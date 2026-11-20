@@ -1,0 +1,49 @@
+/* Página principal del catálogo */
+
+.catalogo {
+  width: 100%;
+  max-width: 1264px;
+  margin-inline: auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.rejilla-productos {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.25rem 4rem;
+}
+
+.sin-resultados {
+  margin-top: 1.5rem;
+  border: 1px solid rgb(31 26 36 / 0.12);
+  border-radius: 12px;
+  background-color: rgb(31 26 36 / 0.04);
+  padding: 1rem;
+  color: rgb(31 26 36 / 0.85);
+  font-size: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .catalogo {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* Tablet: dos columnas */
+@media (min-width: 768px) {
+  .rejilla-productos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Escritorio: separación ancha entre columnas como en el mockup (140 px) */
+@media (min-width: 1280px) {
+  .catalogo {
+    padding-inline: 60px;
+    padding-top: 2rem;
+  }
+
+  .rejilla-productos {
+    column-gap: 140px;
+  }
+}
