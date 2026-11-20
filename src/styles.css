@@ -1,3 +1,42 @@
-/* You can add global styles to this file, and also import other style files */
+/* Estilos globales de UNIQUE — Tailwind CSS 4 + Flowbite */
 
 @import 'tailwindcss';
+@import 'flowbite/src/themes/default';
+
+@plugin 'flowbite/plugin';
+@source '../node_modules/flowbite';
+
+@theme {
+  --font-sans:
+    'Inter',
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  /* Paleta de la tienda UNIQUE.
+     Valores aproximados desde el mockup de catalogo; afinables con los tokens de Figma. */
+  --color-morado-primario: #7e4a96;
+  --color-morado-oscuro: #5d2f75;
+  --color-morado-profundo: #4c1d52;
+  --color-morado-suave: #a878bd;
+  --color-lavanda-claro: #f4dcf3;
+  --color-lavanda-medio: #ecd0ec;
+  --color-rosa-tarjeta: #f8dce8;
+  --color-tinta: #1f1a24;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background-color: #ffffff;
+  color: var(--color-tinta);
+}

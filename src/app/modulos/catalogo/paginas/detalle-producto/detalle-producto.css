@@ -1,0 +1,138 @@
+/* Página de detalle de producto (medidas aproximadas del mockup) */
+
+.detalle {
+  width: 100%;
+  max-width: 1264px;
+  margin-inline: auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.detalle__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  border-radius: 24px;
+  background-color: var(--color-rosa-tarjeta);
+  padding: 1.5rem;
+}
+
+.detalle__imagen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 24rem;
+  margin-inline: auto;
+  aspect-ratio: 388 / 458;
+  overflow: hidden;
+  padding: 0.75rem;
+  border: 1px solid rgb(31 26 36 / 0.75);
+  border-radius: 16px;
+}
+
+.detalle__imagen img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.detalle__imagen-respaldo {
+  color: var(--color-morado-oscuro);
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.detalle__contenido {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.detalle__titulo {
+  margin: 0;
+  color: var(--color-tinta);
+  font-size: clamp(2rem, 3.6vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.detalle__descripcion {
+  margin: 1.5rem 0 0;
+  color: var(--color-tinta);
+  font-size: clamp(1.125rem, 2.1vw, 1.625rem);
+  line-height: 1.4;
+}
+
+.detalle__precio {
+  margin: 2.5rem 0 0;
+  color: var(--color-tinta);
+  font-size: clamp(1.125rem, 1.9vw, 1.5rem);
+}
+
+.detalle__accion {
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 2.5rem;
+}
+
+.boton-carrito {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--color-morado-profundo);
+  color: #ffffff;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-weight: 500;
+  padding: 1.125rem 3rem;
+  transition: background-color 0.2s ease;
+}
+
+.boton-carrito:hover {
+  background-color: var(--color-morado-oscuro);
+}
+
+.boton-carrito:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(168 120 189 / 0.6);
+}
+
+.detalle__no-encontrado {
+  border: 1px solid rgb(31 26 36 / 0.12);
+  border-radius: 16px;
+  background-color: var(--color-rosa-tarjeta);
+  padding: 2rem;
+  text-align: center;
+}
+
+.detalle__no-encontrado-texto {
+  margin: 0 0 1rem;
+}
+
+.detalle__enlace {
+  color: var(--color-morado-primario);
+  font-weight: 600;
+}
+
+/* Escritorio: imagen a la izquierda y contenido a la derecha (como el mockup) */
+@media (min-width: 1024px) {
+  .detalle {
+    padding-inline: 2.5rem;
+  }
+
+  .detalle__tarjeta {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 3rem;
+    padding: 3rem;
+  }
+
+  .detalle__imagen {
+    flex-shrink: 0;
+    max-width: 24.25rem;
+    margin-inline: 0;
+  }
+}
