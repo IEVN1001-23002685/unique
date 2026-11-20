@@ -1,0 +1,66 @@
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <div style="position: relative; width: 100%; max-width: 480px; background-color: #e6cce8; border-radius: 28px; padding: 28px 36px 24px; box-shadow: 0 12px 30px rgba(66, 33, 75, 0.14); color: #3b2d3e;">
+
+    <!-- Botón cerrar -->
+    <button
+      type="button"
+      aria-label="Cerrar inicio de sesión"
+      (click)="onCerrar()"
+      style="position: absolute; top: 18px; left: 18px; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #2b212d; background-color: #ffffff; color: #2b212d; font-size: 16px; font-weight: bold; cursor: pointer;"
+    >
+      ✕
+    </button>
+
+    <!-- Encabezado / Logo -->
+    <div style="text-align: center; margin-top: 16px; margin-bottom: 18px;">
+      <img
+        src="/Logo1.png"
+        alt="UNIQUE - tan único como tú"
+        style="display: block; max-width: 210px; width: 100%; height: auto; margin: 0 auto 10px;"
+      />
+      <h2 style="margin: 0; font-size: 26px; font-weight: 700; color: #332736;">Iniciar Sesión</h2>
+    </div>
+
+    <!-- Formulario -->
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label for="loginCorreo" style="font-size: 13px; font-weight: 600; color: #2f2432; padding-left: 4px;">Correo electrónico:</label>
+        <input
+          id="loginCorreo"
+          name="correo"
+          type="email"
+          [(ngModel)]="credenciales.correo"
+          required
+          style="height: 42px; border: none; border-radius: 999px; background-color: #f3ecf4; padding: 0 16px; font-size: 14px; color: #2b212d; outline: none;"
+        />
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label for="loginContrasena" style="font-size: 13px; font-weight: 600; color: #2f2432; padding-left: 4px;">Contraseña:</label>
+        <input
+          id="loginContrasena"
+          name="contrasena"
+          type="password"
+          [(ngModel)]="credenciales.contrasena"
+          required
+          style="height: 42px; border: none; border-radius: 999px; background-color: #f3ecf4; padding: 0 16px; font-size: 14px; color: #2b212d; outline: none;"
+        />
+      </div>
+
+      <button
+        type="submit"
+        style="margin: 12px auto 4px; width: 72%; height: 44px; border: none; border-radius: 999px; background-color: #4f2857; color: #ffffff; font-size: 16px; font-weight: 600; cursor: pointer;"
+      >
+        Iniciar Sesión
+      </button>
+    </form>
+
+    <!-- Pie -->
+    <p style="margin: 14px 0 0; text-align: center; font-size: 12px; color: #3b2d3e;">
+      ¿Aún no estas registrado?
+      <a href="javascript:void(0)" (click)="onIrARegistro()" style="color: #4f2857; font-weight: 700; text-decoration: none;">
+        Regístrate
+      </a>
+    </p>
+  </div>
+</div>
