@@ -1,0 +1,31 @@
+<article class="tarjeta">
+  <div class="caja-imagen">
+    @if (imagenNoDisponible()) {
+      <span class="imagen-respaldo">{{ producto().nombre }}</span>
+    } @else {
+      <img
+        [src]="producto().imagen"
+        [alt]="producto().nombre"
+        class="h-full w-full object-contain"
+        (error)="imagenNoDisponible.set(true)"
+      />
+    }
+
+    @if (producto().etiqueta) {
+      <span class="etiqueta-buscado">{{ producto().etiqueta }}</span>
+    }
+  </div>
+
+  <div class="tarjeta__contenido">
+    <h2 class="tarjeta__titulo">{{ producto().nombre }}</h2>
+    <p class="tarjeta__descripcion">{{ producto().descripcion }}</p>
+    <p class="tarjeta__precio">
+      {{ producto().precio | currency: 'USD' : 'symbol' : '1.0-0' }}
+    </p>
+    <div class="tarjeta__acciones">
+      <a [routerLink]="['/catalogo/producto', producto().slug]" class="boton-informacion">
+        Ver más información
+      </a>
+    </div>
+  </div>
+</article>

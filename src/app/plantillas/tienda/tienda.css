@@ -1,0 +1,9 @@
+/* Layout de la tienda pública.
+   El pie de página se agregará cuando exista su mockup aprobado. */
+
+:host {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background-color: #ffffff;
+}

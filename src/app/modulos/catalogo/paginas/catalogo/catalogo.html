@@ -1,0 +1,20 @@
+<main class="catalogo">
+  <app-desplegable-categorias
+    class="mb-7 block"
+    [categorias]="categorias()"
+    [seleccionada]="categoriaSeleccionada()"
+    (seleccionar)="categoriaSeleccionada.set($event)"
+  />
+
+  <div class="rejilla-productos">
+    @for (producto of productosFiltrados(); track producto.id) {
+      <app-tarjeta-producto [producto]="producto" />
+    }
+  </div>
+
+  @if (productosFiltrados().length === 0) {
+    <div class="sin-resultados" role="status">
+      No se encontraron productos que coincidan con la búsqueda.
+    </div>
+  }
+</main>

@@ -1,0 +1,40 @@
+<div class="contenedor-desplegable">
+  <button
+    type="button"
+    class="boton-categorias"
+    [attr.aria-expanded]="abierto()"
+    aria-haspopup="listbox"
+    aria-controls="lista-categorias"
+    (click)="alternar()"
+  >
+    <span>{{ seleccionada() ?? 'Todas las categorías' }}</span>
+    <span class="boton-categorias__icono" [class.roto]="abierto()">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-5 w-5">
+        <path
+          d="m6 9 6 6 6-6"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </span>
+  </button>
+
+  @if (abierto()) {
+    <ul id="lista-categorias" class="lista-categorias" role="listbox" aria-label="Categorías">
+      <li role="option" [attr.aria-selected]="seleccionada() === null">
+        <button type="button" class="lista-categorias__opcion" (click)="elegir(null)">
+          Todas las categorías
+        </button>
+      </li>
+      @for (categoria of categorias(); track categoria) {
+        <li role="option" [attr.aria-selected]="seleccionada() === categoria">
+          <button type="button" class="lista-categorias__opcion" (click)="elegir(categoria)">
+            {{ categoria }}
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>

@@ -1,0 +1,39 @@
+<main class="detalle">
+  @if (producto(); as productoActual) {
+    <article class="detalle__tarjeta">
+      <div class="detalle__imagen">
+        @if (imagenNoDisponible()) {
+          <span class="detalle__imagen-respaldo">{{ productoActual.nombre }}</span>
+        } @else {
+          <img
+            [src]="productoActual.imagen"
+            [alt]="productoActual.nombre"
+            (error)="imagenNoDisponible.set(true)"
+          />
+        }
+      </div>
+
+      <div class="detalle__contenido">
+        <h1 class="detalle__titulo">{{ productoActual.nombre }}</h1>
+        <p class="detalle__descripcion">
+          {{ productoActual.descripcionDetalle ?? productoActual.descripcion }}
+        </p>
+        <p class="detalle__precio">
+          {{ productoActual.precio | currency: 'USD' : 'symbol' : '1.0-0' }}
+        </p>
+
+        <div class="detalle__accion">
+          <!-- Pendiente: el módulo de carrito aún no existe; no se simula una compra -->
+          <button type="button" class="boton-carrito">Agregar al carrito</button>
+        </div>
+      </div>
+    </article>
+  } @else {
+    <div class="detalle__no-encontrado" role="alert">
+      <p class="detalle__no-encontrado-texto">
+        No se encontró el producto solicitado.
+      </p>
+      <a routerLink="/catalogo" class="detalle__enlace">Volver al catálogo</a>
+    </div>
+  }
+</main>

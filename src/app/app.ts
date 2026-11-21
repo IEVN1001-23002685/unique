@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Registro } from './modulos/registro';
@@ -19,3 +19,4 @@ manejarLogin(datos: CredencialesLogin): void {
     console.log('Listo para conectar al backend (login):', datos);
   }
 }
+export class App {}

@@ -1,0 +1,119 @@
+/* Tarjeta de producto del catálogo (medidas aproximadas del mockup) */
+
+.tarjeta {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  gap: 1.25rem;
+  border-radius: 20px;
+  background-color: var(--color-rosa-tarjeta);
+  padding: 1.25rem;
+}
+
+.caja-imagen {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 212px;
+  margin-inline: auto;
+  aspect-ratio: 212 / 250;
+  overflow: hidden;
+  padding: 0.5rem;
+  border: 1px solid rgb(126 74 150 / 0.55);
+  border-radius: 14px;
+  background-color: #ffffff;
+}
+
+.imagen-respaldo {
+  color: var(--color-morado-oscuro);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.etiqueta-buscado {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--color-morado-suave);
+  color: #ffffff;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  padding: 0.25rem 0.625rem;
+}
+
+.tarjeta__contenido {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tarjeta__titulo {
+  margin: 0;
+  color: var(--color-tinta);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tarjeta__descripcion {
+  margin: 0;
+  color: rgb(28 25 30 / 0.9);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.tarjeta__precio {
+  margin: 0;
+  color: var(--color-tinta);
+  font-size: 1rem;
+}
+
+.tarjeta__acciones {
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.boton-informacion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--color-morado-primario);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.625rem 1.25rem;
+  transition: background-color 0.2s ease;
+}
+
+.boton-informacion:hover {
+  background-color: var(--color-morado-oscuro);
+}
+
+.boton-informacion:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(168 120 189 / 0.6);
+}
+
+/* Tablet a escritorio: imagen a la izquierda y texto a la derecha (como el mockup) */
+@media (min-width: 1024px) {
+  .tarjeta {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .caja-imagen {
+    flex-shrink: 0;
+    margin-inline: 0;
+  }
+
+  .tarjeta__contenido {
+    min-width: 0;
+  }
+}
