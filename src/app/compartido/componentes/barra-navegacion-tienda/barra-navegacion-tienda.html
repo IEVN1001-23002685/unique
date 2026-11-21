@@ -5,12 +5,12 @@
   >
     <!-- Izquierda: acceso de cuenta (abre los modales de autenticacion) -->
     <div class="col-start-1 flex items-center gap-6 lg:gap-8">
-      <button type="button" class="enlace-cuenta hidden md:inline-flex" (click)="abrirRegistro()">
+      <button type="button" class="enlace-cuenta hidden lg:inline-flex" (click)="abrirRegistro()">
         Registrarse
       </button>
       <button
         type="button"
-        class="enlace-cuenta hidden md:inline-flex"
+        class="enlace-cuenta hidden lg:inline-flex"
         (click)="abrirInicioSesion()"
       >
         Iniciar sesión
@@ -43,30 +43,12 @@
       <a
         routerLink="/catalogo"
         routerLinkActive="enlace-activo"
-        class="enlace-cuenta hidden sm:inline-flex"
+        class="enlace-cuenta hidden lg:inline-flex"
       >
         Catálogo
       </a>
 
-      <form role="search" class="hidden xl:block" (submit)="$event.preventDefault()">
-        <label class="sr-only" for="busqueda-tienda">Buscar productos</label>
-        <div class="campo-busqueda">
-          <input
-            id="busqueda-tienda"
-            type="search"
-            placeholder="Todas las categorías"
-            class="campo-busqueda__entrada"
-            [value]="busqueda.termino()"
-            (input)="actualizarTermino($event)"
-          />
-          <button type="submit" class="campo-busqueda__boton" aria-label="Buscar">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-5 w-5">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
-              <path d="m20 20-3.6-3.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            </svg>
-          </button>
-        </div>
-      </form>
+    
 
       <!-- Carrito: se navegará cuando exista el módulo de carrito -->
       <button type="button" class="icono-barra" aria-label="Carrito de compras">
@@ -85,7 +67,7 @@
 
       <button
         type="button"
-        class="icono-barra"
+        class="icono-barra lg:hidden"
         [attr.aria-expanded]="menuAbierto()"
         aria-controls="menu-tienda"
         aria-label="Menú de navegación"
@@ -104,35 +86,17 @@
   </nav>
 
   @if (menuAbierto()) {
-    <div id="menu-tienda" class="border-t border-neutral-200 bg-white px-4 py-5 sm:px-6 lg:px-[60px]">
+    <div
+      id="menu-tienda"
+      class="lg:hidden border-t border-neutral-200 bg-white px-4 py-5 sm:px-6"
+    >
       <div class="mx-auto flex w-full max-w-[1264px] flex-col items-start gap-4">
-        <!-- Buscador para pantallas donde no cabe en la barra -->
-        <form role="search" class="w-full xl:hidden" (submit)="$event.preventDefault()">
-          <label class="sr-only" for="busqueda-tienda-menu">Buscar productos</label>
-          <div class="campo-busqueda w-full">
-            <input
-              id="busqueda-tienda-menu"
-              type="search"
-              placeholder="Todas las categorías"
-              class="campo-busqueda__entrada"
-              [value]="busqueda.termino()"
-              (input)="actualizarTermino($event)"
-            />
-            <button type="submit" class="campo-busqueda__boton" aria-label="Buscar">
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-5 w-5">
-                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
-                <path d="m20 20-3.6-3.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-              </svg>
-            </button>
-          </div>
-        </form>
-
-        <!-- Los modales de autenticacion se abren desde aqui tambien en pantallas pequenas -->
-        <button type="button" class="enlace-menu" (click)="abrirRegistro()">Registrarse</button>
+        <!-- Enlaces del menú para tablet y celular -->
+        <a routerLink="/catalogo" class="enlace-menu" (click)="cerrarMenu()">Catálogo</a>
         <button type="button" class="enlace-menu" (click)="abrirInicioSesion()">
           Iniciar sesión
         </button>
-        <a routerLink="/catalogo" class="enlace-menu" (click)="cerrarMenu()">Catálogo</a>
+        <button type="button" class="enlace-menu" (click)="abrirRegistro()">Registrarse</button>
       </div>
     </div>
   }
