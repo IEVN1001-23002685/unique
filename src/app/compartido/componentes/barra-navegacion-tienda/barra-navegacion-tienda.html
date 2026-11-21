@@ -3,10 +3,18 @@
     class="mx-auto grid w-full max-w-[1264px] grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-5 sm:px-6 lg:px-[60px] lg:py-7"
     aria-label="Navegación principal"
   >
-    <!-- Izquierda: acceso de cuenta (pendiente del módulo de autenticación) -->
+    <!-- Izquierda: acceso de cuenta (abre los modales de autenticacion) -->
     <div class="col-start-1 flex items-center gap-6 lg:gap-8">
-      <button type="button" class="enlace-cuenta hidden md:inline-flex">Registrarse</button>
-      <button type="button" class="enlace-cuenta hidden md:inline-flex">Iniciar sesión</button>
+      <button type="button" class="enlace-cuenta hidden md:inline-flex" (click)="abrirRegistro()">
+        Registrarse
+      </button>
+      <button
+        type="button"
+        class="enlace-cuenta hidden md:inline-flex"
+        (click)="abrirInicioSesion()"
+      >
+        Iniciar sesión
+      </button>
     </div>
 
     <!-- Centro: logotipo -->
@@ -22,8 +30,8 @@
         </span>
       } @else {
         <img
-          src="images/logo-unique.svg"
-          alt="UNIQUE"
+          src="/Logo1.png"
+          alt="UNIQUE - tan unico como tu"
           class="block h-auto w-[140px] sm:w-[170px]"
           (error)="logoNoDisponible.set(true)"
         />
@@ -119,9 +127,11 @@
           </div>
         </form>
 
-        <!-- Pendiente: rutas de autenticación cuando exista su módulo -->
-        <button type="button" class="enlace-menu" (click)="cerrarMenu()">Registrarse</button>
-        <button type="button" class="enlace-menu" (click)="cerrarMenu()">Iniciar sesión</button>
+        <!-- Los modales de autenticacion se abren desde aqui tambien en pantallas pequenas -->
+        <button type="button" class="enlace-menu" (click)="abrirRegistro()">Registrarse</button>
+        <button type="button" class="enlace-menu" (click)="abrirInicioSesion()">
+          Iniciar sesión
+        </button>
         <a routerLink="/catalogo" class="enlace-menu" (click)="cerrarMenu()">Catálogo</a>
       </div>
     </div>

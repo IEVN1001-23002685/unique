@@ -1,5 +1,4 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 export interface CredencialesLogin {
@@ -10,8 +9,9 @@ export interface CredencialesLogin {
 @Component({
   selector: 'app-inicio-sesion',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './inicio-sesion.html',
+  styleUrl: './inicio-sesion.css',
 })
 export class InicioSesion {
   @Output() cerrar = new EventEmitter<void>();

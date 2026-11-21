@@ -1,11 +1,3 @@
-<app-inicio-sesion
-  *ngIf="vistaActual === 'login'"
-  (irARegistro)="vistaActual = 'registro'"
-  (enviarLogin)="manejarLogin($event)"
-></app-inicio-sesion>
-
-<app-registro
-  *ngIf="vistaActual === 'registro'"
-  (irAIniciarSesion)="vistaActual = 'login'"
-></app-registro>
 <router-outlet />
+
+<app-modal-autenticacion />

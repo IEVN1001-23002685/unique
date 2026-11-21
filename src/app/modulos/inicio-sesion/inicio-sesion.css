@@ -1,0 +1,123 @@
+/* Tarjeta del modal de inicio de sesion. */
+
+.autenticacion {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 28px;
+  background-color: #e6cce8;
+  padding: 28px 36px 24px;
+  box-shadow: 0 12px 30px rgb(66 33 75 / 0.14);
+  color: #3b2d3e;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.autenticacion__cerrar {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 34px;
+  height: 34px;
+  border: 2px solid #2b212d;
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: #2b212d;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.autenticacion__encabezado {
+  margin: 16px 0 18px;
+  text-align: center;
+}
+
+.autenticacion__logo {
+  display: block;
+  width: 100%;
+  max-width: 210px;
+  height: auto;
+  margin: 0 auto 10px;
+}
+
+.autenticacion__titulo {
+  margin: 0;
+  color: #332736;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.autenticacion__formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.autenticacion__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.autenticacion__etiqueta {
+  padding-left: 4px;
+  color: #2f2432;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.autenticacion__entrada {
+  height: 42px;
+  border: none;
+  border-radius: 999px;
+  background-color: #f3ecf4;
+  padding: 0 16px;
+  color: #2b212d;
+  font-size: 14px;
+}
+
+.autenticacion__entrada:focus {
+  outline: none;
+}
+
+.autenticacion__boton {
+  width: 72%;
+  height: 44px;
+  margin: 12px auto 4px;
+  border: none;
+  border-radius: 999px;
+  background-color: #4f2857;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.autenticacion__pie {
+  margin: 14px 0 0;
+  color: #3b2d3e;
+  font-size: 12px;
+  text-align: center;
+}
+
+.autenticacion__enlace {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: #4f2857;
+  font-size: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.autenticacion__cerrar:focus-visible,
+.autenticacion__boton:focus-visible,
+.autenticacion__enlace:focus-visible {
+  outline: 2px solid #4f2857;
+  outline-offset: 2px;
+}
+
+.autenticacion__entrada:focus-visible {
+  box-shadow: 0 0 0 3px rgb(79 40 87 / 0.45);
+}
