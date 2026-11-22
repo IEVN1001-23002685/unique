@@ -1,0 +1,112 @@
+.panel {
+  min-height: 100vh;
+  background-color: var(--color-unique-lila);
+  font-family: var(--font-texto);
+  color: var(--color-unique-texto);
+}
+
+.panel__banda {
+  background-color: var(--color-unique-morado);
+  color: #ffffff;
+}
+
+.panel__banda-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 1rem 2rem;
+}
+
+.panel__identidad,
+.panel__derecha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.panel__logo {
+  font-family: var(--font-titulo);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.panel__lema {
+  font-family: var(--font-interfaz);
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.panel__separador {
+  width: 1px;
+  height: 1.75rem;
+  background-color: rgb(255 255 255 / 0.4);
+}
+
+.panel__modulo {
+  font-family: var(--font-interfaz);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.panel__enlace {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: 999px;
+  color: #ffffff;
+  font-family: var(--font-interfaz);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.panel__enlace:hover,
+.panel__enlace--activo {
+  background-color: #ffffff;
+  color: var(--color-unique-morado);
+}
+
+.panel__perfil {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-interfaz);
+  font-size: 0.8rem;
+}
+
+.panel__avatar {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  background-color: var(--color-unique-rosa-lavanda);
+  color: var(--color-unique-morado);
+  font-weight: 700;
+}
+
+.panel__contenido {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+@media (min-width: 768px) {
+  .panel__banda-inner {
+    padding-inline: 2rem;
+  }
+
+  .panel__contenido {
+    padding: 2rem 2rem 4rem;
+  }
+}

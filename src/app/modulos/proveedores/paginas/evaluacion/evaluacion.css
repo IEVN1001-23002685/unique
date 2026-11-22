@@ -1,0 +1,381 @@
+.vista {
+  width: 100%;
+}
+
+.cabecera {
+  margin-bottom: 1.25rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-interfaz);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-unique-ciruela);
+}
+
+.titulo {
+  margin: 0;
+  font-family: var(--font-titulo);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  color: var(--color-unique-morado);
+}
+
+.subtitulo {
+  margin: 0.4rem 0 0;
+  max-width: 52rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-unique-texto-suave);
+}
+
+.alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background-color: var(--color-unique-info-suave);
+  color: #2b4f8c;
+  font-size: 0.82rem;
+}
+
+.alerta__punto {
+  flex: 0 0 auto;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+  background-color: var(--color-unique-info);
+}
+
+.alerta strong {
+  font-family: var(--font-interfaz);
+  letter-spacing: 0.04em;
+}
+
+.alerta p {
+  margin: 0.25rem 0 0;
+  line-height: 1.5;
+}
+
+.bloque {
+  padding: 1.25rem;
+}
+
+.barra {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.buscador {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+}
+
+.buscador input {
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid #d9bfdb;
+  border-radius: 999px;
+  background-color: #ffffff;
+  font-family: var(--font-texto);
+  font-size: 0.85rem;
+  color: var(--color-unique-texto);
+}
+
+.interruptor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-interfaz);
+  font-size: 0.8rem;
+  color: var(--color-unique-morado);
+}
+
+.interruptor input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-unique-morado);
+}
+
+.subtitulo-seccion {
+  margin: 0 0 1rem;
+  font-family: var(--font-titulo);
+  font-size: 1.05rem;
+  color: var(--color-unique-morado);
+}
+
+.grafica {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.grafica__fila {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background-color: var(--color-unique-fila);
+}
+
+.grafica__nombre {
+  font-family: var(--font-interfaz);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-unique-morado);
+}
+
+.grafica__barras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.barra {
+  display: grid;
+  grid-template-columns: 5rem 1fr 3.5rem;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.barra__etiqueta {
+  font-size: 0.7rem;
+  color: var(--color-unique-texto-suave);
+}
+
+.barra__pista {
+  position: relative;
+  height: 0.75rem;
+  border-radius: 999px;
+  background-color: #e9dcea;
+  overflow: hidden;
+}
+
+.barra__pista::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 80%;
+  width: 2px;
+  background-color: var(--color-unique-texto-suave);
+  opacity: 0.65;
+}
+
+.barra__llena {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.barra__llena--tiempo {
+  background-color: var(--color-unique-exito);
+}
+
+.barra__llena--tiempo[data-nivel='alerta'] {
+  background-color: var(--color-unique-error);
+}
+
+.barra__llena--aceptacion {
+  background-color: var(--color-unique-ciruela);
+}
+
+.barra__valor {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--color-unique-texto);
+}
+
+.leyenda {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.75rem;
+  font-size: 0.72rem;
+  color: var(--color-unique-texto-suave);
+}
+
+.leyenda__linea {
+  width: 2px;
+  height: 0.9rem;
+  background-color: var(--color-unique-texto-suave);
+}
+
+.tabla-contenedor {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.tabla thead th {
+  padding: 0.7rem 0.6rem;
+  background-color: var(--color-unique-ciruela);
+  color: #ffffff;
+  font-family: var(--font-interfaz);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tabla tbody tr {
+  border-bottom: 1px solid #eddfee;
+}
+
+.tabla tbody tr:nth-child(even) {
+  background-color: var(--color-unique-fila);
+}
+
+.tabla td {
+  padding: 0.7rem 0.6rem;
+  vertical-align: middle;
+}
+
+.celda-principal,
+.celda-secundaria {
+  display: block;
+}
+
+.celda-principal {
+  font-weight: 600;
+}
+
+.celda-secundaria {
+  font-size: 0.7rem;
+  color: var(--color-unique-texto-suave);
+}
+
+.medicion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.medicion__punto {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: var(--color-unique-exito);
+}
+
+.medicion[data-nivel='alerta'] .medicion__punto {
+  background-color: var(--color-unique-error);
+}
+
+.accion {
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.nota {
+  margin: 1.25rem 0 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-info-suave);
+  color: #2b4f8c;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.estado {
+  padding: 2rem 1rem;
+  border-radius: 14px;
+  background-color: var(--color-unique-fila);
+  text-align: center;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.85rem;
+}
+
+.estado p {
+  margin: 0.35rem 0 0;
+}
+
+@media (min-width: 768px) {
+  .barra {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .grafica__fila {
+    grid-template-columns: 14rem 1fr;
+    align-items: center;
+  }
+}
+
+@media (max-width: 900px) {
+  .tabla thead {
+    display: none;
+  }
+
+  .tabla,
+  .tabla tbody,
+  .tabla tr,
+  .tabla td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .tabla tbody tr {
+    margin-bottom: 0.85rem;
+    padding: 0.8rem;
+    border: 1px solid #e7d7e8;
+    border-radius: 16px;
+    background-color: #ffffff;
+  }
+
+  .tabla td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0.2rem;
+    text-align: right;
+  }
+
+  .tabla td::before {
+    content: attr(data-etiqueta);
+    flex: 0 0 40%;
+    font-family: var(--font-interfaz);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-unique-texto-suave);
+    text-align: left;
+  }
+
+  .tabla td[data-etiqueta='Proveedor'] {
+    display: block;
+    text-align: left;
+  }
+
+  .tabla td[data-etiqueta='Proveedor']::before {
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+}

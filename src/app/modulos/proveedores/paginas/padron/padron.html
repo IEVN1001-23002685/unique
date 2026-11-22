@@ -1,0 +1,185 @@
+<section class="vista">
+  <app-navegacion-proveedores />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 4 · Abastecimiento</p>
+      <h1 class="titulo">Padrón de proveedores</h1>
+      <p class="subtitulo">
+        Administra el padrón, los materiales que surten y su desempeño. Rol: Administrador.
+      </p>
+    </div>
+    <a routerLink="/proveedores/nuevo" class="boton boton--primario">+ Nuevo proveedor</a>
+  </div>
+
+  <div class="indicadores" aria-label="Resumen del padrón">
+    <div class="indicador">
+      <span class="indicador__numero">{{ totales().todos }}</span>
+      <span class="indicador__etiqueta">Proveedores</span>
+    </div>
+    <div class="indicador" data-tono="exito">
+      <span class="indicador__numero">{{ totales().activos }}</span>
+      <span class="indicador__etiqueta">Activos</span>
+    </div>
+    <div class="indicador" data-tono="adv">
+      <span class="indicador__numero">{{ totales().revision }}</span>
+      <span class="indicador__etiqueta">En revisión</span>
+    </div>
+    <div class="indicador" data-tono="inactivo">
+      <span class="indicador__numero">{{ totales().inactivos }}</span>
+      <span class="indicador__etiqueta">Inactivos</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por proveedor o material"
+          aria-label="Buscar por proveedor o material"
+        />
+      </label>
+
+      <div class="filtros" role="group" aria-label="Filtrar por estatus">
+        @for (opcion of opcionesEstatus; track opcion.valor) {
+          <button
+            type="button"
+            class="filtro"
+            [class.filtro--activo]="estatusFiltro() === opcion.valor"
+            [attr.aria-pressed]="estatusFiltro() === opcion.valor"
+            (click)="estatusFiltro.set(opcion.valor)"
+          >
+            {{ opcion.etiqueta }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (cargando()) {
+      <p class="estado" role="status">Cargando padrón…</p>
+    } @else if (proveedores().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay proveedores registrados.</strong>
+        <p>Usa «+ Nuevo proveedor» para dar de alta el primero.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Prueba con otro proveedor, RFC o material, o cambia el filtro de estatus.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">Padrón de proveedores de UNIQUE</caption>
+          <thead>
+            <tr>
+              <th scope="col">Proveedor</th>
+              <th scope="col">Materiales que surte</th>
+              <th scope="col">Plazo</th>
+              <th scope="col">Mínimo de compra</th>
+              <th scope="col">% a tiempo</th>
+              <th scope="col">% aceptación</th>
+              <th scope="col">Estatus</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (proveedor of filtrados(); track proveedor.id) {
+              <tr>
+                <td data-etiqueta="Proveedor">
+                  <span class="celda-principal">{{ proveedor.razonSocial }}</span>
+                  <span class="celda-secundaria">
+                    {{ proveedor.nombreComercial }} · {{ proveedor.rfc ?? 'Sin RFC' }}
+                  </span>
+                </td>
+                <td data-etiqueta="Materiales">
+                  <div class="etiquetas">
+                    @for (material of proveedor.materiales.slice(0, 3); track material.id) {
+                      <span class="etiqueta">{{ material.material }}</span>
+                    }
+                    @if (proveedor.materiales.length > 3) {
+                      <span class="etiqueta etiqueta--mas">
+                        +{{ proveedor.materiales.length - 3 }}
+                      </span>
+                    }
+                    @if (proveedor.materiales.length === 0) {
+                      <span class="celda-secundaria">Sin materiales</span>
+                    }
+                  </div>
+                </td>
+                <td data-etiqueta="Plazo">{{ plazoProveedor(proveedor) }} días</td>
+                <td data-etiqueta="Mínimo de compra">
+                  {{ minimoProveedor(proveedor) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="% a tiempo">
+                  <span class="medicion" [attr.data-nivel]="nivelEntrega(proveedor)">
+                    <span class="medicion__punto" aria-hidden="true"></span>
+                    {{ (evaluacion(proveedor)?.entregasATiempoPct ?? 0) | number: '1.1-1' : 'es-MX' }}%
+                  </span>
+                </td>
+                <td data-etiqueta="% aceptación">
+                  {{ (evaluacion(proveedor)?.aceptacionPct ?? 0) | number: '1.1-1' : 'es-MX' }}%
+                </td>
+                <td data-etiqueta="Estatus">
+                  <app-chip-estatus [estatus]="proveedor.estatus" />
+                </td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    <a
+                      class="accion"
+                      [routerLink]="['/proveedores', proveedor.id, 'materiales']"
+                      [attr.aria-label]="'Ver catálogo de ' + proveedor.nombreComercial"
+                    >
+                      Catálogo
+                    </a>
+                    <a
+                      class="accion"
+                      [routerLink]="['/proveedores', proveedor.id, 'editar']"
+                      [attr.aria-label]="'Editar a ' + proveedor.nombreComercial"
+                    >
+                      Editar
+                    </a>
+                    <button
+                      type="button"
+                      class="accion accion--peligro"
+                      [attr.aria-label]="'Eliminar a ' + proveedor.nombreComercial"
+                      (click)="proveedorAEliminar.set(proveedor)"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Eliminar solo es posible sin órdenes de compra; con historial el proveedor se desactiva.
+      Los cambios de esta vista son de demostración y no persisten en servidor.
+    </p>
+  </div>
+
+  @if (proveedorAEliminar(); as proveedor) {
+    <app-modal-confirmacion
+      titulo="Eliminar proveedor"
+      [mensaje]="
+        '¿Eliminar a ' +
+        proveedor.razonSocial +
+        '? Si registra órdenes de compra, solo se desactivará.'
+      "
+      etiquetaConfirmar="Eliminar"
+      (confirmar)="confirmarEliminacion()"
+      (cancelar)="proveedorAEliminar.set(null)"
+    />
+  }
+</section>

@@ -1,0 +1,33 @@
+<div class="panel">
+  <header class="panel__banda">
+    <div class="panel__banda-inner">
+      <div class="panel__identidad">
+        <a routerLink="/panel" class="panel__logo" aria-label="UNIQUE, ir al panel">UNIQUE</a>
+        <span class="panel__lema">tan único como tú</span>
+        <span class="panel__separador" aria-hidden="true"></span>
+        <span class="panel__modulo">{{ tituloModulo }}</span>
+      </div>
+
+      <div class="panel__derecha">
+        <a
+          routerLink="/proveedores"
+          routerLinkActive="panel__enlace--activo"
+          class="panel__enlace"
+        >
+          Proveedores
+        </a>
+        <a routerLink="/catalogo" class="panel__enlace">Volver a la tienda</a>
+        <span class="panel__perfil" [attr.title]="'Rol demostrativo: ' + etiquetaRol">
+          <span class="panel__avatar" aria-hidden="true">{{ etiquetaRol.charAt(0) }}</span>
+          {{ etiquetaRol }}
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="panel__contenido">
+    <router-outlet />
+  </main>
+
+  <app-aviso-toast />
+</div>
