@@ -1,0 +1,181 @@
+.vista {
+  font-family: var(--font-texto);
+  color: var(--color-unique-texto);
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.titulo {
+  margin: 0;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.subtitulo {
+  max-width: 44rem;
+  margin: 0.4rem 0 0;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.conteo {
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background-color: var(--color-unique-rosa-lavanda);
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.bloque {
+  padding: 1.25rem;
+}
+
+.barra {
+  margin-bottom: 1.25rem;
+}
+
+.buscador {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 30rem;
+  padding: 0 0.85rem;
+  border: 1px solid #d9bfdb;
+  border-radius: 999px;
+  background-color: #ffffff;
+}
+
+.buscador:focus-within {
+  border-color: var(--color-unique-orquidea);
+  box-shadow: 0 0 0 3px rgb(191 126 187 / 0.22);
+}
+
+.buscador__icono {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--color-unique-ciruela);
+}
+
+.buscador input {
+  width: 100%;
+  min-height: 2.6rem;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: var(--font-texto);
+  font-size: 0.875rem;
+}
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  min-width: 56rem;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.tabla th {
+  padding: 0.75rem;
+  background-color: var(--color-unique-ciruela);
+  color: #ffffff;
+  font-family: var(--font-interfaz);
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.tabla td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #eadcea;
+  vertical-align: top;
+}
+
+.tabla tbody tr:nth-child(even) {
+  background-color: var(--color-unique-fila);
+}
+
+.celda-principal,
+.celda-secundaria {
+  display: block;
+}
+
+.celda-secundaria {
+  color: var(--color-unique-texto-suave);
+  font-size: 0.74rem;
+}
+
+.mono {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+.motivo {
+  min-width: 14rem;
+  line-height: 1.45;
+}
+
+.accion {
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.estado {
+  padding: 2rem 1rem;
+  border: 1px dashed var(--color-unique-orquidea);
+  border-radius: 16px;
+  background-color: var(--color-unique-fila);
+  text-align: center;
+}
+
+.estado strong {
+  color: var(--color-unique-morado);
+}
+
+.estado p {
+  margin: 0.4rem 0 0;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.85rem;
+}
+
+.nota {
+  margin: 1.25rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-info-suave);
+  color: #2b5496;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .bloque {
+    padding: 1.5rem;
+  }
+}

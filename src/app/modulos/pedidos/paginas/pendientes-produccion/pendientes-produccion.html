@@ -1,0 +1,109 @@
+<section class="vista">
+  <app-navegacion-pedidos />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M09 · Demanda faltante</p>
+      <h1 class="titulo">Pendientes de producción</h1>
+      <p class="subtitulo">
+        Líneas que esperan producción, agrupadas por SKU. La demanda se deriva de
+        <span class="mono">cant_reservada + cant_pendiente = cantidad</span> de cada pedido activo.
+      </p>
+    </div>
+    <div class="resumen-demandas">
+      <span class="resumen-demandas__numero">{{ demandaTotal() }}</span>
+      <span class="resumen-demandas__etiqueta">Unidades por producir (filtradas)</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por SKU, prenda o pedido"
+          aria-label="Buscar pendientes de producción"
+        />
+      </label>
+    </div>
+
+    @if (pendientes().length === 0) {
+      <div class="estado" role="status">
+        <strong>No hay líneas pendientes de producción.</strong>
+        <p>Todos los pedidos activos tienen sus unidades reservadas.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Prueba con otro SKU, otra prenda o el folio de un pedido.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">Demanda de producción pendiente agrupada por SKU</caption>
+          <thead>
+            <tr>
+              <th scope="col">SKU</th>
+              <th scope="col">Prenda</th>
+              <th scope="col">Demanda total</th>
+              <th scope="col">Pedidos</th>
+              <th scope="col">Orden vinculada</th>
+              <th scope="col">Fecha estimada</th>
+              <th scope="col">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (grupo of filtrados(); track grupo.sku) {
+              <tr>
+                <td data-etiqueta="SKU"><span class="mono">{{ grupo.sku }}</span></td>
+                <td data-etiqueta="Prenda">
+                  <span class="celda-principal">{{ grupo.nombreProducto }}</span>
+                  <span class="celda-secundaria">Talla {{ grupo.talla }} · {{ grupo.color }}</span>
+                </td>
+                <td data-etiqueta="Demanda">
+                  <strong class="demanda">{{ grupo.demanda }}</strong>
+                </td>
+                <td data-etiqueta="Pedidos">
+                  @for (folio of grupo.pedidos; track folio) {
+                    <a class="accion" [routerLink]="['/admin/pedidos', folio]">{{ folio }}</a>
+                  }
+                </td>
+                <td data-etiqueta="Orden">
+                  @if (grupo.ordenFolio) {
+                    <span class="mono">{{ grupo.ordenFolio }}</span>
+                  } @else {
+                    <span class="celda-secundaria">Sin orden</span>
+                  }
+                </td>
+                <td data-etiqueta="Estimada">
+                  @if (grupo.fechaEstimada) {
+                    {{ grupo.fechaEstimada | date: 'dd/MM/yyyy' : '' : 'es-MX' }}
+                  } @else {
+                    Por definir
+                  }
+                </td>
+                <td data-etiqueta="Acción">
+                  <button type="button" class="boton boton--secundario" (click)="crearOrden(grupo)">
+                    Crear o ajustar orden
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Las órdenes de producción se crean y ajustan en M16; este módulo solo publica la demanda. La
+      cancelación de un pedido debe quitarlo de la orden y liberar sus reservas en M12, acciones que
+      requieren Flask. No se ha creado ninguna orden real desde esta vista.
+    </p>
+  </div>
+</section>

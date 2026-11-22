@@ -165,9 +165,13 @@
           </div>
         </dl>
         <div class="acciones">
-          <button type="button" class="boton boton--secundario" (click)="avisoPedidoPendiente()">
+          <a
+            class="boton boton--secundario"
+            [routerLink]="['/admin/pedidos', venta.pedidoFolio]"
+            [attr.aria-label]="'Ver pedido ' + venta.pedidoFolio + ' en M09'"
+          >
             Ver pedido (M09)
-          </button>
+          </a>
           <button type="button" class="boton boton--secundario" (click)="descargarComprobante()">
             Descargar comprobante
           </button>

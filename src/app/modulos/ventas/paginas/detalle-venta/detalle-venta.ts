@@ -180,7 +180,7 @@ export class DetalleVenta {
       this.avisos.mostrar(
         ok ? 'advertencia' : 'error',
         ok
-          ? 'Venta cancelada en memoria. Cancelación del pedido y liberación de reservas pendientes de M09/M12.'
+          ? 'Venta cancelada en memoria. M09 reflejará la cancelación al abrir el pedido; liberación de reservas pendiente de M12.'
           : 'No fue posible cancelar esta venta de demostración.',
       );
     } else {
@@ -194,13 +194,6 @@ export class DetalleVenta {
     }
 
     this.accion.set(null);
-  }
-
-  protected avisoPedidoPendiente(): void {
-    this.avisos.mostrar(
-      'informacion',
-      'El detalle del pedido pertenece a M09 y aún no está implementado. Esta venta conserva su folio de pedido para la integración.',
-    );
   }
 
   protected descargarComprobante(): void {

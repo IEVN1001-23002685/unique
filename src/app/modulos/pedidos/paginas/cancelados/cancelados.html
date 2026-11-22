@@ -1,0 +1,98 @@
+<section class="vista">
+  <app-navegacion-pedidos />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M09 · Historial</p>
+      <h1 class="titulo">Pedidos cancelados</h1>
+      <p class="subtitulo">
+        Motivo y responsable de cada cancelación. El historial es de solo lectura: no se edita ni se
+        elimina.
+      </p>
+    </div>
+    <span class="conteo">{{ filtrados().length }} de {{ cancelados().length }} registros</span>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Folio, cliente, motivo o quién canceló"
+          aria-label="Buscar en pedidos cancelados"
+        />
+      </label>
+    </div>
+
+    @if (cancelados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay pedidos cancelados.</strong>
+        <p>Las cancelaciones aparecerán aquí con su motivo y responsable.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Ajusta el texto buscado para ver otros registros.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">Historial de pedidos cancelados</caption>
+          <thead>
+            <tr>
+              <th scope="col">Folio</th>
+              <th scope="col">Cliente</th>
+              <th scope="col">Cancelado por</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Motivo</th>
+              <th scope="col">Venta</th>
+              <th scope="col">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pedido of filtrados(); track pedido.folio) {
+              <tr>
+                <td data-etiqueta="Folio"><span class="mono">{{ pedido.folio }}</span></td>
+                <td data-etiqueta="Cliente">
+                  <span class="celda-principal">{{ pedido.cliente }}</span>
+                  <span class="celda-secundaria">{{ servicio.articulos(pedido) }} artículo(s)</span>
+                </td>
+                <td data-etiqueta="Cancelado por">{{ pedido.canceladoPor ?? '—' }}</td>
+                <td data-etiqueta="Fecha">
+                  {{ pedido.canceladoEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Motivo" class="motivo">
+                  {{ pedido.motivoCancelacion ?? 'Sin motivo registrado' }}
+                </td>
+                <td data-etiqueta="Venta">
+                  @if (servicio.tieneVentaRegistrada(pedido.ventaFolio)) {
+                    <a class="accion" [routerLink]="['/ventas', pedido.ventaFolio]">
+                      {{ pedido.ventaFolio }}
+                    </a>
+                  } @else {
+                    <span class="celda-secundaria">{{ pedido.ventaFolio }} · solo demo</span>
+                  }
+                </td>
+                <td data-etiqueta="Acción">
+                  <a class="accion" [routerLink]="['/admin/pedidos', pedido.folio]">Ver detalle</a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Al cancelar, el documento indica liberar reservas (M12), quitar el pedido de las órdenes de
+      producción (M16) y pedir el reembolso a M08. Esas operaciones requieren servidor y no se
+      ejecutan desde esta vista de demostración.
+    </p>
+  </div>
+</section>
