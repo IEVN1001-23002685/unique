@@ -13,8 +13,7 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./modulos/catalogo/catalogo.routes').then((m) => m.CATALOGO_RUTAS),
       },
-      // Fallback hacia una ruta realmente definida
-      { path: '**', redirectTo: 'catalogo' },
+     
     ],
   },
   {
