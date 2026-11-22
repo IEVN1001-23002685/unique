@@ -1,0 +1,52 @@
+<div class="modal" (keydown)="alPulsarTecla($event)">
+  <div class="modal__telon" (click)="cancelar.emit()" aria-hidden="true"></div>
+
+  <section class="modal__panel" role="dialog" aria-modal="true" [attr.aria-label]="titulo()">
+    <div class="modal__icono" aria-hidden="true">!</div>
+    <h2 class="modal__titulo">{{ titulo() }}</h2>
+    <p class="modal__mensaje">{{ mensaje() }}</p>
+
+    <form [formGroup]="formulario" (ngSubmit)="confirmarAccion()">
+      @if (pedirMonto()) {
+        <label class="campo">
+          Monto a reembolsar (MXN)
+          <input
+            class="campo__entrada"
+            type="number"
+            formControlName="monto"
+            min="0.01"
+            [max]="montoMaximo()"
+            step="0.01"
+            [attr.aria-invalid]="intento() && montoInvalido"
+          />
+          @if (intento() && montoInvalido) {
+            <span class="campo__error">Captura un monto entre $0.01 y ${{ montoMaximo() }}.</span>
+          }
+        </label>
+      }
+
+      @if (pedirMotivo()) {
+        <label class="campo">
+          Motivo
+          <textarea
+            class="campo__entrada"
+            formControlName="motivo"
+            rows="3"
+            placeholder="Describe el motivo de la acción"
+            [attr.aria-invalid]="intento() && motivoInvalido"
+          ></textarea>
+          @if (intento() && motivoInvalido) {
+            <span class="campo__error">El motivo es obligatorio.</span>
+          }
+        </label>
+      }
+
+      <div class="modal__acciones">
+        <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">
+          Cancelar
+        </button>
+        <button type="submit" class="boton boton--peligro">{{ etiquetaConfirmar() }}</button>
+      </div>
+    </form>
+  </section>
+</div>

@@ -1,0 +1,328 @@
+.vista {
+  width: 100%;
+}
+
+.cabecera {
+  margin-bottom: 1.25rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.3rem;
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.titulo {
+  margin: 0;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.subtitulo {
+  margin: 0.4rem 0 0;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.875rem;
+}
+
+.pasos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.paso-indicador {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 999px;
+  background-color: var(--color-unique-rosa-lavanda);
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.paso-indicador__numero {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: var(--color-unique-morado);
+}
+
+.paso-indicador--activo {
+  background-color: var(--color-unique-morado);
+  color: #ffffff;
+}
+
+.paso-indicador--hecho {
+  background-color: var(--color-unique-exito-suave);
+  color: #1f6b3d;
+}
+
+.asistente {
+  padding: 1.25rem;
+}
+
+.paso h2 {
+  margin: 0 0 0.35rem;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: 1.15rem;
+}
+
+.paso > p {
+  margin: 0 0 1.1rem;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.82rem;
+}
+
+.opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+}
+
+.opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--color-unique-orquidea);
+  border-radius: 999px;
+  background-color: #ffffff;
+  color: var(--color-unique-morado);
+  font-family: var(--font-interfaz);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.opcion--factura {
+  margin-top: 1rem;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--color-unique-morado);
+  font-family: var(--font-interfaz);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.campo__entrada {
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #d9bfdb;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: var(--color-unique-texto);
+  font-family: var(--font-texto);
+  font-size: 0.85rem;
+}
+
+.campo__entrada[aria-invalid='true'] {
+  border-color: var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+}
+
+.campo__error,
+.ayuda {
+  color: #952a39;
+  font-family: var(--font-texto);
+  font-size: 0.72rem;
+  font-weight: 400;
+}
+
+.ayuda {
+  color: var(--color-unique-texto-suave);
+}
+
+.fila-linea {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+  padding: 0.85rem;
+  border: 1px solid #e7d7e8;
+  border-radius: 14px;
+  background-color: var(--color-unique-fila);
+}
+
+.fila-linea__subtotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-unique-texto-suave);
+  font-family: var(--font-interfaz);
+  font-size: 0.75rem;
+}
+
+.fila-linea__subtotal strong {
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+}
+
+.tarifa {
+  margin: 0.5rem 0 0;
+  padding: 0.7rem 0.85rem;
+  border-left: 4px solid var(--color-unique-exito);
+  border-radius: 10px;
+  background-color: var(--color-unique-exito-suave);
+  color: #1f6b3d;
+  font-size: 0.8rem;
+}
+
+.tarifa--error {
+  border-left-color: var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+  color: #8e2b39;
+}
+
+.descuento {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.descuento .campo {
+  flex: 1 1 14rem;
+}
+
+.cupon-aplicado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-exito-suave);
+  color: #1f6b3d;
+  font-size: 0.8rem;
+}
+
+.cupon-aplicado strong,
+.cupon-aplicado span {
+  display: block;
+}
+
+.aviso {
+  margin: 1rem 0;
+  padding: 0.75rem 0.9rem;
+  border-left: 4px solid var(--color-unique-adv);
+  border-radius: 10px;
+  background-color: var(--color-unique-adv-suave);
+  color: #6f520d;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.resumen {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background-color: var(--color-unique-fila);
+}
+
+.resumen div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--color-unique-texto-suave);
+  font-family: var(--font-interfaz);
+  font-size: 0.8rem;
+}
+
+.resumen strong {
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-variant-numeric: tabular-nums;
+}
+
+.resumen__total {
+  padding-top: 0.6rem;
+  border-top: 1px solid #e0c9e2;
+}
+
+.resumen__total strong {
+  font-size: 1.15rem;
+}
+
+.error-paso {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  background-color: var(--color-unique-error-suave);
+  color: #8e2b39;
+  font-size: 0.78rem;
+}
+
+.navegacion {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eddfee;
+}
+
+.nota-nota {
+  margin: 0.5rem 0 0;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.75rem;
+}
+
+.nota {
+  margin: 1.25rem 0 0;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-info-suave);
+  color: #2b4f8c;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .pasos {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .campos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fila-linea {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 0.6fr) minmax(0, 0.8fr) auto;
+    align-items: end;
+  }
+}
