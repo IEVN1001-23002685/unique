@@ -47,6 +47,8 @@
       >
         Catálogo
       </a>
+      <!-- Acceso de demostración al panel; el control real de roles se hará en Flask. -->
+      <a routerLink="/panel" class="enlace-cuenta hidden lg:inline-flex"> Panel </a>
 
     
 
@@ -93,6 +95,7 @@
       <div class="mx-auto flex w-full max-w-[1264px] flex-col items-start gap-4">
         <!-- Enlaces del menú para tablet y celular -->
         <a routerLink="/catalogo" class="enlace-menu" (click)="cerrarMenu()">Catálogo</a>
+        <a routerLink="/panel" class="enlace-menu" (click)="cerrarMenu()">Panel</a>
         <button type="button" class="enlace-menu" (click)="abrirInicioSesion()">
           Iniciar sesión
         </button>

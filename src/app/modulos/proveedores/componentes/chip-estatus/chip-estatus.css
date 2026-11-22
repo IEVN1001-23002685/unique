@@ -1,0 +1,47 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background-color: #f3eef4;
+  color: var(--color-unique-texto);
+  font-family: var(--font-interfaz);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip__punto {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background-color: var(--color-unique-texto-suave);
+}
+
+.chip[data-estatus='ACTIVO'] {
+  background-color: var(--color-unique-exito-suave);
+  color: #1e6b3c;
+}
+
+.chip[data-estatus='ACTIVO'] .chip__punto {
+  background-color: var(--color-unique-exito);
+}
+
+.chip[data-estatus='EN_REVISION'] {
+  background-color: var(--color-unique-adv-suave);
+  color: #7d5908;
+}
+
+.chip[data-estatus='EN_REVISION'] .chip__punto {
+  background-color: var(--color-unique-adv);
+}
+
+.chip[data-estatus='INACTIVO'] {
+  background-color: var(--color-unique-error-suave);
+  color: #8d2637;
+}
+
+.chip[data-estatus='INACTIVO'] .chip__punto {
+  background-color: var(--color-unique-error);
+}

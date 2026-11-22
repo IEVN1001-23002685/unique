@@ -1,0 +1,154 @@
+<section class="vista">
+  <app-navegacion-proveedores />
+
+  <a routerLink="/proveedores" class="volver">← Volver al padrón</a>
+
+  @if (proveedor(); as proveedor) {
+    <div class="cabecera tarjeta">
+      <div>
+        <p class="eyebrow">M13 · Catálogo del proveedor</p>
+        <h1 class="titulo">{{ proveedor.nombreComercial }}</h1>
+        <p class="subtitulo">
+          {{ proveedor.razonSocial }} · RFC {{ proveedor.rfc ?? 'sin RFC' }}
+        </p>
+      </div>
+      <app-chip-estatus [estatus]="proveedor.estatus" />
+    </div>
+
+    @if (materialesConAlerta().length > 0) {
+      <div class="alerta" role="status">
+        <strong>Revisión de cobertura</strong>
+        <ul>
+          @for (item of materialesConAlerta(); track item.referencia.id) {
+            <li><span class="alerta__punto" aria-hidden="true"></span>{{ item.referencia.nombre }} — {{ item.alerta }}</li>
+          }
+        </ul>
+        <p>
+          Cada material requiere un proveedor principal; los materiales críticos (telas, rib y
+          estambre) también requieren uno alterno. Indicadores calculados con el padrón guardado.
+        </p>
+      </div>
+    }
+
+    <p class="nota">
+      El precio y el mínimo se expresan por unidad de compra. Cambiar un precio no altera las
+      órdenes de compra ya emitidas.
+    </p>
+
+    <form class="formulario" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+      <div formArrayName="lineas">
+        @if (lineas.controls.length === 0) {
+          <div class="tarjeta estado" role="status">
+            <strong>Este proveedor aún no tiene materiales asignados.</strong>
+            <p>Agrega una línea para definir precio, mínimo, plazo y proveedor principal.</p>
+          </div>
+        } @else {
+          <div class="tabla-contenedor tarjeta">
+            <table class="tabla">
+              <caption class="sr-only">Materiales que surte {{ proveedor.nombreComercial }}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Material</th>
+                  <th scope="col">Unidad de compra</th>
+                  <th scope="col">Precio</th>
+                  <th scope="col">Mínimo</th>
+                  <th scope="col">Plazo (días)</th>
+                  <th scope="col">Principal</th>
+                  <th scope="col">Vigencia</th>
+                  <th scope="col">Activo</th>
+                  <th scope="col">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (linea of lineas.controls; track $index; let i = $index) {
+                  <tr [formGroupName]="i">
+                    <td data-etiqueta="Material">
+                      <select class="campo__entrada" formControlName="materialId" aria-label="Material">
+                        @for (material of materialesReferencia; track material.id) {
+                          <option [ngValue]="material.id">{{ material.nombre }}</option>
+                        }
+                      </select>
+                      <span class="celda-secundaria">{{ categoria(materialIdDe(i)) ?? 'Sin categoría' }}</span>
+                      @if (referencia(materialIdDe(i))?.critico) {
+                        <span class="critico">Crítico · requiere alterno</span>
+                      }
+                    </td>
+                    <td data-etiqueta="Unidad de compra">
+                      <input class="campo__entrada" type="text" formControlName="unidadCompra" aria-label="Unidad de compra" />
+                    </td>
+                    <td data-etiqueta="Precio">
+                      <input class="campo__entrada" type="number" min="0.01" step="0.01" formControlName="precioCompra" aria-label="Precio por unidad de compra" />
+                    </td>
+                    <td data-etiqueta="Mínimo">
+                      <input class="campo__entrada" type="number" min="0" step="0.01" formControlName="minimoCompra" aria-label="Mínimo de compra" />
+                    </td>
+                    <td data-etiqueta="Plazo (días)">
+                      <input class="campo__entrada" type="number" min="0" step="1" formControlName="plazoDias" aria-label="Plazo en días" />
+                    </td>
+                    <td data-etiqueta="Principal">
+                      <label class="casilla">
+                        <input type="checkbox" formControlName="esPrincipal" />
+                        <span>Sí</span>
+                      </label>
+                    </td>
+                    <td data-etiqueta="Vigencia">
+                      <input class="campo__entrada" type="date" formControlName="vigenciaHasta" aria-label="Vigencia" />
+                      <span class="vigencia" [attr.data-estado]="estadoVigencia(vigenciaDe(i))">
+                        {{ etiquetaVigencia(vigenciaDe(i)) }}
+                      </span>
+                    </td>
+                    <td data-etiqueta="Activo">
+                      <label class="casilla">
+                        <input type="checkbox" formControlName="activo" />
+                        <span>Sí</span>
+                      </label>
+                    </td>
+                    <td data-etiqueta="Acción">
+                      <button
+                        type="button"
+                        class="accion accion--peligro"
+                        [attr.aria-label]="'Eliminar línea ' + (i + 1)"
+                        (click)="lineaAEliminar.set(i)"
+                      >
+                        Eliminar
+                      </button>
+                      @if (lineaInvalida(i) && intentoEnvio()) {
+                        <span class="campo__error">Revisa los valores de esta línea.</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+      <div class="pie-formulario">
+        <button type="button" class="boton boton--secundario" (click)="agregarLinea()">
+          + Agregar material
+        </button>
+        <div class="pie-acciones">
+          <a routerLink="/proveedores" class="boton boton--enlace">Cancelar</a>
+          <button type="submit" class="boton boton--primario">Guardar catálogo</button>
+        </div>
+      </div>
+    </form>
+
+    @if (lineaAEliminar() !== null) {
+      <app-modal-confirmacion
+        titulo="Eliminar línea del catálogo"
+        mensaje="¿Eliminar esta línea de material? La acción no afecta órdenes ya emitidas."
+        etiquetaConfirmar="Eliminar línea"
+        (confirmar)="confirmarEliminacionLinea()"
+        (cancelar)="lineaAEliminar.set(null)"
+      />
+    }
+  } @else {
+    <div class="tarjeta error" role="alert">
+      <h1 class="titulo">Proveedor no encontrado</h1>
+      <p>Regresa al padrón para elegir un proveedor válido.</p>
+      <a routerLink="/proveedores" class="boton boton--primario">Ir al padrón</a>
+    </div>
+  }
+</section>

@@ -1,0 +1,18 @@
+<div class="modal" (keydown)="alPulsarTecla($event)">
+  <div class="modal__telon" (click)="cancelar.emit()" aria-hidden="true"></div>
+
+  <section class="modal__panel" role="dialog" aria-modal="true" [attr.aria-label]="titulo()">
+    <div class="modal__icono" aria-hidden="true">!</div>
+    <h2 class="modal__titulo">{{ titulo() }}</h2>
+    <p class="modal__mensaje">{{ mensaje() }}</p>
+
+    <div class="modal__acciones">
+      <button type="button" class="boton boton--secundario" autofocus (click)="cancelar.emit()">
+        Cancelar
+      </button>
+      <button type="button" class="boton boton--peligro" (click)="confirmar.emit()">
+        {{ etiquetaConfirmar() }}
+      </button>
+    </div>
+  </section>
+</div>
