@@ -28,3 +28,13 @@ export const telefono10: ValidatorFn = (control: AbstractControl): ValidationErr
   const digitos = valor.replace(/\D/g, '');
   return digitos.length === 10 ? null : { telefono10: true };
 };
+
+/** Código postal mexicano de 5 dígitos (§10 del documento UNIQUE v3.0). */
+export const codigoPostal5: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = control.value;
+  if (typeof valor !== 'string' || valor.trim() === '') {
+    return null; // La presencia se valida con required.
+  }
+
+  return /^\d{5}$/.test(valor.trim()) ? null : { codigoPostal5: true };
+};

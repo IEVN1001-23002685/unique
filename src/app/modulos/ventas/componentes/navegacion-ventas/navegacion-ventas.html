@@ -1,0 +1,16 @@
+<nav class="pestanas" aria-label="Pantallas de ventas">
+  <a
+    routerLink="/ventas"
+    routerLinkActive="pestana--activa"
+    [routerLinkActiveOptions]="{ exact: true }"
+    class="pestana"
+  >
+    Registro de ventas
+  </a>
+  <a routerLink="/ventas/manual" routerLinkActive="pestana--activa" class="pestana">
+    Venta manual
+  </a>
+  <a routerLink="/ventas/descuentos" routerLinkActive="pestana--activa" class="pestana">
+    Descuentos y cupones
+  </a>
+</nav>
