@@ -1,0 +1,122 @@
+<section class="vista">
+  <app-navegacion-inventario-pt />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M12 · Inventario de producto terminado</p>
+      <h1 class="titulo">Reglas de reposición</h1>
+      <p class="subtitulo">
+        Stock mínimo y cantidad de reposición por SKU. El valor inicial propuesto en el documento es
+        5 y 20 unidades; aquí se ajusta por variante según la demanda real.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <button type="button" class="boton boton--primario" [disabled]="forma.pristine" (click)="guardar()">
+        Guardar cambios
+      </button>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra barra--reglas">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por SKU, producto o categoría"
+          aria-label="Buscar reglas de reposición"
+        />
+      </label>
+      <span class="contador">{{ totalReglas() }} SKU con regla</span>
+    </div>
+
+    <form [formGroup]="forma" novalidate>
+      @if (filasConIndice().length === 0) {
+        <div class="estado" role="status">
+          <strong>No hay reglas para mostrar.</strong>
+          <p>Crea variantes en M10 para generar su registro de stock en M12.</p>
+        </div>
+      } @else {
+        <div class="tabla-contenedor">
+          <table class="tabla tabla--reglas">
+            <caption class="sr-only">Reglas de reposición por variante</caption>
+            <thead>
+              <tr>
+                <th scope="col">SKU</th>
+                <th scope="col">Producto</th>
+                <th scope="col">Categoría</th>
+                <th scope="col" class="tabla__numero">Disponible</th>
+                <th scope="col">Semáforo</th>
+                <th scope="col">Stock mínimo</th>
+                <th scope="col">Cantidad de reposición</th>
+              </tr>
+            </thead>
+            <tbody formArrayName="reglas">
+              @for (item of filasConIndice(); track item.fila.varianteId) {
+                <tr [formGroupName]="item.indice">
+                  <td data-etiqueta="SKU"><span class="celda-principal">{{ item.fila.sku }}</span></td>
+                  <td data-etiqueta="Producto">{{ item.fila.productoNombre }}</td>
+                  <td data-etiqueta="Categoría">{{ item.fila.categoriaNombre }}</td>
+                  <td data-etiqueta="Disponible" class="tabla__numero">
+                    @if (servicio.existencias()[item.indice]; as detalle) {
+                      {{ detalle.disponible }}
+                    }
+                  </td>
+                  <td data-etiqueta="Semáforo">
+                    @if (servicio.existencias()[item.indice]; as detalle) {
+                      <app-semaforo-inventario [estado]="detalle.semaforo" />
+                    }
+                  </td>
+                  <td data-etiqueta="Stock mínimo">
+                    <input
+                      class="campo__entrada campo__entrada--compacta"
+                      type="number"
+                      min="0"
+                      step="1"
+                      formControlName="stockMinimo"
+                      [attr.aria-invalid]="esInvalido(item.indice, 'stockMinimo')"
+                      aria-label="Stock mínimo para {{ item.fila.sku }}"
+                    />
+                    @if (esInvalido(item.indice, 'stockMinimo')) {
+                      <span class="campo__error">Entero ≥ 0.</span>
+                    }
+                  </td>
+                  <td data-etiqueta="Reposición">
+                    <input
+                      class="campo__entrada campo__entrada--compacta"
+                      type="number"
+                      min="1"
+                      step="1"
+                      formControlName="cantidadReposicion"
+                      [attr.aria-invalid]="esInvalido(item.indice, 'cantidadReposicion')"
+                      aria-label="Cantidad de reposición para {{ item.fila.sku }}"
+                    />
+                    @if (esInvalido(item.indice, 'cantidadReposicion')) {
+                      <span class="campo__error">Entero ≥ 1.</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </form>
+
+    <p class="nota">
+      Cada movimiento que deja el disponible en el mínimo o menos genera una señal de reposición con
+      origen STOCK_MINIMO por la cantidad indicada; Flask debe crearla o sumarla a la orden abierta en
+      M16 y abrir la alerta. Cambiar el mínimo o la cantidad no crea órdenes por sí mismo.
+    </p>
+    <p class="nota nota--adv">
+      Permisos del documento: el Administrador edita estas reglas; el Operativo solo consulta. Como no
+      existe autenticación aún, el prototipo permite la edición para demostrar la pantalla y deja el
+      contrato PATCH /inventario/producto/{variante_id}/reglas listo para Flask.
+    </p>
+  </div>
+</section>

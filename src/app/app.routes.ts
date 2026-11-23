@@ -53,6 +53,32 @@ export const routes: Routes = [
     redirectTo: 'admin/productos',
   },
   {
+    // M11 es exclusivo del Administrador: dueño de recetas, versiones, hilos y costos.
+    path: 'admin/recetas',
+    component: Administracion,
+    data: { titulo: 'Recetas', rol: 'Administrador', roles: ['Administrador'] },
+    loadChildren: () => import('./modulos/recetas/recetas.routes').then((m) => m.RECETAS_RUTAS),
+  },
+  {
+    path: 'recetas',
+    redirectTo: 'admin/recetas',
+  },
+  {
+    // M12 se monta bajo /operacion para no mezclarlo con catálogos de Administrador.
+    // Operativo edita inventario; Administrador edita solo reglas (sin guards reales aún).
+    path: 'operacion/inventario-pt',
+    component: Administracion,
+    data: { titulo: 'Inventario PT', rol: 'Operativo', roles: ['Administrador', 'Operativo'] },
+    loadChildren: () =>
+      import('./modulos/inventario-producto-terminado/inventario-producto-terminado.routes').then(
+        (m) => m.INVENTARIO_PT_RUTAS,
+      ),
+  },
+  {
+    path: 'inventario-pt',
+    redirectTo: 'operacion/inventario-pt',
+  },
+  {
     path: 'proveedores',
     component: Administracion,
     data: { titulo: 'Proveedores', rol: 'Administrador', roles: ['Administrador'] },

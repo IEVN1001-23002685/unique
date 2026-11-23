@@ -1,0 +1,143 @@
+<section class="vista">
+  <app-navegacion-recetas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M11 · Costeo estándar</p>
+      <h1 class="titulo">Costeo y precio sugerido</h1>
+      <p class="subtitulo">
+        Matriz por producto y talla con receta VIGENTE. El precio sugerido aplica el margen objetivo
+        del {{ margenObjetivo }} % sobre el costo estándar con IVA incluido; el precio vigente se lee
+        de M10 y solo sirve para calcular el margen real.
+      </p>
+    </div>
+    <a routerLink="/admin/recetas" class="boton boton--secundario">Volver a la biblioteca</a>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="campo">
+        Producto
+        <select class="campo__entrada" [value]="productoFiltro()" (change)="alCambiarProducto($event)">
+          <option value="TODOS">Todos</option>
+          @for (producto of servicio.productos; track producto.id) {
+            <option [value]="producto.id">{{ producto.nombre }}</option>
+          }
+        </select>
+      </label>
+      <p class="barra__nota">Solo se muestran versiones vigentes. Los cambios se recalculan al activar otra versión.</p>
+    </div>
+
+    @if (filas().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin recetas vigentes.</strong>
+        <p>Activa una receta desde la biblioteca para ver su costeo estándar.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">Costeo estándar por producto y talla</caption>
+          <thead>
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col">Talla</th>
+              <th scope="col">Versión</th>
+              <th scope="col">Materia prima</th>
+              <th scope="col">Hilo bordado</th>
+              <th scope="col">Empaque</th>
+              <th scope="col">Mano de obra</th>
+              <th scope="col">Bordado</th>
+              <th scope="col">Indirectos</th>
+              <th scope="col">Costo estándar</th>
+              <th scope="col">Precio sugerido</th>
+              <th scope="col">Precio vigente</th>
+              <th scope="col">Margen real</th>
+              <th scope="col">Alerta</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (fila of filas(); track fila.productoId + '-' + fila.talla) {
+              <tr>
+                <td data-etiqueta="Producto">{{ fila.producto }}</td>
+                <td data-etiqueta="Talla">{{ fila.talla }}</td>
+                <td data-etiqueta="Versión">v{{ fila.version }}</td>
+                <td data-etiqueta="Materia prima">{{ fila.materiaPrima | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
+                <td data-etiqueta="Hilo bordado">{{ fila.hiloBordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
+                <td data-etiqueta="Empaque">{{ fila.empaque | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
+                <td data-etiqueta="Mano de obra">{{ fila.manoObra | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
+                <td data-etiqueta="Bordado">{{ fila.bordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
+                <td data-etiqueta="Indirectos">{{ fila.indirectos | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
+                <td data-etiqueta="Costo estándar"><strong>{{ fila.costoEstandar | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></td>
+                <td data-etiqueta="Precio sugerido">{{ fila.precioSugerido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
+                <td data-etiqueta="Precio vigente">{{ fila.precioVigente | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
+                <td data-etiqueta="Margen real">
+                  <span class="chip" [class.chip--bajo]="fila.margen !== null && fila.margen < margenObjetivo"
+                    [class.chip--alto]="fila.margen !== null && fila.margen >= margenObjetivo">
+                    {{ margenTexto(fila.margen) }}
+                  </span>
+                </td>
+                <td data-etiqueta="Alerta">
+                  @if (fila.bordadosPendientes > 0) {
+                    <span class="alerta">{{ fila.bordadosPendientes }} diseño(s) pendiente(s)</span>
+                  } @else {
+                    <span class="sin-alerta">Sin alertas</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Empaque = regla POR_PRENDA del catálogo de materiales (${{ servicio.empaquePorPrenda.toFixed(2) }}).
+      El hilo de bordado se incluye en la materia prima cuando el diseño está DIGITALIZADO: metros
+      por aplicación × aplicaciones × costo del hilo; los diseños PENDIENTE consumen 0 m. El PEPS
+      del lote real se aplicará en M16 con Flask.
+    </p>
+  </div>
+
+  <div class="tarjeta bloque resumen-bloque">
+    <h2 class="seccion__titulo">Sugerencia de precio por producto</h2>
+    <p class="ayuda">
+      La talla de mayor costo define el precio sugerido de la prenda (§7.5). M10 decide si actualiza
+      su precio; M11 no escribe sobre el catálogo de productos.
+    </p>
+    <div class="tabla-contenedor">
+      <table class="tabla tabla--resumen">
+        <caption class="sr-only">Precio sugerido por producto según la talla de mayor costo</caption>
+        <thead>
+          <tr>
+            <th scope="col">Producto</th>
+            <th scope="col">Costo mayor</th>
+            <th scope="col">Precio sugerido</th>
+            <th scope="col">Precio vigente M10</th>
+            <th scope="col">Diferencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of resumen(); track item.id) {
+            <tr>
+              <td data-etiqueta="Producto">{{ item.nombre }}</td>
+              <td data-etiqueta="Costo mayor">
+                {{ item.costo === null ? '—' : (item.costo | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX') }}
+              </td>
+              <td data-etiqueta="Precio sugerido">
+                {{ item.costo === null ? '—' : (precioSugerido(item.costo) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX') }}
+              </td>
+              <td data-etiqueta="Precio vigente">{{ precioDe(item.id) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
+              <td data-etiqueta="Diferencia">
+                {{ (item.costo === null ? 0 : precioSugerido(item.costo) - precioDe(item.id)) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="nota nota--info">
+      Vista con fines de administración: el Operativo no consulta costos ni márgenes. La separación
+      definitiva por rol se aplicará con los guards del backend.
+    </p>
+  </div>
+</section>

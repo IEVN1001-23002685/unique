@@ -1,0 +1,31 @@
+<nav class="pestanas" aria-label="Pantallas de recetas y bordados">
+  <a
+    routerLink="/admin/recetas"
+    routerLinkActive="pestana--activa"
+    [routerLinkActiveOptions]="{ exact: true }"
+    class="pestana"
+  >
+    Biblioteca
+  </a>
+  <a
+    routerLink="/admin/recetas/historial"
+    routerLinkActive="pestana--activa"
+    class="pestana"
+  >
+    Historial
+  </a>
+  <a
+    routerLink="/admin/recetas/disenos"
+    routerLinkActive="pestana--activa"
+    class="pestana"
+  >
+    Diseños de bordado
+  </a>
+  <a
+    routerLink="/admin/recetas/costeo"
+    routerLinkActive="pestana--activa"
+    class="pestana"
+  >
+    Costeo estándar
+  </a>
+</nav>
