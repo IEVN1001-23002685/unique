@@ -41,6 +41,18 @@ export const routes: Routes = [
     loadChildren: () => import('./modulos/pedidos/pedidos.routes').then((m) => m.PEDIDOS_RUTAS),
   },
   {
+    // M10 es exclusivo del Administrador. Se mantiene /productos como alias del §10.
+    path: 'admin/productos',
+    component: Administracion,
+    data: { titulo: 'Productos', rol: 'Administrador', roles: ['Administrador'] },
+    loadChildren: () =>
+      import('./modulos/productos/productos.routes').then((m) => m.PRODUCTOS_RUTAS),
+  },
+  {
+    path: 'productos',
+    redirectTo: 'admin/productos',
+  },
+  {
     path: 'proveedores',
     component: Administracion,
     data: { titulo: 'Proveedores', rol: 'Administrador', roles: ['Administrador'] },

@@ -1,0 +1,25 @@
+<nav class="pestanas" aria-label="Pantallas de productos">
+  <a
+    routerLink="/admin/productos"
+    routerLinkActive="pestana--activa"
+    [routerLinkActiveOptions]="{ exact: true }"
+    class="pestana"
+  >
+    Catálogo maestro
+  </a>
+  <a
+    routerLink="/admin/productos/nuevo"
+    routerLinkActive="pestana--activa"
+    [class.pestana--activa]="activo() === 'nuevo'"
+    class="pestana"
+  >
+    Nuevo producto
+  </a>
+  <a
+    routerLink="/admin/productos/variantes"
+    routerLinkActive="pestana--activa"
+    class="pestana"
+  >
+    Variantes
+  </a>
+</nav>
