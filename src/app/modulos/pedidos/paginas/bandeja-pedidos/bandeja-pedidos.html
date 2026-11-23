@@ -1,0 +1,217 @@
+<section class="vista">
+  <app-navegacion-pedidos />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M09 · Cumplimiento</p>
+      <h1 class="titulo">Bandeja de pedidos</h1>
+      <p class="subtitulo">
+        Estado, reservas y estancamientos de cada pedido. Administrador edita; Operativo consulta.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <a routerLink="/admin/pedidos/pendientes-produccion" class="boton boton--secundario">
+        Ver demanda pendiente
+      </a>
+    </div>
+  </div>
+
+  <div class="indicadores" aria-label="Indicadores de pedidos">
+    <div class="indicador">
+      <span class="indicador__numero">{{ indicadores().activos }}</span>
+      <span class="indicador__etiqueta">Pedidos activos</span>
+    </div>
+    <div class="indicador" data-tono="error">
+      <span class="indicador__numero">{{ indicadores().estancados }}</span>
+      <span class="indicador__etiqueta">Fuera del umbral</span>
+    </div>
+    <div class="indicador" data-tono="adv">
+      <span class="indicador__numero">{{ indicadores().demandaPendiente }}</span>
+      <span class="indicador__etiqueta">Unidades por producir</span>
+    </div>
+    <div class="indicador" data-tono="info">
+      <span class="indicador__numero">{{ indicadores().urgentes }}</span>
+      <span class="indicador__etiqueta">Prioridad alta</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Folio, cliente, venta o SKU"
+          aria-label="Buscar pedidos por folio, cliente, venta o SKU"
+        />
+      </label>
+
+      <div class="selectores">
+        <label class="selector">
+          <span>Prioridad</span>
+          <select class="campo__entrada" [value]="prioridad()" (change)="alCambiarPrioridad($event)">
+            @for (opcion of prioridades; track opcion.valor) {
+              <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+            }
+          </select>
+        </label>
+        <label class="selector">
+          <span>Periodo</span>
+          <select class="campo__entrada" [value]="periodo()" (change)="alCambiarPeriodo($event)">
+            @for (opcion of periodos; track opcion.valor) {
+              <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+            }
+          </select>
+        </label>
+        <label class="selector">
+          <span>Estado</span>
+          <select class="campo__entrada" [value]="estado()" (change)="alCambiarEstado($event)">
+            @for (opcion of estados; track opcion.valor) {
+              <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <div class="barra__acciones">
+        <div class="alternador" role="group" aria-label="Forma de presentación">
+          <button
+            type="button"
+            [class.alternador__opcion--activa]="vista() === 'tablero'"
+            (click)="vista.set('tablero')"
+          >
+            Tablero
+          </button>
+          <button
+            type="button"
+            [class.alternador__opcion--activa]="vista() === 'lista'"
+            (click)="vista.set('lista')"
+          >
+            Lista
+          </button>
+        </div>
+        @if (!sinFiltros()) {
+          <button type="button" class="boton boton--enlace" (click)="restablecer()">
+            Limpiar filtros
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (servicio.pedidos().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay pedidos.</strong>
+        <p>Los pedidos se crean al confirmar una venta en M05 y M08.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Ajusta la búsqueda, la prioridad, el periodo o el estado.</p>
+      </div>
+    } @else if (vista() === 'tablero') {
+      <div class="tablero">
+        @for (columna of columnas(); track columna.estado) {
+          <section class="columna" [attr.aria-label]="columna.etiqueta">
+            <header class="columna__encabezado">
+              <h2>{{ columna.etiqueta }}</h2>
+              <span class="columna__conteo">{{ columna.pedidos.length }}</span>
+            </header>
+
+            @if (columna.pedidos.length === 0) {
+              <p class="columna__vacia">Sin pedidos en este estado.</p>
+            }
+
+            @for (pedido of columna.pedidos; track pedido.folio) {
+              <a
+                class="tarjeta-pedido"
+                [routerLink]="['/admin/pedidos', pedido.folio]"
+                [attr.aria-label]="'Abrir pedido ' + pedido.folio + ' de ' + pedido.cliente"
+              >
+                <div class="tarjeta-pedido__arriba">
+                  <span class="mono">{{ pedido.folio }}</span>
+                  <span
+                    class="prioridad"
+                    [class.prioridad--alta]="pedido.prioridad === 'ALTA'"
+                  >
+                    {{ pedido.prioridad === 'ALTA' ? 'Alta' : 'Normal' }}
+                  </span>
+                </div>
+                <strong class="tarjeta-pedido__cliente">{{ pedido.cliente }}</strong>
+                <span class="tarjeta-pedido__lineas">
+                  {{ servicio.articulos(pedido) }} artículo(s) · {{ pedido.lineas.length }} SKU
+                </span>
+                <app-semaforo-pedido
+                  [tono]="servicio.tono(pedido)"
+                  [texto]="tiempo(pedido) + ' en ' + columna.etiqueta.toLowerCase()"
+                />
+                @if (pedido.estadoPago === 'PENDIENTE') {
+                  <span class="tarjeta-pedido__pago">Pago por validar en M08</span>
+                }
+              </a>
+            }
+          </section>
+        }
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">Pedidos activos filtrados</caption>
+          <thead>
+            <tr>
+              <th scope="col">Folio</th>
+              <th scope="col">Cliente</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Prioridad</th>
+              <th scope="col">Artículos</th>
+              <th scope="col">Tiempo en estado</th>
+              <th scope="col">Venta</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pedido of filtrados(); track pedido.folio) {
+              <tr>
+                <td data-etiqueta="Folio"><span class="mono">{{ pedido.folio }}</span></td>
+                <td data-etiqueta="Cliente">
+                  <span class="celda-principal">{{ pedido.cliente }}</span>
+                  <span class="celda-secundaria">{{ pedido.lineas.length }} SKU</span>
+                </td>
+                <td data-etiqueta="Estado">
+                  <app-chip-estado-pedido [estado]="pedido.estado" />
+                </td>
+                <td data-etiqueta="Prioridad">{{ pedido.prioridad }}</td>
+                <td data-etiqueta="Artículos">{{ servicio.articulos(pedido) }}</td>
+                <td data-etiqueta="Tiempo">
+                  <app-semaforo-pedido [tono]="servicio.tono(pedido)" [texto]="tiempo(pedido)" />
+                </td>
+                <td data-etiqueta="Venta">
+                  @if (servicio.tieneVentaRegistrada(pedido.ventaFolio)) {
+                    <a class="accion" [routerLink]="['/ventas', pedido.ventaFolio]">
+                      {{ pedido.ventaFolio }}
+                    </a>
+                  } @else {
+                    <span class="celda-secundaria">{{ pedido.ventaFolio }} · solo demo</span>
+                  }
+                </td>
+                <td data-etiqueta="Acciones">
+                  <a class="accion" [routerLink]="['/admin/pedidos', pedido.folio]">Ver detalle</a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Umbrales de estancamiento (§8.2): RECIBIDO 2 h, CONFIRMADO 24 h, EN_PRODUCCION 7 d,
+      EN_PREPARACION 24 h, LISTO_ENVIO 24 h y EN_REPARTO 24 h. Ámbar al 75 % y rojo al superarlos.
+      Editables en M22; los valores aquí mostrados son de demostración.
+    </p>
+  </div>
+</section>

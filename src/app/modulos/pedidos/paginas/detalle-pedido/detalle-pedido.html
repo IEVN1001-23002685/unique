@@ -1,0 +1,257 @@
+<section class="vista">
+  <app-navegacion-pedidos />
+
+  <a routerLink="/admin/pedidos" class="volver">← Volver a la bandeja</a>
+
+  @if (pedido(); as pedido) {
+    <div class="cabecera">
+      <div>
+        <p class="eyebrow">Detalle del pedido</p>
+        <h1 class="titulo mono">{{ pedido.folio }}</h1>
+        <p class="subtitulo">
+          {{ pedido.cliente }} · Creado el
+          {{ pedido.fechaCreacion | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }} · Venta
+          @if (servicio.tieneVentaRegistrada(pedido.ventaFolio)) {
+            <a class="enlace" [routerLink]="['/ventas', pedido.ventaFolio]">{{ pedido.ventaFolio }}</a>
+          } @else {
+            <span>{{ pedido.ventaFolio }} (solo demo)</span>
+          }
+        </p>
+      </div>
+      <div class="chips">
+        <app-chip-estado-pedido [estado]="pedido.estado" />
+        <span
+          class="etiqueta-prioridad"
+          [class.etiqueta-prioridad--alta]="pedido.prioridad === 'ALTA'"
+        >
+          Prioridad {{ pedido.prioridad === 'ALTA' ? 'alta' : 'normal' }}
+        </span>
+      </div>
+    </div>
+
+    @if (pedido.estado === 'RECIBIDO' && pedido.estadoPago === 'PENDIENTE') {
+      <div class="aviso" role="status">
+        <strong>Pago pendiente.</strong> El pedido permanece en RECIBIDO hasta que M08 valide el pago.
+        Pasadas 2 horas se genera la alerta PAGO_PENDIENTE en M21.
+      </div>
+    }
+
+    @if (pedido.estado === 'CANCELADO') {
+      <div class="aviso aviso--error" role="status">
+        <strong>Pedido cancelado.</strong>
+        {{ pedido.motivoCancelacion }} · Cancelado por {{ pedido.canceladoPor }} el
+        {{ pedido.canceladoEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}. La liberación de reservas
+        y el reembolso real quedan pendientes de integración.
+      </div>
+    }
+
+    <div class="resumen">
+      <div class="tarjeta metrica">
+        <span class="metrica__etiqueta">Artículos</span>
+        <strong class="metrica__valor">{{ servicio.articulos(pedido) }}</strong>
+        <span class="metrica__detalle">{{ pedido.lineas.length }} SKU en el pedido</span>
+      </div>
+      <div class="tarjeta metrica">
+        <span class="metrica__etiqueta">Reservadas</span>
+        <strong class="metrica__valor">{{ servicio.totalReservado(pedido) }}</strong>
+        <span class="metrica__detalle">Existencia apartada (M12)</span>
+      </div>
+      <div class="tarjeta metrica metrica--adv">
+        <span class="metrica__etiqueta">Pendientes</span>
+        <strong class="metrica__valor">{{ servicio.totalPendiente(pedido) }}</strong>
+        <span class="metrica__detalle">Unidades por producir (M16)</span>
+      </div>
+      <div class="tarjeta metrica">
+        <span class="metrica__etiqueta">Preparadas</span>
+        <strong class="metrica__valor">{{ servicio.totalPreparado(pedido) }}</strong>
+        <span class="metrica__detalle">Verificadas en M18</span>
+      </div>
+    </div>
+
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Seguimiento y acciones</h2>
+        <span>Tiempo en estado: {{ tiempo(pedido) }}</span>
+      </div>
+
+      <div class="seguimiento">
+        <app-semaforo-pedido [tono]="servicio.tono(pedido)" [texto]="tiempo(pedido)" />
+        <div class="seguimiento__campo">
+          <label class="campo">
+            Prioridad
+            <select
+              class="campo__entrada"
+              [value]="pedido.prioridad"
+              (change)="cambiarPrioridad($event)"
+              [disabled]="pedido.estado === 'CANCELADO' || pedido.estado === 'ENTREGADO'"
+            >
+              <option value="NORMAL">Normal</option>
+              <option value="ALTA">Alta</option>
+            </select>
+          </label>
+        </div>
+        <button
+          type="button"
+          class="boton boton--peligro"
+          [disabled]="!puedeCancelar()"
+          (click)="cancelando.set(true)"
+        >
+          Cancelar pedido
+        </button>
+      </div>
+
+      <form class="formulario-nota" [formGroup]="formaNota" (ngSubmit)="guardarNota()">
+        <label class="campo">
+          Nota interna
+          <textarea
+            class="campo__entrada"
+            formControlName="texto"
+            rows="2"
+            maxlength="240"
+            placeholder="Ej. Confirmar talla con la clienta antes del empaque"
+            [attr.aria-invalid]="notaInvalida()"
+          ></textarea>
+        </label>
+        <button type="submit" class="boton boton--secundario">Agregar nota</button>
+      </form>
+      @if (notaInvalida()) {
+        <p class="campo__error" role="alert">Escribe al menos 5 caracteres para la nota.</p>
+      }
+
+      @if (pedido.notas.length > 0) {
+        <ul class="notas">
+          @for (nota of pedido.notas; track nota.id) {
+            <li>
+              <strong>{{ nota.usuario }}</strong>
+              <span>{{ nota.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}</span>
+              <p>{{ nota.texto }}</p>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Líneas del pedido</h2>
+        <span>cant = reservada + pendiente · SKU generado por el sistema</span>
+      </div>
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">Líneas del pedido {{ pedido.folio }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">SKU</th>
+              <th scope="col">Prenda</th>
+              <th scope="col">Cant.</th>
+              <th scope="col">Reservada</th>
+              <th scope="col">Pendiente</th>
+              <th scope="col">Preparada</th>
+              <th scope="col">Orden / estimada</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (linea of pedido.lineas; track linea.sku) {
+              <tr>
+                <td data-etiqueta="SKU"><span class="mono">{{ linea.sku }}</span></td>
+                <td data-etiqueta="Prenda">
+                  <span class="celda-principal">{{ linea.nombreProducto }}</span>
+                  <span class="celda-secundaria">Talla {{ linea.talla }} · {{ linea.color }}</span>
+                </td>
+                <td data-etiqueta="Cant.">{{ linea.cantidad }}</td>
+                <td data-etiqueta="Reservada">{{ linea.cantReservada }}</td>
+                <td data-etiqueta="Pendiente">
+                  <span [class.dato-alerta]="linea.cantPendiente > 0">{{ linea.cantPendiente }}</span>
+                </td>
+                <td data-etiqueta="Preparada">{{ linea.cantPreparada }}</td>
+                <td data-etiqueta="Orden / estimada">
+                  @if (linea.ordenProduccionFolio) {
+                    <span class="mono">{{ linea.ordenProduccionFolio }}</span>
+                  } @else {
+                    <span class="celda-secundaria">Sin orden</span>
+                  }
+                  @if (linea.fechaEstimada) {
+                    <span class="celda-secundaria">
+                      Est. {{ linea.fechaEstimada | date: 'dd/MM/yyyy' : '' : 'es-MX' }}
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Accesos y línea de tiempo</h2>
+        <span>Usuario y hora de cada evento interno</span>
+      </div>
+
+      <div class="accesos">
+        @if (servicio.tieneVentaRegistrada(pedido.ventaFolio)) {
+          <a class="acceso" [routerLink]="['/ventas', pedido.ventaFolio]">
+            <strong>M08 · Venta</strong>
+            <span>Consultar dinero, pagos y reembolsos</span>
+          </a>
+        } @else {
+          <button type="button" class="acceso" (click)="avisoModulo('M08', 'Venta')">
+            <strong>M08 · Venta</strong>
+            <span>Este pedido de ejemplo no tiene venta registrada</span>
+          </button>
+        }
+        <button type="button" class="acceso" (click)="avisoModulo('M16', 'Orden de producción')">
+          <strong>M16 · Producción</strong>
+          <span>{{ servicio.totalPendiente(pedido) }} unidades por producir</span>
+        </button>
+        <button type="button" class="acceso" (click)="avisoModulo('M18', 'Preparación')">
+          <strong>M18 · Preparación</strong>
+          <span>{{ pedido.preparacionFolio ?? 'Sin folio de preparación' }}</span>
+        </button>
+        <button type="button" class="acceso" (click)="avisoModulo('M19', 'Entrega')">
+          <strong>M19 · Entrega</strong>
+          <span>{{ pedido.entregaGuia ?? 'Sin guía asignada' }}</span>
+        </button>
+      </div>
+
+      <ol class="linea-tiempo">
+        @for (evento of pedido.eventos; track evento.id) {
+          <li>
+            <span class="linea-tiempo__punto" aria-hidden="true"></span>
+            <div>
+              <strong>{{ evento.descripcion }}</strong>
+              <span>
+                {{ evento.usuario }} ·
+                {{ evento.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+                @if (!evento.visibleCliente) {
+                  <em> · Interno</em>
+                }
+              </span>
+            </div>
+          </li>
+        }
+      </ol>
+    </div>
+
+    <p class="nota">
+      M09 es dueño del estado del pedido. Los pagos y cancelaciones se leen de M08; las reservas de
+      M12, las órdenes de M16 y las entregas de M19 solo se consultan. Ninguna acción de esta vista
+      persiste en servidor.
+    </p>
+  } @else {
+    <div class="tarjeta bloque estado" role="status">
+      <strong>No encontramos el pedido {{ folio }}.</strong>
+      <p>Regresa a la bandeja para elegir un folio disponible.</p>
+      <a routerLink="/admin/pedidos" class="boton boton--primario">Ir a la bandeja</a>
+    </div>
+  }
+
+  @if (cancelando) {
+    <app-modal-cancelar-pedido
+      [folio]="folio"
+      (confirmar)="cancelar($event)"
+      (cancelar)="cancelando.set(false)"
+    />
+  }
+</section>

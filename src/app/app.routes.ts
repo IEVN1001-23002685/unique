@@ -33,6 +33,14 @@ export const routes: Routes = [
     ],
   },
   {
+    // M09 se monta bajo /admin para no colisionar con /pedidos de M06 (cliente).
+    path: 'admin/pedidos',
+    component: Administracion,
+    // Operativo consulta; Administrador además edita. Sin guards reales todavía.
+    data: { titulo: 'Pedidos', rol: 'Administrador', roles: ['Administrador', 'Operativo'] },
+    loadChildren: () => import('./modulos/pedidos/pedidos.routes').then((m) => m.PEDIDOS_RUTAS),
+  },
+  {
     path: 'proveedores',
     component: Administracion,
     data: { titulo: 'Proveedores', rol: 'Administrador', roles: ['Administrador'] },
