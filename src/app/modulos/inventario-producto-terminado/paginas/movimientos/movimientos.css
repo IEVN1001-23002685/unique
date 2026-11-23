@@ -1,0 +1,9 @@
+.tabla.tabla--movimientos {
+  min-width: 78rem;
+}
+
+@media (min-width: 768px) {
+  .barra.barra--movimientos {
+    grid-template-columns: 10rem 10rem 10rem minmax(10rem, 1fr) 11rem 11rem;
+  }
+}

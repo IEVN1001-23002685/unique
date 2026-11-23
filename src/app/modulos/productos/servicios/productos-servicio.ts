@@ -1,5 +1,6 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import type { IProducto } from '../../../nucleo/modelos/producto';
+import { RecetasServicio } from '../../recetas/servicios/recetas-servicio';
 import {
   CATEGORIAS_PRODUCTO,
   COLORES_PRODUCTO,
@@ -28,21 +29,35 @@ const FACTOR_IVA = 1.16;
   providedIn: 'root',
 })
 export class ProductosServicio {
+  private readonly recetas = inject(RecetasServicio);
+
   private readonly lista = signal<ProductoMaestro[]>(
     structuredClone(PRODUCTOS_MAESTRO_SIMULADOS),
   );
 
-  readonly productos = this.lista.asReadonly();
+  /**
+   * M10 conserva la propiedad del producto y del precio. El costo y las tallas con receta vigente
+   * se proyectan desde M11; no se copian reglas ni se escriben en este servicio.
+   */
+  private readonly conCosteo = computed(() =>
+    this.lista().map((producto) => ({
+      ...producto,
+      costoEstandar: this.recetas.costoEstandarDe(producto.id),
+      recetasVigentes: this.recetas.tallasVigentesDe(producto.id),
+    })),
+  );
+
+  readonly productos = this.conCosteo;
   readonly categorias = CATEGORIAS_PRODUCTO;
   readonly colores = COLORES_PRODUCTO;
   readonly tallas = TALLAS_PRODUCTO;
 
   readonly visibles = computed(() =>
-    this.lista().filter((producto) => producto.activo && producto.eliminadoEn === null),
+    this.productos().filter((producto) => producto.activo && producto.eliminadoEn === null),
   );
 
   readonly filasVariantes = computed<FilaVariante[]>(() =>
-    this.lista().flatMap((producto) =>
+    this.productos().flatMap((producto) =>
       producto.variantes.map((variante) => ({
         productoId: producto.id,
         productoNombre: producto.nombre,
@@ -53,7 +68,7 @@ export class ProductosServicio {
   );
 
   readonly indicadores = computed(() => {
-    const productos = this.lista();
+    const productos = this.productos();
     return {
       total: productos.length,
       activos: productos.filter((producto) => producto.activo && producto.eliminadoEn === null)
@@ -65,7 +80,7 @@ export class ProductosServicio {
   });
 
   obtenerProducto(id: number): ProductoMaestro | undefined {
-    return this.lista().find((producto) => producto.id === id);
+    return this.productos().find((producto) => producto.id === id);
   }
 
   categoriaDe(id: number): CategoriaProducto | undefined {
@@ -149,9 +164,8 @@ export class ProductosServicio {
     if (producto.imagenes.length === 0) {
       razones.push('Agrega al menos una imagen.');
     }
-    const faltantes = producto.tallas.filter(
-      (talla) => !producto.recetasVigentes.includes(talla),
-    );
+    const vigentes = this.recetas.tallasVigentesDe(producto.id);
+    const faltantes = producto.tallas.filter((talla) => !vigentes.includes(talla));
     if (faltantes.length > 0) {
       razones.push(
         `Falta receta VIGENTE (M11) para ${faltantes.map((talla) => this.nombreTalla(talla)).join(', ')}.`,
@@ -226,8 +240,9 @@ export class ProductosServicio {
       tallas,
       colores,
       variantes,
-      costoEstandar: actual?.costoEstandar ?? null,
-      recetasVigentes: actual?.recetasVigentes ?? [],
+      // Costo y recetas vigentes se derivan de M11; no se guardan copias aquí.
+      costoEstandar: null,
+      recetasVigentes: [],
       tieneHistorial: actual?.tieneHistorial ?? false,
       bitacora,
     };
@@ -243,7 +258,7 @@ export class ProductosServicio {
       productoId: producto.id,
       mensaje: actual
         ? `Producto actualizado en memoria. ${variantes.length} variante(s), ningún SKU existente modificado.`
-        : `Producto creado en memoria con ${variantes.length} variante(s) y SKU generados. Queda como borrador hasta integrar M11.`,
+        : `Producto creado en memoria con ${variantes.length} variante(s) y SKU generados. Queda como borrador hasta activar sus recetas en M11.`,
     };
   }
 

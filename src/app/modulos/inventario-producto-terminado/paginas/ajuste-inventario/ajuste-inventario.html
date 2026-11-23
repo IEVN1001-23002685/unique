@@ -1,0 +1,148 @@
+<section class="vista">
+  <app-navegacion-inventario-pt />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M12 · Inventario de producto terminado</p>
+      <h1 class="titulo">Ajuste de inventario</h1>
+      <p class="subtitulo">
+        Conteo físico por SKU. Se compara lo contado contra el sistema; la diferencia queda registrada
+        como un movimiento AJUSTE y abre una alerta informativa cuando existe desvío.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <a routerLink="/operacion/inventario-pt/movimientos" class="boton boton--secundario">Ver movimientos</a>
+    </div>
+  </div>
+
+  <div class="ajuste-grid">
+    <form class="tarjeta bloque" [formGroup]="forma" (ngSubmit)="enviar()" novalidate>
+      <h2 class="panel-titulo">Capturar conteo</h2>
+
+      @if (filas().length === 0) {
+        <div class="estado" role="status">
+          <strong>No hay SKU disponibles.</strong>
+          <p>Da de alta variantes en M10 antes de registrar un conteo.</p>
+        </div>
+      } @else {
+        <div class="campo">
+          SKU
+          <select class="campo__entrada" formControlName="varianteId" (change)="alCambiarVariante($event)">
+            @for (fila of filas(); track fila.varianteId) {
+              <option [value]="fila.varianteId">
+                {{ fila.sku }} · {{ fila.productoNombre }} · {{ servicio.nombreTalla(fila.talla) }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <div class="campo">
+          Cantidad contada
+          <input
+            class="campo__entrada"
+            type="number"
+            min="0"
+            step="1"
+            formControlName="cantidadContada"
+            (input)="alCambiarConteo($event)"
+            [attr.aria-invalid]="esInvalido('cantidadContada')"
+          />
+          @if (esInvalido('cantidadContada')) {
+            @if (errorConteo(); as mensaje) {
+              <p class="campo__error">{{ mensaje }}</p>
+            }
+          }
+        </div>
+
+        <div class="campo">
+          Motivo (obligatorio)
+          <input
+            class="campo__entrada"
+            type="text"
+            maxlength="120"
+            placeholder="Ej. Conteo físico mensual, merma detectada…"
+            formControlName="motivo"
+            [attr.aria-invalid]="esInvalido('motivo')"
+          />
+          @if (esInvalido('motivo')) {
+            <p class="campo__error">Captura un motivo de al menos 4 caracteres.</p>
+          }
+        </div>
+
+        <div class="acciones acciones--formulario">
+          <button type="submit" class="boton boton--primario">Registrar ajuste</button>
+          <a routerLink="/operacion/inventario-pt" class="boton boton--secundario">Cancelar</a>
+        </div>
+      }
+    </form>
+
+    <aside class="tarjeta bloque lectura">
+      <h2 class="panel-titulo">Lectura del sistema</h2>
+
+      @if (filaSeleccionada(); as fila) {
+        <p class="lectura__sku">{{ fila.sku }}</p>
+        <p class="lectura__producto">{{ fila.productoNombre }}</p>
+
+        <dl class="lectura__datos">
+          <div>
+            <dt>Existencia actual</dt>
+            <dd>{{ fila.existencia }}</dd>
+          </div>
+          <div>
+            <dt>Reservado</dt>
+            <dd>{{ fila.reservado }}</dd>
+          </div>
+          <div>
+            <dt>Disponible</dt>
+            <dd>{{ detalleSeleccionado()?.disponible ?? 0 }}</dd>
+          </div>
+          <div>
+            <dt>Stock mínimo</dt>
+            <dd>{{ fila.stockMinimo }}</dd>
+          </div>
+        </dl>
+
+        <div class="lectura__diferencia">
+          <span>Diferencia</span>
+          <strong [class.diferencia--positiva]="diferencia() > 0"
+            [class.diferencia--negativa]="diferencia() < 0"
+            [class.diferencia--cero]="diferencia() === 0">
+            {{ textoDiferencia() }}
+          </strong>
+        </div>
+
+        @if (diferencia() < 0) {
+          <p class="lectura__aviso">Una diferencia negativa representa merma o pérdida: pedirá confirmación.</p>
+        } @else if (diferencia() > 0) {
+          <p class="lectura__aviso lectura__aviso--info">La alerta informativa se abrirá por el desvío registrado.</p>
+        } @else {
+          <p class="lectura__aviso">Sin diferencia: se dejará constancia del conteo sin alerta.</p>
+        }
+      } @else {
+        <p class="panel-vacio">Selecciona un SKU para ver la lectura del sistema.</p>
+      }
+    </aside>
+  </div>
+
+  <p class="nota">
+    Solo existen cuatro formas de cambiar existencias: alta por producción aprobada (M16), salida por
+    envío (M19), reingreso aprobado (M07) y ajuste o merma. Este formulario implementa la última sin
+    editar la tabla a mano. El movimiento y el cambio quedan en memoria de demostración; Flask será la
+    fuente autoritativa.
+  </p>
+  <p class="nota nota--adv">
+    Permisos del documento: el Operativo captura ajustes y el Administrador solo consulta. Sin
+    autenticación real la interfaz no bloquea la acción; el guard y la validación autoritativa se
+    conectarán con Flask.
+  </p>
+
+  @if (confirmando()) {
+    <app-modal-confirmacion
+      titulo="Confirmar ajuste negativo"
+      [mensaje]="'El SKU ' + (filaSeleccionada()?.sku ?? '') + ' bajará ' + textoDiferencia() + '. Se registrará un movimiento AJUSTE y una alerta informativa; no se puede deshacer en la demostración.'"
+      etiquetaConfirmar="Confirmar ajuste"
+      (confirmar)="confirmar()"
+      (cancelar)="confirmando.set(false)"
+    />
+  }
+</section>

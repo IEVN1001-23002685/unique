@@ -1,0 +1,348 @@
+import type { CodigoTalla } from '../../productos/modelos/producto-maestro';
+import type {
+  DisenoBordado,
+  EstadoReceta,
+  LineaReceta,
+  MaterialCatalogo,
+  Receta,
+  UnidadCaptura,
+} from '../modelos/receta';
+import { cantidadBruta, redondear } from '../servicios/calculos-receta';
+
+/**
+ * DATOS DE DEMOSTRACIÓN de M11.
+ * Materiales y recetas tomados de §11.2, §11.3 y §11.4. La existencia de materiales
+ * es una lectura de ejemplo de M15 (dueño real del inventario). La lista de productos
+ * se consulta de la semilla de M10 como instantánea de solo lectura.
+ */
+
+export const MATERIALES: MaterialCatalogo[] = [
+  { id: 1, codigo: 'TEL-FEL', nombre: 'Felpa', categoria: 'Tela', unidadBase: 'm2', costoBase: 89.1975, mermaPct: 15, conColor: true, presentacion: 'Rollo de 20 kg · 64.80 m²', porPrenda: false },
+  { id: 2, codigo: 'TEL-JER', nombre: 'Jersey peinado', categoria: 'Tela', unidadBase: 'm2', costoBase: 25.731, mermaPct: 15, conColor: true, presentacion: 'Rollo de 20 kg · 136.80 m²', porPrenda: false },
+  { id: 3, codigo: 'TEL-RIB', nombre: 'Tejido acanalado (rib)', categoria: 'Tela', unidadBase: 'm2', costoBase: 50.2857, mermaPct: 20, conColor: true, presentacion: 'Rollo de 12 kg · 42.00 m²', porPrenda: false },
+  { id: 4, codigo: 'TEL-LON', nombre: 'Loneta', categoria: 'Tela', unidadBase: 'm2', costoBase: 76.5333, mermaPct: 10, conColor: true, presentacion: 'Rollo de 1.50 × 50.00 m', porPrenda: false },
+  { id: 5, codigo: 'HIL-EST', nombre: 'Estambre acrílico', categoria: 'Hilo', unidadBase: 'm', costoBase: 0.247619, mermaPct: 5, conColor: true, presentacion: 'Cono de 1,000 g · 2,100 m', porPrenda: false },
+  { id: 6, codigo: 'HIL-COS', nombre: 'Hilo de costura 40/2', categoria: 'Hilo', unidadBase: 'm', costoBase: 0.012741, mermaPct: 10, conColor: false, presentacion: 'Cono de 5,000 yd · 4,572 m', porPrenda: false },
+  { id: 7, codigo: 'HIL-BOR-001', nombre: 'Hilo de bordado blanco 120D/2', categoria: 'Hilo', unidadBase: 'm', costoBase: 0.0106, mermaPct: 0, conColor: false, presentacion: 'Cono de 5,000 m', porPrenda: false },
+  { id: 8, codigo: 'HIL-BOR-002', nombre: 'Hilo de bordado negro 120D/2', categoria: 'Hilo', unidadBase: 'm', costoBase: 0.0106, mermaPct: 0, conColor: false, presentacion: 'Cono de 5,000 m', porPrenda: false },
+  { id: 9, codigo: 'HIL-BOR-003', nombre: 'Hilo de bordado gris 120D/2', categoria: 'Hilo', unidadBase: 'm', costoBase: 0.0106, mermaPct: 0, conColor: false, presentacion: 'Cono de 5,000 m', porPrenda: false },
+  { id: 10, codigo: 'EST-HOJ', nombre: 'Estabilizador de corte, hoja 25 × 30 cm', categoria: 'Estabilizador', unidadBase: 'pieza', costoBase: 5, mermaPct: 0, conColor: false, presentacion: 'Paquete de 100 piezas', porPrenda: false },
+  { id: 11, codigo: 'EST-ROL', nombre: 'Estabilizador de corte, rollo 30.5 cm', categoria: 'Estabilizador', unidadBase: 'm', costoBase: 21.9593, mermaPct: 0, conColor: false, presentacion: 'Rollo de 22.86 m', porPrenda: false },
+  { id: 12, codigo: 'AVI-COR', nombre: 'Cordón redondo de poliéster 120 cm', categoria: 'Avio', unidadBase: 'pieza', costoBase: 32.775, mermaPct: 0, conColor: false, presentacion: 'Paquete de 2 piezas', porPrenda: false },
+  { id: 13, codigo: 'AVI-OJI', nombre: 'Ojillos metálicos de 8 mm con contra', categoria: 'Avio', unidadBase: 'pieza', costoBase: 0.42, mermaPct: 0, conColor: false, presentacion: 'Millar', porPrenda: false },
+  { id: 14, codigo: 'ETQ-MAR', nombre: 'Etiqueta de marca', categoria: 'Etiqueta', unidadBase: 'pieza', costoBase: 0.65, mermaPct: 0, conColor: false, presentacion: 'Paquete de 500', porPrenda: false },
+  { id: 15, codigo: 'ETQ-TAL-CH', nombre: 'Etiqueta de talla CH', categoria: 'Etiqueta', unidadBase: 'pieza', costoBase: 0.65, mermaPct: 0, conColor: false, presentacion: 'Paquete de 500', porPrenda: false },
+  { id: 16, codigo: 'ETQ-TAL-MD', nombre: 'Etiqueta de talla MD', categoria: 'Etiqueta', unidadBase: 'pieza', costoBase: 0.65, mermaPct: 0, conColor: false, presentacion: 'Paquete de 500', porPrenda: false },
+  { id: 17, codigo: 'ETQ-TAL-GD', nombre: 'Etiqueta de talla GD', categoria: 'Etiqueta', unidadBase: 'pieza', costoBase: 0.65, mermaPct: 0, conColor: false, presentacion: 'Paquete de 500', porPrenda: false },
+  { id: 18, codigo: 'ETQ-COM-SD', nombre: 'Etiqueta de composición Sudadera', categoria: 'Etiqueta', unidadBase: 'pieza', costoBase: 0.65, mermaPct: 0, conColor: false, presentacion: 'Paquete de 500', porPrenda: false },
+  { id: 19, codigo: 'ETQ-COM-PL', nombre: 'Etiqueta de composición Playera', categoria: 'Etiqueta', unidadBase: 'pieza', costoBase: 0.65, mermaPct: 0, conColor: false, presentacion: 'Paquete de 500', porPrenda: false },
+  { id: 20, codigo: 'ETQ-COM-PN', nombre: 'Etiqueta de composición Pantalón', categoria: 'Etiqueta', unidadBase: 'pieza', costoBase: 0.65, mermaPct: 0, conColor: false, presentacion: 'Paquete de 500', porPrenda: false },
+  { id: 21, codigo: 'ETQ-COM-GO', nombre: 'Etiqueta de composición Gorro', categoria: 'Etiqueta', unidadBase: 'pieza', costoBase: 0.65, mermaPct: 0, conColor: false, presentacion: 'Paquete de 500', porPrenda: false },
+  { id: 22, codigo: 'ETQ-COM-BO', nombre: 'Etiqueta de composición Bolsa de tela', categoria: 'Etiqueta', unidadBase: 'pieza', costoBase: 0.65, mermaPct: 0, conColor: false, presentacion: 'Paquete de 500', porPrenda: false },
+  { id: 23, codigo: 'EMP-BOL', nombre: 'Bolsa individual kraft mediana', categoria: 'Empaque', unidadBase: 'pieza', costoBase: 12, mermaPct: 0, conColor: false, presentacion: 'Lote de 200', porPrenda: true },
+  { id: 24, codigo: 'EMP-PAP', nombre: 'Papel protector', categoria: 'Empaque', unidadBase: 'pieza', costoBase: 2.5, mermaPct: 0, conColor: false, presentacion: 'Lote de 200', porPrenda: true },
+  { id: 25, codigo: 'EMP-TAR', nombre: 'Tarjeta personalizada con código QR', categoria: 'Empaque', unidadBase: 'pieza', costoBase: 5, mermaPct: 0, conColor: false, presentacion: 'Lote de 200', porPrenda: true },
+  { id: 26, codigo: 'EMP-ETE', nombre: 'Etiqueta de envío', categoria: 'Empaque', unidadBase: 'pieza', costoBase: 0, mermaPct: 0, conColor: false, presentacion: 'Por cotizar (provisional)', porPrenda: true },
+];
+
+/** Instantánea de existencia de materiales para la vista previa "alcanza para N". */
+export const INVENTARIO_MATERIAL_DEMO: Record<string, number> = {
+  'TEL-FEL': 260,
+  'TEL-JER': 180,
+  'TEL-RIB': 42,
+  'TEL-LON': 55,
+  'HIL-EST': 4200,
+  'HIL-COS': 18500,
+  'HIL-BOR-001': 12000,
+  'HIL-BOR-002': 12000,
+  'HIL-BOR-003': 9000,
+  'EST-HOJ': 480,
+  'EST-ROL': 68,
+  'AVI-COR': 300,
+  'AVI-OJI': 2400,
+  'ETQ-MAR': 1500,
+  'ETQ-TAL-CH': 600,
+  'ETQ-TAL-MD': 600,
+  'ETQ-TAL-GD': 600,
+  'ETQ-COM-SD': 500,
+  'ETQ-COM-PL': 500,
+  'ETQ-COM-PN': 500,
+  'ETQ-COM-GO': 500,
+  'ETQ-COM-BO': 500,
+  'EMP-BOL': 900,
+  'EMP-PAP': 900,
+  'EMP-TAR': 900,
+  'EMP-ETE': 0,
+};
+
+export const DISENOS_BORDADO: DisenoBordado[] = [
+  { id: 1, codigo: 'DIS-001', nombre: 'Sudadera', anchoCm: 22, altoCm: 15, estado: 'PENDIENTE', notas: 'Diseño principal de pecho.', activo: true, hilos: [] },
+  { id: 2, codigo: 'DIS-002', nombre: 'Playera', anchoCm: 22, altoCm: 15, estado: 'PENDIENTE', notas: '', activo: true, hilos: [] },
+  { id: 3, codigo: 'DIS-003', nombre: 'Pantalón tubo', anchoCm: 55, altoCm: 15, estado: 'PENDIENTE', notas: 'Aplicación en tubo derecho.', activo: true, hilos: [] },
+  { id: 4, codigo: 'DIS-004', nombre: 'Pantalón bolsillo', anchoCm: 5, altoCm: 5, estado: 'PENDIENTE', notas: 'Aplicación en bolsillo trasero.', activo: true, hilos: [] },
+  { id: 5, codigo: 'DIS-005', nombre: 'Gorro', anchoCm: 5, altoCm: 5, estado: 'PENDIENTE', notas: '', activo: true, hilos: [] },
+  { id: 6, codigo: 'DIS-006', nombre: 'Bolsa', anchoCm: 20, altoCm: 20, estado: 'PENDIENTE', notas: '', activo: true, hilos: [] },
+];
+
+interface SemillaLinea {
+  codigo: string;
+  neta: number;
+  unidad?: UnidadCaptura;
+  factor?: number;
+  merma?: number;
+  etiqueta?: boolean;
+  nota?: string;
+}
+
+interface SemillaReceta {
+  id: number;
+  productoId: number;
+  talla: CodigoTalla;
+  version: number;
+  estado: EstadoReceta;
+  lineas: SemillaLinea[];
+  bordados: Array<{ disenoId: number; aplicaciones: number; ubicacion: string }>;
+  creadaEn: string;
+  activadaEn: string | null;
+  nota?: string;
+}
+
+function lineasDe(semilla: SemillaLinea[], offset: number): LineaReceta[] {
+  const porCodigo = new Map(MATERIALES.map((material) => [material.codigo, material]));
+
+  return semilla.map((item, indice) => {
+    const material = porCodigo.get(item.codigo);
+    const merma = item.merma ?? material?.mermaPct ?? 0;
+    const factor = item.factor ?? 1;
+    return {
+      id: offset + indice,
+      materialCodigo: item.codigo,
+      cantidadNeta: item.neta,
+      unidadCaptura: item.unidad ?? 'pieza',
+      factorConsumo: factor,
+      mermaPct: merma,
+      cantidadBruta: cantidadBruta(item.neta, factor, merma),
+      esEtiqueta: item.etiqueta ?? item.codigo.startsWith('ETQ-'),
+      nota: item.nota ?? '',
+    };
+  });
+}
+
+function etiquetas(talla: CodigoTalla | null, productoId: number): SemillaLinea[] {
+  const composicion: Record<number, string> = {
+    1: 'ETQ-COM-SD',
+    2: 'ETQ-COM-PL',
+    3: 'ETQ-COM-PN',
+    4: 'ETQ-COM-GO',
+    5: 'ETQ-COM-BO',
+  };
+  const base: SemillaLinea[] = [{ codigo: 'ETQ-MAR', neta: 1 }];
+  if (talla !== null) {
+    base.push({ codigo: `ETQ-TAL-${talla}`, neta: 1 });
+  }
+  base.push({ codigo: composicion[productoId] ?? 'ETQ-COM-SD', neta: 1 });
+  return base;
+}
+
+const SEMILLAS: SemillaReceta[] = [
+  {
+    id: 1, productoId: 1, talla: 'CH', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'TEL-FEL', neta: 0.9386, unidad: 'm2' },
+      { codigo: 'TEL-RIB', neta: 0.1048, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 13.95, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 1 },
+      ...etiquetas('CH', 1),
+    ],
+    bordados: [{ disenoId: 1, aplicaciones: 1, ubicacion: 'Pecho' }],
+    creadaEn: '2026-11-10T09:30:00', activadaEn: '2026-11-12T11:20:00',
+  },
+  {
+    id: 2, productoId: 1, talla: 'MD', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'TEL-FEL', neta: 1.0184, unidad: 'm2' },
+      { codigo: 'TEL-RIB', neta: 0.1137, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 14.54, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 1 },
+      ...etiquetas('MD', 1),
+    ],
+    bordados: [{ disenoId: 1, aplicaciones: 1, ubicacion: 'Pecho' }],
+    creadaEn: '2026-11-10T09:35:00', activadaEn: '2026-11-12T11:20:00',
+  },
+  {
+    id: 3, productoId: 1, talla: 'GD', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'TEL-FEL', neta: 1.1029, unidad: 'm2' },
+      { codigo: 'TEL-RIB', neta: 0.1231, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 15.14, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 1 },
+      ...etiquetas('GD', 1),
+    ],
+    bordados: [{ disenoId: 1, aplicaciones: 1, ubicacion: 'Pecho' }],
+    creadaEn: '2026-11-10T09:40:00', activadaEn: '2026-11-12T11:20:00',
+    nota: 'Talla de mayor costo; se usa para sugerir el precio del producto.',
+  },
+  {
+    id: 4, productoId: 2, talla: 'CH', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'TEL-JER', neta: 0.7778, unidad: 'm2' },
+      { codigo: 'TEL-RIB', neta: 0.0872, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 11.45, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 1 },
+      ...etiquetas('CH', 2),
+    ],
+    bordados: [{ disenoId: 2, aplicaciones: 1, ubicacion: 'Pecho' }],
+    creadaEn: '2026-11-10T10:05:00', activadaEn: '2026-11-12T11:25:00',
+    nota: 'Patrón pendiente de verificar en la fuente; revisar antes de producir la piloto.',
+  },
+  {
+    id: 5, productoId: 2, talla: 'MD', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'TEL-JER', neta: 0.96, unidad: 'm2' },
+      { codigo: 'TEL-RIB', neta: 0.0946, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 11.93, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 1 },
+      ...etiquetas('MD', 2),
+    ],
+    bordados: [{ disenoId: 2, aplicaciones: 1, ubicacion: 'Pecho' }],
+    creadaEn: '2026-11-10T10:10:00', activadaEn: '2026-11-12T11:25:00',
+  },
+  {
+    id: 6, productoId: 2, talla: 'GD', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'TEL-JER', neta: 1.0396, unidad: 'm2' },
+      { codigo: 'TEL-RIB', neta: 0.1025, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 12.42, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 1 },
+      ...etiquetas('GD', 2),
+    ],
+    bordados: [{ disenoId: 2, aplicaciones: 1, ubicacion: 'Pecho' }],
+    creadaEn: '2026-11-10T10:15:00', activadaEn: '2026-11-12T11:25:00',
+  },
+  {
+    id: 7, productoId: 3, talla: 'CH', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'TEL-FEL', neta: 1.0364, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 17.2, unidad: 'm' },
+      { codigo: 'EST-ROL', neta: 0.61, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 0.25 },
+      { codigo: 'AVI-COR', neta: 1 },
+      { codigo: 'AVI-OJI', neta: 2 },
+      ...etiquetas('CH', 3),
+    ],
+    bordados: [
+      { disenoId: 3, aplicaciones: 1, ubicacion: 'Tubo derecho' },
+      { disenoId: 4, aplicaciones: 1, ubicacion: 'Bolsillo trasero' },
+    ],
+    creadaEn: '2026-11-10T11:00:00', activadaEn: '2026-11-12T11:30:00',
+  },
+  {
+    id: 8, productoId: 3, talla: 'MD', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'TEL-FEL', neta: 1.1245, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 17.92, unidad: 'm' },
+      { codigo: 'EST-ROL', neta: 0.61, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 0.25 },
+      { codigo: 'AVI-COR', neta: 1 },
+      { codigo: 'AVI-OJI', neta: 2 },
+      ...etiquetas('MD', 3),
+    ],
+    bordados: [
+      { disenoId: 3, aplicaciones: 1, ubicacion: 'Tubo derecho' },
+      { disenoId: 4, aplicaciones: 1, ubicacion: 'Bolsillo trasero' },
+    ],
+    creadaEn: '2026-11-10T11:05:00', activadaEn: '2026-11-12T11:30:00',
+  },
+  {
+    id: 9, productoId: 3, talla: 'GD', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'TEL-FEL', neta: 1.2178, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 18.66, unidad: 'm' },
+      { codigo: 'EST-ROL', neta: 0.61, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 0.25 },
+      { codigo: 'AVI-COR', neta: 1 },
+      { codigo: 'AVI-OJI', neta: 2 },
+      ...etiquetas('GD', 3),
+    ],
+    bordados: [
+      { disenoId: 3, aplicaciones: 1, ubicacion: 'Tubo derecho' },
+      { disenoId: 4, aplicaciones: 1, ubicacion: 'Bolsillo trasero' },
+    ],
+    creadaEn: '2026-11-10T11:10:00', activadaEn: '2026-11-12T11:30:00',
+  },
+  {
+    id: 10, productoId: 4, talla: 'UN', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'HIL-EST', neta: 130, unidad: 'm' },
+      { codigo: 'TEL-RIB', neta: 0.0238, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 4, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 0.25 },
+      ...etiquetas(null, 4),
+    ],
+    bordados: [{ disenoId: 5, aplicaciones: 1, ubicacion: 'Frente' }],
+    creadaEn: '2026-11-10T11:40:00', activadaEn: '2026-11-12T11:35:00',
+  },
+  {
+    id: 11, productoId: 5, talla: 'UN', version: 1, estado: 'VIGENTE',
+    lineas: [
+      { codigo: 'TEL-LON', neta: 0.341, unidad: 'm2' },
+      { codigo: 'HIL-COS', neta: 11.65, unidad: 'm' },
+      { codigo: 'EST-HOJ', neta: 1 },
+      ...etiquetas(null, 5),
+    ],
+    bordados: [{ disenoId: 6, aplicaciones: 1, ubicacion: 'Frente' }],
+    creadaEn: '2026-11-10T11:45:00', activadaEn: '2026-11-12T11:35:00',
+  },
+  // El producto borrador de M10 tiene recetas vacías: demuestra la validación de activación.
+  {
+    id: 12, productoId: 6, talla: 'CH', version: 1, estado: 'BORRADOR',
+    lineas: [], bordados: [],
+    creadaEn: '2026-11-20T16:10:00', activadaEn: null,
+    nota: 'Borrador generado al crear el producto en M10; falta completar en M11.',
+  },
+  {
+    id: 13, productoId: 6, talla: 'MD', version: 1, estado: 'BORRADOR',
+    lineas: [], bordados: [],
+    creadaEn: '2026-11-20T16:10:00', activadaEn: null,
+    nota: 'Borrador generado al crear el producto en M10; falta completar en M11.',
+  },
+];
+
+let consecutivoLinea = 1000;
+
+export const RECETAS_SIMULADAS: Receta[] = SEMILLAS.map((semilla) => ({
+  id: semilla.id,
+  productoId: semilla.productoId,
+  talla: semilla.talla,
+  version: semilla.version,
+  estado: semilla.estado,
+  origenRecetaId: null,
+  manoObra: 0,
+  costoBordado: 0,
+  costosIndirectos: 0,
+  nota: semilla.nota ?? '',
+  creadaPor: 'Administrador',
+  creadaEn: semilla.creadaEn,
+  activadaEn: semilla.activadaEn,
+  lineas: lineasDe(semilla.lineas, consecutivoLinea++ * 10),
+  bordados: semilla.bordados.map((bordado, indice) => ({ id: consecutivoLinea++ + indice, ...bordado })),
+  bitacora:
+    semilla.activadaEn === null
+      ? []
+      : [
+          {
+            id: semilla.id,
+            fecha: semilla.activadaEn,
+            usuario: 'Administrador',
+            accion: 'Activación',
+            detalle: `Versión ${semilla.version} activada. La versión anterior, si existía, quedó archivada.`,
+          },
+        ],
+}));
+
+export const EMPAQUE_POR_PRENDA = redondear(
+  MATERIALES.filter((material) => material.porPrenda).reduce(
+    (suma, material) => suma + material.costoBase,
+    0,
+  ),
+);

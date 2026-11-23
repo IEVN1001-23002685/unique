@@ -1,0 +1,5 @@
+<span class="semaforo" [class.semaforo--rojo]="estado() === 'ROJO'"
+  [class.semaforo--ambar]="estado() === 'AMBAR'" [class.semaforo--verde]="estado() === 'VERDE'">
+  <span class="semaforo__punto" aria-hidden="true"></span>
+  {{ estado() }}
+</span>

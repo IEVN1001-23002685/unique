@@ -1,0 +1,147 @@
+<section class="vista">
+  <app-navegacion-recetas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M11 · Recetas y bordados</p>
+      <h1 class="titulo">Biblioteca de recetas</h1>
+      <p class="subtitulo">
+        Una fila por producto y talla. Las cantidades se guardan en unidad base y el costo se calcula
+        con la merma de cada material; el precio de venta sigue siendo propiedad de M10.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <a routerLink="/admin/recetas/nuevo" class="boton boton--primario">Nueva receta</a>
+      <a routerLink="/admin/recetas/disenos" class="boton boton--secundario">Diseños de bordado</a>
+    </div>
+  </div>
+
+  <div class="indicadores">
+    <div class="tarjeta indicador"><span class="indicador__etiqueta">Recetas</span><strong class="indicador__valor">{{ totales().total }}</strong></div>
+    <div class="tarjeta indicador indicador--activo"><span class="indicador__etiqueta">Vigentes</span><strong class="indicador__valor">{{ totales().vigentes }}</strong></div>
+    <div class="tarjeta indicador indicador--adv"><span class="indicador__etiqueta">Borradores</span><strong class="indicador__valor">{{ totales().borradores }}</strong></div>
+    <div class="tarjeta indicador"><span class="indicador__etiqueta">Archivadas</span><strong class="indicador__valor">{{ totales().archivadas }}</strong></div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input type="search" [value]="busqueda()" (input)="alBuscar($event)"
+          placeholder="Buscar por producto, talla, versión o estado" aria-label="Buscar recetas" />
+      </label>
+      <label class="campo filtro">
+        Producto
+        <select class="campo__entrada" [value]="productoFiltro()" (change)="alCambiarProducto($event)">
+          <option value="TODOS">Todos</option>
+          @for (producto of servicio.productos; track producto.id) {
+            <option [value]="producto.id">{{ producto.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo filtro">
+        Estado
+        <select class="campo__entrada" [value]="estadoFiltro()" (change)="alCambiarEstado($event)">
+          <option value="TODOS">Todos</option>
+          <option value="VIGENTE">Vigente</option>
+          <option value="BORRADOR">Borrador</option>
+          <option value="ARCHIVADA">Archivada</option>
+        </select>
+      </label>
+    </div>
+
+    @if (servicio.recetas().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay recetas.</strong>
+        <p>Captura una receta en M11 para el producto y la talla que necesites.</p>
+      </div>
+    } @else if (filtradas().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Ajusta el texto o los filtros para ver otras recetas.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">Biblioteca de recetas por producto y talla</caption>
+          <thead>
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col">Talla</th>
+              <th scope="col">Versión</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Materia prima</th>
+              <th scope="col">Costo estándar</th>
+              <th scope="col">Última modificación</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (receta of filtradas(); track receta.id) {
+              <tr>
+                <td data-etiqueta="Producto">
+                  <span class="celda-principal">{{ servicio.nombreProducto(receta.productoId) }}</span>
+                  @if (servicio.disenosPendientes(receta).length > 0) {
+                    <span class="celda-secundaria">Bordado pendiente de digitalizar</span>
+                  }
+                </td>
+                <td data-etiqueta="Talla">{{ receta.talla }}</td>
+                <td data-etiqueta="Versión">v{{ receta.version }}</td>
+                <td data-etiqueta="Estado">
+                  <span class="chip" [class.chip--vigente]="receta.estado === 'VIGENTE'"
+                    [class.chip--borrador]="receta.estado === 'BORRADOR'"
+                    [class.chip--archivada]="receta.estado === 'ARCHIVADA'">
+                    {{ receta.estado }}
+                  </span>
+                </td>
+                <td data-etiqueta="Materia prima">
+                  {{ servicio.costeo(receta).materiaPrima | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Costo estándar">
+                  <strong>{{ servicio.costeo(receta).costoEstandar | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+                </td>
+                <td data-etiqueta="Modificación">
+                  {{ (receta.activadaEn ?? receta.creadaEn) | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    @if (receta.estado === 'BORRADOR') {
+                      <button type="button" class="accion" (click)="editar(receta)">Editar</button>
+                      <button type="button" class="accion" (click)="activar(receta)"
+                        [title]="razonesActivacion(receta)">Activar</button>
+                    } @else {
+                      <button type="button" class="accion" (click)="copiar(receta)">Copiar a borrador</button>
+                    }
+                    <button type="button" class="accion" (click)="historial(receta)">Historial</button>
+                    @if (receta.estado !== 'ARCHIVADA') {
+                      <button type="button" class="accion accion--peligro" (click)="pedirArchivado(receta)">Archivar</button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Activación requiere tela o hilo de tejido, hilo de costura, etiquetas completas y merma menor a
+      100 %. Al activar, la versión anterior pasa a ARCHIVADA y las órdenes ya creadas conservan su
+      receta. El Operativo consultará esta biblioteca sin columnas de costo cuando se integre M02.
+    </p>
+  </div>
+
+  @if (archivando(); as receta) {
+    <app-modal-confirmacion
+      titulo="Archivar receta"
+      [mensaje]="'Se archivará la versión v' + receta.version + ' de ' + servicio.nombreProducto(receta.productoId) + ' ' + receta.talla + '. Si era vigente, M10 dejará de considerarla.'"
+      etiquetaConfirmar="Archivar"
+      (confirmar)="confirmarArchivado()"
+      (cancelar)="archivando.set(null)"
+    />
+  }
+</section>

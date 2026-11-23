@@ -1,0 +1,117 @@
+<section class="vista">
+  <app-navegacion-recetas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M11 · Historial de versiones</p>
+      <h1 class="titulo">Historial de recetas</h1>
+      <p class="subtitulo">
+        Versiones por producto y talla con quién y cuándo. Selecciona dos versiones para comparar
+        línea por línea cantidades, mermas, costos y bordados.
+      </p>
+    </div>
+    <a routerLink="/admin/recetas" class="boton boton--secundario">Volver a la biblioteca</a>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="campo">
+        Producto
+        <select class="campo__entrada" [value]="producto()" (change)="alCambiarProducto($event)">
+          @for (item of productos; track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }
+        </select>
+      </label>
+      <label class="campo">
+        Talla
+        <select class="campo__entrada" [value]="talla()" (change)="alCambiarTalla($event)">
+          @for (talla of servicio.tallasDeProducto(producto()); track talla) {
+            <option [value]="talla">{{ talla }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    @if (versiones().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin versiones registradas.</strong>
+        <p>Este producto y talla aún no tienen recetas en la demostración.</p>
+      </div>
+    } @else {
+      <div class="versiones">
+        @for (receta of versiones(); track receta.id) {
+          <article class="tarjeta version"
+            [class.version--seleccionada]="idA() === receta.id || idB() === receta.id">
+            <div class="version__cabecera">
+              <strong>v{{ receta.version }}</strong>
+              <span class="chip" [class.chip--vigente]="receta.estado === 'VIGENTE'"
+                [class.chip--borrador]="receta.estado === 'BORRADOR'"
+                [class.chip--archivada]="receta.estado === 'ARCHIVADA'">{{ receta.estado }}</span>
+            </div>
+            <p class="version__dato">
+              Creada por {{ receta.creadaPor }} el {{ receta.creadaEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+            </p>
+            <p class="version__dato">
+              {{ receta.activadaEn ? ('Activada el ' + (receta.activadaEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX')) : 'Sin activar' }}
+            </p>
+            <p class="version__dato">{{ receta.lineas.length }} línea(s) · {{ receta.bordados.length }} bordado(s)</p>
+            @if (receta.nota) { <p class="version__nota">{{ receta.nota }}</p> }
+            <div class="version__acciones">
+              <button type="button" class="boton boton--secundario" (click)="seleccionar('A', receta.id)">
+                {{ idA() === receta.id ? 'Versión A ✓' : 'Usar como A' }}
+              </button>
+              <button type="button" class="boton boton--secundario" (click)="seleccionar('B', receta.id)">
+                {{ idB() === receta.id ? 'Versión B ✓' : 'Usar como B' }}
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+
+      <div class="comparacion">
+        <h2 class="comparacion__titulo">
+          Comparación: <strong>{{ etiquetaVersion(idA()) }}</strong> contra
+          <strong>{{ etiquetaVersion(idB()) }}</strong>
+        </h2>
+        @if (comparacion().length === 0) {
+          <p class="estado-linea">Selecciona dos versiones para ver la comparación.</p>
+        } @else {
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <caption class="sr-only">Comparación línea por línea de dos versiones</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Material / concepto</th>
+                  <th scope="col">Versión A</th>
+                  <th scope="col">Versión B</th>
+                  <th scope="col">Resultado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of comparacion(); track fila.id) {
+                  <tr [class.fila--cambio]="fila.estado === 'CAMBIO'">
+                    <td data-etiqueta="Concepto">
+                      <span class="mono">{{ fila.clave }}</span>
+                      <span class="celda-secundaria">{{ fila.descripcion }}</span>
+                    </td>
+                    <td data-etiqueta="A">{{ fila.detalleA }}</td>
+                    <td data-etiqueta="B">{{ fila.detalleB }}</td>
+                    <td data-etiqueta="Resultado">
+                      <span class="chip" [class.chip--cambio]="fila.estado === 'CAMBIO'"
+                        [class.chip--nueva]="fila.estado === 'NUEVA'"
+                        [class.chip--baja]="fila.estado === 'ELIMINADA'">{{ fila.estado }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    <p class="nota">
+      Al activar una versión, la anterior pasa a ARCHIVADA. Las órdenes de producción ya creadas
+      conservan la receta con la que se generaron, sin importar los cambios posteriores.
+    </p>
+  </div>
+</section>
