@@ -1,0 +1,145 @@
+<section class="vista">
+  <app-navegacion-inventario />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 5 · Producción y merma · M15</p>
+      <h1 class="titulo">Kardex de materiales</h1>
+      <p class="subtitulo">
+        Historial de movimientos por material, color, lote, tipo y fecha. Cada movimiento deja
+        rastro: una corrección nunca sobrescribe al anterior.
+      </p>
+    </div>
+    <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
+  </div>
+
+  <div class="indicadores" aria-label="Resumen del kardex filtrado">
+    <div class="indicador" data-tono="info">
+      <span class="indicador__numero">{{ totales().movimientos }}</span>
+      <span class="indicador__etiqueta">Movimientos</span>
+    </div>
+    <div class="indicador" data-tono="exito">
+      <span class="indicador__numero">{{ totales().entradas }}</span>
+      <span class="indicador__etiqueta">Entradas</span>
+    </div>
+    <div class="indicador" data-tono="adv">
+      <span class="indicador__numero">{{ totales().salidas }}</span>
+      <span class="indicador__etiqueta">Salidas</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="form-grid form-grid--tres filtros-kardex">
+      <label class="campo">
+        Material
+        <select class="campo__entrada" [value]="materialId()" (change)="alCambiarMaterial($event)">
+          <option value="0">Todos los materiales</option>
+          @for (material of materiales(); track material.id) {
+            <option [value]="material.id">{{ material.codigo }} · {{ material.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Color
+        <select class="campo__entrada" [value]="color()" (change)="alCambiarColor($event)">
+          <option value="">Todos los colores</option>
+          @for (opcion of colores(); track opcion) {
+            <option [value]="opcion">{{ opcion }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Lote
+        <select class="campo__entrada" [value]="loteFolio()" (change)="alCambiarLote($event)">
+          <option value="">Todos los lotes</option>
+          @for (lote of lotes(); track lote.id) {
+            <option [value]="lote.folio">{{ lote.folio }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Tipo de movimiento
+        <select class="campo__entrada" [value]="tipo()" (change)="alCambiarTipo($event)">
+          @for (opcion of tipos; track opcion) {
+            <option [value]="opcion">
+              {{ opcion === 'TODOS' ? 'Todos los tipos' : etiquetaTipo(opcion) }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Desde
+        <input class="campo__entrada" type="date" [value]="desde()" (change)="alCambiarDesde($event)" />
+      </label>
+      <label class="campo">
+        Hasta
+        <input class="campo__entrada" type="date" [value]="hasta()" (change)="alCambiarHasta($event)" />
+      </label>
+    </div>
+
+    <div class="form-acciones kardex__acciones">
+      <button type="button" class="boton boton--secundario" (click)="limpiar()">Limpiar filtros</button>
+    </div>
+
+    @if (movimientos().length === 0) {
+      <div class="estado" role="status">
+        <strong>No hay movimientos con estos filtros.</strong>
+        <p>Amplía el periodo o selecciona otro material, color, lote o tipo.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor tabla-contenedor--ancha">
+        <table class="tabla">
+          <caption class="sr-only">Movimientos de inventario de materia prima</caption>
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">Material</th>
+              <th scope="col">Color</th>
+              <th scope="col">Lote</th>
+              <th scope="col">Tipo</th>
+              <th scope="col" class="celda-derecha">Cantidad</th>
+              <th scope="col" class="celda-derecha">Costo unitario</th>
+              <th scope="col">Documento</th>
+              <th scope="col">Motivo</th>
+              <th scope="col">Usuario</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (movimiento of movimientos(); track movimiento.id) {
+              <tr>
+                <td data-etiqueta="Fecha" class="celda-numero">{{ movimiento.fecha }}</td>
+                <td data-etiqueta="Material">
+                  <span class="celda-principal">{{ servicio.nombreMaterial(movimiento.materialId) }}</span>
+                  <span class="celda-secundaria">{{ servicio.obtenerMaterial(movimiento.materialId)?.unidadBase }}</span>
+                </td>
+                <td data-etiqueta="Color">{{ movimiento.color }}</td>
+                <td data-etiqueta="Lote">{{ movimiento.loteFolio ?? 'Sin lote' }}</td>
+                <td data-etiqueta="Tipo">
+                  <span class="etiqueta" [class.etiqueta--error]="movimiento.tipo === 'MERMA'">
+                    {{ etiquetaTipo(movimiento.tipo) }}
+                  </span>
+                </td>
+                <td data-etiqueta="Cantidad" class="celda-numero celda-derecha">
+                  <strong [class.celda-negativa]="movimiento.cantidadBase < 0">
+                    {{ movimiento.cantidadBase | number: '1.0-4' : 'es-MX' }}
+                  </strong>
+                </td>
+                <td data-etiqueta="Costo unitario" class="celda-numero celda-derecha">
+                  {{ movimiento.costoUnitario | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Documento">{{ movimiento.documento }}</td>
+                <td data-etiqueta="Motivo">{{ movimiento.motivo }}</td>
+                <td data-etiqueta="Usuario" class="celda-secundaria">{{ movimiento.usuario }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Solo lectura: los movimientos no se editan ni se eliminan. Las cantidades negativas son salidas
+      por consumo, merma o ajuste a la baja; las positivas son entradas, sobrantes o reversas.
+    </p>
+  </div>
+</section>

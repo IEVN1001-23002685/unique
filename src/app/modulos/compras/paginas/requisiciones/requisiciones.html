@@ -1,0 +1,193 @@
+<section class="vista">
+  <app-navegacion-compras />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 4 · Abastecimiento · M14</p>
+      <h1 class="titulo">Requisiciones</h1>
+      <p class="subtitulo">
+        El pedido de lo que hace falta. El origen puede ser una alerta, una orden de producción o
+        una captura manual. Cantidades sugeridas en presentación comercial.
+      </p>
+    </div>
+    <a routerLink="/compras/requisiciones/nueva" class="boton boton--primario">
+      + Nueva requisición
+    </a>
+  </div>
+
+  <div class="indicadores" aria-label="Resumen de requisiciones">
+    <div class="indicador" data-tono="adv">
+      <span class="indicador__numero">{{ totales().pendientes }}</span>
+      <span class="indicador__etiqueta">Pendientes</span>
+    </div>
+    <div class="indicador" data-tono="info">
+      <span class="indicador__numero">{{ totales().cotizacion }}</span>
+      <span class="indicador__etiqueta">En cotización</span>
+    </div>
+    <div class="indicador">
+      <span class="indicador__numero">{{ totales().emitidas }}</span>
+      <span class="indicador__etiqueta">Compra emitida</span>
+    </div>
+    <div class="indicador" data-tono="exito">
+      <span class="indicador__numero">{{ totales().atendidas }}</span>
+      <span class="indicador__etiqueta">Atendidas</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por folio, material u origen"
+          aria-label="Buscar requisiciones"
+        />
+      </label>
+
+      <div class="filtros" role="group" aria-label="Filtrar por estado">
+        @for (opcion of opciones; track opcion.valor) {
+          <button
+            type="button"
+            class="filtro"
+            [class.filtro--activo]="filtro() === opcion.valor"
+            [attr.aria-pressed]="filtro() === opcion.valor"
+            (click)="filtro.set(opcion.valor)"
+          >
+            {{ opcion.etiqueta }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (filtradas().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin requisiciones para mostrar.</strong>
+        <p>Crea una nueva o ajusta la búsqueda y el filtro de estado.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">Requisiciones de compras de UNIQUE</caption>
+          <thead>
+            <tr>
+              <th scope="col">Folio</th>
+              <th scope="col">Origen</th>
+              <th scope="col">Material y color</th>
+              <th scope="col">Faltante</th>
+              <th scope="col">Sugerida</th>
+              <th scope="col">Prioridad</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (requisicion of filtradas(); track requisicion.id) {
+              <tr>
+                <td data-etiqueta="Folio">
+                  <span class="celda-principal">{{ requisicion.folio }}</span>
+                  <span class="celda-secundaria">{{ requisicion.fecha }}</span>
+                </td>
+                <td data-etiqueta="Origen">
+                  <span class="celda-principal">
+                    @switch (requisicion.origen) {
+                      @case ('ALERTA') { Alerta }
+                      @case ('ORDEN_PRODUCCION') { Orden de producción }
+                      @case ('MANUAL') { Manual }
+                    }
+                  </span>
+                  @if (requisicion.ordenProduccion) {
+                    <span class="celda-secundaria">{{ requisicion.ordenProduccion }}</span>
+                  }
+                </td>
+                <td data-etiqueta="Material">
+                  @for (linea of requisicion.lineas; track linea.id) {
+                    <div class="etiquetas">
+                      <span class="etiqueta">{{ materialNombre(linea.materialId) }}</span>
+                      @if (linea.color) {
+                        <span class="etiqueta etiqueta--neutro">{{ linea.color }}</span>
+                      }
+                    </div>
+                  }
+                </td>
+                <td data-etiqueta="Faltante" class="celda-numero">
+                  @for (linea of requisicion.lineas; track linea.id) {
+                    <div>
+                      {{ linea.cantidadBaseFaltante | number: '1.0-2' : 'es-MX' }}
+                      {{ servicio.obtenerMaterial(linea.materialId)?.unidadBase }}
+                    </div>
+                  }
+                </td>
+                <td data-etiqueta="Sugerida" class="celda-numero">
+                  @for (linea of requisicion.lineas; track linea.id) {
+                    <div>
+                      {{ linea.cantidadCompraSugerida }}
+                      {{ servicio.obtenerMaterial(linea.materialId)?.unidadPresentacion }}(s)
+                    </div>
+                  }
+                </td>
+                <td data-etiqueta="Prioridad">
+                  <span class="etiqueta" [class.etiqueta--neutro]="requisicion.prioridad === 'NORMAL'">
+                    {{ requisicion.prioridad === 'URGENTE' ? 'Urgente' : 'Normal' }}
+                  </span>
+                </td>
+                <td data-etiqueta="Estado">
+                  <app-chip-estado-compra [estado]="requisicion.estado" />
+                </td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    @if (puedeGestionar(requisicion)) {
+                      <button type="button" class="accion" (click)="cotizar(requisicion)">
+                        Cotizar
+                      </button>
+                      <button type="button" class="accion" (click)="ordenDirecta(requisicion)">
+                        Emitir orden directa
+                      </button>
+                      <a
+                        class="accion"
+                        [routerLink]="['/compras/requisiciones', requisicion.id, 'editar']"
+                      >
+                        Editar cantidades
+                      </a>
+                      <button
+                        type="button"
+                        class="accion accion--peligro"
+                        (click)="porCancelar.set(requisicion)"
+                      >
+                        Cancelar
+                      </button>
+                    } @else {
+                      <span class="celda-secundaria">Sin acciones disponibles</span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      La cantidad sugerida se convierte a la presentación comercial del material y se redondea hacia
+      arriba respetando el mínimo del proveedor (ejemplo del documento: 120 m² ÷ 64.80 = 2 rollos =
+      129.60 m²). La creación manual por Operativo quedará sujeta al roleGuard de Flask: §10 reserva
+      /compras al Administrador. Los cambios son de demostración.
+    </p>
+  </div>
+
+  @if (porCancelar(); as requisicion) {
+    <app-modal-confirmacion
+      titulo="Cancelar requisición"
+      [mensaje]="'¿Cancelar ' + requisicion.folio + '? Esta acción no elimina el historial.'"
+      etiquetaConfirmar="Cancelar requisición"
+      (confirmar)="confirmarCancelacion()"
+      (cancelar)="porCancelar.set(null)"
+    />
+  }
+</section>

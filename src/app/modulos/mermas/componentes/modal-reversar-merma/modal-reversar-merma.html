@@ -1,0 +1,30 @@
+<div class="modal" (keydown)="alPulsarTecla($event)">
+  <div class="modal__telon" (click)="cancelar.emit()" aria-hidden="true"></div>
+
+  <section class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="titulo-reverso">
+    <h2 class="modal__titulo" id="titulo-reverso">Corregir merma como Administrador</h2>
+    <p class="modal__mensaje">
+      El registro <strong>{{ merma().folio }}</strong> nunca se edita. Se creará un asiento inverso por
+      {{ merma().cantidad | number: '1.0-4' : 'es-MX' }} {{ merma().unidadBase }} que compensará el original.
+    </p>
+
+    <label class="campo">
+      Motivo de la corrección
+      <textarea
+        class="campo__entrada"
+        [formControl]="motivo"
+        rows="3"
+        placeholder="Ej. Se capturó el lote equivocado en el registro original"
+        [attr.aria-invalid]="motivo.invalid && motivo.touched"
+      ></textarea>
+      @if (motivo.touched && motivo.invalid) {
+        <p class="campo__error">Escribe un motivo de al menos 6 caracteres.</p>
+      }
+    </label>
+
+    <div class="modal__acciones">
+      <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">Cancelar</button>
+      <button type="button" class="boton boton--primario" (click)="aceptar()">Registrar inverso</button>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,41 @@
+.perfil-demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font: 600 0.78rem var(--font-interfaz);
+  color: var(--color-unique-morado);
+}
+.filtros-secundarios {
+  margin-bottom: 1rem;
+}
+.filtro-producto {
+  max-width: 26rem;
+  margin-bottom: 0.85rem;
+}
+.resultados {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.75rem;
+  font: 600 0.78rem var(--font-interfaz);
+  color: var(--color-unique-texto-suave);
+}
+.paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.85rem;
+  margin-top: 1rem;
+  font: 600 0.78rem var(--font-interfaz);
+  color: var(--color-unique-texto-suave);
+}
+code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 6px;
+  background: var(--color-unique-fila);
+  font-size: 0.95em;
+}

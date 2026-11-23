@@ -1,0 +1,70 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background-color: #f3eef4;
+  color: var(--color-unique-texto);
+  font-family: var(--font-interfaz);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip__punto {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background-color: var(--color-unique-texto-suave);
+}
+
+.chip[data-estado='PENDIENTE'],
+.chip[data-estado='PARCIAL'] {
+  background-color: var(--color-unique-adv-suave);
+  color: #7d5908;
+}
+
+.chip[data-estado='PENDIENTE'] .chip__punto,
+.chip[data-estado='PARCIAL'] .chip__punto {
+  background-color: var(--color-unique-adv);
+}
+
+.chip[data-estado='EN_COTIZACION'],
+.chip[data-estado='COMPRA_EMITIDA'],
+.chip[data-estado='EMITIDA'] {
+  background-color: var(--color-unique-info-suave);
+  color: #2b4f8c;
+}
+
+.chip[data-estado='EN_COTIZACION'] .chip__punto,
+.chip[data-estado='COMPRA_EMITIDA'] .chip__punto,
+.chip[data-estado='EMITIDA'] .chip__punto {
+  background-color: var(--color-unique-info);
+}
+
+.chip[data-estado='ATENDIDA'],
+.chip[data-estado='ELEGIDA'],
+.chip[data-estado='RECIBIDA'] {
+  background-color: var(--color-unique-exito-suave);
+  color: #1e6b3c;
+}
+
+.chip[data-estado='ATENDIDA'] .chip__punto,
+.chip[data-estado='ELEGIDA'] .chip__punto,
+.chip[data-estado='RECIBIDA'] .chip__punto {
+  background-color: var(--color-unique-exito);
+}
+
+.chip[data-estado='CANCELADA'],
+.chip[data-estado='DESCARTADA'],
+.chip[data-estado='RETRASADA'] {
+  background-color: var(--color-unique-error-suave);
+  color: #8d2637;
+}
+
+.chip[data-estado='CANCELADA'] .chip__punto,
+.chip[data-estado='DESCARTADA'] .chip__punto,
+.chip[data-estado='RETRASADA'] .chip__punto {
+  background-color: var(--color-unique-error);
+}

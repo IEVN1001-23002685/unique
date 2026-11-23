@@ -1,0 +1,7 @@
+.origen {
+  display: inline-flex; align-items: center;
+  padding: 0.22rem 0.55rem; border-radius: 999px;
+  font: 600 0.7rem var(--font-interfaz); white-space: nowrap;
+}
+.origen--material { background: var(--color-unique-info-suave); color: #2b4f8c; }
+.origen--producto { background: var(--color-unique-rosa-lavanda); color: var(--color-unique-morado); }

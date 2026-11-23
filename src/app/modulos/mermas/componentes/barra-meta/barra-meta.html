@@ -1,0 +1,19 @@
+<div class="meta">
+  <div class="meta__cabecera">
+    <span class="circulo">
+      <span class="circulo__punto" [attr.data-tono]="tono()" aria-hidden="true"></span>
+      {{ etiquetaTono() }}
+    </span>
+    <span class="meta__valor">{{ porcentaje() | number: '1.0-2' : 'es-MX' }}%</span>
+  </div>
+  <div
+    class="meta__pista"
+    role="meter"
+    [attr.aria-label]="base() === 'meta' ? 'Merma respecto de la meta' : 'Participación del total'"
+    [attr.aria-valuenow]="porcentaje()"
+    aria-valuemin="0"
+    [attr.aria-valuemax]="base() === 'meta' ? meta() * 2 : 100"
+  >
+    <div class="meta__relleno" [attr.data-tono]="tono()" [style.width.%]="ancho()"></div>
+  </div>
+</div>

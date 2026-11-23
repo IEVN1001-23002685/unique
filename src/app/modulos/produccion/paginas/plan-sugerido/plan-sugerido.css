@@ -1,0 +1,14 @@
+.barra--plan { align-items: flex-start; }
+.barra__texto {
+  margin: 0;
+  max-width: 26rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-unique-texto-suave);
+}
+.celda-sku { min-width: 15rem; }
+.sugerida { color: var(--color-unique-ciruela); font-size: 0.95rem; }
+.tabla--plan td[data-etiqueta='SKU y producto'] { text-align: left; }
+@media (max-width: 900px) {
+  .barra__texto { flex-basis: 100%; }
+}

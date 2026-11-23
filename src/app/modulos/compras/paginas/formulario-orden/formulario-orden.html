@@ -1,0 +1,140 @@
+<section class="vista">
+  <app-navegacion-compras />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 4 · Abastecimiento · M14</p>
+      <h1 class="titulo">{{ soloLectura() ? 'Orden de compra' : 'Editar orden de compra' }}</h1>
+      <p class="subtitulo">
+        Solo se puede editar en BORRADOR. Se conserva el precio pactado de la cotización de origen;
+        cualquier ajuste debe revisarse antes de emitir.
+      </p>
+    </div>
+    <a routerLink="/compras/ordenes" class="boton boton--secundario">Volver a órdenes</a>
+  </div>
+
+  @if (noEncontrado()) {
+    <div class="tarjeta bloque estado" role="alert">
+      <strong>No se encontró la orden solicitada.</strong>
+      <p>Regresa al listado para elegir un folio vigente.</p>
+    </div>
+  } @else {
+    @if (soloLectura()) {
+      <p class="nota nota--advertencia">
+        Esta orden ya no está en BORRADOR: los datos se muestran solo para consulta.
+      </p>
+    }
+
+    <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+      <div class="form-grid">
+        <label class="campo">
+          Proveedor
+          <select class="campo__entrada" formControlName="proveedorId">
+            @for (proveedor of proveedores(); track proveedor.id) {
+              <option [value]="proveedor.id">{{ proveedor.nombreComercial }}</option>
+            }
+          </select>
+          @if (esInvalido('proveedorId')) {
+            <span class="campo__error">Selecciona un proveedor activo o en revisión.</span>
+          }
+        </label>
+
+        <label class="campo">
+          Condiciones de pago
+          <select class="campo__entrada" formControlName="condicionesPago">
+            @for (condicion of condicionesPago; track condicion) {
+              <option [value]="condicion">{{ condicion }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="campo">
+          Fecha prometida
+          <input class="campo__entrada" type="date" formControlName="fechaPrometida" />
+          @if (esInvalido('fechaPrometida')) {
+            <span class="campo__error">Define la fecha prometida antes de emitir.</span>
+          }
+        </label>
+      </div>
+
+      <h2 class="titulo-section">Líneas de la orden</h2>
+      <div formArrayName="lineas" class="lineas">
+        @for (linea of formulario.controls.lineas.controls; track $index; let i = $index) {
+          <div class="linea" [formGroupName]="i">
+            <div class="linea__campos linea__campos--orden">
+              <label class="campo">
+                Material
+                <select class="campo__entrada" formControlName="materialId">
+                  @for (material of materiales; track material.id) {
+                    <option [value]="material.id">{{ material.codigo }} · {{ material.nombre }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="campo">
+                Cantidad ({{ materialDe(i)?.unidadPresentacion }})
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="1"
+                  step="1"
+                  formControlName="cantidadCompra"
+                />
+                @if (lineaInvalida(i, 'cantidadCompra')) {
+                  <span class="campo__error">Entero mayor o igual a 1.</span>
+                }
+              </label>
+
+              <label class="campo">
+                Precio unitario (MXN)
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  formControlName="precioUnitarioCompra"
+                />
+                @if (lineaInvalida(i, 'precioUnitarioCompra')) {
+                  <span class="campo__error">Mayor que 0 con hasta 4 decimales.</span>
+                }
+              </label>
+
+              <div class="campo">
+                <span>Subtotal y base</span>
+                <span class="campo__entrada campo__solo">
+                  {{ subtotal(i) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </span>
+                <span class="linea__pista">
+                  {{ basePedida(i) }} {{ materialDe(i)?.unidadBase }}
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <label class="campo form-notas">
+        Notas
+        <textarea class="campo__entrada" formControlName="notas" rows="2"></textarea>
+      </label>
+
+      <div class="resumen">
+        <span>Total de la orden</span>
+        <strong>{{ total() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+      </div>
+
+      @if (!soloLectura()) {
+        <div class="form-acciones">
+          <button type="submit" class="boton boton--primario">Guardar orden</button>
+          <a routerLink="/compras/ordenes" class="boton boton--secundario">Cancelar</a>
+        </div>
+      }
+    </form>
+  }
+
+  <p class="nota">
+    El precio unitario se expresa por unidad de compra (rollo, cono, paquete o millar). La base se
+    obtiene con el factor de presentación del material. Los cambios no alteran órdenes ya emitidas
+    ni se envían a Flask en esta etapa.
+  </p>
+</section>
