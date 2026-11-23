@@ -1,0 +1,19 @@
+.pestanas {
+  display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem;
+}
+.pestana {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.55rem 1.1rem; border-radius: 999px;
+  background-color: var(--color-unique-rosa-lavanda); color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz); font-size: 0.85rem; font-weight: 600;
+  text-decoration: none;
+}
+.pestana:hover { background-color: var(--color-unique-orquidea); color: #ffffff; }
+.pestana--activa, .pestana--activa:hover {
+  background-color: var(--color-unique-morado); color: #ffffff;
+}
+.pestana__rol {
+  display: inline-grid; place-items: center; width: 1.15rem; height: 1.15rem;
+  border-radius: 50%; background-color: #ffffff; color: var(--color-unique-morado);
+  font-size: 0.65rem; font-weight: 700;
+}

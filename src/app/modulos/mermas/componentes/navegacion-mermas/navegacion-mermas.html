@@ -1,0 +1,26 @@
+<nav class="pestanas" aria-label="Pantallas de mermas">
+  <a
+    routerLink="/mermas"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'zona'"
+    [attr.aria-current]="activa() === 'zona' ? 'page' : null"
+  >
+    Zona de merma
+  </a>
+  <a
+    routerLink="/mermas/registro"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'registro'"
+    [attr.aria-current]="activa() === 'registro' ? 'page' : null"
+  >
+    Registrar merma
+  </a>
+  <a
+    routerLink="/mermas/indicadores"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'indicadores'"
+    [attr.aria-current]="activa() === 'indicadores' ? 'page' : null"
+  >
+    Indicadores <span class="pestana__rol">Admin</span>
+  </a>
+</nav>

@@ -1,0 +1,19 @@
+.vista__resumen { margin-top: 1.25rem; }
+.panel-solicitud__cabecera {
+  display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+  gap: 0.75rem;
+}
+.linea {
+  display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.6fr) auto;
+  gap: 0.75rem; align-items: end;
+  padding: 0.85rem; margin-bottom: 0.75rem;
+  border: 1px solid #e7d7e8; border-radius: 16px; background: var(--color-unique-fila);
+}
+.linea__numero {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);
+}
+.linea .accion { padding-bottom: 0.75rem; }
+@media (max-width: 900px) {
+  .linea { grid-template-columns: 1fr; gap: 0.7rem; }
+  .linea .accion { padding-bottom: 0; }
+}

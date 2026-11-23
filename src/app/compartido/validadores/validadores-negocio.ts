@@ -38,3 +38,42 @@ export const codigoPostal5: ValidatorFn = (control: AbstractControl): Validation
 
   return /^\d{5}$/.test(valor.trim()) ? null : { codigoPostal5: true };
 };
+
+/**
+ * decimalPositivo (§10.3b): mayor que 0 con hasta 4 decimales.
+ * Se usa en cantidades de M14 y queda disponible para M11, M15 y M17.
+ */
+export const decimalPositivo: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = control.value;
+  if (typeof valor !== 'number' || !Number.isFinite(valor) || valor <= 0) {
+    return { decimalPositivo: true };
+  }
+
+  const texto = String(valor);
+  const decimales = texto.includes('.') ? (texto.split('.')[1]?.length ?? 0) : 0;
+  return decimales <= 4 ? null : { decimalPositivo: true };
+};
+
+/** Igual que decimalPositivo pero acepta cero; útil en mínimos y seguridad. */
+export const decimalNoNegativo: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = control.value;
+  if (typeof valor !== 'number' || !Number.isFinite(valor) || valor < 0) {
+    return { decimalNoNegativo: true };
+  }
+
+  const texto = String(valor);
+  const decimales = texto.includes('.') ? (texto.split('.')[1]?.length ?? 0) : 0;
+  return decimales <= 4 ? null : { decimalNoNegativo: true };
+};
+
+/** mermaPct (§10.3b): entre 0 y menor que 100, con hasta 2 decimales. */
+export const mermaPct: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = control.value;
+  if (typeof valor !== 'number' || !Number.isFinite(valor) || valor < 0 || valor >= 100) {
+    return { mermaPct: true };
+  }
+
+  const texto = String(valor);
+  const decimales = texto.includes('.') ? (texto.split('.')[1]?.length ?? 0) : 0;
+  return decimales <= 2 ? null : { mermaPct: true };
+};

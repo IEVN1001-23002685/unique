@@ -1,0 +1,223 @@
+import type { Existencia, LoteMaterial, Material, MovimientoMaterial } from '../modelos/inventario';
+
+/**
+ * DATOS DEMOSTRATIVOS de M15. Códigos, presentaciones, costos y mermas vienen
+ * del catálogo semilla del documento UNIQUE v3.0 (§11.2). No son datos de
+ * Flask: al integrarse se sustituyen por GET /inventario/material, /lotes y
+ * /movimientos.
+ *
+ * Los identificadores 1 a 10 coinciden con el catálogo de referencia de M14
+ * para que la consulta de requisiciones abiertas sea demostrable. A partir del
+ * 11 se sigue el listado completo del §11.2. Los 5 materiales con color generan
+ * 15 registros de inventario (BL, NG, GR) y los 21 restantes usan color NA:
+ * total inicial de 36 registros, según el documento.
+ */
+
+export const MATERIALES_INVENTARIO: Material[] = [
+  { id: 1, codigo: 'TEL-FEL', nombre: 'Felpa', categoria: 'Tela', unidadBase: 'm²', unidadCompra: 'rollo', factorCompraBase: 64.8, presentacion: 'Rollo de 20 kg · 1.80 × 36.00 m = 64.80 m²', costoEstandarBase: 89.1975, mermaEstandarPct: 15, porColor: true, plazoDias: 10, activo: true },
+  { id: 2, codigo: 'TEL-JER', nombre: 'Jersey peinado', categoria: 'Tela', unidadBase: 'm²', unidadCompra: 'rollo', factorCompraBase: 136.8, presentacion: 'Rollo de 20 kg · 1.80 × 76.00 m = 136.80 m²', costoEstandarBase: 25.731, mermaEstandarPct: 15, porColor: true, plazoDias: 10, activo: true },
+  { id: 3, codigo: 'TEL-RIB', nombre: 'Tejido acanalado (rib)', categoria: 'Tela', unidadBase: 'm²', unidadCompra: 'rollo', factorCompraBase: 42, presentacion: 'Rollo de 12 kg · 1.40 × 30.00 m = 42.00 m²', costoEstandarBase: 50.2857, mermaEstandarPct: 20, porColor: true, plazoDias: 12, activo: true },
+  { id: 4, codigo: 'HIL-EST', nombre: 'Estambre acrílico', categoria: 'Hilo', unidadBase: 'm', unidadCompra: 'cono', factorCompraBase: 2100, presentacion: 'Cono de 1,000 g = 2,100 m', costoEstandarBase: 0.247619, mermaEstandarPct: 5, porColor: true, plazoDias: 7, activo: true },
+  { id: 5, codigo: 'HIL-COS', nombre: 'Hilo de costura 40/2', categoria: 'Hilo', unidadBase: 'm', unidadCompra: 'cono', factorCompraBase: 4572, presentacion: 'Cono de 5,000 yd = 4,572 m', costoEstandarBase: 0.012741, mermaEstandarPct: 10, porColor: false, plazoDias: 7, activo: true },
+  { id: 6, codigo: 'EST-HOJ', nombre: 'Estabilizador de corte, hoja', categoria: 'Estabilizador', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 100, presentacion: 'Paquete de 100 hojas de 25 × 30 cm', costoEstandarBase: 5, mermaEstandarPct: 0, porColor: false, plazoDias: 5, activo: true },
+  { id: 7, codigo: 'ETI-TEJ', nombre: 'Etiqueta tejida UNIQUE', categoria: 'Etiqueta', unidadBase: 'pieza', unidadCompra: 'millar', factorCompraBase: 1000, presentacion: 'Millar (1,000 piezas)', costoEstandarBase: 0.65, mermaEstandarPct: 0, porColor: false, plazoDias: 6, activo: true },
+  { id: 8, codigo: 'EMP-KRA', nombre: 'Bolsa de kraft', categoria: 'Empaque', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 100, presentacion: 'Paquete de 100 bolsas', costoEstandarBase: 12, mermaEstandarPct: 0, porColor: false, plazoDias: 5, activo: true },
+  { id: 9, codigo: 'AVI-OJI', nombre: 'Ojillos metálicos de 8 mm', categoria: 'Avío', unidadBase: 'pieza', unidadCompra: 'millar', factorCompraBase: 1000, presentacion: 'Millar (1,000 piezas)', costoEstandarBase: 0.42, mermaEstandarPct: 0, porColor: false, plazoDias: 8, activo: true },
+  { id: 10, codigo: 'AVI-COR', nombre: 'Cordón redondo de poliéster', categoria: 'Avío', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 2, presentacion: 'Paquete de 2 piezas de 120 cm', costoEstandarBase: 32.775, mermaEstandarPct: 0, porColor: false, plazoDias: 8, activo: true },
+  { id: 11, codigo: 'TEL-LON', nombre: 'Loneta', categoria: 'Tela', unidadBase: 'm²', unidadCompra: 'rollo', factorCompraBase: 75, presentacion: 'Rollo de 1.50 × 50.00 m = 75.00 m²', costoEstandarBase: 76.5333, mermaEstandarPct: 10, porColor: true, plazoDias: 14, activo: true },
+  { id: 12, codigo: 'EST-ROL', nombre: 'Estabilizador de corte, rollo', categoria: 'Estabilizador', unidadBase: 'm', unidadCompra: 'rollo', factorCompraBase: 22.86, presentacion: 'Rollo de 22.86 m × 30.5 cm', costoEstandarBase: 21.9593, mermaEstandarPct: 0, porColor: false, plazoDias: 5, activo: true },
+  { id: 13, codigo: 'HIL-BOR-001', nombre: 'Hilo de bordado 120D/2 blanco', categoria: 'Hilo', unidadBase: 'm', unidadCompra: 'cono', factorCompraBase: 5000, presentacion: 'Cono de 5,000 m', costoEstandarBase: 0.0106, mermaEstandarPct: 0, porColor: false, plazoDias: 7, activo: true },
+  { id: 14, codigo: 'HIL-BOR-002', nombre: 'Hilo de bordado 120D/2 negro', categoria: 'Hilo', unidadBase: 'm', unidadCompra: 'cono', factorCompraBase: 5000, presentacion: 'Cono de 5,000 m', costoEstandarBase: 0.0106, mermaEstandarPct: 0, porColor: false, plazoDias: 7, activo: true },
+  { id: 15, codigo: 'HIL-BOR-003', nombre: 'Hilo de bordado 120D/2 gris', categoria: 'Hilo', unidadBase: 'm', unidadCompra: 'cono', factorCompraBase: 5000, presentacion: 'Cono de 5,000 m', costoEstandarBase: 0.0106, mermaEstandarPct: 0, porColor: false, plazoDias: 7, activo: true },
+  { id: 16, codigo: 'ETQ-TAL-CH', nombre: 'Etiqueta de talla CH', categoria: 'Etiqueta', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 500, presentacion: 'Paquete de 500 piezas', costoEstandarBase: 0.65, mermaEstandarPct: 0, porColor: false, plazoDias: 6, activo: true },
+  { id: 17, codigo: 'ETQ-TAL-MD', nombre: 'Etiqueta de talla MD', categoria: 'Etiqueta', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 500, presentacion: 'Paquete de 500 piezas', costoEstandarBase: 0.65, mermaEstandarPct: 0, porColor: false, plazoDias: 6, activo: true },
+  { id: 18, codigo: 'ETQ-TAL-GD', nombre: 'Etiqueta de talla GD', categoria: 'Etiqueta', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 500, presentacion: 'Paquete de 500 piezas', costoEstandarBase: 0.65, mermaEstandarPct: 0, porColor: false, plazoDias: 6, activo: true },
+  { id: 19, codigo: 'ETQ-COM-SD', nombre: 'Etiqueta de composición y cuidado sudadera', categoria: 'Etiqueta', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 500, presentacion: 'Paquete de 500 piezas', costoEstandarBase: 0.65, mermaEstandarPct: 0, porColor: false, plazoDias: 6, activo: true },
+  { id: 20, codigo: 'ETQ-COM-PL', nombre: 'Etiqueta de composición y cuidado playera', categoria: 'Etiqueta', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 500, presentacion: 'Paquete de 500 piezas', costoEstandarBase: 0.65, mermaEstandarPct: 0, porColor: false, plazoDias: 6, activo: true },
+  { id: 21, codigo: 'ETQ-COM-PN', nombre: 'Etiqueta de composición y cuidado pantalón', categoria: 'Etiqueta', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 500, presentacion: 'Paquete de 500 piezas', costoEstandarBase: 0.65, mermaEstandarPct: 0, porColor: false, plazoDias: 6, activo: true },
+  { id: 22, codigo: 'ETQ-COM-GO', nombre: 'Etiqueta de composición y cuidado gorro', categoria: 'Etiqueta', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 500, presentacion: 'Paquete de 500 piezas', costoEstandarBase: 0.65, mermaEstandarPct: 0, porColor: false, plazoDias: 6, activo: true },
+  { id: 23, codigo: 'ETQ-COM-BO', nombre: 'Etiqueta de composición y cuidado bolsa', categoria: 'Etiqueta', unidadBase: 'pieza', unidadCompra: 'paquete', factorCompraBase: 500, presentacion: 'Paquete de 500 piezas', costoEstandarBase: 0.65, mermaEstandarPct: 0, porColor: false, plazoDias: 6, activo: true },
+  { id: 24, codigo: 'EMP-PAP', nombre: 'Papel protector', categoria: 'Empaque', unidadBase: 'pieza', unidadCompra: 'lote', factorCompraBase: 200, presentacion: 'Lote de 200 piezas', costoEstandarBase: 2.5, mermaEstandarPct: 0, porColor: false, plazoDias: 5, activo: true },
+  { id: 25, codigo: 'EMP-TAR', nombre: 'Tarjeta personalizada con código QR', categoria: 'Empaque', unidadBase: 'pieza', unidadCompra: 'lote', factorCompraBase: 200, presentacion: 'Lote de 200 piezas', costoEstandarBase: 5, mermaEstandarPct: 0, porColor: false, plazoDias: 5, activo: true },
+  { id: 26, codigo: 'EMP-ETE', nombre: 'Etiqueta de envío', categoria: 'Empaque', unidadBase: 'pieza', unidadCompra: 'pieza', factorCompraBase: 1, presentacion: 'Por cotizar (provisional)', costoEstandarBase: 0, mermaEstandarPct: 0, porColor: false, plazoDias: 5, activo: true },
+];
+
+type FilaLote = [
+  folio: string,
+  materialId: number,
+  color: string,
+  proveedorId: number,
+  fechaEntrada: string,
+  cantidadRecibida: number,
+  cantidadDisponible: number,
+  costoUnitario: number,
+  medidas: string,
+];
+
+const FILAS_LOTE: FilaLote[] = [
+  ['LOTE-2026-0001', 1, 'Gris', 1, '2026-10-28', 129.6, 92.4, 89.1975, '1.80 × 36.00 m · 20 kg'],
+  ['LOTE-2026-0002', 1, 'Negro', 1, '2026-10-30', 64.8, 18.2, 89.1975, '1.80 × 36.00 m · 20 kg'],
+  ['LOTE-2026-0003', 2, 'Natural', 2, '2026-10-15', 136.8, 110.4, 25.731, '1.80 × 76.00 m · 20 kg'],
+  ['LOTE-2026-0004', 2, 'Negro', 2, '2026-11-02', 136.8, 136.8, 25.731, '1.80 × 76.00 m · 20 kg'],
+  ['LOTE-2026-0005', 3, 'Negro', 1, '2026-10-20', 42, 30.5, 50.2857, '1.40 × 30.00 m · 12 kg'],
+  ['LOTE-2026-0006', 4, 'Rojo', 3, '2026-10-12', 2100, 840, 0.247619, 'Cono 1,000 g = 2,100 m'],
+  ['LOTE-2026-0007', 1, 'Gris', 1, '2026-11-12', 64.8, 64.8, 89.1975, '1.80 × 36.00 m · 20 kg'],
+  ['LOTE-2026-0008', 4, 'Negro', 3, '2026-11-05', 2100, 1500, 0.247619, 'Cono 1,000 g = 2,100 m'],
+  ['LOTE-2026-0009', 5, 'NA', 3, '2026-10-08', 4572, 3200, 0.012741, 'Cono 5,000 yd = 4,572 m'],
+  ['LOTE-2026-0010', 6, 'NA', 2, '2026-11-03', 100, 62, 5, '100 hojas de 25 × 30 cm'],
+  ['LOTE-2026-0011', 7, 'NA', 4, '2026-10-22', 1000, 720, 0.65, 'Millar de etiquetas'],
+  ['LOTE-2026-0012', 8, 'NA', 4, '2026-11-10', 100, 88, 12, 'Paquete de 100 bolsas'],
+  ['LOTE-2026-0013', 9, 'NA', 2, '2026-10-18', 1000, 640, 0.42, 'Millar de ojillos de 8 mm'],
+  ['LOTE-2026-0014', 10, 'NA', 2, '2026-11-14', 2, 1.4, 32.775, '2 piezas de 120 cm'],
+  ['LOTE-2026-0015', 11, 'Natural', 1, '2026-10-25', 75, 40, 76.5333, '1.50 × 50.00 m = 75.00 m²'],
+  ['LOTE-2026-0016', 12, 'NA', 2, '2026-11-08', 22.86, 12.4, 21.9593, '22.86 m × 30.5 cm'],
+  ['LOTE-2026-0017', 13, 'NA', 3, '2026-10-29', 5000, 3200, 0.0106, 'Cono de 5,000 m'],
+  ['LOTE-2026-0018', 14, 'NA', 3, '2026-11-01', 5000, 1800, 0.0106, 'Cono de 5,000 m'],
+  ['LOTE-2026-0019', 15, 'NA', 3, '2026-10-24', 5000, 600, 0.0106, 'Cono de 5,000 m'],
+  ['LOTE-2026-0020', 16, 'NA', 4, '2026-10-17', 500, 320, 0.65, 'Paquete de 500 etiquetas CH'],
+  ['LOTE-2026-0021', 17, 'NA', 4, '2026-10-19', 500, 180, 0.65, 'Paquete de 500 etiquetas MD'],
+  ['LOTE-2026-0022', 18, 'NA', 4, '2026-11-04', 500, 260, 0.65, 'Paquete de 500 etiquetas GD'],
+  ['LOTE-2026-0023', 19, 'NA', 4, '2026-10-21', 500, 410, 0.65, 'Paquete de 500 etiquetas sudadera'],
+  ['LOTE-2026-0024', 20, 'NA', 4, '2026-10-23', 500, 150, 0.65, 'Paquete de 500 etiquetas playera'],
+  ['LOTE-2026-0025', 21, 'NA', 4, '2026-11-06', 500, 220, 0.65, 'Paquete de 500 etiquetas pantalón'],
+  ['LOTE-2026-0026', 22, 'NA', 4, '2026-11-09', 500, 300, 0.65, 'Paquete de 500 etiquetas gorro'],
+  ['LOTE-2026-0027', 23, 'NA', 4, '2026-10-27', 500, 120, 0.65, 'Paquete de 500 etiquetas bolsa'],
+  ['LOTE-2026-0028', 24, 'NA', 4, '2026-11-11', 200, 140, 2.5, 'Lote de 200 piezas'],
+  ['LOTE-2026-0029', 25, 'NA', 4, '2026-10-31', 200, 90, 5, 'Lote de 200 piezas'],
+  ['LOTE-2026-0030', 26, 'NA', 4, '2026-11-16', 200, 40, 0, 'Por cotizar (provisional)'],
+];
+
+export const LOTES_SIMULADOS: LoteMaterial[] = FILAS_LOTE.map((fila, indice) => ({
+  id: indice + 1,
+  folio: fila[0],
+  materialId: fila[1],
+  color: fila[2],
+  proveedorId: fila[3],
+  fechaEntrada: fila[4],
+  cantidadRecibida: fila[5],
+  cantidadDisponible: fila[6],
+  costoUnitario: fila[7],
+  medidas: fila[8],
+  estado: fila[6] > 0 ? 'DISPONIBLE' : 'AGOTADO',
+}));
+
+type FilaExistencia = [
+  materialId: number,
+  color: string,
+  reservado: number,
+  enCompra: number,
+  stockMinimo: number,
+  stockSeguridad: number,
+  consumoDiarioManual: number,
+  cubreOrdenConfirmada: boolean,
+];
+
+const FILAS_EXISTENCIA: FilaExistencia[] = [
+  [1, 'Gris', 45, 64.8, 80, 25, 9, true],
+  [1, 'Negro', 10, 0, 25, 15, 5, false],
+  [1, 'Blanco', 0, 0, 20, 10, 4, true],
+  [2, 'Natural', 30, 0, 70, 20, 7, true],
+  [2, 'Blanco', 0, 0, 40, 15, 6, true],
+  [2, 'Negro', 20, 0, 50, 20, 6, true],
+  [3, 'Negro', 12, 42, 20, 12, 4, true],
+  [3, 'Gris', 0, 0, 15, 8, 2, true],
+  [3, 'Blanco', 0, 0, 15, 8, 2, true],
+  [4, 'Rojo', 600, 8400, 500, 800, 600, false],
+  [4, 'Negro', 200, 0, 400, 300, 120, true],
+  [4, 'Gris', 0, 0, 200, 150, 60, true],
+  [5, 'NA', 500, 0, 1000, 500, 120, true],
+  [6, 'NA', 20, 0, 30, 15, 8, true],
+  [7, 'NA', 300, 1000, 500, 200, 40, true],
+  [8, 'NA', 30, 0, 40, 20, 10, true],
+  [9, 'NA', 200, 0, 300, 100, 25, true],
+  [10, 'NA', 0.4, 2, 2, 1, 0.5, true],
+  [11, 'Natural', 10, 0, 25, 15, 4, true],
+  [11, 'Blanco', 0, 0, 20, 10, 3, true],
+  [11, 'Negro', 0, 0, 20, 10, 3, true],
+  [12, 'NA', 3, 0, 8, 3, 0.6, true],
+  [13, 'NA', 400, 0, 300, 200, 90, true],
+  [14, 'NA', 300, 0, 400, 300, 100, true],
+  [15, 'NA', 100, 0, 400, 200, 80, true],
+  [16, 'NA', 100, 0, 150, 50, 20, true],
+  [17, 'NA', 60, 0, 150, 50, 20, true],
+  [18, 'NA', 40, 0, 150, 60, 20, true],
+  [19, 'NA', 120, 0, 200, 80, 30, true],
+  [20, 'NA', 30, 0, 200, 80, 30, true],
+  [21, 'NA', 20, 0, 150, 70, 25, true],
+  [22, 'NA', 50, 0, 150, 60, 25, true],
+  [23, 'NA', 10, 0, 150, 60, 25, true],
+  [24, 'NA', 20, 0, 60, 30, 12, true],
+  [25, 'NA', 10, 0, 60, 30, 12, true],
+  [26, 'NA', 0, 0, 50, 20, 8, true],
+];
+
+function fisicoDe(materialId: number, color: string): number {
+  return LOTES_SIMULADOS.filter(
+    (lote) => lote.materialId === materialId && lote.color === color,
+  ).reduce((suma, lote) => suma + lote.cantidadDisponible, 0);
+}
+
+/**
+ * El físico se deriva de los lotes disponibles, igual que v_inventario_material.
+ * Reservado y en compra llegan mediante servicios de M16 y M14; aquí son
+ * valores de ejemplo leídos, nunca calculados por M15.
+ */
+export const EXISTENCIAS_SIMULADAS: Existencia[] = FILAS_EXISTENCIA.map((fila, indice) => ({
+  id: indice + 1,
+  materialId: fila[0],
+  color: fila[1],
+  fisico: Math.round((fisicoDe(fila[0], fila[1]) + Number.EPSILON) * 10000) / 10000,
+  reservado: fila[2],
+  enCompra: fila[3],
+  stockMinimo: fila[4],
+  stockSeguridad: fila[5],
+  consumoDiarioManual: fila[6],
+  cubreOrdenConfirmada: fila[7],
+  activo: true,
+}));
+
+type FilaMovimiento = [
+  fecha: string,
+  materialId: number,
+  color: string,
+  loteFolio: string | null,
+  tipo: MovimientoMaterial['tipo'],
+  cantidadBase: number,
+  costoUnitario: number,
+  documento: string,
+  motivo: string,
+  usuario: string,
+];
+
+const FILAS_MOVIMIENTO: FilaMovimiento[] = [
+  ['2026-11-01', 1, 'Gris', 'LOTE-2026-0001', 'CONSUMO', -90, 89.1975, 'OP-2026-0135', 'Consumo por PEPS', 'Producción · M16'],
+  ['2026-11-18', 1, 'Gris', 'LOTE-2026-0001', 'CONSUMO', -90, 89.1975, 'OP-2026-0139', 'Consumo por PEPS', 'Producción · M16'],
+  ['2026-11-22', 1, 'Gris', 'LOTE-2026-0001', 'CONSUMO', -90, 89.1975, 'OP-2026-0142', 'Consumo por PEPS', 'Producción · M16'],
+  ['2026-11-12', 1, 'Gris', 'LOTE-2026-0007', 'ENTRADA', 64.8, 89.1975, 'REC-2026-0007', 'Recepción de rollo', 'Operativo · demostración'],
+  ['2026-11-14', 1, 'Negro', 'LOTE-2026-0002', 'AJUSTE', -6.5, 89.1975, 'AJU-2026-0001', 'Conteo físico', 'Operativo · demostración'],
+  ['2026-11-06', 2, 'Natural', 'LOTE-2026-0003', 'CONSUMO', -91.8, 25.731, 'OP-2026-0136', 'Consumo por PEPS', 'Producción · M16'],
+  ['2026-11-10', 2, 'Natural', 'LOTE-2026-0003', 'CONSUMO', -91.8, 25.731, 'OP-2026-0140', 'Consumo por PEPS', 'Producción · M16'],
+  ['2026-11-16', 2, 'Natural', 'LOTE-2026-0003', 'CONSUMO', -26.4, 25.731, 'OP-2026-0140', 'Consumo por PEPS', 'Producción · M16'],
+  ['2026-11-09', 3, 'Negro', 'LOTE-2026-0005', 'REVERSA', 2.5, 50.2857, 'OP-2026-0136', 'Reversa de orden cancelada', 'Producción · M16'],
+  ['2026-11-05', 4, 'Rojo', 'LOTE-2026-0006', 'CONSUMO', -6300, 0.247619, 'OP-2026-0141', 'Consumo por PEPS', 'Producción · M16'],
+  ['2026-11-20', 4, 'Rojo', 'LOTE-2026-0006', 'CONSUMO', -6300, 0.247619, 'OP-2026-0143', 'Consumo por PEPS', 'Producción · M16'],
+  ['2026-11-08', 5, 'NA', 'LOTE-2026-0009', 'CONSUMO', -1200, 0.012741, 'OP-2026-0138', 'Consumo de costura', 'Producción · M16'],
+  ['2026-11-16', 6, 'NA', 'LOTE-2026-0010', 'MERMA', -8, 5, 'MER-2026-0004', 'Defecto de estabilizador', 'Operativo · demostración'],
+  ['2026-11-19', 7, 'NA', 'LOTE-2026-0011', 'CONSUMO', -280, 0.65, 'OP-2026-0142', 'Etiquetas aplicadas', 'Producción · M16'],
+  ['2026-11-21', 8, 'NA', 'LOTE-2026-0012', 'SOBRANTE', 8, 12, 'AJU-2026-0002', 'Conteo físico', 'Operativo · demostración'],
+  ['2026-11-17', 11, 'Natural', 'LOTE-2026-0015', 'CONSUMO', -35, 76.5333, 'OP-2026-0137', 'Consumo por PEPS', 'Producción · M16'],
+];
+
+export const MOVIMIENTOS_SIMULADOS: MovimientoMaterial[] = FILAS_MOVIMIENTO.map((fila, indice) => ({
+  id: indice + 1,
+  fecha: fila[0],
+  materialId: fila[1],
+  color: fila[2],
+  loteFolio: fila[3],
+  tipo: fila[4],
+  cantidadBase: fila[5],
+  costoUnitario: fila[6],
+  documento: fila[7],
+  motivo: fila[8],
+  usuario: fila[9],
+}));

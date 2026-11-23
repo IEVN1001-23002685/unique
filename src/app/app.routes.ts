@@ -97,5 +97,56 @@ export const routes: Routes = [
     data: { titulo: 'Ventas', rol: 'Administrador', roles: ['Administrador'] },
     loadChildren: () => import('./modulos/ventas/ventas.routes').then((m) => m.VENTAS_RUTAS),
   },
+  {
+    // M14: /compras es de Administrador según §10; las recepciones se montan aparte.
+    path: 'compras',
+    component: Administracion,
+    data: { titulo: 'Compras', rol: 'Administrador', roles: ['Administrador'] },
+    loadChildren: () => import('./modulos/compras/compras.routes').then((m) => m.COMPRAS_RUTAS),
+  },
+  {
+    // Recepciones: Operativo o Administrador (§10). Ruta propia del §10 del documento.
+    path: 'recepciones',
+    component: Administracion,
+    data: {
+      titulo: 'Recepciones',
+      rol: 'Operativo',
+      roles: ['Administrador', 'Operativo'],
+    },
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./modulos/compras/paginas/recepciones/recepciones').then((c) => c.Recepciones),
+      },
+    ],
+  },
+  {
+    // M15: /inventario-mp según §10. Operativo consulta y ajusta; Administrador
+    // además administra catálogo y políticas. Sin guards reales todavía.
+    path: 'inventario-mp',
+    component: Administracion,
+    data: { titulo: 'Inventario MP', rol: 'Operativo', roles: ['Administrador', 'Operativo'] },
+    loadChildren: () =>
+      import('./modulos/inventario/inventario.routes').then((m) => m.INVENTARIO_RUTAS),
+  },
+  {
+    // M16: /producción según §10 se normaliza a /produccion. Rol Operativo;
+    // el Administrador también crea y supervisa. Sin guards reales todavía.
+    path: 'produccion',
+    component: Administracion,
+    data: { titulo: 'Producción', rol: 'Operativo', roles: ['Administrador', 'Operativo'] },
+    loadChildren: () =>
+      import('./modulos/produccion/produccion.routes').then((m) => m.PRODUCCION_RUTAS),
+  },
+  {
+    // M17: /mermas según §10. Operativo registra y consulta; el Administrador
+    // además analiza costos y ejecuta reversas. Sin guards reales todavía.
+    path: 'mermas',
+    component: Administracion,
+    data: { titulo: 'Mermas', rol: 'Operativo', roles: ['Administrador', 'Operativo'] },
+    loadChildren: () => import('./modulos/mermas/mermas.routes').then((m) => m.MERMAS_RUTAS),
+  },
   { path: '**', redirectTo: 'catalogo' },
 ];

@@ -1,0 +1,164 @@
+<section class="vista">
+  <app-navegacion-compras />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 4 · Abastecimiento · M14</p>
+      <h1 class="titulo">{{ esEdicion ? 'Editar cantidades' : 'Nueva requisición' }}</h1>
+      <p class="subtitulo">
+        La cantidad base faltante se convierte a la presentación comercial del material. El
+        redondeo hacia arriba y el mínimo se calculan para la interfaz; Flask confirmará la regla.
+      </p>
+    </div>
+    <a routerLink="/compras" class="boton boton--secundario">Volver a requisiciones</a>
+  </div>
+
+  @if (noEncontrado()) {
+    <div class="tarjeta bloque estado" role="alert">
+      <strong>No se encontró la requisición solicitada.</strong>
+      <p>Regresa al listado para elegir un folio vigente.</p>
+    </div>
+  } @else {
+    <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+      <div class="form-grid">
+        <label class="campo">
+          Origen
+          <select class="campo__entrada" formControlName="origen">
+            @for (opcion of origenes; track opcion.valor) {
+              <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="campo">
+          Orden de producción
+          <input
+            class="campo__entrada"
+            type="text"
+            formControlName="ordenProduccion"
+            placeholder="OP-2026-0000"
+            [attr.aria-invalid]="esInvalido('ordenProduccion')"
+          />
+          @if (esInvalido('ordenProduccion')) {
+            <span class="campo__error">Indica la orden cuando el origen sea producción.</span>
+          }
+        </label>
+
+        <label class="campo">
+          Prioridad
+          <select class="campo__entrada" formControlName="prioridad">
+            @for (opcion of prioridades; track opcion) {
+              <option [value]="opcion">{{ opcion === 'URGENTE' ? 'Urgente' : 'Normal' }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="campo">
+          Solicitada por
+          <input class="campo__entrada" type="text" formControlName="solicitadaPor" />
+          @if (esInvalido('solicitadaPor')) {
+            <span class="campo__error">Este dato es obligatorio.</span>
+          }
+        </label>
+      </div>
+
+      <h2 class="titulo-section">Líneas del material</h2>
+      <div formArrayName="lineas" class="lineas">
+        @for (linea of formulario.controls.lineas.controls; track $index; let i = $index) {
+          <div class="linea" [formGroupName]="i">
+            <div class="linea__titulo">
+              <span>Línea {{ i + 1 }}</span>
+              <button
+                type="button"
+                class="accion accion--peligro"
+                [disabled]="formulario.controls.lineas.length === 1"
+                (click)="quitarLinea(i)"
+              >
+                Quitar línea
+              </button>
+            </div>
+
+            <div class="linea__campos">
+              <label class="campo">
+                Material
+                <select class="campo__entrada" formControlName="materialId">
+                  @for (material of materiales; track material.id) {
+                    <option [value]="material.id">{{ material.codigo }} · {{ material.nombre }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="campo">
+                Color
+                <input class="campo__entrada" type="text" formControlName="color" placeholder="Gris" />
+                @if (lineaInvalida(i, 'color')) {
+                  <span class="campo__error">Indica el color del material.</span>
+                }
+              </label>
+
+              <label class="campo">
+                Faltante ({{ materialDe(i)?.unidadBase }})
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  formControlName="cantidadBaseFaltante"
+                  [attr.aria-invalid]="lineaInvalida(i, 'cantidadBaseFaltante')"
+                />
+                @if (lineaInvalida(i, 'cantidadBaseFaltante')) {
+                  <span class="campo__error">Mayor que 0 con hasta 4 decimales.</span>
+                }
+              </label>
+
+              <label class="campo">
+                Cantidad sugerida ({{ materialDe(i)?.unidadPresentacion }})
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="1"
+                  step="1"
+                  formControlName="cantidadCompraSugerida"
+                  [attr.aria-invalid]="lineaInvalida(i, 'cantidadCompraSugerida')"
+                />
+                @if (lineaInvalida(i, 'cantidadCompraSugerida')) {
+                  <span class="campo__error">Entero mayor o igual a 1.</span>
+                }
+              </label>
+            </div>
+
+            <p class="linea__pista">
+              Presentación: {{ materialDe(i)?.presentacion }} · mínimo
+              {{ materialDe(i)?.minimoCompra }} {{ materialDe(i)?.unidadPresentacion }}(s).
+              Equivale a {{ baseSugerida(i) }} {{ materialDe(i)?.unidadBase }}.
+            </p>
+            <button type="button" class="accion" (click)="calcularSugerida(i)">
+              Recalcular presentación
+            </button>
+          </div>
+        }
+      </div>
+
+      <button type="button" class="boton boton--secundario" (click)="agregarLinea()">
+        + Agregar material
+      </button>
+
+      <label class="campo form-notas">
+        Notas
+        <textarea class="campo__entrada" formControlName="notas" rows="2"></textarea>
+      </label>
+
+      <div class="form-acciones">
+        <button type="submit" class="boton boton--primario">
+          {{ esEdicion ? 'Guardar cantidades' : 'Crear requisición' }}
+        </button>
+        <a routerLink="/compras" class="boton boton--secundario">Cancelar</a>
+      </div>
+    </form>
+  }
+
+  <p class="nota">
+    Editar conserva el origen, el material y la cantidad faltante; únicamente se ajustan la
+    cantidad sugerida, la prioridad y las notas. Ningún cambio se envía a Flask en esta etapa.
+  </p>
+</section>

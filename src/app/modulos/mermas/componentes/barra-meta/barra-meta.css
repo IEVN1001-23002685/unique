@@ -1,0 +1,31 @@
+.meta { display: flex; flex-direction: column; gap: 0.4rem; }
+.meta__cabecera {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 0.5rem; font-size: 0.78rem;
+}
+.meta__valor {
+  font: 700 0.95rem var(--font-titulo); color: var(--color-unique-morado);
+  font-variant-numeric: tabular-nums;
+}
+.meta__pista {
+  height: 0.5rem; border-radius: 999px;
+  background: var(--color-unique-rosa-lavanda); overflow: hidden;
+}
+.meta__relleno {
+  height: 100%; border-radius: 999px; background: var(--color-unique-exito);
+  transition: width 0.2s ease;
+}
+.meta__relleno[data-tono='adv'] { background: var(--color-unique-adv); }
+.meta__relleno[data-tono='error'] { background: var(--color-unique-error); }
+.meta__relleno[data-tono='info'] { background: var(--color-unique-ciruela); }
+.circulo {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font: 0.72rem var(--font-interfaz); color: var(--color-unique-texto-suave);
+}
+.circulo__punto {
+  width: 0.6rem; height: 0.6rem; flex: 0 0 auto;
+  border-radius: 50%; background: var(--color-unique-exito);
+}
+.circulo__punto[data-tono='adv'] { background: var(--color-unique-adv); }
+.circulo__punto[data-tono='error'] { background: var(--color-unique-error); }
+.circulo__punto[data-tono='info'] { background: var(--color-unique-ciruela); }
