@@ -219,10 +219,21 @@
             <span>{{ pedido.preparacionFolio ?? 'Sin folio; toma el pedido en la cola' }}</span>
           </button>
         }
-        <button type="button" class="acceso" (click)="avisoModulo('M19', 'Entrega')">
-          <strong>M19 · Entrega</strong>
-          <span>{{ pedido.entregaGuia ?? 'Sin guía asignada' }}</span>
-        </button>
+        @if (pedido.entregaGuia) {
+          <a
+            class="acceso"
+            [routerLink]="['/entregas/seguimiento']"
+            [queryParams]="{ guia: pedido.entregaGuia }"
+          >
+            <strong>M19 · Entrega</strong>
+            <span>Rastrear guía {{ pedido.entregaGuia }}</span>
+          </a>
+        } @else {
+          <a class="acceso" [routerLink]="['/entregas']">
+            <strong>M19 · Entrega</strong>
+            <span>Sin guía; revisar pedidos por asignar</span>
+          </a>
+        }
       </div>
 
       <ol class="linea-tiempo">

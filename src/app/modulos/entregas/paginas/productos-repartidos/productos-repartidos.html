@@ -1,0 +1,103 @@
+<section class="vista">
+  <app-navegacion-entregas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M19 · Logística</p>
+      <h1 class="titulo">Productos repartidos</h1>
+      <p class="subtitulo">
+        Reporte por repartidor y fecha con SKU, cantidad y pedido. Considera entregas con salida
+        confirmada; los fallos y las cancelaciones se excluyen.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <a routerLink="/entregas/seguimiento" class="boton boton--secundario">Seguimiento</a>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Detalle de lo enviado</h2>
+      <span>Solo demostración: M12 descuenta la existencia en Flask</span>
+    </div>
+
+    <div class="barra">
+      <label class="campo filtro">
+        Repartidor
+        <select class="campo__entrada" [value]="repartidorId()" (change)="alCambiarRepartidor($event)">
+          <option value="0">Todos los repartidores</option>
+          @for (repartidor of repartidores(); track repartidor.id) {
+            <option [value]="repartidor.id">{{ repartidor.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo filtro">
+        Fecha programada
+        <input class="campo__entrada" type="date" [value]="fecha()" (change)="alCambiarFecha($event)" />
+      </label>
+      <div class="resumen" aria-live="polite">
+        <strong>{{ totalPiezas() }} piezas</strong>
+        <span>{{ totalPedidos() }} pedidos · {{ filtrados().length }} SKU</span>
+      </div>
+    </div>
+
+    @if (repartidorId() !== 0 || fecha() !== '') {
+      <p class="filtros">
+        <button type="button" class="boton boton--enlace" (click)="restablecer()">Limpiar filtros</button>
+      </p>
+    }
+
+    @if (servicio.productosRepartidos().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay productos repartidos.</strong>
+        <p>Confirma la salida de una entrega en la hoja de reparto para verla en este reporte.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Prueba con otro repartidor o con una fecha con entregas confirmadas.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">Productos repartidos según los filtros seleccionados</caption>
+          <thead>
+            <tr>
+              <th scope="col">SKU</th>
+              <th scope="col">Prenda</th>
+              <th scope="col">Talla / color</th>
+              <th scope="col">Cantidad</th>
+              <th scope="col">Pedidos</th>
+              <th scope="col">Repartidor</th>
+              <th scope="col">Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of filtrados(); track item.sku + item.fechaProgramada + item.repartidorId) {
+              <tr>
+                <td data-etiqueta="SKU"><span class="mono">{{ item.sku }}</span></td>
+                <td data-etiqueta="Prenda">{{ item.nombreProducto }}</td>
+                <td data-etiqueta="Talla / color">{{ item.talla }} / {{ item.color }}</td>
+                <td data-etiqueta="Cantidad">{{ item.cantidad }}</td>
+                <td data-etiqueta="Pedidos">
+                  @for (pedido of item.pedidos; track pedido) {
+                    <span class="mono">{{ pedido }}</span>
+                  }
+                </td>
+                <td data-etiqueta="Repartidor">{{ item.repartidor }}</td>
+                <td data-etiqueta="Fecha">
+                  {{ item.fechaProgramada | date: 'dd/MM/yyyy' : '' : 'es-MX' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      El movimiento SALIDA_ENVIO descuenta existencia y reservado en M12 cuando se confirma la
+      salida; este reporte solo consulta la proyección local de entregas.
+    </p>
+  </div>
+</section>
