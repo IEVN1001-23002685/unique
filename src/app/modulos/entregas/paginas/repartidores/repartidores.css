@@ -1,0 +1,16 @@
+:host {
+  display: block;
+}
+
+.indicadores--catalogo {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 28rem;
+}
+
+.barra--catalogo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tabla--repartidores {
+  min-width: 48rem;
+}

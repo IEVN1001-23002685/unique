@@ -1,0 +1,129 @@
+<div class="bloque__titulo">
+  <h2>Logística y devoluciones</h2>
+  <span>Pedidos y entregas son lectura de M09 y M19; devoluciones son demostración</span>
+</div>
+
+<div class="metricas" aria-label="Indicadores de logística">
+  @for (metrica of servicio.metricasLogistica(); track metrica.etiqueta) {
+    <app-tarjeta-metrica [metrica]="metrica" />
+  }
+</div>
+
+<div class="dos-columnas">
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Pedidos por estado</h2>
+      <span>Semáforo rojo: supera el umbral de su estado</span>
+    </div>
+    <div class="tabla-contenedor">
+      <table class="tabla tabla--corta">
+        <caption class="sr-only">Pedidos agrupados por estado</caption>
+        <thead>
+          <tr><th scope="col">Estado</th><th scope="col">Pedidos</th></tr>
+        </thead>
+        <tbody>
+          @for (estado of servicio.pedidosPorEstado(); track estado.estado) {
+            <tr>
+              <td data-etiqueta="Estado">{{ estado.estado }}</td>
+              <td data-etiqueta="Pedidos">{{ numero(estado.cantidad) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="filtros__acciones">
+      <a class="boton boton--secundario" routerLink="/admin/pedidos">Ver bandeja de pedidos</a>
+    </p>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Pedidos estancados</h2>
+      <span>Requieren atención del Operativo</span>
+    </div>
+    @if (servicio.pedidosEstancados().length === 0) {
+      <p class="vacio">No hay pedidos en semáforo rojo.</p>
+    } @else {
+      <ul class="lista-pedidos">
+        @for (pedido of servicio.pedidosEstancados(); track pedido.folio) {
+          <li>
+            <span class="mono">{{ pedido.folio }}</span>
+            <span>{{ pedido.cliente }}</span>
+            <app-chip-semaforo tono="ROJO" etiqueta="Estancado" />
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>
+
+<div class="tarjeta bloque">
+  <div class="bloque__titulo">
+    <h2>Entregas por repartidor</h2>
+    <span>Éxito en primer intento y tiempo promedio desde la salida</span>
+  </div>
+  <div class="tabla-contenedor">
+    <table class="tabla tabla--repartidores">
+      <caption class="sr-only">Indicadores de entrega por repartidor</caption>
+      <thead>
+        <tr>
+          <th scope="col">Repartidor</th>
+          <th scope="col">Entregas</th>
+          <th scope="col">Exitosas</th>
+          <th scope="col">Primer intento</th>
+          <th scope="col">Tiempo promedio</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of servicio.entregasPorRepartidor(); track item.repartidor) {
+          <tr>
+            <td data-etiqueta="Repartidor">{{ item.repartidor }}</td>
+            <td data-etiqueta="Entregas">{{ numero(item.entregas) }}</td>
+            <td data-etiqueta="Exitosas">{{ numero(item.exitosas) }}</td>
+            <td data-etiqueta="Primer intento">{{ porcentaje(item.primerIntento) }}</td>
+            <td data-etiqueta="Tiempo promedio">{{ item.tiempoHoras.toFixed(1) }} h</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="vacio">Aún no hay repartidores con entregas registradas.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="filtros__acciones">
+    <a class="boton boton--secundario" routerLink="/entregas/seguimiento">Ver seguimiento de entregas</a>
+  </p>
+</div>
+
+<div class="tarjeta bloque">
+  <div class="bloque__titulo">
+    <h2>Tasa de devolución por motivo y producto</h2>
+    <span>Datos de demostración hasta integrar M07</span>
+  </div>
+  <div class="tabla-contenedor">
+    <table class="tabla tabla--devoluciones">
+      <caption class="sr-only">Devoluciones de demostración</caption>
+      <thead>
+        <tr>
+          <th scope="col">Motivo</th>
+          <th scope="col">Producto</th>
+          <th scope="col">Unidades</th>
+          <th scope="col">Tasa</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of servicio.devoluciones(); track item.motivo + item.producto) {
+          <tr>
+            <td data-etiqueta="Motivo">{{ item.motivo }}</td>
+            <td data-etiqueta="Producto">{{ item.producto }}</td>
+            <td data-etiqueta="Unidades">{{ numero(item.unidades) }}</td>
+            <td data-etiqueta="Tasa">{{ porcentaje(item.tasa) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="nota">
+    Un reembolso o reingreso real se registra en M08, M07 y M12; desde M20 solo se observa el
+    indicador.
+  </p>
+</div>

@@ -131,6 +131,22 @@ export const routes: Routes = [
       import('./modulos/preparacion/preparacion.routes').then((m) => m.PREPARACION_RUTAS),
   },
   {
+    // M19 se monta en /entregas según el mapa del §10. Operativo opera y Administrador también.
+    path: 'entregas',
+    component: Administracion,
+    data: { titulo: 'Entregas', rol: 'Operativo', roles: ['Administrador', 'Operativo'] },
+    loadChildren: () => import('./modulos/entregas/entregas.routes').then((m) => m.ENTREGAS_RUTAS),
+  },
+  {
+    // M20 se monta en /dashboard según el mapa del §10. El documento también
+    // prevé una vista operativa sin ventas ni costos; el rol es demostrativo.
+    path: 'dashboard',
+    component: Administracion,
+    data: { titulo: 'Dashboard gerencial', rol: 'Administrador', roles: ['Administrador', 'Operativo'] },
+    loadChildren: () =>
+      import('./modulos/dashboard-gerencial/dashboard.routes').then((m) => m.DASHBOARD_RUTAS),
+  },
+  {
     path: 'proveedores',
     component: Administracion,
     data: { titulo: 'Proveedores', rol: 'Administrador', roles: ['Administrador'] },

@@ -1,0 +1,128 @@
+<section class="vista">
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M20 · Control y administración</p>
+      <h1 class="titulo">Dashboard gerencial</h1>
+      <p class="subtitulo">
+        Indicadores de ventas, producto, producción, merma, abasto y logística. Consulta de solo
+        lectura: cada cifra pertenece a su módulo de origen y Flask será la fuente autoritativa.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <label class="campo campo--rol">
+        Vista previa de rol (no es seguridad)
+        <select class="campo__entrada" [value]="servicio.rol()" (change)="alCambiarRol($event)">
+          <option value="Administrador">Administrador</option>
+          <option value="Operativo">Operativo</option>
+        </select>
+      </label>
+      <button type="button" class="boton boton--primario" (click)="exportar()">
+        Exportar CSV
+      </button>
+    </div>
+  </div>
+
+  @if (servicio.alertasCriticas().length > 0) {
+    <div class="alertas" aria-label="Alertas críticas abiertas">
+      @for (alerta of servicio.alertasCriticas(); track alerta.id) {
+        <article
+          class="alerta"
+          [class.alerta--preventiva]="alerta.severidad === 'PREVENTIVA'"
+        >
+          <span class="alerta__clave">{{ alerta.clave }}</span>
+          <div class="alerta__cuerpo">
+            <strong class="alerta__titulo">{{ alerta.titulo }}</strong>
+            <span class="alerta__detalle">{{ alerta.detalle }}</span>
+          </div>
+          <span class="alerta__origen">{{ alerta.origen }}</span>
+          <a class="boton boton--secundario" [routerLink]="alerta.ruta">Ver origen</a>
+        </article>
+      }
+      <p class="nota nota--adv">
+        El centro de alertas M21 todavía no está implementado; estos avisos son una proyección
+        local y cada enlace abre el módulo de origen.
+      </p>
+    </div>
+  }
+
+  <div class="tarjeta filtros">
+    <div class="filtros__grid">
+      <label class="campo">
+        Periodo
+        <select class="campo__entrada" [value]="servicio.filtros().periodo" (change)="alCambiarPeriodo($event)">
+          @for (opcion of servicio.periodos; track opcion.valor) {
+            <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Categoría
+        <select class="campo__entrada" [value]="servicio.filtros().categoriaId" (change)="alCambiarCategoria($event)">
+          <option value="0">Todas las categorías</option>
+          @for (categoria of servicio.categorias; track categoria.id) {
+            <option [value]="categoria.id">{{ categoria.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Producto
+        <select class="campo__entrada" [value]="servicio.filtros().productoId" (change)="alCambiarProducto($event)">
+          <option value="0">Todos los productos</option>
+          @for (producto of servicio.productosCatalogo(); track producto.id) {
+            <option [value]="producto.id">{{ producto.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Color observado
+        <select class="campo__entrada" [value]="servicio.filtros().color" (change)="alCambiarColor($event)">
+          <option value="">Todos los colores</option>
+          @for (color of servicio.coloresVendidos(); track color) {
+            <option [value]="color">{{ color }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Talla observada
+        <select class="campo__entrada" [value]="servicio.filtros().talla" (change)="alCambiarTalla($event)">
+          <option value="">Todas las tallas</option>
+          @for (talla of servicio.tallasVendidas(); track talla) {
+            <option [value]="talla">{{ talla }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Canal
+        <select class="campo__entrada" [value]="servicio.filtros().canal" (change)="alCambiarCanal($event)">
+          @for (canal of servicio.canales; track canal.valor) {
+            <option [value]="canal.valor">{{ canal.etiqueta }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <div class="filtros__acciones">
+      <button type="button" class="boton boton--enlace" (click)="servicio.restablecerFiltros()">
+        Limpiar filtros
+      </button>
+      <span class="filtros__ayuda">
+        Los filtros de categoría, producto, color y talla se aplican a las líneas de venta.
+      </span>
+    </div>
+  </div>
+
+  <nav class="pestanas" aria-label="Pestañas del dashboard">
+    @for (pestana of pestanas; track pestana.seccion) {
+      @if (servicio.esAdmin() || !pestana.soloAdmin) {
+        <a
+          class="pestana"
+          [routerLink]="pestana.ruta"
+          routerLinkActive="pestana--activa"
+        >
+          {{ pestana.etiqueta }}
+        </a>
+      }
+    }
+  </nav>
+
+  <router-outlet />
+</section>
