@@ -1,0 +1,87 @@
+<section class="pagina">
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Parámetros de configuración</h2>
+      <span>{{ propuestas() }} propuestos por confirmar · {{ cambiosPendientes() }} cambios sin guardar</span>
+    </div>
+    <p class="nota">
+      Los valores iniciales provienen del documento v3.0 (§11.5). Los parámetros marcados como
+      «propuesta» no están definidos en los documentos del proyecto y deben confirmarse antes de
+      fijarlos en Flask. Aquí solo se ajusta la vista de demostración.
+    </p>
+  </div>
+
+  <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()">
+    <div class="tabla-contenedor">
+      <table class="tabla tabla--config">
+        <thead>
+          <tr>
+            <th scope="col">Parámetro</th>
+            <th scope="col">Clave</th>
+            <th scope="col">Valor</th>
+            <th scope="col">Origen</th>
+          </tr>
+        </thead>
+        <tbody formArrayName="parametros">
+          @for (parametro of servicio.parametros(); track parametro.clave; let i = $index) {
+            <tr [formGroupName]="i">
+              <td data-etiqueta="Parámetro">
+                <span class="celda-principal">{{ parametro.etiqueta }}</span>
+                <span class="celda-secundaria">{{ parametro.descripcion }}</span>
+              </td>
+              <td data-etiqueta="Clave"><span class="mono">{{ parametro.clave }}</span></td>
+              <td data-etiqueta="Valor">
+                <div class="valor">
+                  <input
+                    class="campo__entrada"
+                    type="number"
+                    [min]="parametro.min"
+                    [max]="parametro.max"
+                    [step]="parametro.decimales === 0 ? 1 : 0.01"
+                    formControlName="valor"
+                    [attr.aria-label]="'Valor de ' + parametro.etiqueta"
+                  />
+                  <span>{{ parametro.unidad }}</span>
+                  @if (!esValido(parametro)) {
+                    <span class="campo__error">Fuera de rango ({{ parametro.min }}–{{ parametro.max }}).</span>
+                  }
+                </div>
+              </td>
+              <td data-etiqueta="Origen">
+                <span class="chip" [class.chip--operativo]="!parametro.propuesta" [class.chip--admin]="parametro.propuesta">
+                  <span class="chip__punto" aria-hidden="true"></span>
+                  {{ parametro.propuesta ? 'Propuesta' : 'Documentado' }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (errorGeneral(); as error) { <p class="nota nota--adv error-servicio">{{ error }}</p> }
+
+    <div class="acciones acciones--form">
+      <button type="submit" class="boton boton--primario">Guardar parámetros</button>
+      <button type="button" class="boton boton--secundario" (click)="pedirRestablecimiento()">
+        Restablecer valores iniciales
+      </button>
+    </div>
+  </form>
+
+  <p class="nota nota-final">
+    Cada cambio queda registrado en la <a routerLink="/sistema/bitacora">bitácora</a>. Los umbrales
+    de alerta se editan en el <a routerLink="/alertas/reglas">centro de alertas</a> (M21) y la
+    configuración definitiva debe confirmarse en Flask antes de afectar cálculos reales.
+  </p>
+
+  @if (confirmarRestablecer()) {
+    <app-modal-confirmacion
+      titulo="Restablecer parámetros"
+      mensaje="Volver a los valores iniciales del documento v3.0. Los cambios locales se descartan y se registra la acción en la bitácora."
+      etiquetaConfirmar="Restablecer"
+      (confirmar)="restablecer()"
+      (cancelar)="cancelarRestablecimiento()"
+    />
+  }
+</section>

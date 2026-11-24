@@ -1,0 +1,30 @@
+<section class="vista">
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M22 · Control y administración</p>
+      <h1 class="titulo">Administración del sistema</h1>
+      <p class="subtitulo">
+        Usuarios, clientes, catálogos, parámetros y auditoría. Las altas, bajas y cambios se
+        registran en la bitácora local; Flask conservará la versión definitiva y los hashes de
+        contraseña.
+      </p>
+    </div>
+    <span class="chip chip--admin">Rol: Administrador</span>
+  </div>
+
+  <p class="nota nota--adv aviso-demo">
+    Demostración frontend: los clientes y sus compras se leen de M08; los colores, tallas y
+    categorías de producto se inicializan desde M10. Las contraseñas nunca se guardan ni se envían,
+    y ninguna desactivación elimina registros históricos.
+  </p>
+
+  <nav class="pestanas" aria-label="Pantallas de administración del sistema">
+    @for (pestana of pestanas; track pestana.ruta) {
+      <a class="pestana" [routerLink]="pestana.ruta" routerLinkActive="pestana--activa">
+        {{ pestana.etiqueta }}
+      </a>
+    }
+  </nav>
+
+  <router-outlet />
+</section>
