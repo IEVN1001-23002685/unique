@@ -1,0 +1,9 @@
+import { Component, OnInit, inject } from '@angular/core'; import { CommonModule } from '@angular/common'; import { FormsModule } from '@angular/forms'; import { RouterLink } from '@angular/router';
+import { ApiAdminService } from '../services/api-admin.service'; import { AuthSessionService } from '../services/auth-session.service'; import { IndicadoresDashboard } from '../services/ui-admin.models';
+@Component({selector:'app-dashboard-m20',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./dashboard-m20.component.html',styleUrl:'../preparacion/modulos-admin.css'})
+export class DashboardM20Component implements OnInit { private api=inject(ApiAdminService); auth=inject(AuthSessionService); data:IndicadoresDashboard|null=null; cargando=true; error=''; periodo='mes'; categoria=''; producto=''; color=''; talla=''; canal=''; pestana='resumen'; filtros(){this.cargar();} ngOnInit(){this.pestana=this.admin?'resumen':'produccion';this.cargar();}
+ cargar(){this.cargando=true;this.api.get<IndicadoresDashboard>('/dashboard/kpis',{periodo:this.periodo,categoria:this.categoria,producto:this.producto,color:this.color,talla:this.talla,canal:this.canal}).subscribe({next:r=>{this.data=r;this.cargando=false;},error:()=>{this.error='No se pudieron consultar los indicadores. Los datos se cargarán desde las vistas de MySQL a través de Flask.';this.cargando=false;}})}
+ exportar(){this.api.get<Blob>('/dashboard/exportar',{periodo:this.periodo,categoria:this.categoria,producto:this.producto,color:this.color,talla:this.talla,canal:this.canal}).subscribe({next:b=>{const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='unique-dashboard.csv';a.click();URL.revokeObjectURL(u);},error:()=>this.error='No fue posible exportar el reporte CSV.'});}
+ get maxVenta(){return Math.max(1,...(this.data?.ventas_mensuales??[]).map(x=>x.total));}
+ get admin(){return this.auth.usuario?.rol==='ADMIN';}
+}
