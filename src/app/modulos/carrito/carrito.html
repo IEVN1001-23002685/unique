@@ -1,0 +1,177 @@
+<div style="min-height: 100vh; padding: 24px 16px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #3b2d3e; box-sizing: border-box;">
+  <div style="max-width: 920px; margin: 0 auto; background-color: #e6cce8; border-radius: 28px; padding: 28px 32px; box-shadow: 0 12px 30px rgba(66, 33, 75, 0.14); box-sizing: border-box;">
+
+    <!-- Encabezado -->
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <img src="/Logo1.png" alt="UNIQUE" style="height: 48px; width: auto;" />
+        <div>
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #332736;">Carrito de compras</h2>
+          <span style="font-size: 12px; color: #4f2857; font-weight: 600;">Máximo 10 unidades por línea · Precios con IVA incluido</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button
+          type="button"
+          (click)="seguirComprando.emit()"
+          style="padding: 8px 16px; border-radius: 999px; border: 1px solid #4f2857; background-color: #f3ecf4; color: #4f2857; font-size: 13px; font-weight: 600; cursor: pointer;"
+        >
+          ← Seguir comprando
+        </button>
+        <button
+          type="button"
+          (click)="cerrar.emit()"
+          style="padding: 8px 14px; border-radius: 999px; border: 2px solid #2b212d; background-color: #ffffff; color: #2b212d; font-size: 13px; font-weight: 700; cursor: pointer;"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- Mensaje de estado o validación -->
+    <div *ngIf="mensajeCarrito" style="margin-bottom: 16px; background-color: #f3ecf4; border-left: 4px solid #4f2857; border-radius: 12px; padding: 10px 14px; font-size: 13px; font-weight: 600; color: #332736;">
+      {{ mensajeCarrito }}
+    </div>
+
+    <!-- Carrito vacío -->
+    <div *ngIf="items.length === 0" style="background-color: #f3ecf4; border-radius: 22px; padding: 36px 24px; text-align: center;">
+      <p style="margin: 0 0 14px; font-size: 16px; font-weight: 700; color: #332736;">Tu carrito está vacío por ahora</p>
+      <p style="margin: 0 0 18px; font-size: 13px; color: #534057;">Explora el catálogo y agrega tus prendas favoritas.</p>
+      <button
+        type="button"
+        (click)="seguirComprando.emit()"
+        style="padding: 10px 24px; border: none; border-radius: 999px; background-color: #4f2857; color: #ffffff; font-size: 14px; font-weight: 600; cursor: pointer;"
+      >
+        Ir al catálogo
+      </button>
+    </div>
+
+    <!-- Contenido principal cuando hay artículos -->
+    <div *ngIf="items.length > 0" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 20px; align-items: start;">
+
+      <!-- Lista de productos (ocupa más espacio en pantallas amplias) -->
+      <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 14px; min-width: 0;">
+        <div
+          *ngFor="let item of items"
+          style="background-color: #f3ecf4; border-radius: 20px; padding: 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; box-sizing: border-box;"
+        >
+          <div style="display: flex; align-items: center; gap: 14px; min-width: 220px; flex: 1;">
+            <img
+              [src]="item.imagenUrl || '/Logo1.png'"
+              [alt]="item.nombre"
+              style="width: 68px; height: 68px; object-fit: contain; background-color: #e6cce8; border-radius: 14px; padding: 6px; box-sizing: border-box;"
+            />
+            <div style="font-size: 13px; line-height: 1.4;">
+              <div style="font-weight: 700; font-size: 15px; color: #332736;">{{ item.nombre }}</div>
+              <div style="color: #534057;">Color: {{ item.colorNombre }} · Talla: {{ item.talla }} · SKU: {{ item.sku }}</div>
+              <div style="margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="background-color: #e6cce8; color: #4f2857; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700;">
+                  {{ item.estadoDisponibilidad }}
+                </span>
+                <span *ngIf="item.estadoDisponibilidad === 'Bajo pedido' && item.fechaEstimada" style="font-size: 11px; color: #534057;">
+                  {{ item.fechaEstimada }}
+                </span>
+              </div>
+              <div *ngIf="item.cambioDetectado || item.estadoDisponibilidad === 'Agotado'" style="margin-top: 6px; font-size: 12px; font-weight: 700; color: #8b1e3f;">
+                {{ item.cambioDetectado || 'Producto agotado: no se puede incluir en el pago.' }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Controles de cantidad, subtotal y eliminar -->
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 6px; background-color: #ffffff; border-radius: 999px; padding: 4px 8px;">
+              <button
+                type="button"
+                [disabled]="item.estadoDisponibilidad === 'Agotado'"
+                (click)="cambiarCantidad(item, -1)"
+                style="width: 26px; height: 26px; border-radius: 50%; border: none; background-color: #e6cce8; font-weight: 700; cursor: pointer;"
+              >
+                −
+              </button>
+              <span style="min-width: 20px; text-align: center; font-size: 13px; font-weight: 700;">{{ item.cantidad }}</span>
+              <button
+                type="button"
+                [disabled]="item.estadoDisponibilidad === 'Agotado' || item.cantidad >= 10"
+                (click)="cambiarCantidad(item, 1)"
+                style="width: 26px; height: 26px; border-radius: 50%; border: none; background-color: #e6cce8; font-weight: 700; cursor: pointer;"
+              >
+                +
+              </button>
+            </div>
+
+            <div style="min-width: 78px; text-align: right; font-size: 14px; font-weight: 700; color: #4f2857;">
+              ${{ item.precioUnitarioConIva * item.cantidad }}
+            </div>
+
+            <button
+              type="button"
+              (click)="eliminarItem(item.idLinea)"
+              title="Eliminar producto"
+              style="width: 34px; height: 34px; border-radius: 50%; border: none; background-color: #e6cce8; cursor: pointer; font-size: 14px;"
+            >
+              🗑
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen de compra -->
+      <div style="background-color: #f3ecf4; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;">
+        <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #332736;">Resumen de compra</h3>
+
+        <div style="display: flex; justify-content: space-between; font-size: 13px;">
+          <span>Subtotal (IVA incluido)</span>
+          <strong>${{ subtotalConIva }}</strong>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 13px;">
+          <span>Envío estimado</span>
+          <strong>{{ costoEnvioEstimado === 0 ? 'Gratis' : '$' + costoEnvioEstimado }}</strong>
+        </div>
+
+        <div *ngIf="montoDescuento > 0" style="display: flex; justify-content: space-between; font-size: 13px; color: #2e7d32;">
+          <span>Descuento aplicado</span>
+          <strong>−${{ montoDescuento }}</strong>
+        </div>
+
+        <!-- Código promocional simulado -->
+        <div style="display: flex; gap: 6px; margin-top: 4px;">
+          <input
+            type="text"
+            [(ngModel)]="codigoCupon"
+            placeholder="Código (ej. UNIQUE10)"
+            style="flex: 1; height: 36px; border: none; border-radius: 999px; background-color: #ffffff; padding: 0 12px; font-size: 12px; box-sizing: border-box;"
+          />
+          <button
+            type="button"
+            (click)="aplicarCupon()"
+            style="padding: 0 14px; height: 36px; border: none; border-radius: 999px; background-color: #e6cce8; color: #4f2857; font-size: 12px; font-weight: 700; cursor: pointer;"
+          >
+            Aplicar
+          </button>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid rgba(79, 40, 87, 0.2); margin: 4px 0;" />
+
+        <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; color: #332736;">
+          <span>Total estimado</span>
+          <span style="color: #4f2857;">${{ totalEstimado }}</span>
+        </div>
+
+        <button
+          type="button"
+          [disabled]="tieneItemsAgotados"
+          (click)="onProcederPago()"
+          [style.opacity]="tieneItemsAgotados ? '0.5' : '1'"
+          [style.cursor]="tieneItemsAgotados ? 'not-allowed' : 'pointer'"
+          style="margin-top: 6px; width: 100%; height: 42px; border: none; border-radius: 999px; background-color: #4f2857; color: #ffffff; font-size: 14px; font-weight: 600;"
+        >
+          Proceder al pago
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
