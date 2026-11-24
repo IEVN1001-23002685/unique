@@ -1,0 +1,24 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-family: var(--font-interfaz);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip__punto {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.chip[data-tono='ROJO'] { background-color: var(--color-unique-error-suave); color: #a52b3c; }
+.chip[data-tono='AMBAR'] { background-color: var(--color-unique-adv-suave); color: #825c08; }
+.chip[data-tono='VERDE'] { background-color: var(--color-unique-exito-suave); color: #1f6d3c; }
+.chip[data-tono='INFO'] { background-color: var(--color-unique-info-suave); color: #2b5496; }
+.chip[data-tono='NEUTRO'] { background-color: var(--color-unique-fila); color: var(--color-unique-texto-suave); }

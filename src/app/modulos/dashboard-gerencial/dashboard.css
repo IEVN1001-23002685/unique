@@ -1,0 +1,34 @@
+.campo--rol {
+  min-width: 13rem;
+}
+
+.alerta__clave {
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background-color: #ffffff;
+  color: #a52b3c;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.alerta--preventiva .alerta__clave {
+  color: #825c08;
+}
+
+.filtros__ayuda {
+  color: var(--color-unique-texto-suave);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 719px) {
+  .campo--rol {
+    width: 100%;
+  }
+
+  .alerta__origen {
+    order: 4;
+  }
+}

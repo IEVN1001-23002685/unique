@@ -1,0 +1,27 @@
+:host {
+  display: block;
+}
+
+.tabla--mermas tfoot th,
+.tabla--mermas tfoot td {
+  padding: 0.7rem;
+  background-color: var(--color-unique-fila);
+  color: var(--color-unique-morado);
+  font-family: var(--font-interfaz);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 719px) {
+  .tabla--mermas tfoot th,
+  .tabla--mermas tfoot td {
+    display: block;
+    width: 100%;
+  }
+
+  .tabla--mermas tfoot th::before {
+    content: attr(data-etiqueta);
+    display: block;
+    color: var(--color-unique-texto-suave);
+    font-size: 0.7rem;
+  }
+}

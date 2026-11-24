@@ -1,0 +1,97 @@
+<div class="bloque__titulo">
+  <h2>Producción y merma</h2>
+  <span>M16 y M17 aún no están implementados: las filas son de demostración</span>
+</div>
+
+<div class="metricas" aria-label="Indicadores de producción y merma">
+  @for (metrica of servicio.metricasProduccion(); track metrica.etiqueta) {
+    <app-tarjeta-metrica [metrica]="metrica" />
+  }
+</div>
+
+<div class="tarjeta bloque">
+  <div class="bloque__titulo">
+    <h2>Órdenes por semáforo y capacidad por SKU</h2>
+    <span>«Alcanza para N» indica pedidos adicionales cubiertos con lo planeado</span>
+  </div>
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <caption class="sr-only">Órdenes de producción de demostración</caption>
+      <thead>
+        <tr>
+          <th scope="col">Orden</th>
+          <th scope="col">SKU</th>
+          <th scope="col">Semáforo</th>
+          <th scope="col">Planeadas</th>
+          <th scope="col">Aprobadas</th>
+          <th scope="col">Cumplimiento</th>
+          <th scope="col">Alcanza para</th>
+          <th scope="col">Etapa</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (orden of servicio.ordenes(); track orden.folio) {
+          <tr>
+            <td data-etiqueta="Orden"><span class="mono">{{ orden.folio }}</span></td>
+            <td data-etiqueta="SKU"><span class="mono">{{ orden.sku }}</span></td>
+            <td data-etiqueta="Semáforo"><app-chip-semaforo [tono]="orden.tono" /></td>
+            <td data-etiqueta="Planeadas">{{ numero(orden.planeadas) }}</td>
+            <td data-etiqueta="Aprobadas">{{ numero(orden.aprobadas) }}</td>
+            <td data-etiqueta="Cumplimiento">
+              {{ porcentaje(orden.planeadas === 0 ? 0 : (orden.aprobadas / orden.planeadas) * 100) }}
+            </td>
+            <td data-etiqueta="Alcanza para">{{ numero(orden.alcanzaPara) }} pedido(s)</td>
+            <td data-etiqueta="Etapa">{{ orden.etapa }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="tarjeta bloque">
+  <div class="bloque__titulo">
+    <h2>Merma por etapa y causa</h2>
+    <span>Referencia: merma de producción menor a 5 %</span>
+  </div>
+  <div class="tabla-contenedor">
+    <table class="tabla tabla--mermas">
+      <caption class="sr-only">Mermas de demostración por etapa y causa</caption>
+      <thead>
+        <tr>
+          <th scope="col">Etapa</th>
+          <th scope="col">Causa</th>
+          <th scope="col">Unidades</th>
+          @if (servicio.esAdmin()) {
+            <th scope="col">Costo perdido</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (merma of servicio.mermas(); track merma.etapa + merma.causa) {
+          <tr>
+            <td data-etiqueta="Etapa">{{ merma.etapa }}</td>
+            <td data-etiqueta="Causa">{{ merma.causa }}</td>
+            <td data-etiqueta="Unidades">{{ numero(merma.unidades) }}</td>
+            @if (servicio.esAdmin()) {
+              <td data-etiqueta="Costo perdido">{{ mxn(merma.costo) }}</td>
+            }
+          </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row" colspan="2" data-etiqueta="Total">Total de demostración</th>
+          <td data-etiqueta="Unidades">{{ numero(servicio.mermaUnidades()) }}</td>
+          @if (servicio.esAdmin()) {
+            <td data-etiqueta="Costo perdido">{{ mxn(servicio.costoPerdido()) }}</td>
+          }
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <p class="nota nota--adv">
+    Las cifras de costo son ilustrativas y no sustituyen el cálculo definitivo de M11/M17 en Flask.
+    El rol Operativo no ve costos ni márgenes.
+  </p>
+</div>
