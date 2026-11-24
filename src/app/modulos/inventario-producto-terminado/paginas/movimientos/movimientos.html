@@ -1,0 +1,172 @@
+<section class="vista">
+  <app-navegacion-inventario-pt />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M12 · Inventario de producto terminado</p>
+      <h1 class="titulo">Historial de movimientos</h1>
+      <p class="subtitulo">
+        Kardex de producto terminado. Filtra por SKU, tipo, fecha y documento (orden, pedido,
+        devolución o ajuste) para seguir el origen de cada unidad.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <a routerLink="/operacion/inventario-pt" class="boton boton--secundario"
+        >Volver a existencias</a
+      >
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra barra--movimientos">
+      <label class="campo filtro">
+        SKU
+        <select class="campo__entrada" [value]="skuFiltro()" (change)="alCambiarSku($event)">
+          <option value="TODOS">Todos</option>
+          @for (fila of servicio.filas(); track fila.varianteId) {
+            <option [value]="fila.sku">{{ fila.sku }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="campo filtro">
+        Tipo
+        <select class="campo__entrada" [value]="tipoFiltro()" (change)="alCambiarTipo($event)">
+          @for (tipo of tipos; track tipo) {
+            <option [value]="tipo">{{ tipo === 'TODOS' ? 'Todos' : etiquetasTipo[tipo] }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="campo filtro">
+        Documento
+        <select
+          class="campo__entrada"
+          [value]="documentoFiltro()"
+          (change)="alCambiarDocumento($event)"
+        >
+          @for (documento of documentos; track documento) {
+            <option [value]="documento">{{ documento === 'TODOS' ? 'Todos' : documento }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="campo filtro">
+        Folio
+        <input
+          class="campo__entrada"
+          type="search"
+          [value]="folio()"
+          (input)="alCambiarFolio($event)"
+          placeholder="OP-0210, PED-1401…"
+          aria-label="Buscar por folio de documento"
+        />
+      </label>
+
+      <label class="campo filtro">
+        Desde
+        <input
+          class="campo__entrada"
+          type="date"
+          [value]="desde()"
+          (change)="alCambiarDesde($event)"
+        />
+      </label>
+
+      <label class="campo filtro">
+        Hasta
+        <input
+          class="campo__entrada"
+          type="date"
+          [value]="hasta()"
+          (change)="alCambiarHasta($event)"
+        />
+      </label>
+    </div>
+
+    @if (servicio.movimientos().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay movimientos.</strong>
+        <p>Las altas de producción, salidas, reingresos y ajustes aparecerán aquí.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin movimientos con esos filtros.</strong>
+        <p>Amplía el rango de fechas o selecciona «Todos» en SKU, tipo y documento.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--movimientos">
+          <caption class="sr-only">
+            Movimientos de inventario de producto terminado
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">SKU</th>
+              <th scope="col">Producto</th>
+              <th scope="col">Tipo</th>
+              <th scope="col" class="tabla__numero">Existencia</th>
+              <th scope="col" class="tabla__numero">Reservado</th>
+              <th scope="col">Documento</th>
+              <th scope="col">Motivo</th>
+              <th scope="col">Registró</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (movimiento of filtrados(); track movimiento.id) {
+              <tr>
+                <td data-etiqueta="Fecha">
+                  {{ movimiento.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="SKU">
+                  <span class="celda-principal">{{ movimiento.sku }}</span>
+                </td>
+                <td data-etiqueta="Producto">{{ nombreProducto(movimiento.sku) }}</td>
+                <td data-etiqueta="Tipo">
+                  <span
+                    class="chip"
+                    [class.chip--entrada]="claseTipo(movimiento) === 'entrada'"
+                    [class.chip--salida]="claseTipo(movimiento) === 'salida'"
+                    [class.chip--reserva]="claseTipo(movimiento) === 'reserva'"
+                    [class.chip--neutro]="claseTipo(movimiento) === 'neutro'"
+                  >
+                    {{ etiquetasTipo[movimiento.tipo] }}
+                  </span>
+                </td>
+                <td
+                  data-etiqueta="Existencia"
+                  class="tabla__numero"
+                  [class.diferencia--positiva]="movimiento.deltaExistencia > 0"
+                  [class.diferencia--negativa]="movimiento.deltaExistencia < 0"
+                >
+                  {{ movimiento.deltaExistencia > 0 ? '+' : '' }}{{ movimiento.deltaExistencia }}
+                </td>
+                <td
+                  data-etiqueta="Reservado"
+                  class="tabla__numero"
+                  [class.diferencia--positiva]="movimiento.deltaReservado > 0"
+                  [class.diferencia--negativa]="movimiento.deltaReservado < 0"
+                >
+                  {{ movimiento.deltaReservado > 0 ? '+' : '' }}{{ movimiento.deltaReservado }}
+                </td>
+                <td data-etiqueta="Documento">
+                  <span class="celda-principal">{{ movimiento.documentoId }}</span>
+                  <span class="celda-secundaria">{{ movimiento.documentoTipo }}</span>
+                </td>
+                <td data-etiqueta="Motivo">{{ movimiento.motivo }}</td>
+                <td data-etiqueta="Registró">{{ movimiento.usuario }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Los movimientos solo se agregan: una corrección nunca se edita ni se elimina, sino que genera
+      otro movimiento con motivo y bitácora. Las altas de M16, salidas de M19, reingresos de M07 y
+      reservas de M05 se muestran como contratos simulados hasta integrar esos módulos.
+    </p>
+  </div>
+</section>

@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-fila);
+}
+
+.resumen strong {
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+}
+
+.resumen span {
+  color: var(--color-unique-texto-suave);
+  font-size: 0.76rem;
+}
+
+.tabla--paradas td {
+  min-width: 0;
+}

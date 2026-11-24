@@ -1,0 +1,51 @@
+<div class="autenticacion">
+  <button
+    type="button"
+    class="autenticacion__cerrar"
+    aria-label="Cerrar inicio de sesion"
+    (click)="onCerrar()"
+  >
+    ✕
+  </button>
+
+  <div class="autenticacion__encabezado">
+    <img src="/Logo1.png" alt="UNIQUE - tan unico como tu" class="autenticacion__logo" />
+    <h2 class="autenticacion__titulo">Iniciar Sesión</h2>
+  </div>
+
+  <form class="autenticacion__formulario" (ngSubmit)="onSubmit()" #loginForm="ngForm">
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="loginCorreo">Correo electrónico:</label>
+      <input
+        id="loginCorreo"
+        name="correo"
+        type="email"
+        [(ngModel)]="credenciales.correo"
+        required
+        autofocus
+        class="autenticacion__entrada"
+      />
+    </div>
+
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="loginContrasena">Contraseña:</label>
+      <input
+        id="loginContrasena"
+        name="contrasena"
+        type="password"
+        [(ngModel)]="credenciales.contrasena"
+        required
+        class="autenticacion__entrada"
+      />
+    </div>
+
+    <button type="submit" class="autenticacion__boton">Iniciar Sesión</button>
+  </form>
+
+  <p class="autenticacion__pie">
+    ¿Aún no estás registrado?
+    <button type="button" class="autenticacion__enlace" (click)="onIrARegistro()">
+      Regístrate
+    </button>
+  </p>
+</div>

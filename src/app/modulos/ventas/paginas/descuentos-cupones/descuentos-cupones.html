@@ -1,0 +1,176 @@
+<section class="vista">
+  <app-navegacion-ventas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M08 · Promociones</p>
+      <h1 class="titulo">Descuentos y cupones</h1>
+      <p class="subtitulo">
+        Administra descuentos automáticos y cupones. Solo se aplica uno por venta y el histórico de
+        usos no se elimina.
+      </p>
+    </div>
+    <a routerLink="/ventas/descuentos/nuevo" class="boton boton--primario">+ Nuevo descuento</a>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por nombre o código"
+          aria-label="Buscar por nombre o código"
+        />
+      </label>
+
+      <div class="selectores">
+        <label class="selector">
+          <span>Aplicación</span>
+          <select
+            class="campo__entrada"
+            [value]="aplicacion()"
+            (change)="alCambiarAplicacion($event)"
+          >
+            <option value="TODOS">Todas</option>
+            <option value="CUPON">Cupón</option>
+            <option value="AUTOMATICO">Automático</option>
+          </select>
+        </label>
+        <label class="selector">
+          <span>Estatus</span>
+          <select class="campo__entrada" [value]="activo()" (change)="alCambiarActivo($event)">
+            <option value="TODOS">Todos</option>
+            <option value="ACTIVOS">Activos</option>
+            <option value="INACTIVOS">Inactivos</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    @if (servicio.descuentos().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay descuentos registrados.</strong>
+        <p>Usa «+ Nuevo descuento» para crear el primero.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Prueba con otro nombre o código, o cambia los filtros.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">
+            Descuentos y cupones de UNIQUE
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Nombre</th>
+              <th scope="col">Código</th>
+              <th scope="col">Tipo y valor</th>
+              <th scope="col">Aplicación</th>
+              <th scope="col">Condiciones</th>
+              <th scope="col">Vigencia</th>
+              <th scope="col">Usos</th>
+              <th scope="col">Estatus</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (descuento of filtrados(); track descuento.id) {
+              <tr>
+                <td data-etiqueta="Nombre">
+                  <span class="celda-principal">{{ descuento.nombre }}</span>
+                </td>
+                <td data-etiqueta="Código">
+                  @if (descuento.codigo) {
+                    <span class="mono">{{ descuento.codigo }}</span>
+                  } @else {
+                    <span class="celda-secundaria">Sin código</span>
+                  }
+                </td>
+                <td data-etiqueta="Valor">
+                  {{ formatoValor(descuento) }}
+                  <span class="celda-secundaria">{{ descuento.tipo }}</span>
+                </td>
+                <td data-etiqueta="Aplicación">
+                  {{ descuento.aplicacion === 'CUPON' ? 'Cupón' : 'Automático' }}
+                </td>
+                <td data-etiqueta="Condiciones">
+                  <span class="celda-secundaria">
+                    @if (descuento.soloPrimeraCompra) {
+                      Primera compra ·
+                    }
+                    @if (descuento.montoMinimo !== null) {
+                      Mín. ${{ descuento.montoMinimo }} ·
+                    }
+                    @if (descuento.minArticulos !== null) {
+                      Mín. {{ descuento.minArticulos }} art. ·
+                    }
+                    {{ descuento.usosPorCliente }} por cliente
+                  </span>
+                </td>
+                <td data-etiqueta="Vigencia">{{ vigencia(descuento) }}</td>
+                <td data-etiqueta="Usos">
+                  {{ descuento.usosActuales
+                  }}{{ descuento.usosMaximos === null ? '' : ' / ' + descuento.usosMaximos }}
+                </td>
+                <td data-etiqueta="Estatus">
+                  <span class="estatus" [attr.data-activo]="descuento.activo">
+                    <span class="estatus__punto" aria-hidden="true"></span>
+                    {{ descuento.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    <a
+                      class="accion"
+                      [routerLink]="['/ventas/descuentos', descuento.id, 'editar']"
+                      [attr.aria-label]="'Editar ' + descuento.nombre"
+                    >
+                      Editar ✏
+                    </a>
+                    <button
+                      type="button"
+                      class="accion accion--peligro"
+                      [attr.aria-label]="'Eliminar ' + descuento.nombre"
+                      (click)="descuentoAEliminar.set(descuento)"
+                    >
+                      Eliminar 🗑
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      «Primera compra» al 10 % viene sembrada según §11.6 del documento. Eliminar un descuento con
+      usos registrados solo lo desactiva; sin usos se retira de la lista. Los cambios son de
+      demostración y no persisten en Flask.
+    </p>
+  </div>
+
+  @if (descuentoAEliminar(); as descuento) {
+    <app-modal-confirmacion
+      titulo="Eliminar descuento"
+      [mensaje]="
+        '¿Eliminar «' +
+        descuento.nombre +
+        '»? Si registra usos, solo se desactivará para conservar el historial.'
+      "
+      etiquetaConfirmar="Eliminar"
+      (confirmar)="confirmarEliminacion()"
+      (cancelar)="descuentoAEliminar.set(null)"
+    />
+  }
+</section>

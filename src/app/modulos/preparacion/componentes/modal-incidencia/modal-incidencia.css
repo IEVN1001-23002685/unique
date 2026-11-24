@@ -1,0 +1,96 @@
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.modal__telon {
+  position: absolute;
+  inset: 0;
+  background-color: rgb(31 18 38 / 0.55);
+}
+
+.modal__panel {
+  position: relative;
+  width: min(100%, 34rem);
+  max-height: min(90vh, 46rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border-radius: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 24px 60px rgb(31 18 38 / 0.28);
+}
+
+.modal__titulo {
+  margin: 0;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: 1.25rem;
+}
+
+.modal__mensaje {
+  margin: 0.4rem 0 1.1rem;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.modal__cuerpo {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: var(--font-interfaz);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-unique-morado);
+}
+
+.campo__entrada {
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #d9bfdb;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: var(--color-unique-texto);
+  font-family: var(--font-texto);
+  font-size: 0.85rem;
+}
+
+.campo__entrada[aria-invalid='true'] {
+  border-color: var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+}
+
+.campo__error {
+  margin: 0;
+  color: #a52b3c;
+  font-family: var(--font-texto);
+  font-size: 0.75rem;
+}
+
+.modal__nota {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-adv-suave);
+  color: #7a5606;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.modal__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}

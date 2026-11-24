@@ -1,0 +1,31 @@
+<nav class="pestanas" aria-label="Pantallas de inventario de producto terminado">
+  <a
+    routerLink="/operacion/inventario-pt"
+    routerLinkActive="pestana--activa"
+    [routerLinkActiveOptions]="{ exact: true }"
+    class="pestana"
+  >
+    Existencias
+  </a>
+  <a
+    routerLink="/operacion/inventario-pt/movimientos"
+    routerLinkActive="pestana--activa"
+    class="pestana"
+  >
+    Movimientos
+  </a>
+  <a
+    routerLink="/operacion/inventario-pt/ajuste"
+    routerLinkActive="pestana--activa"
+    class="pestana"
+  >
+    Ajuste de inventario
+  </a>
+  <a
+    routerLink="/operacion/inventario-pt/reglas"
+    routerLinkActive="pestana--activa"
+    class="pestana"
+  >
+    Reglas de reposición
+  </a>
+</nav>

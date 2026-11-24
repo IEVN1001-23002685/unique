@@ -405,6 +405,7 @@ export class AdministracionSistemaServicio {
         (entrada) =>
           entrada.tipo === 'TARIFA_ENVIO' &&
           entrada.activo &&
+          entrada.activa &&
           entrada.id !== id &&
           entrada.cpInicio !== undefined &&
           entrada.cpFin !== undefined &&

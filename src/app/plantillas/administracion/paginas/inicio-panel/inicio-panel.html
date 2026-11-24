@@ -1,0 +1,85 @@
+<section class="inicio">
+  <p class="inicio__eyebrow">Panel administrativo</p>
+  <h1 class="inicio__titulo">Bienvenida al panel de UNIQUE</h1>
+  <p class="inicio__texto">
+    El panel reúne las interfaces de <strong>M08 a M13</strong>,
+    <strong>M20 · Dashboard gerencial</strong>, <strong>M21 · Centro de alertas</strong> y
+    <strong>M22 · Administración del sistema</strong>, además de la operación de preparación y
+    entregas. Las operaciones son demostrativas y no persisten información.
+    Esta entrega incluye las interfaces de <strong>M08 · Ventas</strong>,
+    <strong>M09 · Pedidos</strong>, <strong>M10 · Productos y variantes</strong>,
+    <strong>M11 · Recetas y bordados</strong>,
+    <strong>M12 · Inventario de producto terminado</strong> y <strong>M13 · Proveedores</strong>.
+    Los demás módulos se integrarán en entregas posteriores. Las operaciones son demostrativas y no
+    persisten información.
+  </p>
+
+  <div class="inicio__tarjetas">
+    <a routerLink="/ventas" class="inicio__modulo tarjeta">
+      <span class="inicio__codigo">M08</span>
+      <span class="inicio__nombre">Ventas</span>
+      <span class="inicio__descripcion">
+        Registro, detalle de pagos y reembolsos, venta manual y descuentos o cupones.
+      </span>
+      <span class="inicio__entrar">Abrir módulo →</span>
+    </a>
+
+    <a routerLink="/admin/pedidos" class="inicio__modulo tarjeta">
+      <span class="inicio__codigo">M09</span>
+      <span class="inicio__nombre">Pedidos</span>
+      <span class="inicio__descripcion">
+        Bandeja por estado con semáforos, detalle y línea de tiempo, demanda de producción e
+        historial de cancelaciones.
+      </span>
+      <span class="inicio__entrar">Abrir módulo →</span>
+    </a>
+
+    <a routerLink="/admin/productos" class="inicio__modulo tarjeta">
+      <span class="inicio__codigo">M10</span>
+      <span class="inicio__nombre">Productos y variantes</span>
+      <span class="inicio__descripcion">
+        Catálogo maestro con SKU automático, formulario de producto con vista previa y tabla de
+        variantes por talla y color.
+      </span>
+      <span class="inicio__entrar">Abrir módulo →</span>
+    </a>
+
+    <a routerLink="/admin/recetas" class="inicio__modulo tarjeta">
+      <span class="inicio__codigo">M11</span>
+      <span class="inicio__nombre">Recetas y bordados</span>
+      <span class="inicio__descripcion">
+        Recetas por talla con versiones, mermas y conversión de unidades, diseños de bordado y
+        costeo estándar con precio sugerido.
+      </span>
+      <span class="inicio__entrar">Abrir módulo →</span>
+    </a>
+
+    <a routerLink="/operacion/inventario-pt" class="inicio__modulo tarjeta">
+      <span class="inicio__codigo">M12</span>
+      <span class="inicio__nombre">Inventario de producto terminado</span>
+      <span class="inicio__descripcion">
+        Existencias por categoría y SKU, disponible y reservado, semáforo, cobertura, movimientos,
+        conteo físico y reglas de reposición.
+      </span>
+      <span class="inicio__entrar">Abrir módulo →</span>
+    </a>
+
+    <a routerLink="/proveedores" class="inicio__modulo tarjeta">
+      <span class="inicio__codigo">M13</span>
+      <span class="inicio__nombre">Proveedores</span>
+      <span class="inicio__descripcion">
+        Padrón, catálogo de materiales que surten y evaluación de desempeño.
+      </span>
+      <span class="inicio__entrar">Abrir módulo →</span>
+    </a>
+
+    <a routerLink="/sistema" class="inicio__modulo tarjeta">
+      <span class="inicio__codigo">M22</span>
+      <span class="inicio__nombre">Administración del sistema</span>
+      <span class="inicio__descripcion">
+        Usuarios y roles, consulta de clientes, catálogos, parámetros y bitácora de auditoría.
+      </span>
+      <span class="inicio__entrar">Abrir módulo →</span>
+    </a>
+  </div>
+</section>

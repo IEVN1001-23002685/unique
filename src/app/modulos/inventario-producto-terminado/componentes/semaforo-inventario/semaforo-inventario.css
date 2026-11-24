@@ -1,0 +1,35 @@
+.semaforo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-family: var(--font-interfaz);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.semaforo__punto {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background-color: currentColor;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.75);
+}
+
+.semaforo--rojo {
+  background-color: var(--color-unique-error-suave);
+  color: #a52b3c;
+}
+
+.semaforo--ambar {
+  background-color: var(--color-unique-adv-suave);
+  color: #7a5606;
+}
+
+.semaforo--verde {
+  background-color: var(--color-unique-exito-suave);
+  color: #217a47;
+}

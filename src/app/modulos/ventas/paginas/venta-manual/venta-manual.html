@@ -1,0 +1,408 @@
+<section class="vista">
+  <app-navegacion-ventas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M08 · Asistente de cuatro pasos</p>
+      <h1 class="titulo">Venta manual</h1>
+      <p class="subtitulo">
+        Registra una venta fuera del carrito. Comparte el contrato de pago simulado con M05; nada se
+        persiste en servidor.
+      </p>
+    </div>
+  </div>
+
+  <ol class="pasos" aria-label="Progreso de la venta manual">
+    @for (numero of [1, 2, 3, 4]; track numero) {
+      <li
+        class="paso-indicador"
+        [class.paso-indicador--activo]="paso() === numero"
+        [class.paso-indicador--hecho]="paso() > numero"
+        [attr.aria-current]="paso() === numero ? 'step' : null"
+      >
+        <span class="paso-indicador__numero">{{ numero }}</span>
+        <span class="paso-indicador__texto">
+          @switch (numero) {
+            @case (1) {
+              Cliente
+            }
+            @case (2) {
+              Prendas
+            }
+            @case (3) {
+              Envío
+            }
+            @case (4) {
+              Pago
+            }
+          }
+        </span>
+      </li>
+    }
+  </ol>
+
+  <form class="tarjeta asistente" [formGroup]="formulario" (ngSubmit)="finalizar()">
+    @if (paso() === 1) {
+      <div class="paso">
+        <h2>1. Cliente</h2>
+        <p>Elige un cliente existente o registra a una persona nueva sin acceso al sistema.</p>
+
+        <div class="opciones" role="group" aria-label="Tipo de cliente">
+          <label class="opcion">
+            <input type="radio" formControlName="clienteTipo" value="EXISTENTE" />
+            Cliente existente
+          </label>
+          <label class="opcion">
+            <input type="radio" formControlName="clienteTipo" value="NUEVO" />
+            Nuevo sin acceso
+          </label>
+        </div>
+
+        @if (formulario.controls.clienteTipo.value === 'EXISTENTE') {
+          <label class="campo">
+            Cliente
+            <select class="campo__entrada" formControlName="clienteId">
+              <option [ngValue]="0">Selecciona un cliente</option>
+              @for (cliente of clientes; track cliente.id) {
+                <option [ngValue]="cliente.id">{{ cliente.nombre }}</option>
+              }
+            </select>
+          </label>
+          @if (intentoPaso() && formulario.controls.clienteId.value === 0) {
+            <p class="campo__error">Selecciona un cliente para continuar.</p>
+          }
+        } @else {
+          <div class="campos">
+            <label class="campo">
+              Nombre completo
+              <input class="campo__entrada" type="text" formControlName="nombreNuevo" />
+              @if (intentoPaso() && formulario.controls.nombreNuevo.value.trim() === '') {
+                <span class="campo__error">El nombre es obligatorio.</span>
+              }
+            </label>
+            <label class="campo">
+              Correo
+              <input class="campo__entrada" type="email" formControlName="correoNuevo" />
+            </label>
+            <label class="campo">
+              Teléfono a 10 dígitos
+              <input class="campo__entrada" type="tel" formControlName="telefonoNuevo" />
+              @if (intentoPaso() && telefonoInvalido('telefonoNuevo')) {
+                <span class="campo__error">Captura 10 dígitos.</span>
+              }
+            </label>
+          </div>
+          <p class="nota-nota">
+            «Nuevo sin acceso» crea solo los datos de contacto para la venta; no crea credenciales
+            ni una cuenta de cliente.
+          </p>
+        }
+      </div>
+    }
+
+    @if (paso() === 2) {
+      <div class="paso">
+        <h2>2. Prendas por SKU</h2>
+        <p>
+          El SKU se genera en M10 con formato PRODUCTO-TALLA-COLOR. Las cantidades son unidades
+          enteras.
+        </p>
+
+        <div formArrayName="lineas">
+          @for (linea of lineas.controls; track $index; let indice = $index) {
+            <div class="fila-linea" [formGroupName]="indice">
+              <label class="campo campo--sku">
+                SKU
+                <select class="campo__entrada" formControlName="sku" (change)="sincronizarLineas()">
+                  <option value="">Selecciona una variante</option>
+                  @for (variante of variantes; track variante.sku) {
+                    <option [value]="variante.sku">
+                      {{ variante.sku }} · {{ variante.nombreProducto }} · ${{
+                        variante.precioUnitario
+                      }}
+                    </option>
+                  }
+                </select>
+              </label>
+              <label class="campo campo--cantidad">
+                Cantidad
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="1"
+                  step="1"
+                  formControlName="cantidad"
+                  (input)="sincronizarLineas()"
+                />
+              </label>
+              <div class="fila-linea__subtotal">
+                <span>Subtotal</span>
+                <strong>{{
+                  lineasCarrito()[indice]?.subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+                }}</strong>
+              </div>
+              <button
+                type="button"
+                class="boton boton--enlace"
+                [attr.aria-label]="'Quitar línea ' + (indice + 1)"
+                (click)="quitarLinea(indice)"
+              >
+                Quitar
+              </button>
+            </div>
+          }
+        </div>
+
+        <button type="button" class="boton boton--secundario" (click)="agregarLinea()">
+          + Agregar prenda
+        </button>
+
+        @if (intentoPaso() && lineasInvalidas()) {
+          <p class="campo__error">
+            Captura al menos una SKU válida, cantidad entera mayor a cero y sin SKU repetidos.
+          </p>
+        }
+      </div>
+    }
+
+    @if (paso() === 3) {
+      <div class="paso">
+        <h2>3. Dirección y envío</h2>
+        <p>El código postal determina la cobertura y la tarifa de envío.</p>
+
+        <div class="campos">
+          <label class="campo">
+            Destinatario
+            <input class="campo__entrada" type="text" formControlName="destinatario" />
+          </label>
+          <label class="campo">
+            Teléfono
+            <input class="campo__entrada" type="tel" formControlName="telefono" />
+            @if (intentoPaso() && telefonoInvalido('telefono')) {
+              <span class="campo__error">Captura 10 dígitos.</span>
+            }
+          </label>
+          <label class="campo">
+            Calle
+            <input class="campo__entrada" type="text" formControlName="calle" />
+          </label>
+          <label class="campo">
+            Número exterior
+            <input class="campo__entrada" type="text" formControlName="numeroExt" />
+          </label>
+          <label class="campo">
+            Número interior (opcional)
+            <input class="campo__entrada" type="text" formControlName="numeroInt" />
+          </label>
+          <label class="campo">
+            Colonia
+            <input class="campo__entrada" type="text" formControlName="colonia" />
+          </label>
+          <label class="campo">
+            Municipio
+            <input class="campo__entrada" type="text" formControlName="municipio" />
+          </label>
+          <label class="campo">
+            Estado
+            <input class="campo__entrada" type="text" formControlName="estado" />
+          </label>
+          <label class="campo">
+            Código postal
+            <input
+              class="campo__entrada"
+              type="text"
+              inputmode="numeric"
+              maxlength="5"
+              formControlName="codigoPostal"
+              (input)="alCambiarCp($event)"
+            />
+            @if (esInvalido('codigoPostal')) {
+              <span class="campo__error">Captura 5 dígitos válidos.</span>
+            }
+          </label>
+          <label class="campo">
+            Referencia (opcional)
+            <input class="campo__entrada" type="text" formControlName="referencia" />
+          </label>
+        </div>
+
+        @if (tarifa(); as tarifa) {
+          <p class="tarifa" role="status">
+            <strong>Tarifa Local León:</strong> ${{ tarifa.costo }}.00 · {{ tarifa.dias }} días
+            estimados.
+          </p>
+        } @else {
+          <p class="tarifa tarifa--error" role="status">
+            Sin cobertura para ese código postal. No se puede continuar hasta capturar un CP de León
+            (37000–37999).
+          </p>
+        }
+
+        <label class="opcion opcion--factura">
+          <input
+            type="checkbox"
+            formControlName="requiereFactura"
+            (change)="alCambiarCheckbox($event, requiereFactura)"
+          />
+          Necesito factura (comprobante simulado)
+        </label>
+
+        @if (requiereFactura()) {
+          <div class="campos">
+            <label class="campo">
+              RFC
+              <input class="campo__entrada" type="text" formControlName="rfc" />
+              @if (intentoPaso() && esRfcInvalido()) {
+                <span class="campo__error">Captura un RFC con formato válido.</span>
+              }
+            </label>
+            <label class="campo">
+              Razón social
+              <input class="campo__entrada" type="text" formControlName="razonSocial" />
+            </label>
+          </div>
+        }
+      </div>
+    }
+
+    @if (paso() === 4) {
+      <div class="paso">
+        <h2>4. Descuento y método de pago</h2>
+        <p>Solo se permite un descuento por venta; no se acumulan.</p>
+
+        <div class="descuento">
+          <label class="campo">
+            Código de cupón
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="codigoCupon"
+              placeholder="UNQ10"
+            />
+          </label>
+          <button type="button" class="boton boton--secundario" (click)="aplicarCupon()">
+            Aplicar
+          </button>
+          <button type="button" class="boton boton--enlace" (click)="aplicarAutomatico()">
+            Aplicar descuento automático
+          </button>
+        </div>
+
+        <label class="opcion">
+          <input
+            type="checkbox"
+            formControlName="esPrimeraCompra"
+            (change)="alCambiarCheckbox($event, esPrimeraCompra)"
+          />
+          Es la primera compra del cliente
+        </label>
+
+        @if (descuentoAplicado(); as descuento) {
+          <div class="cupon-aplicado" role="status">
+            <div>
+              <strong>{{ descuento.nombre }}</strong>
+              <span>
+                @if (descuento.tipo === 'PORCENTAJE') {
+                  {{ descuento.valor }}%
+                } @else {
+                  ${{ descuento.valor }}
+                }
+                · {{ descuento.aplicacion === 'CUPON' ? 'Cupón' : 'Automático' }}
+              </span>
+            </div>
+            <button type="button" class="boton boton--enlace" (click)="quitarDescuento()">
+              Quitar
+            </button>
+          </div>
+        }
+
+        <div class="campos">
+          <label class="campo">
+            Método de pago
+            <select class="campo__entrada" formControlName="metodoPago">
+              @for (metodo of metodosPago; track metodo.valor) {
+                <option [value]="metodo.valor">{{ metodo.etiqueta }}</option>
+              }
+            </select>
+          </label>
+          @if (formulario.controls.metodoPago.value === 'TARJETA') {
+            <label class="campo">
+              Últimos 4 dígitos (opcional)
+              <input
+                class="campo__entrada"
+                type="text"
+                inputmode="numeric"
+                maxlength="4"
+                formControlName="ultimos4"
+                placeholder="0000"
+              />
+              <span class="ayuda">No capturar PAN ni CVV.</span>
+            </label>
+          }
+        </div>
+
+        <div class="opciones" role="group" aria-label="Estado del pago">
+          <label class="opcion">
+            <input type="radio" formControlName="estadoPago" value="PAGADA" />
+            Pagada
+          </label>
+          <label class="opcion">
+            <input type="radio" formControlName="estadoPago" value="PENDIENTE" />
+            Pendiente
+          </label>
+        </div>
+
+        @if (formulario.controls.estadoPago.value === 'PENDIENTE') {
+          <p class="aviso" role="status">
+            Una venta manual con pago pendiente reserva existencias; pasadas las 2 horas se genera
+            la alerta PAGO_PENDIENTE. Esa reserva y esa alerta requieren M12 y M21.
+          </p>
+        }
+
+        <div class="resumen">
+          <div>
+            <span>Subtotal</span
+            ><strong>{{ subtotal() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+          </div>
+          <div>
+            <span>Descuento</span
+            ><strong
+              >− {{ descuentoMonto() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong
+            >
+          </div>
+          <div>
+            <span>Envío</span
+            ><strong>{{ costoEnvio() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+          </div>
+          <div class="resumen__total">
+            <span>Total</span
+            ><strong>{{ total() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (intentoPaso()) {
+      <p class="error-paso" role="alert">Revisa los campos marcados antes de continuar.</p>
+    }
+
+    <div class="navegacion">
+      @if (paso() > 1) {
+        <button type="button" class="boton boton--secundario" (click)="retroceder()">
+          Anterior
+        </button>
+      }
+      @if (paso() < 4) {
+        <button type="button" class="boton boton--primario" (click)="avanzar()">Continuar</button>
+      } @else {
+        <button type="submit" class="boton boton--primario">Registrar venta</button>
+      }
+    </div>
+  </form>
+
+  <p class="nota">
+    El pago es simulado: no se guarda PAN ni CVV y no existe pasarela real. Las existencias, los
+    pedidos y las alertas que dependen de otros módulos quedan pendientes de la integración con
+    Flask.
+  </p>
+</section>

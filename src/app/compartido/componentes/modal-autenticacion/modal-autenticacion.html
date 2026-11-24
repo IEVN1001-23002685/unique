@@ -1,0 +1,26 @@
+@if (modal.modalActiva(); as tipoModal) {
+  <div class="modal-fondo" (click)="cerrarSiEsBackdrop($event)">
+    <div
+      class="modal-dialogo"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="tipoModal === 'login' ? 'Iniciar sesion' : 'Registro'"
+    >
+      @switch (tipoModal) {
+        @case ('login') {
+          <app-inicio-sesion
+            (cerrar)="modal.cerrar()"
+            (irARegistro)="modal.cambiarARegistro()"
+            (enviarLogin)="alEnviarLogin($event)"
+          />
+        }
+        @case ('registro') {
+          <app-registro
+            (cerrar)="modal.cerrar()"
+            (irAIniciarSesion)="modal.cambiarAInicioSesion()"
+          />
+        }
+      }
+    </div>
+  </div>
+}

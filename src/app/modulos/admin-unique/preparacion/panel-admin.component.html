@@ -1,0 +1,66 @@
+<style>
+  .logo-admin {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    padding: 12px 0;
+  }
+
+  .logo-admin img {
+    width: 155px;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .logo-admin small {
+    display: block;
+    color: #f2d5ed;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+</style>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo-admin">
+        <img src="/Logo1.png" alt="UNIQUE" />
+        <small>tan único como tú</small>
+      </div>
+    </div>
+    <div class="side-label">PANEL DE CONTROL</div>
+    <a routerLink="dashboard" routerLinkActive="active"><span>▦</span> Dashboard gerencial</a>
+    <a routerLink="preparacion" routerLinkActive="active"><span>▣</span> Preparación</a>
+    <a routerLink="entregas" routerLinkActive="active"><span>➜</span> Entregas</a>
+    <a routerLink="alertas" routerLinkActive="active"><span>◉</span> Centro de alertas</a>
+    <a routerLink="sistema" routerLinkActive="active" *ngIf="rol === 'ADMIN'"
+      ><span>⚙</span> Administración</a
+    >
+
+    <div class="side-bottom">
+      <div class="user-dot">{{ auth.usuario?.nombre?.charAt(0) || 'U' }}</div>
+      <div class="user-info">
+        <b>{{ auth.usuario?.nombre || 'Usuario' }}</b><small>{{ rol }}</small>
+      </div>
+      <button (click)="salir()" title="Cerrar sesión">↪</button>
+    </div>
+  </aside>
+  <main class="main-area">
+    <header class="topbar">
+      <div>
+        <span class="crumb">UNIQUE / PANEL</span>
+        <h1>Panel administrativo</h1>
+      </div>
+      <div class="top-actions">
+        <span class="role-pill">Perfil: {{ rol === 'ADMIN' ? 'Administrador' : 'Operativo' }}</span
+        ><span class="avatar">{{ auth.usuario?.nombre?.charAt(0) || 'U' }}</span>
+      </div>
+    </header>
+    <section class="page-content"><router-outlet /></section>
+  </main>
+</div>

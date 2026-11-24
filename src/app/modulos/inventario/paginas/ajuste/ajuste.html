@@ -1,0 +1,166 @@
+<section class="vista">
+  <app-navegacion-inventario />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 5 · Producción y merma · M15</p>
+      <h1 class="titulo">Ajuste y conteo físico</h1>
+      <p class="subtitulo">
+        Compara la cantidad contada contra la del sistema. El motivo es obligatorio y la diferencia
+        se descuenta por PEPS desde el lote más antiguo.
+      </p>
+    </div>
+    <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
+  </div>
+
+  <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+    <div class="form-grid">
+      <label class="campo">
+        Material y color
+        <select class="campo__entrada" formControlName="existenciaId">
+          <option [value]="0">Selecciona una existencia</option>
+          @for (vista of vistas(); track vista.id) {
+            <option [value]="vista.id">
+              {{ vista.material.codigo }} · {{ vista.material.nombre }} · {{ vista.color }}
+            </option>
+          }
+        </select>
+        @if (esInvalido('existenciaId')) {
+          <span class="campo__error">Selecciona el material y color a contar.</span>
+        }
+      </label>
+      <label class="campo">
+        Cantidad contada ({{ seleccionada()?.material?.unidadBase ?? 'unidad base' }})
+        <input
+          class="campo__entrada"
+          type="number"
+          min="0"
+          step="0.0001"
+          formControlName="cantidadContada"
+          [attr.aria-invalid]="esInvalido('cantidadContada')"
+        />
+        @if (esInvalido('cantidadContada')) {
+          <span class="campo__error"
+            >Captura un número mayor o igual a cero con hasta 4 decimales.</span
+          >
+        }
+      </label>
+      <label class="campo">
+        Motivo del ajuste
+        <select class="campo__entrada" formControlName="motivo">
+          <option value="">Selecciona un motivo</option>
+          @for (motivo of motivos; track motivo) {
+            <option [value]="motivo">{{ motivo }}</option>
+          }
+        </select>
+        @if (esInvalido('motivo')) {
+          <span class="campo__error"
+            >El motivo es obligatorio para dejar rastro del movimiento.</span
+          >
+        }
+      </label>
+      <label class="campo campo--casilla">
+        <span class="campo__casilla">
+          <input type="checkbox" formControlName="enviarAMerma" [disabled]="diferencia() >= 0" />
+          Mandar la diferencia a merma (M17)
+        </span>
+        <span class="campo__pista">
+          Disponible solo para conteos a la baja. Flask debe registrar la merma con su causa.
+        </span>
+      </label>
+    </div>
+
+    @if (seleccionada(); as vista) {
+      <dl class="lector">
+        <div>
+          <dt>Cantidad en sistema</dt>
+          <dd>{{ vista.fisico | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}</dd>
+        </div>
+        <div>
+          <dt>Diferencia</dt>
+          <dd [class.celda-negativa]="diferencia() < 0">
+            {{ diferencia() | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}
+          </dd>
+        </div>
+        <div>
+          <dt>Disponible proyectado</dt>
+          <dd>
+            {{ redondear(vista.disponible + diferencia()) | number: '1.0-4' : 'es-MX' }}
+            {{ vista.material.unidadBase }}
+          </dd>
+        </div>
+        <div>
+          <dt>Lotes del material</dt>
+          <dd>{{ servicio.lotesDe(vista.materialId, vista.color).length }}</dd>
+        </div>
+      </dl>
+    } @else {
+      <p class="estado estado--compacto" role="status">
+        Selecciona un material para ver la cantidad en sistema y la diferencia proyectada.
+      </p>
+    }
+
+    <div class="form-acciones">
+      <button type="submit" class="boton boton--primario">Registrar ajuste</button>
+      @if (resultado()) {
+        <button type="button" class="boton boton--secundario" (click)="nuevoAjuste()">
+          Nuevo ajuste
+        </button>
+      }
+    </div>
+  </form>
+
+  @if (resultado(); as visto) {
+    <section class="tarjeta bloque resultado" aria-live="polite">
+      <h2 class="titulo-section">{{ visto.movimiento.documento }} · vista previa</h2>
+      <dl class="lector">
+        <div>
+          <dt>Tipo de movimiento</dt>
+          <dd>{{ visto.movimiento.tipo }}</dd>
+        </div>
+        <div>
+          <dt>Diferencia</dt>
+          <dd>{{ visto.diferencia | number: '1.0-4' : 'es-MX' }}</dd>
+        </div>
+        <div>
+          <dt>Lote PEPS afectado</dt>
+          <dd>{{ visto.loteAfectado ?? 'Sin lote (sobrante)' }}</dd>
+        </div>
+        <div>
+          <dt>Motivo</dt>
+          <dd>{{ visto.movimiento.motivo }}</dd>
+        </div>
+      </dl>
+
+      @if (visto.merma; as merma) {
+        <h3>Merma que M17 registraría</h3>
+        <p>
+          {{ servicio.nombreMaterial(merma.materialId) }} · {{ merma.color }} ·
+          {{ merma.cantidadBase }} {{ merma.unidadBase }} · causa: {{ merma.causa }} · etapa
+          {{ merma.etapa }}.
+        </p>
+      }
+
+      <p class="nota nota--advertencia">
+        El ajuste y su movimiento viven solo en memoria. Flask debe aplicar PEPS sobre los lotes,
+        conservar la bitácora del movimiento y, si aplica, crear la merma en M17 con
+        Idempotency-Key.
+      </p>
+    </section>
+  }
+
+  <p class="nota">
+    Los motivos vienen del catálogo de causas de merma del documento. No se permite editar ni borrar
+    el movimiento original: una corrección es otro movimiento con su propio motivo.
+  </p>
+
+  @if (confirmarMerma()) {
+    <app-modal-confirmacion
+      titulo="Mandar diferencia a merma"
+      mensaje="La diferencia a la baja saldrá del inventario y se enviará como merma pendiente a M17. Solo se registrará en la demostración; Flask debe ejecutar la operación real."
+      etiquetaConfirmar="Confirmar merma"
+      (confirmar)="confirmarEnvioMerma()"
+      (cancelar)="confirmarMerma.set(false)"
+    />
+  }
+</section>

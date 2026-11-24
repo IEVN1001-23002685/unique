@@ -1,0 +1,238 @@
+.vista {
+  font-family: var(--font-texto);
+  color: var(--color-unique-texto);
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.titulo {
+  margin: 0;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.subtitulo {
+  max-width: 46rem;
+  margin: 0.4rem 0 0;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.bloque {
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.barra {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--color-unique-morado);
+  font-family: var(--font-interfaz);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.campo__entrada {
+  width: 100%;
+  max-width: 22rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d9bfdb;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: var(--color-unique-texto);
+  font-family: var(--font-texto);
+  font-size: 0.85rem;
+}
+
+.campo__entrada:focus {
+  border-color: var(--color-unique-orquidea);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(191 126 187 / 0.22);
+}
+
+.barra__nota {
+  margin: 0;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.76rem;
+}
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  min-width: 80rem;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.tabla--resumen {
+  min-width: 42rem;
+}
+
+.tabla th {
+  padding: 0.65rem;
+  background-color: var(--color-unique-ciruela);
+  color: #ffffff;
+  font-family: var(--font-interfaz);
+  font-size: 0.72rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: 0.6rem 0.65rem;
+  border-bottom: 1px solid #eadcea;
+}
+
+.tabla tbody tr:nth-child(even) {
+  background-color: var(--color-unique-fila);
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-family: var(--font-interfaz);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.chip--bajo {
+  background-color: var(--color-unique-error-suave);
+  color: #a52b3c;
+}
+.chip--alto {
+  background-color: var(--color-unique-exito-suave);
+  color: #217a47;
+}
+
+.alerta {
+  color: #7a5606;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.sin-alerta {
+  color: var(--color-unique-texto-suave);
+  font-size: 0.74rem;
+}
+
+.seccion__titulo {
+  margin: 0 0 0.7rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-unique-rosa-lavanda);
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: 1.05rem;
+}
+
+.ayuda {
+  margin: 0 0 0.9rem;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.nota {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-adv-suave);
+  color: #7a5606;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.nota--info {
+  background-color: var(--color-unique-info-suave);
+  color: #2b5496;
+}
+
+.estado {
+  padding: 2rem 1rem;
+  border: 1px dashed var(--color-unique-orquidea);
+  border-radius: 16px;
+  background-color: var(--color-unique-fila);
+  text-align: center;
+}
+.estado strong {
+  color: var(--color-unique-morado);
+}
+.estado p {
+  margin: 0.4rem 0 0;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.85rem;
+}
+
+@media (min-width: 992px) {
+  .barra {
+    grid-template-columns: 22rem minmax(0, 1fr);
+    align-items: end;
+  }
+  .bloque {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 719px) {
+  .tabla,
+  .tabla tbody,
+  .tabla tr,
+  .tabla td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .tabla thead {
+    display: none;
+  }
+  .tabla tr {
+    margin-bottom: 0.75rem;
+    padding: 0.7rem;
+    border: 1px solid #e7d7e8;
+    border-radius: 12px;
+    background-color: #ffffff;
+  }
+  .tabla td {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    border-bottom: 0;
+  }
+  .tabla td::before {
+    content: attr(data-etiqueta);
+    flex: 0 0 9rem;
+    color: var(--color-unique-texto-suave);
+    font-family: var(--font-interfaz);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+}

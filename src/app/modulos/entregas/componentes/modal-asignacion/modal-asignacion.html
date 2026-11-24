@@ -1,0 +1,69 @@
+<div class="modal" (keydown)="alPulsarTecla($event)">
+  <div class="modal__telon" (click)="cancelar.emit()" aria-hidden="true"></div>
+
+  <section class="modal__panel" role="dialog" aria-modal="true" [attr.aria-label]="'Asignar ' + pedido().folio">
+    <form [formGroup]="forma" (ngSubmit)="alEnviar()">
+      <h2 class="modal__titulo">Asignar entrega</h2>
+      <p class="modal__contexto">
+        Elige quién reparte y cuándo. Al confirmar la salida se generará la guía EN-AAAA-NNNNNN.
+      </p>
+
+      <div class="modal__resumen">
+        <strong>{{ pedido().folio }}</strong> · {{ pedido().cliente }}<br />
+        Fecha prometida: {{ pedido().fechaPromesa ?? 'Sin fecha registrada' }}
+      </div>
+
+      <div class="modal__campos">
+        <label class="campo">
+          Repartidor
+          <select
+            class="campo__entrada"
+            formControlName="repartidorId"
+            autofocus
+            [attr.aria-invalid]="repartidorInvalido()"
+          >
+            <option value="" disabled>Selecciona un repartidor activo</option>
+            @for (repartidor of activos(); track repartidor.id) {
+              <option [value]="repartidor.id">
+                {{ repartidor.nombre }} · {{ repartidor.vehiculo ?? 'Sin vehículo' }}
+              </option>
+            }
+          </select>
+        </label>
+        @if (repartidorInvalido()) {
+          <p class="campo__error" role="alert">Selecciona un repartidor activo.</p>
+        }
+
+        <label class="campo">
+          Fecha programada
+          <input
+            class="campo__entrada"
+            type="date"
+            formControlName="fechaProgramada"
+            [min]="fechaMinima"
+            [attr.aria-invalid]="fechaInvalida()"
+          />
+        </label>
+        @if (fechaInvalida()) {
+          <p class="campo__error" role="alert">Captura una fecha igual o posterior a hoy.</p>
+        }
+
+        <label class="campo">
+          Notas para el repartidor (opcional)
+          <textarea
+            class="campo__entrada"
+            formControlName="notas"
+            rows="2"
+            maxlength="240"
+            placeholder="Ej. Tocar el timbre de la derecha"
+          ></textarea>
+        </label>
+      </div>
+
+      <div class="modal__acciones">
+        <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">Cancelar</button>
+        <button type="submit" class="boton boton--primario">Programar entrega</button>
+      </div>
+    </form>
+  </section>
+</div>

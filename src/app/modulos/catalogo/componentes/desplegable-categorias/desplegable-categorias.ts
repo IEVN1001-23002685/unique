@@ -1,12 +1,4 @@
-import {
-  Component,
-  ElementRef,
-  HostListener,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, ElementRef, HostListener, inject, input, output, signal } from '@angular/core';
 
 @Component({
   selector: 'app-desplegable-categorias',

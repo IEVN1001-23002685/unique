@@ -1,0 +1,260 @@
+<section class="vista">
+  <app-navegacion-compras />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 4 · Abastecimiento · M14</p>
+      <h1 class="titulo">Recepciones</h1>
+      <p class="subtitulo">
+        El Operativo mide y acepta lo recibido. Solo lo aceptado genera lote con costo real; lo
+        rechazado se envía a merma de material en etapa RECEPCIÓN (M17).
+      </p>
+    </div>
+    <a routerLink="/compras/ordenes" class="boton boton--secundario">Volver a órdenes</a>
+  </div>
+
+  <div class="tarjeta bloque selector-orden">
+    <label class="campo selector">
+      Orden de compra a recibir
+      <select class="campo__entrada" [value]="ordenId()" (change)="alCambiar($event)">
+        @if (ordenId() === 0) {
+          <option value="0">No hay órdenes pendientes de recepción</option>
+        }
+        @for (opcion of ordenesDisponibles(); track opcion.id) {
+          <option [value]="opcion.id">
+            {{ opcion.folio }} · {{ servicio.proveedorNombre(opcion.proveedorId) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    @if (orden(); as ordenSeleccionada) {
+      <dl class="lector">
+        <div>
+          <dt>Proveedor</dt>
+          <dd>{{ servicio.proveedorNombre(ordenSeleccionada.proveedorId) }}</dd>
+        </div>
+        <div>
+          <dt>Total de la orden</dt>
+          <dd>{{ ordenSeleccionada.total | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd>
+        </div>
+        <div>
+          <dt>Fecha prometida</dt>
+          <dd>{{ ordenSeleccionada.fechaPrometida ?? 'Por definir' }}</dd>
+        </div>
+        <div>
+          <dt>Estado</dt>
+          <dd><app-chip-estado-compra [estado]="ordenSeleccionada.estado" /></dd>
+        </div>
+      </dl>
+    }
+  </div>
+
+  @if (!orden()) {
+    <div class="tarjeta bloque estado" role="status">
+      <strong>No hay órdenes listas para recibir.</strong>
+      <p>Emite una orden de compra desde el listado para habilitar esta captura.</p>
+    </div>
+  } @else {
+    <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+      <div class="form-grid">
+        <label class="campo">
+          Documento del proveedor
+          <input
+            class="campo__entrada"
+            type="text"
+            formControlName="documentoProveedor"
+            placeholder="FAC-2026-0000"
+          />
+        </label>
+        <label class="campo">
+          Recibida por
+          <input class="campo__entrada" type="text" formControlName="recibidaPor" />
+        </label>
+      </div>
+
+      <h2 class="titulo-section">Medición por línea</h2>
+      <div formArrayName="lineas" class="lineas">
+        @for (lineaForm of formulario.controls.lineas.controls; track $index; let i = $index) {
+          <div class="linea" [formGroupName]="i">
+            @if (orden(); as ordenActual) {
+              @if (material(ordenActual.lineas[i])) {
+                <div class="linea__titulo">
+                  <span>
+                    {{ material(ordenActual.lineas[i])?.codigo }} ·
+                    {{ material(ordenActual.lineas[i])?.nombre }}
+                  </span>
+                  <span class="celda-secundaria">
+                    Pendiente {{ pendiente(ordenActual.lineas[i]) }}
+                    {{ material(ordenActual.lineas[i])?.unidadBase }}
+                  </span>
+                </div>
+              }
+            }
+
+            <div class="linea__campos">
+              <label class="campo">
+                Peso (kg)
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  formControlName="pesoKg"
+                />
+              </label>
+              <label class="campo">
+                Ancho (cm)
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  formControlName="anchoCm"
+                />
+              </label>
+              <label class="campo">
+                Largo (m)
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  formControlName="largoM"
+                />
+              </label>
+              <label class="campo">
+                Medida (base)
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  formControlName="cantidadBaseMedida"
+                />
+                @if (campoInvalido(i, 'cantidadBaseMedida')) {
+                  <span class="campo__error">Mayor que 0 con hasta 4 decimales.</span>
+                }
+              </label>
+              <label class="campo">
+                Aceptada
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  formControlName="cantidadBaseAceptada"
+                />
+              </label>
+              <label class="campo">
+                Rechazada
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  formControlName="cantidadBaseRechazada"
+                />
+              </label>
+              <label class="campo campo--amplio">
+                Motivo de rechazo
+                <input class="campo__entrada" type="text" formControlName="motivoRechazo" />
+              </label>
+            </div>
+
+            @if (medidaCalculada(i); as onCalculada) {
+              <p class="linea__pista">
+                Cálculo de telas: {{ onCalculada }} m² = (ancho ÷ 100) × largo. Compara con la
+                medida capturada antes de guardar.
+              </p>
+            }
+
+            @if (errorLinea(i, 'cuadre')) {
+              <p class="campo__error">Aceptada más rechazada debe igualar la medida.</p>
+            }
+            @if (errorLinea(i, 'motivo')) {
+              <p class="campo__error">Indica el motivo cuando haya cantidad rechazada.</p>
+            }
+            @if (errorLinea(i, 'medida')) {
+              <p class="campo__error">La medida debe ser mayor que cero.</p>
+            }
+          </div>
+        }
+      </div>
+
+      <label class="campo">
+        Notas de la recepción
+        <textarea class="campo__entrada" formControlName="notas" rows="2"></textarea>
+      </label>
+
+      @if (hayFaltante()) {
+        <label class="opcion-cierre">
+          <input type="checkbox" formControlName="cerrarConFaltante" />
+          <span>
+            Cerrar la orden con faltante (solo el Administrador puede confirmar esta decisión).
+          </span>
+        </label>
+      }
+
+      <div class="form-acciones">
+        <button type="submit" class="boton boton--primario">Registrar recepción</button>
+      </div>
+    </form>
+  }
+
+  @if (resultado(); as visto) {
+    <section class="tarjeta bloque resultado" aria-live="polite">
+      <h2 class="titulo-section">{{ visto.recepcion.folio }} · vista previa</h2>
+      <p>
+        La orden quedó <app-chip-estado-compra [estado]="visto.estadoOrden" />. Nada de esto se
+        guardó en servidor.
+      </p>
+
+      <h3>Lotes que M15 crearía</h3>
+      @if (visto.lotes.length === 0) {
+        <p class="celda-secundaria">No hay cantidad aceptada para generar lotes.</p>
+      } @else {
+        <ul>
+          @for (lote of visto.lotes; track lote.folio) {
+            <li>
+              <strong>{{ lote.folio }}</strong> ·
+              {{ servicio.obtenerMaterial(lote.materialId)?.nombre }} · {{ lote.cantidadBase }}
+              {{ lote.unidadBase }} · {{ lote.medidas }} · costo real
+              {{ lote.costoReal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+            </li>
+          }
+        </ul>
+      }
+
+      <h3>Mermas que M17 registraría</h3>
+      @if (visto.mermas.length === 0) {
+        <p class="celda-secundaria">No hubo material rechazado.</p>
+      } @else {
+        <ul>
+          @for (merma of visto.mermas; track merma.materialId) {
+            <li>
+              {{ servicio.obtenerMaterial(merma.materialId)?.nombre }} · {{ merma.cantidadBase }}
+              {{ merma.unidadBase }} · {{ merma.causa }} · etapa {{ merma.etapa }}
+            </li>
+          }
+        </ul>
+      }
+
+      <p class="nota nota--advertencia">
+        La integración con Flask debe ejecutar registrar_recepcion con Idempotency-Key, crear los
+        lotes, mover inventario en M15, enviar rechazos a M17 y reevaluar alertas y órdenes de
+        producción.
+      </p>
+    </section>
+  }
+
+  @if (confirmarCierre()) {
+    <app-modal-confirmacion
+      titulo="Cerrar orden con faltante"
+      mensaje="Existe material rechazado. Solo el Administrador puede cerrar la orden con faltante; de lo contrario quedará PARCIAL."
+      etiquetaConfirmar="Cerrar con faltante"
+      (confirmar)="confirmarCerrarConFaltante()"
+      (cancelar)="confirmarCierre.set(false)"
+    />
+  }
+</section>

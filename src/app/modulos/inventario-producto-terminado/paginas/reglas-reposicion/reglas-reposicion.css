@@ -1,0 +1,31 @@
+.tabla.tabla--reglas {
+  min-width: 70rem;
+}
+
+.campo__entrada.campo__entrada--compacta {
+  width: 7rem;
+  min-height: 2.2rem;
+  padding: 0.35rem 0.55rem;
+}
+
+span.campo__error {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+}
+
+.contador {
+  align-self: end;
+  padding-bottom: 0.75rem;
+  color: var(--color-unique-texto-suave);
+  font-family: var(--font-interfaz);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .barra.barra--reglas {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+}

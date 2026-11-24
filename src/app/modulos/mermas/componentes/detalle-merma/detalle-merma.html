@@ -1,0 +1,86 @@
+<div class="modal" (keydown)="alPulsarTecla($event)">
+  <div class="modal__telon" (click)="cerrar.emit()" aria-hidden="true"></div>
+
+  <section
+    class="modal__panel"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'Detalle de ' + merma().folio"
+  >
+    <div class="modal__cabecera">
+      <div>
+        <p class="eyebrow">Registro inmutable · M17</p>
+        <h2 class="modal__titulo">{{ merma().folio }}</h2>
+      </div>
+      <button type="button" class="modal__cerrar" autofocus (click)="cerrar.emit()">Cerrar</button>
+    </div>
+
+    <div class="etiquetas">
+      <app-chip-origen-merma [origen]="merma().origen" />
+      <span class="etiqueta etiqueta--neutro">{{ merma().etiquetaProcedencia }}</span>
+      @if (merma().automatica) {
+        <span class="etiqueta etiqueta--info">Generada por otro módulo</span>
+      }
+      @if (merma().reversada) {
+        <span class="etiqueta etiqueta--alerta">Corregida con reverso</span>
+      }
+      @if (merma().esReversion) {
+        <span class="etiqueta etiqueta--neutro">Registro inverso</span>
+      }
+    </div>
+
+    <dl class="lector">
+      <div>
+        <dt>Fecha</dt>
+        <dd>{{ merma().fecha | date: 'dd/MM/yyyy' : '' : 'es-MX' }}</dd>
+      </div>
+      <div>
+        <dt>Ítem</dt>
+        <dd>{{ merma().etiquetaItem }}</dd>
+      </div>
+      <div>
+        <dt>Cantidad</dt>
+        <dd>{{ merma().cantidad | number: '1.0-4' : 'es-MX' }} {{ merma().unidadBase }}</dd>
+      </div>
+      <div>
+        <dt>Etapa</dt>
+        <dd>{{ etiquetasEtapa[merma().etapa] }}</dd>
+      </div>
+      <div>
+        <dt>Causa</dt>
+        <dd>{{ merma().causaNombre }}</dd>
+      </div>
+      <div>
+        <dt>Orden relacionada</dt>
+        <dd>{{ merma().ordenFolio ?? 'Sin orden' }}</dd>
+      </div>
+      <div>
+        <dt>Registró</dt>
+        <dd>{{ merma().registradaPor }}</dd>
+      </div>
+      <div>
+        <dt>Evidencia</dt>
+        <dd>{{ merma().evidenciaNombre ?? 'Sin archivo' }}</dd>
+      </div>
+    </dl>
+
+    @if (merma().descripcion; as descripcion) {
+      <p class="detalle"><strong>Descripción:</strong> {{ descripcion }}</p>
+    }
+    @if (merma().motivoReversion; as motivo) {
+      <p class="detalle"><strong>Motivo del reverso:</strong> {{ motivo }}</p>
+    }
+    @if (merma().reversionDeId !== null) {
+      <p class="detalle">
+        Este registro corrige la merma original con un asiento contrario; ninguno de los dos se
+        edita.
+      </p>
+    }
+
+    <p class="nota nota--advertencia">
+      El costo perdido se calcula en el registro (costo del lote para materiales y costo estándar
+      para prendas), pero solo se consulta en Indicadores con perfil Administrador. El descuento de
+      existencias, el movimiento MERMA y la alerta MERMA_ALTA quedan pendientes de Flask.
+    </p>
+  </section>
+</div>

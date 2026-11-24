@@ -1,0 +1,34 @@
+.semaforo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-interfaz);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.semaforo__circulo {
+  flex: 0 0 auto;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.7);
+}
+.semaforo[data-tono='VERDE'] .semaforo__circulo {
+  background-color: var(--color-unique-exito);
+}
+.semaforo[data-tono='AMBAR'] .semaforo__circulo {
+  background-color: var(--color-unique-adv);
+}
+.semaforo[data-tono='ROJO'] .semaforo__circulo {
+  background-color: var(--color-unique-error);
+}
+.semaforo[data-tono='VERDE'] {
+  color: #1f6d3c;
+}
+.semaforo[data-tono='AMBAR'] {
+  color: #825c08;
+}
+.semaforo[data-tono='ROJO'] {
+  color: #a52b3c;
+}

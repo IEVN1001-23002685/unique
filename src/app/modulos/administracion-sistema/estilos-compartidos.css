@@ -1,0 +1,42 @@
+/* Estilos compartidos de las cinco pantallas de M22. */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.vista{font-family:var(--font-texto);color:var(--color-unique-texto)}
+.cabecera{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1.25rem}
+.eyebrow{margin:0 0 .35rem;color:var(--color-unique-ciruela);font-family:var(--font-interfaz);font-size:.75rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.titulo{margin:0;color:var(--color-unique-morado);font-family:var(--font-titulo);font-size:clamp(1.5rem,3vw,2rem)}
+.subtitulo{max-width:55rem;margin:.4rem 0 0;color:var(--color-unique-texto-suave);font-size:.9rem;line-height:1.5}
+.pestanas{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem}
+.pestana{padding:.55rem 1.05rem;border-radius:999px;background-color:var(--color-unique-rosa-lavanda);color:var(--color-unique-ciruela);font-family:var(--font-interfaz);font-size:.82rem;font-weight:600;text-decoration:none}
+.pestana:hover{background-color:var(--color-unique-orquidea);color:#fff}
+.pestana--activa,.pestana--activa:hover{background-color:var(--color-unique-morado);color:#fff}
+.tarjeta{padding:1.1rem;border:1px solid #e7d7e8;border-radius:20px;background-color:#fff;box-shadow:0 6px 18px rgba(84,45,89,.06)}
+.bloque{padding:1.1rem;margin-bottom:1.25rem}
+.bloque__titulo{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:.5rem;margin-bottom:.9rem}
+.bloque__titulo h2{margin:0;color:var(--color-unique-morado);font-family:var(--font-titulo);font-size:1.08rem}
+.bloque__titulo span{color:var(--color-unique-texto-suave);font-size:.75rem}
+.nota{margin:0;padding:.8rem 1rem;border-radius:12px;background-color:var(--color-unique-info-suave);color:#2b5496;font-size:.78rem;line-height:1.5}
+.nota--adv{background-color:var(--color-unique-adv-suave);color:#745008}
+.nota a{color:inherit;font-weight:700}
+.vacio{margin:0;padding:1.2rem 1rem;border:1px dashed var(--color-unique-orquidea);border-radius:14px;background-color:var(--color-unique-fila);color:var(--color-unique-texto-suave);font-size:.85rem;text-align:center}
+.tabla-contenedor{overflow-x:auto}
+.tabla{width:100%;min-width:46rem;border-collapse:collapse;font-size:.82rem}
+.tabla th{padding:.65rem .7rem;background-color:var(--color-unique-ciruela);color:#fff;font-family:var(--font-interfaz);font-size:.73rem;text-align:left;white-space:nowrap}
+.tabla td{padding:.6rem .7rem;border-bottom:1px solid #eadcea;vertical-align:top}
+.tabla tbody tr:nth-child(even){background-color:var(--color-unique-fila)}
+.mono{font-family:ui-monospace,'SFMono-Regular',Consolas,monospace;font-size:.78rem;color:var(--color-unique-ciruela)}
+.celda-principal,.celda-secundaria{display:block}
+.celda-principal{font-weight:600}
+.celda-secundaria{color:var(--color-unique-texto-suave);font-size:.72rem}
+.campo{display:flex;flex-direction:column;gap:.3rem;font-family:var(--font-interfaz);font-size:.74rem;font-weight:600;color:var(--color-unique-morado)}
+.campo__entrada{width:100%;min-height:2.5rem;padding:.5rem .7rem;border:1px solid #d9bfdb;border-radius:12px;background-color:#fff;color:var(--color-unique-texto);font-family:var(--font-texto);font-size:.82rem}
+.campo__entrada:disabled{background-color:var(--color-unique-fila);color:var(--color-unique-texto-suave)}
+.campo__error{display:block;margin-top:.15rem;color:#a3263a;font-size:.7rem;font-weight:400}
+.chip{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .6rem;border:1px solid transparent;border-radius:999px;font-family:var(--font-interfaz);font-size:.72rem;font-weight:600;white-space:nowrap}
+.chip__punto{width:.5rem;height:.5rem;border-radius:50%;background-color:currentColor}
+.chip--activa{background-color:var(--color-unique-fila);border-color:#b7dfc6;color:#2a7a48}
+.chip--inactiva,.chip--sin-acceso,.chip--bloqueada{background-color:var(--color-unique-error-suave);border-color:#e8a3ae;color:#a3263a}
+.chip--admin{background-color:var(--color-unique-rosa-lavanda);border-color:var(--color-unique-orquidea);color:var(--color-unique-morado)}
+.chip--operativo{background-color:var(--color-unique-info-suave);border-color:#b8ccef;color:#2b5496}
+.acciones{display:flex;flex-wrap:wrap;gap:.4rem}
+@media (min-width:768px){.bloque{padding:1.35rem}}
+@media (max-width:719px){.tabla,.tabla tbody,.tabla tr,.tabla td{display:block;width:100%;min-width:0}.tabla thead{display:none}.tabla tr{margin-bottom:.8rem;padding:.7rem;border:1px solid #e7d7e8;border-radius:14px;background-color:#fff}.tabla td{display:flex;gap:.6rem;padding:.3rem 0;border-bottom:0}.tabla td::before{content:attr(data-etiqueta);flex:0 0 7.2rem;color:var(--color-unique-texto-suave);font-family:var(--font-interfaz);font-size:.7rem;font-weight:600}}

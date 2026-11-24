@@ -1,0 +1,200 @@
+<section class="vista">
+  <app-navegacion-ventas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M08 · Operación comercial</p>
+      <h1 class="titulo">Registro de ventas</h1>
+      <p class="subtitulo">
+        Control del dinero de cada venta: folio, cliente, canal, pago y pedido. Rol: Administrador.
+      </p>
+    </div>
+    <a routerLink="/ventas/manual" class="boton boton--primario">+ Nueva venta manual</a>
+  </div>
+
+  <div class="indicadores" aria-label="Indicadores de ventas">
+    <div class="indicador">
+      <span class="indicador__numero">{{
+        indicadores().dia | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+      }}</span>
+      <span class="indicador__etiqueta">Ventas del día</span>
+    </div>
+    <div class="indicador">
+      <span class="indicador__numero">{{
+        indicadores().mes | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+      }}</span>
+      <span class="indicador__etiqueta">Ventas del mes</span>
+    </div>
+    <div class="indicador" data-tono="info">
+      <span class="indicador__numero">{{
+        indicadores().ticket | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+      }}</span>
+      <span class="indicador__etiqueta">Ticket promedio</span>
+    </div>
+    <div class="indicador" data-tono="adv">
+      <span class="indicador__numero">{{ indicadores().pendientes }}</span>
+      <span class="indicador__etiqueta">Pendientes de pago</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por folio o cliente"
+          aria-label="Buscar por folio o cliente"
+        />
+      </label>
+
+      <div class="selectores">
+        <label class="selector">
+          <span>Periodo</span>
+          <select class="campo__entrada" [value]="periodo()" (change)="alCambiarPeriodo($event)">
+            @for (opcion of periodos; track opcion.valor) {
+              <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+            }
+          </select>
+        </label>
+        <label class="selector">
+          <span>Canal</span>
+          <select class="campo__entrada" [value]="canal()" (change)="alCambiarCanal($event)">
+            @for (opcion of canales; track opcion.valor) {
+              <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+            }
+          </select>
+        </label>
+        <label class="selector">
+          <span>Estado de pago</span>
+          <select class="campo__entrada" [value]="estadoPago()" (change)="alCambiarEstado($event)">
+            @for (opcion of estadosPago; track opcion.valor) {
+              <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <div class="barra__acciones">
+        <button type="button" class="boton boton--secundario" (click)="exportarCsv()">
+          Exportar CSV
+        </button>
+        @if (!sinFiltros()) {
+          <button type="button" class="boton boton--enlace" (click)="restablecer()">
+            Limpiar filtros
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (servicio.ventas().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay ventas registradas.</strong>
+        <p>Usa «+ Nueva venta manual» para registrar la primera.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Prueba con otro folio o cliente, o ajusta periodo, canal y estado de pago.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">
+            Registro de ventas de UNIQUE
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Folio</th>
+              <th scope="col">Cliente</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Canal</th>
+              <th scope="col">Total</th>
+              <th scope="col">Estado de pago</th>
+              <th scope="col">Pedido</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (venta of visibles(); track venta.folio) {
+              <tr>
+                <td data-etiqueta="Folio">
+                  <span class="celda-principal">{{ venta.folio }}</span>
+                </td>
+                <td data-etiqueta="Cliente">
+                  <span class="celda-principal">{{ venta.cliente }}</span>
+                  <span class="celda-secundaria">{{ venta.lineas.length }} línea(s)</span>
+                </td>
+                <td data-etiqueta="Fecha">
+                  {{ venta.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Canal">{{ venta.canal }}</td>
+                <td data-etiqueta="Total">
+                  {{ venta.total | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Pago">
+                  <app-chip-estado-venta dominio="pago" [estado]="venta.estadoPago" />
+                </td>
+                <td data-etiqueta="Pedido">
+                  <app-chip-estado-venta dominio="pedido" [estado]="venta.estadoPedido" />
+                </td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    <a
+                      class="accion"
+                      [routerLink]="['/ventas', venta.folio]"
+                      [attr.aria-label]="'Ver detalle de la venta ' + venta.folio"
+                    >
+                      Ver detalle
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="paginacion" aria-label="Paginación de ventas">
+        <button
+          type="button"
+          class="boton boton--secundario"
+          [disabled]="paginaSegura() === 1"
+          (click)="pagina.set(paginaSegura() - 1)"
+        >
+          Anterior
+        </button>
+        @for (numero of numerosPagina(); track numero) {
+          <button
+            type="button"
+            class="pagina"
+            [class.pagina--activa]="paginaSegura() === numero"
+            [attr.aria-current]="paginaSegura() === numero ? 'page' : null"
+            (click)="pagina.set(numero)"
+          >
+            {{ numero }}
+          </button>
+        }
+        <button
+          type="button"
+          class="boton boton--secundario"
+          [disabled]="paginaSegura() === totalPaginas()"
+          (click)="pagina.set(paginaSegura() + 1)"
+        >
+          Siguiente
+        </button>
+      </nav>
+    }
+
+    <p class="nota">
+      Los importes son de demostración y no representan cobros reales. El IVA mostrado en el detalle
+      es informativo (total ÷ 1.16 × 0.16); no hay timbrado. Cuando una venta se cancela, el cambio
+      de pedido y la liberación de reservas requieren M09 y M12 en la integración con Flask.
+    </p>
+  </div>
+</section>

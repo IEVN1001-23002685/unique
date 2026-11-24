@@ -1,0 +1,175 @@
+<div class="module-head">
+  <div>
+    <span class="eyebrow">MÓDULO 20 · CONTROL Y ADMINISTRACIÓN</span>
+    <h2>Dashboard gerencial</h2>
+    <p>Indicadores del negocio para detectar oportunidades, pérdidas y retrasos.</p>
+  </div>
+  <button class="btn-primary" *ngIf="admin" (click)="exportar()">⇩ Exportar CSV</button>
+</div>
+<div class="notice error" *ngIf="error">{{ error }}</div>
+<div class="critical-banner" *ngIf="(data?.alertas_criticas || 0) > 0">
+  <b>⚠ {{ data?.alertas_criticas }} alertas críticas abiertas</b
+  ><a routerLink="../alertas">Revisar en Centro de alertas →</a>
+</div>
+<div class="filters">
+  <label
+    >Periodo<select [(ngModel)]="periodo" (change)="filtros()">
+      <option value="mes">Mes actual</option>
+      <option value="trimestre">Trimestre</option>
+      <option value="anio">Año</option>
+      <option value="30dias">Últimos 30 días</option>
+    </select></label
+  ><label>Categoría<input [(ngModel)]="categoria" (change)="filtros()" placeholder="Todas" /></label
+  ><label>Producto<input [(ngModel)]="producto" (change)="filtros()" placeholder="Todos" /></label
+  ><label>Color<input [(ngModel)]="color" (change)="filtros()" placeholder="Todos" /></label
+  ><label>Talla<input [(ngModel)]="talla" (change)="filtros()" placeholder="Todas" /></label
+  ><label
+    >Canal<select [(ngModel)]="canal" (change)="filtros()">
+      <option value="">Todos</option>
+      <option value="TIENDA_PWA">Tienda PWA</option>
+      <option value="OTRO">Otros</option>
+    </select></label
+  >
+</div>
+<div class="tabs dashboard-tabs">
+  <button
+    class="tab"
+    *ngIf="admin"
+    [class.active]="pestana === 'resumen'"
+    (click)="pestana = 'resumen'"
+  >
+    Resumen</button
+  ><button
+    class="tab"
+    *ngIf="admin"
+    [class.active]="pestana === 'ventas'"
+    (click)="pestana = 'ventas'"
+  >
+    Ventas y productos</button
+  ><button class="tab" [class.active]="pestana === 'produccion'" (click)="pestana = 'produccion'">
+    Producción y merma</button
+  ><button class="tab" [class.active]="pestana === 'abasto'" (click)="pestana = 'abasto'">
+    Abastecimiento</button
+  ><button class="tab" [class.active]="pestana === 'logistica'" (click)="pestana = 'logistica'">
+    Logística y devoluciones
+  </button>
+</div>
+<div class="empty" *ngIf="cargando">Consultando indicadores...</div>
+<ng-container *ngIf="!cargando && data"
+  ><div class="stats-grid" *ngIf="pestana === 'resumen' || pestana === 'ventas'">
+    <article class="stat-card accent-green">
+      <small>VENTAS TOTALES</small><b>{{ data.kpis['ventas_totales'] | currency: 'MXN' }}</b
+      ><span>Ventas activas con pago aprobado</span>
+    </article>
+    <article class="stat-card accent-purple">
+      <small>TICKET PROMEDIO</small><b>{{ data.kpis['ticket_promedio'] | currency: 'MXN' }}</b
+      ><span>Por venta</span>
+    </article>
+    <article class="stat-card accent-amber">
+      <small>CONVERSIÓN</small><b>{{ data.kpis['conversion'] }}%</b
+      ><span>Carritos convertidos</span>
+    </article>
+    <article class="stat-card accent-blue">
+      <small>PEDIDOS A TIEMPO</small><b>{{ data.kpis['pedidos_a_tiempo'] }}%</b
+      ><span>Meta de referencia 95%</span>
+    </article>
+  </div>
+  <div class="stats-grid" *ngIf="pestana === 'resumen' || pestana === 'produccion'">
+    <article class="stat-card accent-red">
+      <small>MERMA DEL MES</small><b>{{ data.kpis['merma_mes'] }}%</b><span>Meta menor a 5%</span>
+    </article>
+    <article class="stat-card accent-amber">
+      <small>ÓRDENES ROJAS</small><b>{{ data.kpis['ordenes_rojas'] }}</b
+      ><span>Producción bloqueada o retrasada</span>
+    </article>
+    <article class="stat-card">
+      <small>EXACTITUD DE PEDIDOS</small><b>{{ data.kpis['exactitud_pedidos'] }}%</b
+      ><span>Preparados sin incidencia</span>
+    </article>
+    <article class="stat-card">
+      <small>RECOMPRA A 60 DÍAS</small><b>{{ data.kpis['recompra_60_dias'] }}%</b
+      ><span>Clientes que regresan</span>
+    </article>
+  </div>
+  <div class="chart-grid" *ngIf="pestana === 'resumen' || pestana === 'ventas'">
+    <section class="panel-card">
+      <div class="panel-title">
+        <h3>Ventas mensuales</h3>
+        <span class="muted">MXN</span>
+      </div>
+      <div class="bar-chart">
+        <div class="bar-col" *ngFor="let v of data.ventas_mensuales">
+          <b>{{ v.total | number: '1.0-0' }}</b>
+          <div class="bar" [style.height.%]="(v.total / maxVenta) * 100"></div>
+          <small>{{ v.periodo }}</small>
+        </div>
+      </div>
+    </section>
+    <section class="panel-card">
+      <div class="panel-title"><h3>Ingresos por SKU</h3></div>
+      <div class="rank-list">
+        <div *ngFor="let x of data.ingresos_sku">
+          <span
+            >{{ x.nombre }} <small>{{ x.sku }}</small></span
+          ><b>{{ x.total | currency: 'MXN' }}</b>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="chart-grid" *ngIf="pestana === 'resumen' || pestana === 'produccion'">
+    <section class="panel-card">
+      <div class="panel-title"><h3>Producción por semáforo</h3></div>
+      <div class="traffic">
+        <div>
+          <i class="dot green-dot"></i><b>{{ data.produccion.verde }}</b
+          ><small>Verde · En tiempo</small>
+        </div>
+        <div>
+          <i class="dot amber-dot"></i><b>{{ data.produccion.ambar }}</b
+          ><small>Ámbar · En riesgo</small>
+        </div>
+        <div>
+          <i class="dot red-dot"></i><b>{{ data.produccion.rojo }}</b
+          ><small>Rojo · Bloqueada</small>
+        </div>
+      </div>
+    </section>
+    <section class="panel-card">
+      <div class="panel-title"><h3>Merma por etapa</h3></div>
+      <div class="rank-list">
+        <div *ngFor="let m of data.mermas">
+          <span>{{ m.etapa }}</span><b>{{ m.porcentaje }}%</b>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="stats-grid" *ngIf="pestana === 'abasto'">
+    <article class="stat-card accent-red">
+      <small>MATERIALES EN ROJO</small><b>{{ data.kpis['materiales_rojos'] }}</b>
+    </article>
+    <article class="stat-card accent-amber">
+      <small>MATERIALES EN ÁMBAR</small><b>{{ data.kpis['materiales_ambar'] }}</b>
+    </article>
+    <article class="stat-card">
+      <small>COMPRAS PENDIENTES</small><b>{{ data.kpis['compras_pendientes'] }}</b>
+    </article>
+    <article class="stat-card">
+      <small>ENTREGAS A TIEMPO PROVEEDOR</small><b>{{ data.kpis['proveedores_a_tiempo'] }}%</b>
+    </article>
+  </div>
+  <div class="stats-grid" *ngIf="pestana === 'logistica'">
+    <article class="stat-card">
+      <small>PEDIDOS ESTANCADOS</small><b>{{ data.kpis['pedidos_estancados'] }}</b>
+    </article>
+    <article class="stat-card">
+      <small>ÉXITO PRIMER INTENTO</small><b>{{ data.kpis['exito_primer_intento'] }}%</b>
+    </article>
+    <article class="stat-card">
+      <small>TIEMPO DE ENTREGA</small><b>{{ data.kpis['tiempo_entrega'] }} días</b>
+    </article>
+    <article class="stat-card accent-red">
+      <small>TASA DE DEVOLUCIÓN</small><b>{{ data.kpis['tasa_devolucion'] }}%</b
+      ><span>Meta menor a 3%</span>
+    </article>
+  </div>
+</ng-container>

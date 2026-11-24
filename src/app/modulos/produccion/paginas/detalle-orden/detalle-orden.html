@@ -1,0 +1,326 @@
+<section class="vista">
+  <app-navegacion-produccion />
+
+  @if (orden(); as orden) {
+    <div class="cabecera">
+      <div>
+        <p class="eyebrow">M16 · Detalle de orden de producción</p>
+        <h1 class="titulo">{{ orden.folio }}</h1>
+        <p class="subtitulo">
+          Líneas en unidades, explosión de materiales y pedidos vinculados. El SKU se copia de M10 y
+          no se edita en producción.
+        </p>
+      </div>
+      <a routerLink="/produccion" class="boton boton--secundario">Volver al tablero</a>
+    </div>
+
+    <div class="tarjeta bloque cabecera-orden">
+      <div class="etiquetas">
+        <app-chip-estado-produccion [estado]="orden.estado" />
+        <app-semaforo-produccion [tono]="orden.semaforo" [texto]="etiquetasTono[orden.semaforo]" />
+        <span class="etiqueta etiqueta--neutro">Origen: {{ etiquetasOrigen[orden.origen] }}</span>
+        @if (orden.vencida) {
+          <span class="etiqueta etiqueta--error">Fecha requerida vencida</span>
+        }
+      </div>
+      <p class="motivo">{{ orden.motivoSemaforo }}</p>
+
+      <dl class="lector">
+        <div>
+          <dt>Fecha requerida</dt>
+          <dd>
+            {{
+              orden.fechaRequerida === null
+                ? 'Sin fecha'
+                : (orden.fechaRequerida | date: 'dd/MM/yyyy' : '' : 'es-MX')
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>Iniciada</dt>
+          <dd>
+            {{
+              orden.iniciadaEn === null
+                ? 'Aún no'
+                : (orden.iniciadaEn | date: 'dd/MM/yyyy' : '' : 'es-MX')
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>Cerrada</dt>
+          <dd>
+            {{
+              orden.cerradaEn === null
+                ? 'Aún no'
+                : (orden.cerradaEn | date: 'dd/MM/yyyy' : '' : 'es-MX')
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>Creada por</dt>
+          <dd>{{ orden.creadaPor }}</dd>
+        </div>
+        <div>
+          <dt>Cumplimiento del plan</dt>
+          <dd>{{ orden.cumplimientoPct | number: '1.0-1' : 'es-MX' }}%</dd>
+        </div>
+        <div>
+          <dt>Merma real</dt>
+          <dd>{{ orden.mermaRealPct | number: '1.0-1' : 'es-MX' }}%</dd>
+        </div>
+      </dl>
+
+      @if (orden.notas) {
+        <p class="nota">{{ orden.notas }}</p>
+      }
+
+      <div class="acciones acciones-orden">
+        @if (puedeReservar()) {
+          <button type="button" class="boton boton--primario" (click)="reservar()">
+            Reservar materiales
+          </button>
+        }
+        @if (faltantes().length > 0 && !['CERRADA', 'CANCELADA'].includes(orden.estado)) {
+          <button type="button" class="boton boton--secundario" (click)="solicitarCompra()">
+            Solicitar compra de faltantes
+          </button>
+        }
+        @if (puedeIniciar()) {
+          <button type="button" class="boton boton--primario" (click)="iniciar()">
+            Iniciar producción
+          </button>
+        }
+        @if (orden.estado === 'EN_PROCESO') {
+          <button type="button" class="boton boton--primario" (click)="enviarRevision()">
+            Enviar a revisión
+          </button>
+          <a class="boton boton--secundario" [routerLink]="['/produccion/revision', orden.id]">
+            Capturar revisión
+          </a>
+        }
+        @if (orden.estado === 'EN_REVISION') {
+          <a class="boton boton--primario" [routerLink]="['/produccion/revision', orden.id]">
+            Dictaminar calidad
+          </a>
+        }
+        @if (orden.estado === 'PLANEADA' || orden.estado === 'LISTA') {
+          <button type="button" class="boton boton--peligro" (click)="cancelando.set(true)">
+            Cancelar orden
+          </button>
+        }
+      </div>
+    </div>
+
+    <h2 class="titulo-section">Líneas de la orden</h2>
+    <div class="tarjeta bloque">
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">
+            Líneas de producción en unidades
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">SKU</th>
+              <th scope="col">Producto</th>
+              <th scope="col">Talla / color</th>
+              <th scope="col" class="celda-derecha">Planeada</th>
+              <th scope="col" class="celda-derecha">Aprobada</th>
+              <th scope="col" class="celda-derecha">Merma</th>
+              <th scope="col" class="celda-derecha">Reproceso</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (linea of orden.lineas; track linea.id) {
+              <tr>
+                <td data-etiqueta="SKU">
+                  <span class="celda-principal">{{ linea.sku }}</span>
+                </td>
+                <td data-etiqueta="Producto">{{ linea.nombreProducto }}</td>
+                <td data-etiqueta="Talla / color">{{ linea.talla }} / {{ linea.color }}</td>
+                <td data-etiqueta="Planeada" class="celda-numero celda-derecha">
+                  {{ linea.cantidadPlaneada | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Aprobada" class="celda-numero celda-derecha">
+                  {{ linea.cantidadAprobada | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Merma" class="celda-numero celda-derecha">
+                  {{ linea.cantidadMerma | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Reproceso" class="celda-numero celda-derecha">
+                  {{ linea.cantidadReproceso | number: '1.0-0' : 'es-MX' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h2 class="titulo-section">Explosión de materiales</h2>
+    <div class="tarjeta bloque">
+      <div class="tabla-contenedor tabla-contenedor--ancha">
+        <table class="tabla">
+          <caption class="sr-only">
+            Materiales requeridos, reservados, disponibles y faltantes
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Material</th>
+              <th scope="col">Color</th>
+              <th scope="col">Unidad</th>
+              <th scope="col" class="celda-derecha">Requerido</th>
+              <th scope="col" class="celda-derecha">Reservado</th>
+              <th scope="col" class="celda-derecha">Disponible M15</th>
+              <th scope="col" class="celda-derecha">Faltante</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Cobertura</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (material of orden.materiales; track material.id) {
+              <tr>
+                <td data-etiqueta="Material">
+                  <span class="celda-principal">{{ material.nombreMaterial }}</span>
+                </td>
+                <td data-etiqueta="Color">{{ material.color }}</td>
+                <td data-etiqueta="Unidad">{{ material.unidadBase }}</td>
+                <td data-etiqueta="Requerido" class="celda-numero celda-derecha">
+                  {{ material.cantidadRequerida | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Reservado" class="celda-numero celda-derecha">
+                  {{ material.cantidadReservada | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Disponible M15" class="celda-numero celda-derecha">
+                  {{ material.disponibleM15 | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Faltante" class="celda-numero celda-derecha">
+                  <strong>{{ material.faltante | number: '1.0-4' : 'es-MX' }}</strong>
+                </td>
+                <td data-etiqueta="Estado">
+                  <app-semaforo-produccion
+                    [tono]="material.semaforo"
+                    [texto]="etiquetasEstadoMaterial[material.estadoMaterial]"
+                  />
+                </td>
+                <td data-etiqueta="Cobertura">
+                  <span
+                    class="etiqueta"
+                    [class.etiqueta--error]="
+                      material.cobertura === 'RETRASADA' || material.cobertura === 'NINGUNA'
+                    "
+                  >
+                    {{ material.etiquetaCobertura }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="nota">
+        Disponible se lee de M15; reservar no modifica esa existencia en esta demostración. Flask
+        debe apartar por material y color, consumir por PEPS con el costo real de cada lote y
+        deshacer la operación completa si algo cambia entre la reserva y el inicio.
+      </p>
+    </div>
+
+    <h2 class="titulo-section">Pedidos vinculados</h2>
+    <div class="tarjeta bloque">
+      @if (pedidos().length === 0) {
+        <div class="estado" role="status">
+          <strong>No hay pedidos esperando esta producción.</strong>
+          <p>La orden puede originarse en stock mínimo o en captura manual.</p>
+        </div>
+      } @else {
+        <ul class="pedidos">
+          @for (pedido of pedidos(); track pedido.sku) {
+            <li>
+              <strong>{{ pedido.sku }}</strong>
+              <span>{{ pedido.demanda | number: '1.0-0' : 'es-MX' }} unidades pendientes</span>
+              <span class="celda-secundaria">Pedidos: {{ pedido.pedidos.join(', ') }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    @if (mostrarCompra() && faltantes().length > 0) {
+      <section class="tarjeta bloque panel-solicitud" aria-live="polite">
+        <div class="panel-solicitud__cabecera">
+          <div>
+            <p class="eyebrow">Conexión con M14 · Compras</p>
+            <h2 class="titulo-section">Solicitud de compra de faltantes</h2>
+          </div>
+          <button type="button" class="accion" (click)="mostrarCompra.set(false)">Cerrar</button>
+        </div>
+        <ul class="pedidos">
+          @for (faltante of faltantes(); track faltante.materialId) {
+            <li>
+              <strong>{{ faltante.nombreMaterial }} · {{ faltante.color }}</strong>
+              <span
+                >{{ faltante.faltante | number: '1.0-4' : 'es-MX' }}
+                {{ faltante.unidadBase }} faltantes</span
+              >
+              <span class="etiqueta" [class.etiqueta--error]="faltante.ordenRetrasada">
+                @if (faltante.ordenRetrasada) {
+                  Orden de compra retrasada
+                } @else if (faltante.tieneOrdenCompra) {
+                  Orden de compra vigente
+                } @else if (faltante.tieneRequisicion) {
+                  Requisición vigente
+                } @else {
+                  Sin cobertura
+                }
+              </span>
+            </li>
+          }
+        </ul>
+        <div class="form-acciones">
+          <button type="button" class="boton boton--primario" (click)="registrarSolicitud()">
+            Preparar solicitud de compra
+          </button>
+          <a routerLink="/compras/requisiciones/nueva" class="boton boton--secundario">
+            Capturar requisición en M14 (Administrador)
+          </a>
+        </div>
+        <p class="nota nota--advertencia">
+          Esta pantalla no crea la requisición ni propaga cantidades: Flask debe generarla con su
+          folio REQ, verificar que no exista otra abierta y reevaluar el semáforo al recibir
+          material.
+        </p>
+      </section>
+    }
+
+    <p class="nota nota--advertencia">
+      Aprobar sube las unidades a M12 y las asigna al pedido más antiguo en espera (FIFO), que pasa
+      a CONFIRMADO al quedar completo. La merma o el defecto se reportan a M17 con causa y etapa.
+      Nada de eso se ejecuta en esta demostración.
+    </p>
+
+    @if (cancelando()) {
+      <app-modal-confirmacion
+        titulo="Cancelar orden de producción"
+        [mensaje]="
+          '¿Cancelar la orden ' +
+          orden.folio +
+          '? Solo se permite desde PLANEADA o LISTA. No se liberarán reservas reales en M15.'
+        "
+        etiquetaConfirmar="Cancelar orden"
+        (confirmar)="cancelar()"
+        (cancelar)="cancelando.set(false)"
+      />
+    }
+  } @else {
+    <div class="cabecera">
+      <div>
+        <p class="eyebrow">M16 · Producción</p>
+        <h1 class="titulo">Orden no encontrada</h1>
+      </div>
+    </div>
+    <div class="tarjeta bloque estado" role="status">
+      <strong>No existe una orden con ese identificador.</strong>
+      <p>Regresa al tablero para elegir una orden vigente.</p>
+      <p><a routerLink="/produccion" class="accion">Ver tablero</a></p>
+    </div>
+  }
+</section>

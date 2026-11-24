@@ -1,0 +1,309 @@
+<section class="vista">
+  <app-navegacion-productos [activo]="'nuevo'" />
+
+  <a routerLink="/admin/productos" class="volver">← Volver al catálogo</a>
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M10 · Catálogo maestro</p>
+      <h1 class="titulo">{{ esEdicion ? 'Editar producto' : 'Nuevo producto' }}</h1>
+      <p class="subtitulo">
+        El código base y los SKU se generan solamente al guardar. Agregar un color o una talla crea
+        únicamente las variantes nuevas; las existentes conservan su SKU.
+      </p>
+    </div>
+  </div>
+
+  @if (!esEdicion || producto) {
+    <form [formGroup]="forma" (ngSubmit)="guardar()" class="formulario" novalidate>
+      <fieldset class="tarjeta seccion">
+        <legend class="seccion__titulo">1 · Identidad del producto</legend>
+        <div class="rejilla">
+          <label class="campo">
+            Nombre *
+            <input
+              class="campo__entrada"
+              formControlName="nombre"
+              maxlength="60"
+              placeholder="Ej. Sudadera universitaria"
+              [attr.aria-invalid]="invalido('nombre')"
+            />
+            @if (invalido('nombre')) {
+              <span class="campo__error">Escribe entre 3 y 60 caracteres.</span>
+            }
+          </label>
+
+          <label class="campo">
+            Categoría *
+            <select class="campo__entrada" formControlName="categoriaId">
+              @for (categoria of servicio.categorias; track categoria.id) {
+                <option [value]="categoria.id">{{ categoria.nombre }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="campo">
+            Código base (automático, solo lectura)
+            <input
+              class="campo__entrada campo__entrada--bloqueado"
+              [value]="codigoBase()"
+              readonly
+              aria-label="Código base generado por el sistema"
+            />
+          </label>
+
+          <label class="campo campo--ancho">
+            Descripción
+            <textarea
+              class="campo__entrada"
+              formControlName="descripcion"
+              rows="2"
+              maxlength="240"
+              placeholder="Descripción breve para la tienda"
+            ></textarea>
+          </label>
+
+          <label class="campo">
+            Composición textil
+            <input
+              class="campo__entrada"
+              formControlName="composicionTextil"
+              maxlength="120"
+              placeholder="Ej. 80% algodón, 20% poliéster"
+            />
+          </label>
+
+          <label class="campo">
+            Guía de medidas
+            <input
+              class="campo__entrada"
+              formControlName="guiaMedidas"
+              maxlength="160"
+              placeholder="Ej. CH 48 × 66 cm · MD 51 × 69 cm"
+            />
+          </label>
+        </div>
+        @if (categoria(); as categoria) {
+          <p class="ayuda">
+            La categoría <strong>{{ categoria.nombre }}</strong> usa el prefijo
+            <span class="mono">{{ categoria.prefijo }}</span> y
+            {{
+              categoria.usaTallas ? 'trabaja con tallas CH, MD y GD' : 'usa únicamente la talla UN'
+            }}.
+          </p>
+        }
+      </fieldset>
+
+      <fieldset class="tarjeta seccion">
+        <legend class="seccion__titulo">2 · Precio y existencias iniciales</legend>
+        <div class="rejilla">
+          <label class="campo">
+            Precio de venta con IVA *
+            <input
+              class="campo__entrada"
+              type="number"
+              min="1"
+              step="0.01"
+              formControlName="precioVenta"
+              [attr.aria-invalid]="invalido('precioVenta')"
+            />
+            @if (invalido('precioVenta')) {
+              <span class="campo__error">Captura un precio mayor a $0.00.</span>
+            }
+          </label>
+
+          <div class="campo">
+            <span class="campo__etiqueta">Precio sin IVA (16% incluido)</span>
+            <span class="dato-derivado">
+              {{ precioSinIva() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+            </span>
+            <span class="ayuda">El precio de venta es el único precio del producto (§6).</span>
+          </div>
+
+          <label class="campo">
+            Stock mínimo por defecto
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              step="1"
+              formControlName="stockMinimo"
+              [attr.aria-invalid]="invalido('stockMinimo')"
+            />
+            @if (invalido('stockMinimo')) {
+              <span class="campo__error">Captura un número entero mayor o igual a cero.</span>
+            }
+          </label>
+
+          <label class="campo">
+            Cantidad de reposición por defecto
+            <input
+              class="campo__entrada"
+              type="number"
+              min="1"
+              step="1"
+              formControlName="cantidadReposicion"
+              [attr.aria-invalid]="invalido('cantidadReposicion')"
+            />
+            @if (invalido('cantidadReposicion')) {
+              <span class="campo__error">Captura un entero mayor a cero.</span>
+            }
+          </label>
+        </div>
+        <label class="casilla">
+          <input type="checkbox" formControlName="permiteBajoPedido" />
+          <span>Permite bajo pedido</span>
+        </label>
+        <p class="ayuda">
+          Los valores de stock son propuesta inicial (5 y 20) y se ajustan en M12; aquí solo se
+          guardan como defaults para las variantes nuevas.
+        </p>
+      </fieldset>
+
+      <fieldset class="tarjeta seccion">
+        <legend class="seccion__titulo">3 · Colores y tallas</legend>
+        <div class="grupo-opciones">
+          <div>
+            <p class="grupo-opciones__titulo">Colores comerciales *</p>
+            <div formArrayName="colores" class="opciones">
+              @for (color of colores; track color.codigo; let indice = $index) {
+                <label class="casilla" [attr.for]="'color-' + color.codigo">
+                  <input
+                    type="checkbox"
+                    [formControlName]="indice"
+                    [id]="'color-' + color.codigo"
+                  />
+                  <span
+                    >{{ color.nombre }} <small>{{ color.codigo }}</small></span
+                  >
+                </label>
+              }
+            </div>
+            @if (sinColor()) {
+              <span class="campo__error">Selecciona al menos un color.</span>
+            }
+          </div>
+
+          <div>
+            <p class="grupo-opciones__titulo">Tallas *</p>
+            <div formArrayName="tallas" class="opciones">
+              @for (talla of tallas; track talla.codigo; let indice = $index) {
+                <label class="casilla" [attr.for]="'talla-' + talla.codigo">
+                  <input
+                    type="checkbox"
+                    [formControlName]="indice"
+                    [id]="'talla-' + talla.codigo"
+                  />
+                  <span
+                    >{{ talla.nombre }} <small>{{ talla.codigo }}</small></span
+                  >
+                </label>
+              }
+            </div>
+            @if (sinTalla()) {
+              <span class="campo__error">Selecciona al menos una talla.</span>
+            }
+            <p class="ayuda">
+              Las tallas disponibles dependen de la categoría; GO y BO solo usan UN.
+            </p>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="tarjeta seccion">
+        <legend class="seccion__titulo">4 · Imágenes por color</legend>
+        <label class="campo">
+          Imagen general
+          <select class="campo__entrada" formControlName="imagenGeneral">
+            <option value="">Sin imagen</option>
+            @for (imagen of imagenes; track imagen.url) {
+              <option [value]="imagen.url">{{ imagen.etiqueta }}</option>
+            }
+          </select>
+        </label>
+        <div formGroupName="imagenesPorColor" class="rejilla imagenes-color">
+          @for (color of coloresSeleccionados(); track color) {
+            <label class="campo">
+              Imagen de {{ servicio.nombreColor(color) }} ({{ color }})
+              <select class="campo__entrada" [formControlName]="color">
+                <option value="">Usar la general</option>
+                @for (imagen of imagenes; track imagen.url) {
+                  <option [value]="imagen.url">{{ imagen.etiqueta }}</option>
+                }
+              </select>
+            </label>
+          }
+        </div>
+        <p class="ayuda">
+          Solo se pueden elegir recursos de imagen que ya existen en el proyecto. No se descargan
+          fotografías externas.
+        </p>
+      </fieldset>
+
+      <section class="tarjeta seccion">
+        <h2 class="seccion__titulo">5 · Vista previa de SKU</h2>
+        <p>
+          Se generarán <strong>{{ skusVistaPrevia().length }}</strong> variantes con el código base
+          <span class="mono">{{ codigoBase() || '—' }}</span>. Formato
+          <span class="mono">PRODUCTO-TALLA-COLOR</span>, sin edición manual.
+        </p>
+        @if (skusVistaPrevia().length === 0) {
+          <p class="estado-linea">Selecciona al menos una talla y un color para ver los SKU.</p>
+        } @else {
+          <div class="sku-lista">
+            @for (sku of skusVistaPrevia(); track sku) {
+              <code>{{ sku }}</code>
+            }
+          </div>
+        }
+      </section>
+
+      @if (esEdicion && producto) {
+        <section class="tarjeta seccion">
+          <h2 class="seccion__titulo">6 · Activación y bitácora</h2>
+          @if (razonesActivacion().length === 0) {
+            <p class="nota nota--exito">
+              Este producto cumple las condiciones de activación registradas en la demostración:
+              recetas vigentes por talla y al menos una imagen.
+            </p>
+          } @else {
+            <ul class="razones">
+              @for (razon of razonesActivacion(); track razon) {
+                <li>{{ razon }}</li>
+              }
+            </ul>
+            <p class="ayuda">
+              Un producto no aparece en la tienda hasta que todas sus tallas tengan receta VIGENTE
+              (M11) y al menos una imagen.
+            </p>
+          }
+          @if (producto.bitacora.length > 0) {
+            <h3 class="subtitulo-seccion">Bitácora de precio</h3>
+            <ul class="bitacora">
+              @for (entrada of producto.bitacora; track entrada.id) {
+                <li>
+                  <strong>{{ entrada.usuario }}</strong>
+                  <span>{{ entrada.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}</span>
+                  <p>{{ entrada.detalle }}</p>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+
+      <div class="acciones-forma">
+        <button type="submit" class="boton boton--primario">
+          {{ esEdicion ? 'Guardar cambios' : 'Crear producto' }}
+        </button>
+        <a routerLink="/admin/productos" class="boton boton--secundario">Cancelar</a>
+      </div>
+    </form>
+  } @else {
+    <div class="tarjeta seccion estado" role="status">
+      <strong>No encontramos el producto solicitado.</strong>
+      <p>Regresa al catálogo para elegir uno disponible.</p>
+      <a routerLink="/admin/productos" class="boton boton--primario">Ir al catálogo</a>
+    </div>
+  }
+</section>

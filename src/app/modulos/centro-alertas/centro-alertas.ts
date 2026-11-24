@@ -29,6 +29,7 @@ export class CentroAlertas {
   protected alCambiarRol(evento: Event): void {
     const rol = (evento.target as HTMLSelectElement).value as RolVistaAlertas;
     this.servicio.cambioRol(rol);
+    this.servicio.cambiarRol(rol);
     if (rol === 'Operativo' && this.router.url.includes('/reglas')) {
       void this.router.navigate(['/alertas', 'bandeja']);
     }

@@ -1,0 +1,177 @@
+<section class="vista">
+  <app-navegacion-entregas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M19 · Logística</p>
+      <h1 class="titulo">Seguimiento de entregas</h1>
+      <p class="subtitulo">
+        Historial con estado, intento, repartidor y tiempos. Las decisiones por dos intentos
+        fallidos se muestran aquí para el Administrador.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <a routerLink="/entregas/hoja-reparto" class="boton boton--secundario">Hoja de reparto</a>
+      <a routerLink="/entregas/productos-repartidos" class="boton boton--secundario">Productos repartidos</a>
+    </div>
+  </div>
+
+  @if (alertas().length > 0) {
+    <div class="tarjeta bloque bloque--alerta">
+      <div class="bloque__titulo">
+        <h2>Alertas críticas abiertas</h2>
+        <span>Dos intentos fallidos · decisión del Administrador</span>
+      </div>
+      @for (entrega of alertas(); track entrega.folio) {
+        <div class="alerta">
+          <div>
+            <span class="mono">{{ entrega.folio }}</span>
+            <span class="celda-principal">{{ entrega.pedidoFolio }} · {{ entrega.cliente }}</span>
+            <span class="celda-secundaria">
+              {{ etiquetaMotivo(entrega.motivoFallo) }} · {{ entrega.intento }} intentos fallidos
+            </span>
+          </div>
+          <div class="acciones">
+            <button type="button" class="boton boton--primario" (click)="abrirConfirmacion(entrega.folio, 'REPROGRAMAR')">
+              Reprogramar
+            </button>
+            <button type="button" class="boton boton--secundario" (click)="abrirConfirmacion(entrega.folio, 'CANCELAR')">
+              Cancelar con reembolso
+            </button>
+          </div>
+        </div>
+      }
+      <p class="nota nota--error">
+        La resolución definitiva, la alerta en M21, el reingreso en M12 y el reembolso en M08
+        corresponden a Flask. Aquí solo se proyecta la decisión en memoria.
+      </p>
+    </div>
+  }
+
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Historial de entregas</h2>
+      <span>Filtros por periodo, repartidor y estado</span>
+    </div>
+
+    <div class="barra barra--seguimiento">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Guía, pedido o cliente"
+          aria-label="Buscar entregas"
+        />
+      </label>
+      <label class="campo filtro">
+        Repartidor
+        <select class="campo__entrada" [value]="repartidorId()" (change)="alCambiarRepartidor($event)">
+          <option value="0">Todos los repartidores</option>
+          @for (repartidor of repartidores(); track repartidor.id) {
+            <option [value]="repartidor.id">{{ repartidor.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo filtro">
+        Estado
+        <select class="campo__entrada" [value]="estado()" (change)="alCambiarEstado($event)">
+          @for (opcion of estados; track opcion.valor) {
+            <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo filtro">
+        Desde
+        <input class="campo__entrada" type="date" [value]="desde()" (change)="alCambiarDesde($event)" />
+      </label>
+      <label class="campo filtro">
+        Hasta
+        <input class="campo__entrada" type="date" [value]="hasta()" (change)="alCambiarHasta($event)" />
+      </label>
+    </div>
+
+    @if (!sinFiltros()) {
+      <p class="filtros">
+        <button type="button" class="boton boton--enlace" (click)="restablecer()">Limpiar filtros</button>
+      </p>
+    }
+
+    @if (servicio.entregas().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay entregas registradas.</strong>
+        <p>Asigna un pedido en «Por asignar» para iniciar el historial.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Ajusta el periodo, el repartidor, el estado o la búsqueda.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--historial">
+          <caption class="sr-only">Historial filtrado de entregas</caption>
+          <thead>
+            <tr>
+              <th scope="col">Guía rastreable</th>
+              <th scope="col">Pedido / cliente</th>
+              <th scope="col">Intento</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Repartidor</th>
+              <th scope="col">Programada</th>
+              <th scope="col">Salida</th>
+              <th scope="col">Resultado</th>
+              <th scope="col">Motivo / notas</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entrega of filtrados(); track entrega.folio) {
+              <tr>
+                <td data-etiqueta="Guía"><span class="mono">{{ entrega.folio }}</span></td>
+                <td data-etiqueta="Pedido">
+                  <span class="celda-principal">{{ entrega.pedidoFolio }}</span>
+                  <span class="celda-secundaria">{{ entrega.cliente }}</span>
+                </td>
+                <td data-etiqueta="Intento">{{ entrega.intento }}</td>
+                <td data-etiqueta="Estado"><app-chip-estado-entrega [estado]="entrega.estado" /></td>
+                <td data-etiqueta="Repartidor">{{ servicio.nombreRepartidor(entrega.repartidorId) }}</td>
+                <td data-etiqueta="Programada">
+                  {{ entrega.fechaProgramada | date: 'dd/MM/yyyy' : '' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Salida">
+                  {{ entrega.salidaEn ? (entrega.salidaEn | date: 'dd/MM HH:mm' : '' : 'es-MX') : '—' }}
+                </td>
+                <td data-etiqueta="Resultado">
+                  {{ entrega.resultadoEn ? (entrega.resultadoEn | date: 'dd/MM HH:mm' : '' : 'es-MX') : '—' }}
+                  @if (entrega.receptor) {
+                    <span class="celda-secundaria">Recibió {{ entrega.receptor }}</span>
+                  }
+                </td>
+                <td data-etiqueta="Motivo / notas">
+                  <span class="celda-principal">{{ etiquetaMotivo(entrega.motivoFallo) }}</span>
+                  @if (entrega.notas) {
+                    <span class="celda-secundaria">{{ entrega.notas }}</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  @if (confirmacion(); as datos) {
+    <app-modal-confirmacion
+      [titulo]="datos.titulo"
+      [mensaje]="datos.mensaje"
+      [etiquetaConfirmar]="datos.etiqueta"
+      (confirmar)="confirmar()"
+      (cancelar)="confirmando.set(null)"
+    />
+  }
+</section>

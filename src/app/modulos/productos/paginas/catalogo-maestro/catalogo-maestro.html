@@ -1,0 +1,209 @@
+<section class="vista">
+  <app-navegacion-productos />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M10 · Catálogo maestro</p>
+      <h1 class="titulo">Productos y variantes</h1>
+      <p class="subtitulo">
+        Prendas con código base y SKU generados por el sistema. El precio se muestra con IVA
+        incluido y el margen se calcula con el costo provisional que entrega M11.
+      </p>
+    </div>
+    <a routerLink="/admin/productos/nuevo" class="boton boton--primario">Nuevo producto</a>
+  </div>
+
+  <div class="indicadores">
+    <div class="tarjeta indicador">
+      <span class="indicador__etiqueta">Productos</span>
+      <strong class="indicador__valor">{{ indicadores().total }}</strong>
+    </div>
+    <div class="tarjeta indicador indicador--activo">
+      <span class="indicador__etiqueta">Activos en tienda</span>
+      <strong class="indicador__valor">{{ indicadores().activos }}</strong>
+    </div>
+    <div class="tarjeta indicador indicador--adv">
+      <span class="indicador__etiqueta">Borradores</span>
+      <strong class="indicador__valor">{{ indicadores().borradores }}</strong>
+    </div>
+    <div class="tarjeta indicador">
+      <span class="indicador__etiqueta">Variantes generadas</span>
+      <strong class="indicador__valor">{{ indicadores().variantes }}</strong>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por producto, código, categoría o SKU"
+          aria-label="Buscar en el catálogo maestro"
+        />
+      </label>
+      <label class="campo filtro">
+        Categoría
+        <select class="campo__entrada" [value]="categoria()" (change)="alCambiarCategoria($event)">
+          <option value="TODAS">Todas</option>
+          @for (categoria of servicio.categorias; track categoria.id) {
+            <option [value]="categoria.id">{{ categoria.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo filtro">
+        Estatus
+        <select class="campo__entrada" [value]="estatus()" (change)="alCambiarEstatus($event)">
+          <option value="TODOS">Todos</option>
+          <option value="ACTIVO">Activo</option>
+          <option value="BORRADOR">Borrador</option>
+          <option value="DESACTIVADO">Desactivado</option>
+        </select>
+      </label>
+    </div>
+
+    @if (productos().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay productos en el catálogo.</strong>
+        <p>Crea el primero desde «Nuevo producto».</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Ajusta el texto o los filtros para ver otros productos.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">
+            Catálogo maestro de productos
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Imagen</th>
+              <th scope="col">Producto</th>
+              <th scope="col">Categoría</th>
+              <th scope="col">Código base</th>
+              <th scope="col">Variantes</th>
+              <th scope="col">Precio vigente</th>
+              <th scope="col">Costo estándar</th>
+              <th scope="col">Margen real</th>
+              <th scope="col">Estatus</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (producto of filtrados(); track producto.id) {
+              <tr>
+                <td data-etiqueta="Imagen">
+                  @if (producto.imagenes[0]; as imagen) {
+                    <img
+                      class="miniatura"
+                      [src]="imagen.url"
+                      [alt]="'Imagen de ' + producto.nombre"
+                      width="52"
+                      height="52"
+                    />
+                  } @else {
+                    <span class="miniatura miniatura--vacia">Sin imagen</span>
+                  }
+                </td>
+                <td data-etiqueta="Producto">
+                  <span class="celda-principal">{{ producto.nombre }}</span>
+                  <span class="celda-secundaria">{{ producto.descripcion }}</span>
+                </td>
+                <td data-etiqueta="Categoría">
+                  {{ servicio.nombreCategoria(producto.categoriaId) }}
+                </td>
+                <td data-etiqueta="Código base">
+                  <span class="mono">{{ producto.codigoSku }}</span>
+                </td>
+                <td data-etiqueta="Variantes">{{ producto.variantes.length }}</td>
+                <td data-etiqueta="Precio">
+                  {{ producto.precioVenta | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Costo">
+                  @if (producto.costoEstandar !== null) {
+                    {{ producto.costoEstandar | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                  } @else {
+                    <span class="celda-secundaria">Pendiente de M11</span>
+                  }
+                </td>
+                <td data-etiqueta="Margen">
+                  @if (margen(producto) !== null) {
+                    <span class="margen" [class.margen--bajo]="margenBajo(producto)">
+                      {{ textoMargen(producto) }}
+                    </span>
+                  } @else {
+                    <span class="celda-secundaria">—</span>
+                  }
+                </td>
+                <td data-etiqueta="Estatus">
+                  <span
+                    class="chip"
+                    [class.chip--activo]="estatusDe(producto) === 'ACTIVO'"
+                    [class.chip--borrador]="estatusDe(producto) === 'BORRADOR'"
+                    [class.chip--baja]="estatusDe(producto) === 'DESACTIVADO'"
+                  >
+                    {{ estatusDe(producto) }}
+                  </span>
+                </td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    <a
+                      class="accion"
+                      [routerLink]="['/admin/productos/editar', producto.id]"
+                      [attr.aria-label]="'Editar ' + producto.nombre"
+                    >
+                      Editar
+                    </a>
+                    <button type="button" class="accion" (click)="verVariantes(producto)">
+                      Variantes
+                    </button>
+                    @if (estatusDe(producto) === 'ACTIVO') {
+                      <button type="button" class="accion" (click)="activar(producto, false)">
+                        Desactivar
+                      </button>
+                    } @else if (producto.eliminadoEn === null) {
+                      <button type="button" class="accion" (click)="activar(producto, true)">
+                        Activar
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      class="accion accion--peligro"
+                      (click)="pedirEliminacion(producto)"
+                    >
+                      {{ producto.tieneHistorial ? 'Dar de baja' : 'Eliminar' }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      El código base y los SKU se generan con la regla 6.5 y no se editan a mano. El costo y el
+      margen son valores de demostración provenientes de la tabla de recetas semilla; M11 es el
+      dueño de esa cifra. Las existencias se consultan en M12 y no se modifican aquí.
+    </p>
+  </div>
+
+  @if (confirmando(); as producto) {
+    <app-modal-confirmacion
+      [titulo]="producto.tieneHistorial ? 'Dar de baja producto' : 'Eliminar producto'"
+      [mensaje]="mensajeEliminacion(producto)"
+      [etiquetaConfirmar]="producto.tieneHistorial ? 'Desactivar' : 'Eliminar'"
+      (confirmar)="confirmarEliminacion()"
+      (cancelar)="confirmando.set(null)"
+    />
+  }
+</section>

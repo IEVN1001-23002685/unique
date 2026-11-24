@@ -1,0 +1,87 @@
+<div class="autenticacion">
+  <button
+    type="button"
+    class="autenticacion__cerrar"
+    aria-label="Cerrar registro"
+    (click)="onCerrar()"
+  >
+    ✕
+  </button>
+
+  <div class="autenticacion__encabezado">
+    <img src="/Logo1.png" alt="UNIQUE - tan unico como tu" class="autenticacion__logo" />
+    <h2 class="autenticacion__titulo">Registro</h2>
+  </div>
+
+  <form class="autenticacion__formulario" (ngSubmit)="onSubmit()" #registroForm="ngForm">
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="nombreCompleto">Nombre completo:</label>
+      <input
+        id="nombreCompleto"
+        name="nombreCompleto"
+        type="text"
+        [(ngModel)]="usuario.nombreCompleto"
+        required
+        autofocus
+        class="autenticacion__entrada"
+      />
+    </div>
+
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="telefono">Teléfono:</label>
+      <input
+        id="telefono"
+        name="telefono"
+        type="tel"
+        [(ngModel)]="usuario.telefono"
+        required
+        class="autenticacion__entrada"
+      />
+    </div>
+
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="correo">Correo electrónico:</label>
+      <input
+        id="correo"
+        name="correo"
+        type="email"
+        [(ngModel)]="usuario.correo"
+        required
+        class="autenticacion__entrada"
+      />
+    </div>
+
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="contrasena">Contraseña</label>
+      <input
+        id="contrasena"
+        name="contrasena"
+        type="password"
+        [(ngModel)]="usuario.contrasena"
+        required
+        class="autenticacion__entrada"
+      />
+    </div>
+
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="repetirContrasena">Repetir contraseña:</label>
+      <input
+        id="repetirContrasena"
+        name="repetirContrasena"
+        type="password"
+        [(ngModel)]="usuario.repetirContrasena"
+        required
+        class="autenticacion__entrada"
+      />
+    </div>
+
+    <button type="submit" class="autenticacion__boton">Registrarse</button>
+  </form>
+
+  <p class="autenticacion__pie">
+    ¿Ya estás registrado?
+    <button type="button" class="autenticacion__enlace" (click)="onIrAIniciarSesion()">
+      Iniciar Sesión
+    </button>
+  </p>
+</div>

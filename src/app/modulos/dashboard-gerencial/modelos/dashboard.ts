@@ -92,6 +92,7 @@ export interface MaterialDemo {
   disponible: number;
   minimo: number;
   tono: Exclude<TonoDashboard, 'INFO' | 'NEUTRO'>;
+  tono: 'ROJO' | 'AMBAR';
 }
 
 export interface CompraDemo {

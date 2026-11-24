@@ -1,0 +1,78 @@
+.cabecera-orden {
+  margin-bottom: 1.5rem;
+}
+.motivo {
+  margin: 0.75rem 0 1rem;
+  padding: 0.6rem 0.85rem;
+  border-left: 4px solid var(--color-unique-orquidea);
+  background: var(--color-unique-fila);
+  font-size: 0.82rem;
+  color: var(--color-unique-texto-suave);
+}
+.lector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1.25rem;
+  margin: 0 0 1rem;
+}
+.lector > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px dashed #e7d7e8;
+}
+.lector dt {
+  font-family: var(--font-interfaz);
+  font-size: 0.78rem;
+  color: var(--color-unique-texto-suave);
+}
+.lector dd {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: right;
+}
+.acciones-orden {
+  margin-top: 0.5rem;
+}
+.pedidos {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pedidos li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #e7d7e8;
+  border-radius: 12px;
+  background: var(--color-unique-fila);
+  font-size: 0.82rem;
+}
+.pedidos li strong {
+  color: var(--color-unique-morado);
+}
+.pedidos li .celda-secundaria {
+  flex-basis: 100%;
+}
+.panel-solicitud {
+  margin-top: 1.25rem;
+}
+.panel-solicitud__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+@media (max-width: 640px) {
+  .lector {
+    grid-template-columns: 1fr;
+  }
+}

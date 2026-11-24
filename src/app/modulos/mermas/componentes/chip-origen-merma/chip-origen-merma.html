@@ -1,0 +1,7 @@
+<span
+  class="origen"
+  [class.origen--material]="origen() === 'MATERIAL'"
+  [class.origen--producto]="origen() === 'PRODUCTO'"
+>
+  {{ origen() === 'MATERIAL' ? 'Material' : 'Producto' }}
+</span>

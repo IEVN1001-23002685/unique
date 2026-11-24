@@ -1,0 +1,39 @@
+:host {
+  display: block;
+}
+
+.ranking {
+  margin: 0;
+  padding-left: 1.4rem;
+  color: var(--color-unique-texto);
+  font-size: 0.84rem;
+  line-height: 1.9;
+}
+
+.ranking .vacio {
+  list-style: none;
+  margin-left: -1.4rem;
+}
+
+.valor-margen {
+  color: #1f6d3c;
+  font-weight: 700;
+}
+
+.valor-margen--bajo {
+  color: #a52b3c;
+}
+
+.metricas--clientes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.filtros__acciones {
+  margin-bottom: 0;
+}
+
+@media (max-width: 767px) {
+  .metricas--clientes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

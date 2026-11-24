@@ -1,0 +1,20 @@
+<nav class="pestanas" aria-label="Pantallas de pedidos">
+  <a
+    routerLink="/admin/pedidos"
+    routerLinkActive="pestana--activa"
+    [routerLinkActiveOptions]="{ exact: true }"
+    class="pestana"
+  >
+    Bandeja
+  </a>
+  <a
+    routerLink="/admin/pedidos/pendientes-produccion"
+    routerLinkActive="pestana--activa"
+    class="pestana"
+  >
+    Pendientes de producción
+  </a>
+  <a routerLink="/admin/pedidos/cancelados" routerLinkActive="pestana--activa" class="pestana">
+    Cancelados
+  </a>
+</nav>

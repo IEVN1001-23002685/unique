@@ -1,0 +1,182 @@
+<section class="vista">
+  <app-navegacion-proveedores />
+
+  <a routerLink="/proveedores" class="volver">← Volver al padrón</a>
+
+  @if (noEncontrado()) {
+    <div class="tarjeta error" role="alert">
+      <h1 class="titulo">Proveedor no encontrado</h1>
+      <p>El folio solicitado no existe en el padrón de demostración.</p>
+      <a routerLink="/proveedores" class="boton boton--primario">Ir al padrón</a>
+    </div>
+  } @else {
+    <div class="cabecera">
+      <div>
+        <p class="eyebrow">M13 · Proveedores</p>
+        <h1 class="titulo">
+          {{ esEdicion ? 'Editar proveedor' : 'Alta de proveedor' }}
+        </h1>
+        <p class="subtitulo">
+          Captura la información del padrón. Los campos marcados con * son obligatorios.
+        </p>
+      </div>
+    </div>
+
+    <form class="tarjeta formulario" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+      <fieldset class="seccion">
+        <legend>Datos de identificación</legend>
+        <div class="rejilla">
+          <label class="campo campo--amplio">
+            Razón social *
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="razonSocial"
+              autocomplete="organization"
+              [attr.aria-invalid]="esInvalido('razonSocial')"
+            />
+            @if (esInvalido('razonSocial')) {
+              <span class="campo__error">Ingresa la razón social (mínimo 3 caracteres).</span>
+            }
+          </label>
+
+          <label class="campo">
+            Nombre comercial *
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="nombreComercial"
+              [attr.aria-invalid]="esInvalido('nombreComercial')"
+            />
+            @if (esInvalido('nombreComercial')) {
+              <span class="campo__error">Ingresa el nombre comercial.</span>
+            }
+          </label>
+
+          <label class="campo">
+            RFC (12 o 13 caracteres)
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="rfc"
+              maxlength="13"
+              placeholder="TLC120315AB1"
+              [attr.aria-invalid]="esInvalido('rfc')"
+            />
+            @if (esInvalido('rfc')) {
+              <span class="campo__error">El RFC no tiene la estructura oficial válida.</span>
+            }
+          </label>
+
+          <label class="campo">
+            Estatus
+            <select class="campo__entrada" formControlName="estatus">
+              @for (estatus of estatusPosibles; track estatus) {
+                <option [value]="estatus">{{ etiquetaEstatus(estatus) }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="seccion">
+        <legend>Contacto</legend>
+        <div class="rejilla">
+          <label class="campo">
+            Persona de contacto *
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="contacto"
+              autocomplete="name"
+              [attr.aria-invalid]="esInvalido('contacto')"
+            />
+            @if (esInvalido('contacto')) {
+              <span class="campo__error">Ingresa el nombre del contacto.</span>
+            }
+          </label>
+
+          <label class="campo">
+            Teléfono (10 dígitos) *
+            <input
+              class="campo__entrada"
+              type="tel"
+              formControlName="telefono"
+              inputmode="numeric"
+              maxlength="14"
+              placeholder="5543128890"
+              [attr.aria-invalid]="esInvalido('telefono')"
+            />
+            @if (esInvalido('telefono')) {
+              <span class="campo__error">El teléfono debe tener exactamente 10 dígitos.</span>
+            }
+          </label>
+
+          <label class="campo">
+            Correo electrónico *
+            <input
+              class="campo__entrada"
+              type="email"
+              formControlName="correo"
+              autocomplete="email"
+              placeholder="ventas@proveedor.mx"
+              [attr.aria-invalid]="esInvalido('correo')"
+            />
+            @if (esInvalido('correo')) {
+              <span class="campo__error">Ingresa un correo electrónico válido.</span>
+            }
+          </label>
+
+          <label class="campo campo--amplio">
+            Dirección *
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="direccion"
+              autocomplete="street-address"
+              [attr.aria-invalid]="esInvalido('direccion')"
+            />
+            @if (esInvalido('direccion')) {
+              <span class="campo__error">Ingresa la dirección del proveedor.</span>
+            }
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="seccion">
+        <legend>Condiciones y notas</legend>
+        <div class="rejilla">
+          <label class="campo">
+            Condiciones de pago *
+            <select class="campo__entrada" formControlName="condicionesPago">
+              @for (condicion of condicionesPago; track condicion) {
+                <option [value]="condicion">{{ condicion }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="campo campo--amplio">
+            Notas (opcional)
+            <textarea
+              class="campo__entrada campo__area"
+              formControlName="notas"
+              rows="3"
+            ></textarea>
+          </label>
+        </div>
+      </fieldset>
+
+      <p class="nota">
+        El alta o edición se registra únicamente en memoria para probar la interfaz. La validación
+        definitiva y la persistencia se conectarán a Flask.
+      </p>
+
+      <div class="acciones-formulario">
+        <a routerLink="/proveedores" class="boton boton--secundario">Cancelar</a>
+        <button type="submit" class="boton boton--primario">
+          {{ esEdicion ? 'Guardar cambios' : 'Dar de alta' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

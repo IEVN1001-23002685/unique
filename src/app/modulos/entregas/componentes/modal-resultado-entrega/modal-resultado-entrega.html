@@ -1,0 +1,76 @@
+<div class="modal" (keydown)="alPulsarTecla($event)">
+  <div class="modal__telon" (click)="cancelar.emit()" aria-hidden="true"></div>
+
+  <section class="modal__panel" role="dialog" aria-modal="true" [attr.aria-label]="modo() === 'ENTREGADO' ? 'Registrar entrega' : 'Registrar intento fallido'">
+    <h2 class="modal__titulo">
+      {{ modo() === 'ENTREGADO' ? 'Registrar entrega' : 'Registrar intento fallido' }}
+    </h2>
+    <p class="modal__contexto">
+      Guía <span class="mono">{{ entrega().folio }}</span> · {{ entrega().cliente }} · intento
+      {{ entrega().intento }}
+    </p>
+
+    @if (modo() === 'ENTREGADO') {
+      <form [formGroup]="entregadoForma" (ngSubmit)="alEnviar()" class="modal__campos">
+        <label class="campo">
+          ¿Quién recibió el pedido?
+          <input
+            class="campo__entrada"
+            type="text"
+            formControlName="receptor"
+            autofocus
+            maxlength="80"
+            placeholder="Nombre de la persona que recibió"
+            [attr.aria-invalid]="receptorInvalido()"
+          />
+        </label>
+        @if (receptorInvalido()) {
+          <p class="campo__error" role="alert">Captura al menos 3 caracteres.</p>
+        }
+        <label class="campo">
+          Notas (opcional)
+          <textarea
+            class="campo__entrada"
+            formControlName="notas"
+            rows="2"
+            maxlength="240"
+            placeholder="Ej. Entregada en portería"
+          ></textarea>
+        </label>
+        <div class="modal__acciones">
+          <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">Cancelar</button>
+          <button type="submit" class="boton boton--primario">Confirmar entrega</button>
+        </div>
+      </form>
+    } @else {
+      <form [formGroup]="fallidaForma" (ngSubmit)="alEnviar()" class="modal__campos">
+        <label class="campo">
+          Motivo del fallo
+          <select class="campo__entrada" formControlName="motivoFallo" autofocus>
+            @for (motivo of motivos; track motivo) {
+              <option [value]="motivo">{{ etiquetasMotivo[motivo] }}</option>
+            }
+          </select>
+        </label>
+        <label class="campo">
+          Detalle (opcional)
+          <textarea
+            class="campo__entrada"
+            formControlName="notas"
+            rows="2"
+            maxlength="240"
+            placeholder="Ej. No se localizó el domicilio"
+          ></textarea>
+        </label>
+        <p class="modal__aviso">
+          Al registrar el fallo se reingresan las prendas (M12) y el pedido vuelve a LISTO_ENVIO
+          (M09). Con dos intentos fallidos se abre una alerta crítica.
+        </p>
+        <div class="modal__acciones">
+          <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">Cancelar</button>
+          <button type="submit" class="boton boton--peligro">Registrar fallo</button>
+        </div>
+      </form>
+    }
+  </section>
+</div>

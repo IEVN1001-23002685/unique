@@ -1,0 +1,10 @@
+.selector{max-width:26rem}
+.formulario{display:grid;gap:.75rem}
+.campo--amplio{grid-column:1/-1}
+.campo--check{flex-direction:row;align-items:center;gap:.5rem;font-weight:500}
+.campo--check input{width:1rem;height:1rem;accent-color:var(--color-unique-morado)}
+.error-servicio{margin-top:.85rem}
+.acciones--form{margin-top:1rem}
+.nota-final{margin-top:1.25rem}
+.muestra-color{display:inline-block;width:.85rem;height:.85rem;margin-right:.4rem;border:1px solid #d9bfdb;border-radius:50%;vertical-align:middle}
+@media (min-width:768px){.formulario{grid-template-columns:repeat(3,minmax(0,1fr))}}
