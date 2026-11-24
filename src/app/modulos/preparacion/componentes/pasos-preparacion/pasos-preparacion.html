@@ -1,0 +1,15 @@
+<ol class="pasos" aria-label="Avance de la preparación">
+  @for (paso of pasos; track paso; let indicePaso = $index) {
+    <li
+      class="pasos__item"
+      [class.pasos__item--hecho]="indicePaso < indice()"
+      [class.pasos__item--actual]="indicePaso === indice()"
+      [attr.aria-current]="indicePaso === indice() ? 'step' : null"
+    >
+      <span class="pasos__numero" aria-hidden="true">
+        {{ indicePaso < indice() ? '✓' : indicePaso + 1 }}
+      </span>
+      <span class="pasos__etiqueta">{{ etiquetas[paso] }}</span>
+    </li>
+  }
+</ol>

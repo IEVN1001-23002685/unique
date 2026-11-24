@@ -109,7 +109,9 @@ export class DetallePedido {
     const detalle =
       modulo === 'M08'
         ? 'Este pedido de ejemplo no tiene una venta registrada en M08.'
-        : `${nombre} aún no está implementado; el acceso queda preparado para la integración. No se simuló ninguna operación.`;
+        : modulo === 'M18'
+          ? 'Este pedido no tiene una hoja activa en M18; revisa la cola de preparación para tomarlo.'
+          : `${nombre} aún no está implementado; el acceso queda preparado para la integración. No se simuló ninguna operación.`;
     this.avisos.mostrar('informacion', `${modulo} · ${detalle}`);
   }
 }

@@ -123,6 +123,14 @@ export const routes: Routes = [
     redirectTo: 'operacion/inventario-pt',
   },
   {
+    // M18 se monta en /preparación según el mapa del §10. Operativo opera y Administrador también.
+    path: 'preparacion',
+    component: Administracion,
+    data: { titulo: 'Preparación', rol: 'Operativo', roles: ['Administrador', 'Operativo'] },
+    loadChildren: () =>
+      import('./modulos/preparacion/preparacion.routes').then((m) => m.PREPARACION_RUTAS),
+  },
+  {
     path: 'proveedores',
     component: Administracion,
     data: { titulo: 'Proveedores', rol: 'Administrador', roles: ['Administrador'] },

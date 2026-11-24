@@ -216,10 +216,20 @@
           <strong>M16 · Producción</strong>
           <span>{{ servicio.totalPendiente(pedido) }} unidades por producir</span>
         </button>
-        <button type="button" class="acceso" (click)="avisoModulo('M18', 'Preparación')">
-          <strong>M18 · Preparación</strong>
-          <span>{{ pedido.preparacionFolio ?? 'Sin folio de preparación' }}</span>
-        </button>
+        @if (
+          pedido.preparacionFolio &&
+          (pedido.estado === 'EN_PREPARACION' || pedido.estado === 'LISTO_ENVIO')
+        ) {
+          <a class="acceso" [routerLink]="['/preparacion', pedido.preparacionFolio]">
+            <strong>M18 · Preparación</strong>
+            <span>Abrir hoja {{ pedido.preparacionFolio }}</span>
+          </a>
+        } @else {
+          <button type="button" class="acceso" (click)="avisoModulo('M18', 'Preparación')">
+            <strong>M18 · Preparación</strong>
+            <span>{{ pedido.preparacionFolio ?? 'Sin folio; toma el pedido en la cola' }}</span>
+          </button>
+        }
         <button type="button" class="acceso" (click)="avisoModulo('M19', 'Entrega')">
           <strong>M19 · Entrega</strong>
           <span>{{ pedido.entregaGuia ?? 'Sin guía asignada' }}</span>
