@@ -50,10 +50,50 @@
       <!-- Acceso de demostración al panel; el control real de roles se hará en Flask. -->
       <a routerLink="/panel" class="enlace-cuenta hidden lg:inline-flex"> Panel </a>
 
-    
+      <a
+        routerLink="/pedidos"
+        routerLinkActive="enlace-activo"
+        class="enlace-cuenta hidden lg:inline-flex"
+      >
+        Mis pedidos
+      </a>
+      <a
+        routerLink="/cuenta"
+        routerLinkActive="enlace-activo"
+        class="enlace-cuenta hidden lg:inline-flex"
+      >
+        Mi cuenta
+      </a>
 
-      <!-- Carrito: se navegará cuando exista el módulo de carrito -->
-      <button type="button" class="icono-barra" aria-label="Carrito de compras">
+      <!-- La búsqueda filtra el catálogo a través de BusquedaCatalogoServicio. -->
+      <div class="hidden md:block">
+        <label class="campo-busqueda">
+          <span class="sr-only">Buscar prendas</span>
+          <input
+            type="search"
+            class="campo-busqueda__entrada"
+            placeholder="Buscar prendas..."
+            [value]="busqueda.termino()"
+            (input)="actualizarTermino($event)"
+          />
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            class="campo-busqueda__boton h-5 w-5"
+          >
+            <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+            <path
+              d="m16 16 4.5 4.5"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+        </label>
+      </div>
+
+      <a routerLink="/carrito" class="icono-barra" aria-label="Ir al carrito de compras">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-6 w-6">
           <path
             d="M3 4h2.2l2.3 10.1a2 2 0 0 0 1.95 1.55h7.6a2 2 0 0 0 1.95-1.55L20.5 8H6"
@@ -65,7 +105,7 @@
           <circle cx="10" cy="20" r="1.4" fill="currentColor" />
           <circle cx="17.5" cy="20" r="1.4" fill="currentColor" />
         </svg>
-      </button>
+      </a>
 
       <button
         type="button"
@@ -88,13 +128,16 @@
   </nav>
 
   @if (menuAbierto()) {
-    <div
-      id="menu-tienda"
-      class="lg:hidden border-t border-neutral-200 bg-white px-4 py-5 sm:px-6"
-    >
+    <div id="menu-tienda" class="lg:hidden border-t border-neutral-200 bg-white px-4 py-5 sm:px-6">
       <div class="mx-auto flex w-full max-w-[1264px] flex-col items-start gap-4">
         <!-- Enlaces del menú para tablet y celular -->
         <a routerLink="/catalogo" class="enlace-menu" (click)="cerrarMenu()">Catálogo</a>
+        <a routerLink="/carrito" class="enlace-menu" (click)="cerrarMenu()">Carrito</a>
+        <a routerLink="/pedidos" class="enlace-menu" (click)="cerrarMenu()">Mis pedidos</a>
+        <a routerLink="/devoluciones" class="enlace-menu" (click)="cerrarMenu()"
+          >Cambios y devoluciones</a
+        >
+        <a routerLink="/cuenta" class="enlace-menu" (click)="cerrarMenu()">Mi cuenta</a>
         <a routerLink="/panel" class="enlace-menu" (click)="cerrarMenu()">Panel</a>
         <button type="button" class="enlace-menu" (click)="abrirInicioSesion()">
           Iniciar sesión

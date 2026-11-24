@@ -41,13 +41,7 @@ type LineaGrupo = ReturnType<typeof crearGrupoLinea>;
 
 @Component({
   selector: 'app-catalogo-proveedor',
-  imports: [
-    ReactiveFormsModule,
-    RouterLink,
-    ChipEstatus,
-    NavegacionProveedores,
-    ModalConfirmacion,
-  ],
+  imports: [ReactiveFormsModule, RouterLink, ChipEstatus, NavegacionProveedores, ModalConfirmacion],
   templateUrl: './catalogo-proveedor.html',
   styleUrl: './catalogo-proveedor.css',
 })
@@ -201,7 +195,8 @@ export class CatalogoProveedor {
       return;
     }
 
-    let siguienteId = proveedor.materiales.reduce((maximo, linea) => Math.max(maximo, linea.id), 0) + 1;
+    let siguienteId =
+      proveedor.materiales.reduce((maximo, linea) => Math.max(maximo, linea.id), 0) + 1;
 
     const materiales: MaterialProveedor[] = this.lineas.getRawValue().map((valor, indice) => {
       const referencia = this.referencia(valor.materialId);

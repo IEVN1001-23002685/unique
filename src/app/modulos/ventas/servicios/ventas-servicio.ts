@@ -116,22 +116,20 @@ export class VentasServicio {
     if (descuento.vigenteHasta !== null && descuento.vigenteHasta < hoy) {
       return { valido: false, motivo: 'El descuento ya venció.', monto: 0 };
     }
-    if (
-      descuento.usosMaximos !== null &&
-      descuento.usosActuales >= descuento.usosMaximos
-    ) {
+    if (descuento.usosMaximos !== null && descuento.usosActuales >= descuento.usosMaximos) {
       return { valido: false, motivo: 'Se agotaron los usos del descuento.', monto: 0 };
     }
     if (descuento.soloPrimeraCompra && !contexto.esPrimeraCompra) {
       return { valido: false, motivo: 'Solo aplica a la primera compra.', monto: 0 };
     }
     if (descuento.montoMinimo !== null && contexto.subtotal < descuento.montoMinimo) {
-      return { valido: false, motivo: `Requiere un subtotal de $${descuento.montoMinimo}.`, monto: 0 };
+      return {
+        valido: false,
+        motivo: `Requiere un subtotal de $${descuento.montoMinimo}.`,
+        monto: 0,
+      };
     }
-    if (
-      descuento.minArticulos !== null &&
-      contexto.cantidadArticulos < descuento.minArticulos
-    ) {
+    if (descuento.minArticulos !== null && contexto.cantidadArticulos < descuento.minArticulos) {
       return {
         valido: false,
         motivo: `Requiere al menos ${descuento.minArticulos} artículos.`,
@@ -185,9 +183,10 @@ export class VentasServicio {
 
     const subtotal = lineas.reduce((suma, linea) => suma + linea.subtotal, 0);
     const cantidadArticulos = lineas.reduce((suma, linea) => suma + linea.cantidad, 0);
-    const descuento = solicitud.descuentoId === null
-      ? null
-      : this.obtenerDescuento(solicitud.descuentoId) ?? null;
+    const descuento =
+      solicitud.descuentoId === null
+        ? null
+        : (this.obtenerDescuento(solicitud.descuentoId) ?? null);
     const descuentoMonto =
       descuento === null
         ? 0
@@ -448,17 +447,21 @@ export class VentasServicio {
   }
 
   private siguienteConsecutivo(): number {
-    return this.listaVentas().reduce((maximo, venta) => {
-      const consecutivo = Number(venta.folio.split('-').pop() ?? 0);
-      return Math.max(maximo, Number.isFinite(consecutivo) ? consecutivo : 0);
-    }, 480) + 1;
+    return (
+      this.listaVentas().reduce((maximo, venta) => {
+        const consecutivo = Number(venta.folio.split('-').pop() ?? 0);
+        return Math.max(maximo, Number.isFinite(consecutivo) ? consecutivo : 0);
+      }, 480) + 1
+    );
   }
 
   private siguienteIdPago(): number {
-    return this.listaVentas().reduce(
-      (maximo, venta) =>
-        venta.pagos.reduce((interno, pago) => Math.max(interno, pago.id), maximo),
-      0,
-    ) + 1;
+    return (
+      this.listaVentas().reduce(
+        (maximo, venta) =>
+          venta.pagos.reduce((interno, pago) => Math.max(interno, pago.id), maximo),
+        0,
+      ) + 1
+    );
   }
 }

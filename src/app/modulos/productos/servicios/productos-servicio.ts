@@ -31,9 +31,7 @@ const FACTOR_IVA = 1.16;
 export class ProductosServicio {
   private readonly recetas = inject(RecetasServicio);
 
-  private readonly lista = signal<ProductoMaestro[]>(
-    structuredClone(PRODUCTOS_MAESTRO_SIMULADOS),
-  );
+  private readonly lista = signal<ProductoMaestro[]>(structuredClone(PRODUCTOS_MAESTRO_SIMULADOS));
 
   /**
    * M10 conserva la propiedad del producto y del precio. El costo y las tallas con receta vigente
@@ -120,9 +118,7 @@ export class ProductosServicio {
 
     const usados = new Set(
       this.lista()
-        .filter(
-          (producto) => producto.categoriaId === categoriaId && producto.id !== excluirId,
-        )
+        .filter((producto) => producto.categoriaId === categoriaId && producto.id !== excluirId)
         .map((producto) => producto.codigoSku),
     );
 
@@ -318,15 +314,14 @@ export class ProductosServicio {
     if (producto.tieneHistorial) {
       this.lista.update((productos) =>
         productos.map((item) =>
-          item.id === id
-            ? { ...item, activo: false, eliminadoEn: new Date().toISOString() }
-            : item,
+          item.id === id ? { ...item, activo: false, eliminadoEn: new Date().toISOString() } : item,
         ),
       );
       return {
         ok: true,
         modo: 'desactivado',
-        mensaje: 'Producto desactivado con borrado lógico: se conservan ventas, recetas y movimientos.',
+        mensaje:
+          'Producto desactivado con borrado lógico: se conservan ventas, recetas y movimientos.',
       };
     }
 

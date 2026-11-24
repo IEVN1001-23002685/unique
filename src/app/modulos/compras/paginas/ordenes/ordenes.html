@@ -1,0 +1,192 @@
+<section class="vista">
+  <app-navegacion-compras />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 4 · Abastecimiento · M14</p>
+      <h1 class="titulo">Órdenes de compra</h1>
+      <p class="subtitulo">
+        Folio, proveedor, total, fecha prometida y estado. Editar y eliminar solo en BORRADOR; la
+        recepción parcial o total se registra desde la pestaña Recepciones.
+      </p>
+    </div>
+    <a routerLink="/compras/cotizaciones" class="boton boton--primario"> Ver cotizaciones </a>
+  </div>
+
+  <div class="indicadores" aria-label="Resumen de órdenes">
+    <div class="indicador">
+      <span class="indicador__numero">{{ totales().borradores }}</span>
+      <span class="indicador__etiqueta">En borrador</span>
+    </div>
+    <div class="indicador" data-tono="info">
+      <span class="indicador__numero">{{ totales().emitidas }}</span>
+      <span class="indicador__etiqueta">Emitidas</span>
+    </div>
+    <div class="indicador" data-tono="exito">
+      <span class="indicador__numero">{{ totales().enProceso }}</span>
+      <span class="indicador__etiqueta">Recibidas o parciales</span>
+    </div>
+    <div class="indicador" data-tono="error">
+      <span class="indicador__numero">{{ totales().retrasadas }}</span>
+      <span class="indicador__etiqueta">Retrasadas</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por folio, proveedor o material"
+          aria-label="Buscar órdenes de compra"
+        />
+      </label>
+
+      <div class="filtros" role="group" aria-label="Filtrar por estado de orden">
+        @for (opcion of opciones; track opcion.valor) {
+          <button
+            type="button"
+            class="filtro"
+            [class.filtro--activo]="filtro() === opcion.valor"
+            [attr.aria-pressed]="filtro() === opcion.valor"
+            (click)="filtro.set(opcion.valor)"
+          >
+            {{ opcion.etiqueta }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (filtradas().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin órdenes para mostrar.</strong>
+        <p>Genera una desde el comparador de cotizaciones o ajusta los filtros.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">
+            Órdenes de compra de UNIQUE
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Folio</th>
+              <th scope="col">Proveedor</th>
+              <th scope="col">Materiales</th>
+              <th scope="col">Total</th>
+              <th scope="col">Fecha prometida</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (orden of filtradas(); track orden.id) {
+              <tr>
+                <td data-etiqueta="Folio">
+                  <span class="celda-principal">{{ orden.folio }}</span>
+                  <span class="celda-secundaria">
+                    {{
+                      orden.fechaEmision
+                        ? 'Emitida ' + (orden.fechaEmision | date: 'dd/MM/yyyy' : 'es-MX')
+                        : 'Sin emitir'
+                    }}
+                  </span>
+                </td>
+                <td data-etiqueta="Proveedor">
+                  <span class="celda-principal">{{
+                    servicio.proveedorNombre(orden.proveedorId)
+                  }}</span>
+                  <span class="celda-secundaria">{{ orden.condicionesPago }}</span>
+                </td>
+                <td data-etiqueta="Materiales">{{ materiales(orden) }}</td>
+                <td data-etiqueta="Total" class="celda-numero">
+                  {{ orden.total | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Fecha prometida">
+                  @if (orden.fechaPrometida) {
+                    <span>{{ orden.fechaPrometida | date: 'dd/MM/yyyy' : 'es-MX' }}</span>
+                  } @else {
+                    <span class="celda-secundaria">Por definir</span>
+                  }
+                </td>
+                <td data-etiqueta="Estado">
+                  <app-chip-estado-compra [estado]="orden.estado" />
+                  @if (servicio.retrasada(orden)) {
+                    <div class="estado-retraso">
+                      <app-chip-estado-compra estado="RETRASADA" />
+                    </div>
+                  }
+                </td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    @if (orden.estado === 'BORRADOR') {
+                      <a class="accion" [routerLink]="['/compras/ordenes', orden.id, 'editar']">
+                        Editar
+                      </a>
+                      <button type="button" class="accion" (click)="emitir(orden)">Emitir</button>
+                      <button
+                        type="button"
+                        class="accion accion--peligro"
+                        (click)="porEliminar.set(orden)"
+                      >
+                        Eliminar
+                      </button>
+                    } @else {
+                      <button type="button" class="accion" (click)="descargarPdf(orden)">
+                        Descargar PDF
+                      </button>
+                      @if (['EMITIDA', 'PARCIAL'].includes(orden.estado)) {
+                        <button type="button" class="accion" (click)="abrirRecepcion(orden)">
+                          Registrar recepción
+                        </button>
+                        <button
+                          type="button"
+                          class="accion accion--peligro"
+                          (click)="porCancelar.set(orden)"
+                        >
+                          Cancelar
+                        </button>
+                      }
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Retraso: fecha actual mayor a la fecha prometida y orden aún sin recibir. Editar y eliminar
+      solo aplica a BORRADOR; con historial se conserva la orden y se usa cancelar. Los cambios y el
+      PDF son de demostración hasta la integración con Flask.
+    </p>
+  </div>
+
+  @if (porCancelar(); as orden) {
+    <app-modal-confirmacion
+      titulo="Cancelar orden de compra"
+      [mensaje]="'¿Cancelar ' + orden.folio + '? El historial se conserva.'"
+      etiquetaConfirmar="Cancelar orden"
+      (confirmar)="confirmarCancelacion()"
+      (cancelar)="porCancelar.set(null)"
+    />
+  }
+
+  @if (porEliminar(); as orden) {
+    <app-modal-confirmacion
+      titulo="Eliminar borrador"
+      [mensaje]="'¿Eliminar ' + orden.folio + '? Solo es posible mientras esté en BORRADOR.'"
+      etiquetaConfirmar="Eliminar"
+      (confirmar)="confirmarEliminacion()"
+      (cancelar)="porEliminar.set(null)"
+    />
+  }
+</section>

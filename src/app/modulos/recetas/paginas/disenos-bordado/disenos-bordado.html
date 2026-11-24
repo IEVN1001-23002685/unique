@@ -7,8 +7,8 @@
       <h1 class="titulo">Biblioteca de diseños</h1>
       <p class="subtitulo">
         Cada diseño define sus hilos y metros por aplicación. Mientras está PENDIENTE el consumo es
-        0 m y las recetas que lo usan muestran una alerta; al digitalizar, el hilo se considera en el
-        costo de la receta.
+        0 m y las recetas que lo usan muestran una alerta; al digitalizar, el hilo se considera en
+        el costo de la receta.
       </p>
     </div>
     <button type="button" class="boton boton--primario" (click)="nuevo()">Nuevo diseño</button>
@@ -26,13 +26,23 @@
         <ul class="lista__items">
           @for (item of servicio.disenos(); track item.id) {
             <li>
-              <button type="button" class="lista__item"
-                [class.lista__item--activo]="seleccionado() === item.id" (click)="seleccionar(item.id)">
+              <button
+                type="button"
+                class="lista__item"
+                [class.lista__item--activo]="seleccionado() === item.id"
+                (click)="seleccionar(item.id)"
+              >
                 <span class="lista__codigo">{{ item.codigo }}</span>
                 <strong>{{ item.nombre }}</strong>
-                <span class="chip" [class.chip--pendiente]="item.estado === 'PENDIENTE'"
-                  [class.chip--listo]="item.estado === 'DIGITALIZADO'">{{ item.estado }}</span>
-                <span class="lista__detalle">{{ item.anchoCm }} × {{ item.altoCm }} cm · {{ item.hilos.length }} hilo(s)</span>
+                <span
+                  class="chip"
+                  [class.chip--pendiente]="item.estado === 'PENDIENTE'"
+                  [class.chip--listo]="item.estado === 'DIGITALIZADO'"
+                  >{{ item.estado }}</span
+                >
+                <span class="lista__detalle"
+                  >{{ item.anchoCm }} × {{ item.altoCm }} cm · {{ item.hilos.length }} hilo(s)</span
+                >
               </button>
             </li>
           }
@@ -50,15 +60,23 @@
             <h2 class="seccion__titulo">{{ actual.codigo }} · {{ actual.nombre }}</h2>
             <p class="ayuda">
               Estado:
-              <span class="chip" [class.chip--pendiente]="actual.estado === 'PENDIENTE'"
-                [class.chip--listo]="actual.estado === 'DIGITALIZADO'">{{ actual.estado }}</span>
+              <span
+                class="chip"
+                [class.chip--pendiente]="actual.estado === 'PENDIENTE'"
+                [class.chip--listo]="actual.estado === 'DIGITALIZADO'"
+                >{{ actual.estado }}</span
+              >
             </p>
           </div>
           <div class="detalle__acciones">
             @if (actual.estado === 'PENDIENTE') {
-              <button type="button" class="boton boton--primario" (click)="digitalizar()">Digitalizar</button>
+              <button type="button" class="boton boton--primario" (click)="digitalizar()">
+                Digitalizar
+              </button>
             }
-            <button type="button" class="boton boton--peligro" (click)="pedirEliminacion(actual)">Eliminar</button>
+            <button type="button" class="boton boton--peligro" (click)="pedirEliminacion(actual)">
+              Eliminar
+            </button>
           </div>
         </div>
       } @else {
@@ -75,26 +93,52 @@
             <div class="rejilla">
               <label class="campo">
                 Nombre
-                <input class="campo__entrada" formControlName="nombre" maxlength="60"
-                  [attr.aria-invalid]="invalido('nombre')" />
-                @if (invalido('nombre')) { <span class="campo__error">Captura al menos 3 caracteres.</span> }
+                <input
+                  class="campo__entrada"
+                  formControlName="nombre"
+                  maxlength="60"
+                  [attr.aria-invalid]="invalido('nombre')"
+                />
+                @if (invalido('nombre')) {
+                  <span class="campo__error">Captura al menos 3 caracteres.</span>
+                }
               </label>
               <label class="campo">
                 Ancho (cm)
-                <input class="campo__entrada" type="number" min="0.1" step="0.1" formControlName="anchoCm"
-                  [attr.aria-invalid]="invalido('anchoCm')" />
-                @if (invalido('anchoCm')) { <span class="campo__error">El ancho debe ser mayor a cero.</span> }
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  formControlName="anchoCm"
+                  [attr.aria-invalid]="invalido('anchoCm')"
+                />
+                @if (invalido('anchoCm')) {
+                  <span class="campo__error">El ancho debe ser mayor a cero.</span>
+                }
               </label>
               <label class="campo">
                 Alto (cm)
-                <input class="campo__entrada" type="number" min="0.1" step="0.1" formControlName="altoCm"
-                  [attr.aria-invalid]="invalido('altoCm')" />
-                @if (invalido('altoCm')) { <span class="campo__error">El alto debe ser mayor a cero.</span> }
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  formControlName="altoCm"
+                  [attr.aria-invalid]="invalido('altoCm')"
+                />
+                @if (invalido('altoCm')) {
+                  <span class="campo__error">El alto debe ser mayor a cero.</span>
+                }
               </label>
               <label class="campo campo--ancho">
                 Notas
-                <textarea class="campo__entrada" formControlName="notas" rows="2"
-                  placeholder="Observaciones para digitalización"></textarea>
+                <textarea
+                  class="campo__entrada"
+                  formControlName="notas"
+                  rows="2"
+                  placeholder="Observaciones para digitalización"
+                ></textarea>
               </label>
               <label class="campo campo--check">
                 <input type="checkbox" formControlName="activo" /> Diseño activo para nuevas recetas
@@ -105,43 +149,75 @@
           <section class="campos">
             <h2 class="seccion__titulo">Hilos por aplicación</h2>
             <p class="ayuda">
-              Los metros se capturan por color de hilo de bordado. Una receta multiplica estos metros
-              por el número de aplicaciones.
+              Los metros se capturan por color de hilo de bordado. Una receta multiplica estos
+              metros por el número de aplicaciones.
             </p>
             <div formArrayName="hilos" class="lista-hilos">
               @for (hilo of formas.controls.hilos.controls; let indice = $index; track hilo) {
                 <div [formGroupName]="indice" class="hilo">
                   <label class="campo">
                     Hilo
-                    <select class="campo__entrada" formControlName="materialCodigo" aria-label="Hilo de bordado">
+                    <select
+                      class="campo__entrada"
+                      formControlName="materialCodigo"
+                      aria-label="Hilo de bordado"
+                    >
                       @for (material of hilosDiseno; track material.codigo) {
-                        <option [value]="material.codigo">{{ material.codigo }} · {{ material.nombre }}</option>
+                        <option [value]="material.codigo">
+                          {{ material.codigo }} · {{ material.nombre }}
+                        </option>
                       }
                     </select>
                   </label>
                   <label class="campo">
                     Metros por aplicación
-                    <input class="campo__entrada" type="number" min="0" step="0.001"
-                      formControlName="metrosPorAplicacion" />
+                    <input
+                      class="campo__entrada"
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      formControlName="metrosPorAplicacion"
+                    />
                   </label>
-                  <button type="button" class="accion accion--peligro" (click)="quitarHilo(indice)"
-                    [attr.aria-label]="'Quitar hilo ' + (indice + 1)">Quitar</button>
+                  <button
+                    type="button"
+                    class="accion accion--peligro"
+                    (click)="quitarHilo(indice)"
+                    [attr.aria-label]="'Quitar hilo ' + (indice + 1)"
+                  >
+                    Quitar
+                  </button>
                 </div>
               } @empty {
                 <p class="estado-linea">Sin hilos capturados. El consumo del diseño es 0 m.</p>
               }
             </div>
-            <button type="button" class="boton boton--secundario" (click)="agregarHilo()">Agregar hilo</button>
+            <button type="button" class="boton boton--secundario" (click)="agregarHilo()">
+              Agregar hilo
+            </button>
 
             <div class="resumen">
-              <div class="resumen__dato"><span>Total por aplicación</span><strong>{{ totalMetros() }} m</strong></div>
-              <div class="resumen__dato"><span>Costo estimado de hilos</span><strong>{{ costoHilos() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
+              <div class="resumen__dato">
+                <span>Total por aplicación</span><strong>{{ totalMetros() }} m</strong>
+              </div>
+              <div class="resumen__dato">
+                <span>Costo estimado de hilos</span
+                ><strong>{{
+                  costoHilos() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+                }}</strong>
+              </div>
             </div>
           </section>
 
           <div class="acciones-forma">
             <button type="submit" class="boton boton--primario">Guardar diseño</button>
-            <button type="button" class="boton boton--secundario" (click)="seleccionar(seleccionado())">Descartar cambios</button>
+            <button
+              type="button"
+              class="boton boton--secundario"
+              (click)="seleccionar(seleccionado())"
+            >
+              Descartar cambios
+            </button>
           </div>
         </form>
       }
@@ -150,7 +226,11 @@
         <div class="aviso-uso">
           <strong>Enlazado a {{ usos().length }} receta(s):</strong>
           @for (receta of usos(); track receta.id) {
-            <span>{{ servicio.nombreProducto(receta.productoId) }} {{ receta.talla }} v{{ receta.version }}</span>
+            <span
+              >{{ servicio.nombreProducto(receta.productoId) }} {{ receta.talla }} v{{
+                receta.version
+              }}</span
+            >
           }
           @if (diseno()?.estado === 'PENDIENTE') {
             <p>Producción mostrará una alerta informativa mientras el diseño siga pendiente.</p>
@@ -168,7 +248,13 @@
   @if (eliminando(); as item) {
     <app-modal-confirmacion
       titulo="Eliminar diseño"
-      [mensaje]="'¿Eliminar ' + item.codigo + ' · ' + item.nombre + '? No se puede eliminar si alguna receta lo utiliza.'"
+      [mensaje]="
+        '¿Eliminar ' +
+        item.codigo +
+        ' · ' +
+        item.nombre +
+        '? No se puede eliminar si alguna receta lo utiliza.'
+      "
       etiquetaConfirmar="Eliminar"
       (confirmar)="confirmarEliminacion()"
       (cancelar)="eliminando.set(null)"

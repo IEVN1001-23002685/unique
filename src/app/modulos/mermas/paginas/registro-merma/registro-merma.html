@@ -1,0 +1,331 @@
+<div class="vista">
+  <header class="cabecera">
+    <div>
+      <p class="eyebrow">M17 · Mermas · Captura manual</p>
+      <h1 class="titulo">Registro de merma</h1>
+      <p class="subtitulo">
+        Documenta materiales o prendas que salen del inventario por daño, error de corte o sobrante
+        inservible. El registro queda como constancia: no se edita ni se elimina.
+      </p>
+    </div>
+    <a routerLink="/mermas" class="boton boton--enlace">Ver zona de merma</a>
+  </header>
+
+  <app-navegacion-mermas />
+
+  <div class="dos-columnas">
+    <section class="tarjeta bloque" aria-labelledby="titulo-formulario">
+      <div class="perfil-demo">
+        <span>Perfil de demostración</span>
+        <div class="filtros" role="group" aria-label="Perfil de demostración">
+          <button
+            type="button"
+            class="filtro"
+            [class.filtro--activo]="perfil() === 'Operativo'"
+            (click)="cambiarPerfil('Operativo')"
+          >
+            Operativo
+          </button>
+          <button
+            type="button"
+            class="filtro"
+            [class.filtro--activo]="perfil() === 'Administrador'"
+            (click)="cambiarPerfil('Administrador')"
+          >
+            Administrador
+          </button>
+        </div>
+      </div>
+      <p class="nota nota--advertencia">
+        El selector solo demuestra la visibilidad por rol; no es autenticación. Los guards y la
+        validación autoritativa corresponderán a Flask.
+      </p>
+
+      @if (ultimoFolio(); as folio) {
+        <p class="confirmacion" role="status">
+          <strong>{{ folio }}</strong> quedó registrado en memoria. El descuento de existencias y el
+          movimiento MERMA están pendientes de Flask.
+        </p>
+      }
+
+      <h2 class="titulo-section" id="titulo-formulario">Datos de la merma</h2>
+
+      <form [formGroup]="forma" (ngSubmit)="guardar()" novalidate>
+        <div class="form-grid">
+          <label class="campo">
+            Origen del ítem
+            <select
+              class="campo__entrada"
+              formControlName="origen"
+              (change)="alCambiarOrigen($event)"
+            >
+              <option value="MATERIAL">Material (materia prima)</option>
+              <option value="PRODUCTO">Producto (prenda terminada)</option>
+            </select>
+          </label>
+
+          <label class="campo">
+            Etapa en que se detectó
+            <select
+              class="campo__entrada"
+              formControlName="etapa"
+              [attr.aria-invalid]="forma.controls.etapa.invalid && forma.controls.etapa.touched"
+            >
+              <option value="">Selecciona una etapa</option>
+              @for (etapa of etapas; track etapa) {
+                <option [value]="etapa">{{ etiquetasEtapa[etapa] }}</option>
+              }
+            </select>
+            @if (forma.controls.etapa.touched && forma.controls.etapa.invalid) {
+              <p class="campo__error">Indica la etapa donde se detectó la merma.</p>
+            }
+          </label>
+        </div>
+
+        @if (forma.controls.origen.value === 'MATERIAL') {
+          <h3 class="titulo-section">Material, color y lote</h3>
+          <div class="form-grid form-grid--tres">
+            <label class="campo">
+              Material
+              <select
+                class="campo__entrada"
+                formControlName="materialId"
+                [attr.aria-invalid]="
+                  forma.controls.materialId.invalid && forma.controls.materialId.touched
+                "
+                (change)="alCambiarMaterial($event)"
+              >
+                <option [ngValue]="null">Selecciona material</option>
+                @for (material of materiales(); track material.materialId) {
+                  <option [ngValue]="material.materialId">{{ material.etiqueta }}</option>
+                }
+              </select>
+              @if (forma.controls.materialId.touched && forma.controls.materialId.invalid) {
+                <p class="campo__error">Selecciona un material del inventario.</p>
+              }
+            </label>
+
+            <label class="campo">
+              Color
+              <input
+                class="campo__entrada"
+                type="text"
+                formControlName="color"
+                maxlength="20"
+                placeholder="Ej. Negro, Natural o NA"
+              />
+              <span class="ayuda">Debe coincidir con el color del lote seleccionado.</span>
+            </label>
+
+            <label class="campo">
+              Lote afectado
+              <select
+                class="campo__entrada"
+                formControlName="loteId"
+                [attr.aria-invalid]="forma.controls.loteId.invalid && forma.controls.loteId.touched"
+              >
+                <option [ngValue]="null">Selecciona lote</option>
+                @for (lote of lotes(); track lote.id) {
+                  <option [ngValue]="lote.id">{{ lote.etiqueta }}</option>
+                }
+              </select>
+              @if (lotes().length === 0 && forma.controls.materialId.value !== null) {
+                <p class="campo__error">Este material no tiene lotes disponibles en la demo.</p>
+              } @else if (forma.controls.loteId.touched && forma.controls.loteId.invalid) {
+                <p class="campo__error">Selecciona el lote del material.</p>
+              }
+            </label>
+          </div>
+        } @else {
+          <h3 class="titulo-section">Variante del producto</h3>
+          <div class="form-grid">
+            <label class="campo">
+              SKU generado por M10
+              <select
+                class="campo__entrada"
+                formControlName="sku"
+                [attr.aria-invalid]="forma.controls.sku.invalid && forma.controls.sku.touched"
+              >
+                <option value="">Selecciona una variante</option>
+                @for (variante of variantes(); track variante.varianteId) {
+                  <option [value]="variante.sku">{{ variante.etiqueta }}</option>
+                }
+              </select>
+              @if (forma.controls.sku.touched && forma.controls.sku.invalid) {
+                <p class="campo__error">Selecciona un SKU válido; no se captura a mano.</p>
+              }
+            </label>
+            <div class="lector">
+              <div>
+                <dt>Unidad de merma</dt>
+                <dd>piezas enteras</dd>
+              </div>
+              <div>
+                <dt>Costo unitario</dt>
+                <dd>
+                  {{ esAdministrador() ? 'Solo Administrador' : 'No disponible para Operativo' }}
+                </dd>
+              </div>
+            </div>
+          </div>
+        }
+
+        <h3 class="titulo-section">Cantidad, causa y contexto</h3>
+        <div class="form-grid form-grid--tres">
+          <label class="campo">
+            Cantidad ({{ forma.controls.origen.value === 'MATERIAL' ? 'unidades base' : 'piezas' }})
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0.0001"
+              [attr.step]="forma.controls.origen.value === 'PRODUCTO' ? '1' : '0.0001'"
+              inputmode="decimal"
+              formControlName="cantidad"
+              [attr.aria-invalid]="
+                forma.controls.cantidad.invalid && forma.controls.cantidad.touched
+              "
+              placeholder="0.0000"
+            />
+            @if (forma.controls.cantidad.touched && forma.controls.cantidad.invalid) {
+              <p class="campo__error">
+                @if (forma.controls.cantidad.hasError('enteroRequerido')) {
+                  Las prendas se registran en unidades enteras.
+                } @else {
+                  Captura una cantidad mayor que cero, hasta 4 decimales.
+                }
+              </p>
+            }
+          </label>
+
+          <label class="campo">
+            Causa (catálogo M22)
+            <select
+              class="campo__entrada"
+              formControlName="causaId"
+              [attr.aria-invalid]="forma.controls.causaId.invalid && forma.controls.causaId.touched"
+              (change)="alCambiarCausa($event)"
+            >
+              <option [ngValue]="null">Selecciona causa</option>
+              @for (causa of causas(); track causa.id) {
+                <option [ngValue]="causa.id">{{ causa.nombre }}</option>
+              }
+            </select>
+            @if (forma.controls.causaId.touched && forma.controls.causaId.invalid) {
+              <p class="campo__error">Selecciona una causa vigente para el origen elegido.</p>
+            }
+          </label>
+
+          <label class="campo">
+            Orden de producción (opcional)
+            <select class="campo__entrada" formControlName="ordenFolio">
+              <option value="">Sin orden relacionada</option>
+              @for (orden of ordenes(); track orden.id) {
+                <option [value]="orden.folio">{{ orden.folio }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <label class="campo">
+          Descripción de lo ocurrido
+          <textarea
+            class="campo__entrada"
+            rows="3"
+            formControlName="descripcion"
+            maxlength="500"
+            [attr.aria-invalid]="
+              forma.controls.descripcion.invalid && forma.controls.descripcion.touched
+            "
+            placeholder="Describe el daño, error o sobrante y cómo se detectó"
+          ></textarea>
+          @if (forma.controls.descripcion.touched && forma.controls.descripcion.invalid) {
+            <p class="campo__error">Escribe al menos 10 caracteres con lo ocurrido.</p>
+          }
+        </label>
+
+        <div class="form-grid">
+          <label class="campo">
+            Evidencia fotográfica (opcional)
+            <input
+              id="evidencia-merma"
+              class="campo__entrada"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              (change)="alSeleccionarArchivo($event)"
+            />
+            <span class="ayuda">JPG, PNG o WebP · máximo 2 MB. Solo se conserva el nombre.</span>
+            @if (errorEvidencia(); as error) {
+              <p class="campo__error">{{ error }}</p>
+            }
+          </label>
+          @if (forma.controls.evidenciaNombre.value; as nombre) {
+            <div class="evidencia">
+              <span class="etiqueta etiqueta--info">{{ nombre }}</span>
+              <button type="button" class="accion accion--peligro" (click)="quitarArchivo()">
+                Quitar evidencia
+              </button>
+            </div>
+          }
+        </div>
+
+        <div class="form-acciones">
+          <button type="submit" class="boton boton--primario">Registrar merma</button>
+          <button type="button" class="boton boton--secundario" (click)="limpiar()">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+    <aside class="tarjeta bloque resumen" aria-labelledby="titulo-resumen">
+      <h2 class="titulo-section" id="titulo-resumen">Resumen de la captura</h2>
+      <dl class="lector">
+        <div>
+          <dt>Origen</dt>
+          <dd>{{ forma.controls.origen.value === 'MATERIAL' ? 'Material' : 'Producto' }}</dd>
+        </div>
+        <div>
+          <dt>Etapa</dt>
+          <dd>{{ etiquetaEtapaForma() }}</dd>
+        </div>
+        <div>
+          <dt>Cantidad</dt>
+          <dd>
+            {{ forma.controls.cantidad.value ?? 0 }}
+            {{ forma.controls.origen.value === 'MATERIAL' ? 'u. base' : 'piezas' }}
+          </dd>
+        </div>
+        <div>
+          <dt>Evidencia</dt>
+          <dd>{{ forma.controls.evidenciaNombre.value ?? 'Sin archivo' }}</dd>
+        </div>
+      </dl>
+
+      @if (esAdministrador()) {
+        <div class="costo">
+          <span>Costo perdido calculado</span>
+          <strong>{{ costo() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+          <small>Costo del lote para materiales; costo estándar para prendas.</small>
+        </div>
+      } @else {
+        <p class="nota">
+          El costo perdido se calcula automáticamente, pero no se muestra a Operativo. Para
+          consultarlo usa la vista de Indicadores con perfil Administrador.
+        </p>
+      }
+
+      <h3 class="titulo-section">Reglas de la captura</h3>
+      <ul class="reglas">
+        <li>Las prendas se registran en unidades enteras; los materiales, en unidades base.</li>
+        <li>El SKU se elige del catálogo de M10: no se escribe manualmente.</li>
+        <li>
+          Las llegadas de recepciones, calidad y devoluciones las generan sus módulos, no esta
+          captura.
+        </li>
+        <li>Un error se corrige con un reverso del Administrador; este registro no se modifica.</li>
+      </ul>
+      <p class="nota nota--advertencia">
+        Pendiente de Flask: descontar existencias, generar el movimiento MERMA, calcular el costo
+        definitivo y evaluar la alerta MERMA_ALTA.
+      </p>
+    </aside>
+  </div>
+</div>

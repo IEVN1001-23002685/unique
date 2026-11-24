@@ -6,13 +6,7 @@ import type { CodigoTalla } from '../../productos/modelos/producto-maestro';
  * autoritativo corresponderán a Flask cuando se integre el backend.
  */
 
-export type CategoriaMaterial =
-  | 'Tela'
-  | 'Hilo'
-  | 'Estabilizador'
-  | 'Avio'
-  | 'Etiqueta'
-  | 'Empaque';
+export type CategoriaMaterial = 'Tela' | 'Hilo' | 'Estabilizador' | 'Avio' | 'Etiqueta' | 'Empaque';
 
 export type UnidadBase = 'm2' | 'm' | 'g' | 'pieza';
 export type UnidadCaptura = 'cm2' | 'cm' | 'm2' | 'm' | 'g' | 'pieza';

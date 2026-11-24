@@ -34,7 +34,7 @@ export function cantidadBruta(cantidadNeta: number, factor: number, mermaPct: nu
   if (mermaPct >= 100) {
     return 0;
   }
-  return Math.round((cantidadNeta * factor) / (1 - mermaPct / 100) * 1e4) / 1e4;
+  return Math.round(((cantidadNeta * factor) / (1 - mermaPct / 100)) * 1e4) / 1e4;
 }
 
 export function redondear(valor: number, decimales = 2): number {
@@ -77,9 +77,12 @@ export function costear(
 
   const materiaPrima = consumoMateriales + hiloBordado;
   const costoEstandar =
-    materiaPrima + empaquePorPrenda + receta.manoObra + receta.costoBordado + receta.costosIndirectos;
-  const precioSugerido =
-    costoEstandar / (1 - MARGEN_OBJETIVO_PCT / 100) * (1 + IVA_PCT / 100);
+    materiaPrima +
+    empaquePorPrenda +
+    receta.manoObra +
+    receta.costoBordado +
+    receta.costosIndirectos;
+  const precioSugerido = (costoEstandar / (1 - MARGEN_OBJETIVO_PCT / 100)) * (1 + IVA_PCT / 100);
 
   return {
     materiaPrima: redondear(materiaPrima),
@@ -107,10 +110,7 @@ export function margenReal(precio: number, costo: number): number | null {
  * "Alcanza para N prendas": el material con menor cobertura limita el cálculo.
  * El inventario es una lectura de demostración de M15.
  */
-export function prendasPosibles(
-  receta: Receta,
-  inventario: Record<string, number>,
-): number | null {
+export function prendasPosibles(receta: Receta, inventario: Record<string, number>): number | null {
   const coberturas = receta.lineas
     .filter((linea) => linea.cantidadBruta > 0)
     .map((linea) => Math.floor((inventario[linea.materialCodigo] ?? 0) / linea.cantidadBruta));

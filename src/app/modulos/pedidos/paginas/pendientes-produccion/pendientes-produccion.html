@@ -46,7 +46,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Demanda de producción pendiente agrupada por SKU</caption>
+          <caption class="sr-only">
+            Demanda de producción pendiente agrupada por SKU
+          </caption>
           <thead>
             <tr>
               <th scope="col">SKU</th>
@@ -61,7 +63,9 @@
           <tbody>
             @for (grupo of filtrados(); track grupo.sku) {
               <tr>
-                <td data-etiqueta="SKU"><span class="mono">{{ grupo.sku }}</span></td>
+                <td data-etiqueta="SKU">
+                  <span class="mono">{{ grupo.sku }}</span>
+                </td>
                 <td data-etiqueta="Prenda">
                   <span class="celda-principal">{{ grupo.nombreProducto }}</span>
                   <span class="celda-secundaria">Talla {{ grupo.talla }} · {{ grupo.color }}</span>

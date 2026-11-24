@@ -1,7 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import {
+  FormArray,
   FormBuilder,
+  FormControl,
+  FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
@@ -11,7 +14,7 @@ import { ModalConfirmacion } from '../../../../compartido/componentes/modal-conf
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionRecetas } from '../../componentes/navegacion-recetas/navegacion-recetas';
 import type { CodigoTalla } from '../../../productos/modelos/producto-maestro';
-import type { DatosReceta, LineaReceta, Receta } from '../../modelos/receta';
+import type { DatosReceta, LineaReceta, Receta, UnidadCaptura } from '../../modelos/receta';
 import { RecetasServicio } from '../../servicios/recetas-servicio';
 import {
   cantidadBruta,
@@ -34,9 +37,43 @@ interface LineaVista {
   esEtiqueta: boolean;
 }
 
+interface FormaLinea {
+  materialCodigo: FormControl<string>;
+  cantidadCapturada: FormControl<number>;
+  unidadCaptura: FormControl<UnidadCaptura>;
+  factorConsumo: FormControl<number>;
+  mermaPct: FormControl<number>;
+  esEtiqueta: FormControl<boolean>;
+  nota: FormControl<string>;
+}
+
+interface FormaBordado {
+  disenoId: FormControl<number>;
+  aplicaciones: FormControl<number>;
+  ubicacion: FormControl<string>;
+}
+
+interface FormaReceta {
+  productoId: FormControl<number>;
+  talla: FormControl<CodigoTalla>;
+  nota: FormControl<string>;
+  manoObra: FormControl<number>;
+  costoBordado: FormControl<number>;
+  costosIndirectos: FormControl<number>;
+  lineas: FormArray<FormGroup<FormaLinea>>;
+  bordados: FormArray<FormGroup<FormaBordado>>;
+}
+
 @Component({
   selector: 'app-editor-receta',
-  imports: [CurrencyPipe, DatePipe, ReactiveFormsModule, RouterLink, ModalConfirmacion, NavegacionRecetas],
+  imports: [
+    CurrencyPipe,
+    DatePipe,
+    ReactiveFormsModule,
+    RouterLink,
+    ModalConfirmacion,
+    NavegacionRecetas,
+  ],
   templateUrl: './editor-receta.html',
   styleUrl: './editor-receta.css',
 })
@@ -55,7 +92,14 @@ export class EditorReceta {
   protected readonly soloLectura = this.receta?.estado !== 'BORRADOR';
 
   protected readonly materiales = this.servicio.materiales;
-  protected readonly unidades: LineaReceta['unidadCaptura'][] = ['cm2', 'cm', 'm2', 'm', 'g', 'pieza'];
+  protected readonly unidades: LineaReceta['unidadCaptura'][] = [
+    'cm2',
+    'cm',
+    'm2',
+    'm',
+    'g',
+    'pieza',
+  ];
   protected readonly disenos = this.servicio.disenos;
   protected readonly materialNuevo = signal('HIL-COS');
   protected readonly intento = signal(false);
@@ -63,22 +107,30 @@ export class EditorReceta {
   protected readonly copiarProducto = signal(this.receta?.productoId ?? 1);
   protected readonly copiarTalla = signal<CodigoTalla>(this.receta?.talla ?? 'CH');
 
-  protected readonly forma = this.fb.nonNullable.group({
-    productoId: [this.receta?.productoId ?? 1, Validators.required],
-    talla: [this.receta?.talla ?? 'CH' as CodigoTalla, Validators.required],
-    nota: [this.receta?.nota ?? ''],
-    manoObra: [this.receta?.manoObra ?? 0, [Validators.min(0)]],
-    costoBordado: [this.receta?.costoBordado ?? 0, [Validators.min(0)]],
-    costosIndirectos: [this.receta?.costosIndirectos ?? 0, [Validators.min(0)]],
-    lineas: this.fb.nonNullable.array(
+  protected readonly forma = this.fb.group<FormaReceta>({
+    productoId: this.fb.nonNullable.control(this.receta?.productoId ?? 1, Validators.required),
+    talla: this.fb.nonNullable.control<CodigoTalla>(
+      this.receta?.talla ?? 'CH',
+      Validators.required,
+    ),
+    nota: this.fb.nonNullable.control(this.receta?.nota ?? ''),
+    manoObra: this.fb.nonNullable.control(this.receta?.manoObra ?? 0, [Validators.min(0)]),
+    costoBordado: this.fb.nonNullable.control(this.receta?.costoBordado ?? 0, [Validators.min(0)]),
+    costosIndirectos: this.fb.nonNullable.control(this.receta?.costosIndirectos ?? 0, [
+      Validators.min(0),
+    ]),
+    lineas: this.fb.array<FormGroup<FormaLinea>>(
       (this.receta?.lineas ?? []).map((linea) => this.lineaForm(linea)),
     ),
-    bordados: this.fb.nonNullable.array(
+    bordados: this.fb.array<FormGroup<FormaBordado>>(
       (this.receta?.bordados ?? []).map((bordado) =>
-        this.fb.nonNullable.group({
-          disenoId: [bordado.disenoId, Validators.required],
-          aplicaciones: [bordado.aplicaciones, [Validators.required, Validators.min(1)]],
-          ubicacion: [bordado.ubicacion],
+        this.fb.group<FormaBordado>({
+          disenoId: this.fb.nonNullable.control(bordado.disenoId, Validators.required),
+          aplicaciones: this.fb.nonNullable.control(bordado.aplicaciones, [
+            Validators.required,
+            Validators.min(1),
+          ]),
+          ubicacion: this.fb.nonNullable.control(bordado.ubicacion),
         }),
       ),
     ),
@@ -143,12 +195,16 @@ export class EditorReceta {
 
   protected readonly costeo = computed(() => this.servicio.costeo(this.recetaVista()));
   protected readonly alcanza = computed(() => this.servicio.alcanzaPara(this.recetaVista()));
-  protected readonly precioVigente = computed(() => this.servicio.precioVigente(Number(this.valores().productoId)));
+  protected readonly precioVigente = computed(() =>
+    this.servicio.precioVigente(Number(this.valores().productoId)),
+  );
   protected readonly margen = computed(() =>
     this.calcularMargen(this.precioVigente(), this.costeo().costoEstandar),
   );
   protected readonly razones = computed(() => this.servicio.validarActivacion(this.recetaVista()));
-  protected readonly pendientes = computed(() => this.servicio.disenosPendientes(this.recetaVista()));
+  protected readonly pendientes = computed(() =>
+    this.servicio.disenosPendientes(this.recetaVista()),
+  );
   protected readonly etiquetasFaltantes = computed(() => {
     const codigos = new Set(this.lineasVista().map((linea) => linea.materialCodigo));
     return this.servicio
@@ -214,16 +270,36 @@ export class EditorReceta {
     return base <= 0 ? null : redondear(((base - costo) / base) * 100, 1);
   }
 
-  private lineaForm(linea: LineaReceta) {
-    return this.fb.nonNullable.group({
-      materialCodigo: [linea.materialCodigo, Validators.required],
-      cantidadCapturada: [convertirDeBase(linea.cantidadNeta, linea.unidadCaptura), [Validators.min(0)]],
-      unidadCaptura: [linea.unidadCaptura, Validators.required],
-      factorConsumo: [linea.factorConsumo, [Validators.min(0.001)]],
-      mermaPct: [linea.mermaPct, [Validators.min(0), Validators.max(99.99)]],
-      esEtiqueta: [linea.esEtiqueta],
-      nota: [linea.nota],
+  private lineaFormDesde(
+    materialCodigo: string,
+    cantidadCapturada: number,
+    unidadCaptura: UnidadCaptura,
+    mermaPct: number,
+    esEtiqueta: boolean,
+    nota: string,
+  ): FormGroup<FormaLinea> {
+    return this.fb.group<FormaLinea>({
+      materialCodigo: this.fb.nonNullable.control(materialCodigo, Validators.required),
+      cantidadCapturada: this.fb.nonNullable.control(cantidadCapturada, [Validators.min(0)]),
+      unidadCaptura: this.fb.nonNullable.control(unidadCaptura, Validators.required),
+      factorConsumo: this.fb.nonNullable.control(1, [Validators.min(0.001)]),
+      mermaPct: this.fb.nonNullable.control(mermaPct, [Validators.min(0), Validators.max(99.99)]),
+      esEtiqueta: this.fb.nonNullable.control(esEtiqueta),
+      nota: this.fb.nonNullable.control(nota),
     });
+  }
+
+  private lineaForm(linea: LineaReceta): FormGroup<FormaLinea> {
+    const grupo = this.lineaFormDesde(
+      linea.materialCodigo,
+      convertirDeBase(linea.cantidadNeta, linea.unidadCaptura),
+      linea.unidadCaptura,
+      linea.mermaPct,
+      linea.esEtiqueta,
+      linea.nota,
+    );
+    grupo.controls.factorConsumo.setValue(linea.factorConsumo);
+    return grupo;
   }
 
   protected invalido(campo: 'manoObra' | 'costoBordado' | 'costosIndirectos'): boolean {
@@ -238,15 +314,7 @@ export class EditorReceta {
     }
     const unidad = material.unidadBase === 'pieza' ? 'pieza' : material.unidadBase;
     this.forma.controls.lineas.push(
-      this.fb.nonNullable.group({
-        materialCodigo: [material.codigo, Validators.required],
-        cantidadCapturada: [1, [Validators.min(0)]],
-        unidadCaptura: [unidad, Validators.required],
-        factorConsumo: [1, [Validators.min(0.001)]],
-        mermaPct: [material.mermaPct, [Validators.min(0), Validators.max(99.99)]],
-        esEtiqueta: [false],
-        nota: [''],
-      }),
+      this.lineaFormDesde(material.codigo, 1, unidad, material.mermaPct, false, ''),
     );
   }
 
@@ -258,15 +326,7 @@ export class EditorReceta {
         continue;
       }
       this.forma.controls.lineas.push(
-        this.fb.nonNullable.group({
-          materialCodigo: [codigo, Validators.required],
-          cantidadCapturada: [1, [Validators.min(0)]],
-          unidadCaptura: ['pieza' as const, Validators.required],
-          factorConsumo: [1, [Validators.min(0.001)]],
-          mermaPct: [0, [Validators.min(0), Validators.max(99.99)]],
-          esEtiqueta: [true],
-          nota: ['Etiqueta precargada según §11.4'],
-        }),
+        this.lineaFormDesde(codigo, 1, 'pieza', 0, true, 'Etiqueta precargada según §11.4'),
       );
     }
     this.avisos.mostrar(
@@ -284,7 +344,9 @@ export class EditorReceta {
     if (!material || !grupo) {
       return;
     }
-    grupo.controls.unidadCaptura.setValue(material.unidadBase === 'pieza' ? 'pieza' : material.unidadBase);
+    grupo.controls.unidadCaptura.setValue(
+      material.unidadBase === 'pieza' ? 'pieza' : material.unidadBase,
+    );
     grupo.controls.mermaPct.setValue(material.mermaPct);
   }
 
@@ -416,15 +478,7 @@ export class EditorReceta {
     }
     for (const codigo of this.servicio.etiquetasEsperadas(productoId, talla)) {
       lineas.push(
-        this.fb.nonNullable.group({
-          materialCodigo: [codigo, Validators.required],
-          cantidadCapturada: [1, [Validators.min(0)]],
-          unidadCaptura: ['pieza' as const, Validators.required],
-          factorConsumo: [1, [Validators.min(0.001)]],
-          mermaPct: [0, [Validators.min(0), Validators.max(99.99)]],
-          esEtiqueta: [true],
-          nota: ['Etiqueta precargada según §11.4'],
-        }),
+        this.lineaFormDesde(codigo, 1, 'pieza', 0, true, 'Etiqueta precargada según §11.4'),
       );
     }
   }

@@ -8,9 +8,7 @@
       <div>
         <p class="eyebrow">M13 · Catálogo del proveedor</p>
         <h1 class="titulo">{{ proveedor.nombreComercial }}</h1>
-        <p class="subtitulo">
-          {{ proveedor.razonSocial }} · RFC {{ proveedor.rfc ?? 'sin RFC' }}
-        </p>
+        <p class="subtitulo">{{ proveedor.razonSocial }} · RFC {{ proveedor.rfc ?? 'sin RFC' }}</p>
       </div>
       <app-chip-estatus [estatus]="proveedor.estatus" />
     </div>
@@ -20,7 +18,10 @@
         <strong>Revisión de cobertura</strong>
         <ul>
           @for (item of materialesConAlerta(); track item.referencia.id) {
-            <li><span class="alerta__punto" aria-hidden="true"></span>{{ item.referencia.nombre }} — {{ item.alerta }}</li>
+            <li>
+              <span class="alerta__punto" aria-hidden="true"></span>{{ item.referencia.nombre }} —
+              {{ item.alerta }}
+            </li>
           }
         </ul>
         <p>
@@ -45,7 +46,12 @@
         } @else {
           <div class="tabla-contenedor tarjeta">
             <table class="tabla">
-              <caption class="sr-only">Materiales que surte {{ proveedor.nombreComercial }}</caption>
+              <caption class="sr-only">
+                Materiales que surte
+                {{
+                  proveedor.nombreComercial
+                }}
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">Material</th>
@@ -63,27 +69,59 @@
                 @for (linea of lineas.controls; track $index; let i = $index) {
                   <tr [formGroupName]="i">
                     <td data-etiqueta="Material">
-                      <select class="campo__entrada" formControlName="materialId" aria-label="Material">
+                      <select
+                        class="campo__entrada"
+                        formControlName="materialId"
+                        aria-label="Material"
+                      >
                         @for (material of materialesReferencia; track material.id) {
                           <option [ngValue]="material.id">{{ material.nombre }}</option>
                         }
                       </select>
-                      <span class="celda-secundaria">{{ categoria(materialIdDe(i)) ?? 'Sin categoría' }}</span>
+                      <span class="celda-secundaria">{{
+                        categoria(materialIdDe(i)) ?? 'Sin categoría'
+                      }}</span>
                       @if (referencia(materialIdDe(i))?.critico) {
                         <span class="critico">Crítico · requiere alterno</span>
                       }
                     </td>
                     <td data-etiqueta="Unidad de compra">
-                      <input class="campo__entrada" type="text" formControlName="unidadCompra" aria-label="Unidad de compra" />
+                      <input
+                        class="campo__entrada"
+                        type="text"
+                        formControlName="unidadCompra"
+                        aria-label="Unidad de compra"
+                      />
                     </td>
                     <td data-etiqueta="Precio">
-                      <input class="campo__entrada" type="number" min="0.01" step="0.01" formControlName="precioCompra" aria-label="Precio por unidad de compra" />
+                      <input
+                        class="campo__entrada"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        formControlName="precioCompra"
+                        aria-label="Precio por unidad de compra"
+                      />
                     </td>
                     <td data-etiqueta="Mínimo">
-                      <input class="campo__entrada" type="number" min="0" step="0.01" formControlName="minimoCompra" aria-label="Mínimo de compra" />
+                      <input
+                        class="campo__entrada"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        formControlName="minimoCompra"
+                        aria-label="Mínimo de compra"
+                      />
                     </td>
                     <td data-etiqueta="Plazo (días)">
-                      <input class="campo__entrada" type="number" min="0" step="1" formControlName="plazoDias" aria-label="Plazo en días" />
+                      <input
+                        class="campo__entrada"
+                        type="number"
+                        min="0"
+                        step="1"
+                        formControlName="plazoDias"
+                        aria-label="Plazo en días"
+                      />
                     </td>
                     <td data-etiqueta="Principal">
                       <label class="casilla">
@@ -92,7 +130,12 @@
                       </label>
                     </td>
                     <td data-etiqueta="Vigencia">
-                      <input class="campo__entrada" type="date" formControlName="vigenciaHasta" aria-label="Vigencia" />
+                      <input
+                        class="campo__entrada"
+                        type="date"
+                        formControlName="vigenciaHasta"
+                        aria-label="Vigencia"
+                      />
                       <span class="vigencia" [attr.data-estado]="estadoVigencia(vigenciaDe(i))">
                         {{ etiquetaVigencia(vigenciaDe(i)) }}
                       </span>

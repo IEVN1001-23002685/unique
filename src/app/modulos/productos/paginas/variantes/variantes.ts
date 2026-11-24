@@ -36,10 +36,7 @@ export class Variantes {
           this.servicio.nombreTalla(fila.variante.talla),
           this.servicio.nombreColor(fila.variante.color),
         ].some((valor) => valor.toLowerCase().includes(termino));
-      return (
-        coincide &&
-        (producto === 'TODOS' || String(fila.productoId) === producto)
-      );
+      return coincide && (producto === 'TODOS' || String(fila.productoId) === producto);
     });
   });
 

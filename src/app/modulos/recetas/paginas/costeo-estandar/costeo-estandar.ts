@@ -62,7 +62,9 @@ export class CosteoEstandar {
           bordadosPendientes: this.servicio.disenosPendientes(receta).length,
         };
       })
-      .sort((a, b) => a.producto.localeCompare(b.producto, 'es-MX') || a.talla.localeCompare(b.talla)),
+      .sort(
+        (a, b) => a.producto.localeCompare(b.producto, 'es-MX') || a.talla.localeCompare(b.talla),
+      ),
   );
 
   protected readonly resumen = computed(() =>

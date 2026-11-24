@@ -14,13 +14,21 @@
       <div>
         <p class="eyebrow">M11 · Editor de receta</p>
         <h1 class="titulo">
-          {{ esNueva ? 'Nueva receta' : servicio.nombreProducto(actual.productoId) + ' · ' + actual.talla }}
+          {{
+            esNueva
+              ? 'Nueva receta'
+              : servicio.nombreProducto(actual.productoId) + ' · ' + actual.talla
+          }}
         </h1>
         <p class="subtitulo">
           Versión <strong>v{{ actual.version }}</strong> ·
-          <span class="chip" [class.chip--vigente]="actual.estado === 'VIGENTE'"
+          <span
+            class="chip"
+            [class.chip--vigente]="actual.estado === 'VIGENTE'"
             [class.chip--borrador]="actual.estado === 'BORRADOR'"
-            [class.chip--archivada]="actual.estado === 'ARCHIVADA'">{{ actual.estado }}</span>
+            [class.chip--archivada]="actual.estado === 'ARCHIVADA'"
+            >{{ actual.estado }}</span
+          >
           @if (actual.origenRecetaId !== null) {
             · copiada de otra versión
           }
@@ -42,31 +50,54 @@
           <label class="campo">
             Producto
             @if (esNueva) {
-              <select class="campo__entrada" formControlName="productoId" (change)="alCambiarProductoNuevo($event)">
+              <select
+                class="campo__entrada"
+                formControlName="productoId"
+                (change)="alCambiarProductoNuevo($event)"
+              >
                 @for (producto of servicio.productos; track producto.id) {
                   <option [value]="producto.id">{{ producto.nombre }}</option>
                 }
               </select>
             } @else {
-              <input class="campo__entrada campo__entrada--bloqueado" [value]="servicio.nombreProducto(actual.productoId)" readonly />
+              <input
+                class="campo__entrada campo__entrada--bloqueado"
+                [value]="servicio.nombreProducto(actual.productoId)"
+                readonly
+              />
             }
           </label>
           <label class="campo">
             Talla
             @if (esNueva) {
-              <select class="campo__entrada" formControlName="talla" (change)="alCambiarTallaNueva($event)">
-                @for (talla of servicio.tallasDeProducto(forma.controls.productoId.value); track talla) {
+              <select
+                class="campo__entrada"
+                formControlName="talla"
+                (change)="alCambiarTallaNueva($event)"
+              >
+                @for (
+                  talla of servicio.tallasDeProducto(forma.controls.productoId.value);
+                  track talla
+                ) {
                   <option [value]="talla">{{ talla }}</option>
                 }
               </select>
             } @else {
-              <input class="campo__entrada campo__entrada--bloqueado" [value]="actual.talla" readonly />
+              <input
+                class="campo__entrada campo__entrada--bloqueado"
+                [value]="actual.talla"
+                readonly
+              />
             }
           </label>
           <label class="campo campo--ancho">
             Nota de la receta
-            <textarea class="campo__entrada" formControlName="nota" rows="2"
-              placeholder="Observaciones para producción"></textarea>
+            <textarea
+              class="campo__entrada"
+              formControlName="nota"
+              rows="2"
+              placeholder="Observaciones para producción"
+            ></textarea>
           </label>
         </div>
       </fieldset>
@@ -74,14 +105,16 @@
       <section class="tarjeta seccion">
         <h2 class="seccion__titulo">2 · Líneas de materiales</h2>
         <p class="ayuda">
-          La captura se convierte a unidad base (cm² → m², cm → m). Cantidad bruta = neta × factor
-          ÷ (1 − merma/100). La receta no lleva color: al producir se toma el material del color de
-          la variante.
+          La captura se convierte a unidad base (cm² → m², cm → m). Cantidad bruta = neta × factor ÷
+          (1 − merma/100). La receta no lleva color: al producir se toma el material del color de la
+          variante.
         </p>
 
         <div class="tabla-contenedor">
           <table class="tabla">
-            <caption class="sr-only">Materiales de la receta</caption>
+            <caption class="sr-only">
+              Materiales de la receta
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Material</th>
@@ -98,8 +131,12 @@
               @for (linea of forma.controls.lineas.controls; let indice = $index; track linea) {
                 <tr [formGroupName]="indice">
                   <td data-etiqueta="Material">
-                    <select class="campo__entrada" formControlName="materialCodigo"
-                      (change)="alCambiarMaterial(indice, $event)" aria-label="Material de la línea">
+                    <select
+                      class="campo__entrada"
+                      formControlName="materialCodigo"
+                      (change)="alCambiarMaterial(indice, $event)"
+                      aria-label="Material de la línea"
+                    >
                       @for (material of materiales; track material.codigo) {
                         <option [value]="material.codigo">
                           {{ material.codigo }} · {{ material.nombre }}
@@ -113,39 +150,75 @@
                   </td>
                   <td data-etiqueta="Capturada">
                     <div class="inline">
-                      <input class="campo__entrada campo__entrada--corto" type="number" min="0" step="0.0001"
-                        formControlName="cantidadCapturada" aria-label="Cantidad capturada" />
-                      <select class="campo__entrada campo__entrada--unidad" formControlName="unidadCaptura"
-                        aria-label="Unidad de captura">
-                        @for (unidad of unidades; track unidad) { <option [value]="unidad">{{ unidad }}</option> }
+                      <input
+                        class="campo__entrada campo__entrada--corto"
+                        type="number"
+                        min="0"
+                        step="0.0001"
+                        formControlName="cantidadCapturada"
+                        aria-label="Cantidad capturada"
+                      />
+                      <select
+                        class="campo__entrada campo__entrada--unidad"
+                        formControlName="unidadCaptura"
+                        aria-label="Unidad de captura"
+                      >
+                        @for (unidad of unidades; track unidad) {
+                          <option [value]="unidad">{{ unidad }}</option>
+                        }
                       </select>
                     </div>
                   </td>
                   <td data-etiqueta="Neta">
-                    {{ lineasVista()[indice]?.cantidadNeta }} {{ lineasVista()[indice]?.unidadBase }}
+                    {{ lineasVista()[indice]?.cantidadNeta }}
+                    {{ lineasVista()[indice]?.unidadBase }}
                   </td>
                   <td data-etiqueta="Factor">
-                    <input class="campo__entrada campo__entrada--corto" type="number" min="0.001" step="0.001"
-                      formControlName="factorConsumo" aria-label="Factor de consumo" />
+                    <input
+                      class="campo__entrada campo__entrada--corto"
+                      type="number"
+                      min="0.001"
+                      step="0.001"
+                      formControlName="factorConsumo"
+                      aria-label="Factor de consumo"
+                    />
                   </td>
                   <td data-etiqueta="Merma">
-                    <input class="campo__entrada campo__entrada--corto" type="number" min="0" max="99.99" step="0.01"
-                      formControlName="mermaPct" aria-label="Porcentaje de merma" />
+                    <input
+                      class="campo__entrada campo__entrada--corto"
+                      type="number"
+                      min="0"
+                      max="99.99"
+                      step="0.01"
+                      formControlName="mermaPct"
+                      aria-label="Porcentaje de merma"
+                    />
                   </td>
                   <td data-etiqueta="Bruta">{{ lineasVista()[indice]?.bruta }}</td>
                   <td data-etiqueta="Costo">
-                    {{ (lineasVista()[indice]?.costo ?? 0) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                    {{
+                      lineasVista()[indice]?.costo ?? 0
+                        | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+                    }}
                   </td>
                   <td>
                     @if (!soloLectura) {
-                      <button type="button" class="accion accion--peligro" (click)="quitarLinea(indice)"
-                        [attr.aria-label]="'Quitar línea ' + (indice + 1)">Quitar</button>
+                      <button
+                        type="button"
+                        class="accion accion--peligro"
+                        (click)="quitarLinea(indice)"
+                        [attr.aria-label]="'Quitar línea ' + (indice + 1)"
+                      >
+                        Quitar
+                      </button>
                     }
                   </td>
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="8" class="celda-vacia">Sin líneas. Agrega materiales o las etiquetas precargadas.</td>
+                  <td colspan="8" class="celda-vacia">
+                    Sin líneas. Agrega materiales o las etiquetas precargadas.
+                  </td>
                 </tr>
               }
             </tbody>
@@ -156,13 +229,21 @@
           <div class="acciones-lineas">
             <label class="campo campo--compacto">
               Material a agregar
-              <select class="campo__entrada" [value]="materialNuevo()" (change)="alCambiarMaterialNuevo($event)">
+              <select
+                class="campo__entrada"
+                [value]="materialNuevo()"
+                (change)="alCambiarMaterialNuevo($event)"
+              >
                 @for (material of materiales; track material.codigo) {
-                  <option [value]="material.codigo">{{ material.codigo }} · {{ material.nombre }}</option>
+                  <option [value]="material.codigo">
+                    {{ material.codigo }} · {{ material.nombre }}
+                  </option>
                 }
               </select>
             </label>
-            <button type="button" class="boton boton--secundario" (click)="agregarLinea()">Agregar línea</button>
+            <button type="button" class="boton boton--secundario" (click)="agregarLinea()">
+              Agregar línea
+            </button>
             <button type="button" class="boton boton--secundario" (click)="agregarEtiquetas()">
               Agregar etiquetas precargadas
             </button>
@@ -181,22 +262,40 @@
             <div [formGroupName]="indice" class="bordado">
               <label class="campo">
                 Diseño
-                <select class="campo__entrada" formControlName="disenoId" aria-label="Diseño de bordado">
+                <select
+                  class="campo__entrada"
+                  formControlName="disenoId"
+                  aria-label="Diseño de bordado"
+                >
                   @for (diseno of disenos(); track diseno.id) {
-                    <option [value]="diseno.id">{{ diseno.codigo }} · {{ diseno.nombre }} ({{ diseno.estado }})</option>
+                    <option [value]="diseno.id">
+                      {{ diseno.codigo }} · {{ diseno.nombre }} ({{ diseno.estado }})
+                    </option>
                   }
                 </select>
               </label>
               <label class="campo">
                 Aplicaciones
-                <input class="campo__entrada" type="number" min="1" step="1" formControlName="aplicaciones" />
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="1"
+                  step="1"
+                  formControlName="aplicaciones"
+                />
               </label>
               <label class="campo">
                 Ubicación
                 <input class="campo__entrada" formControlName="ubicacion" maxlength="40" />
               </label>
               @if (!soloLectura) {
-                <button type="button" class="accion accion--peligro" (click)="quitarBordado(indice)">Quitar</button>
+                <button
+                  type="button"
+                  class="accion accion--peligro"
+                  (click)="quitarBordado(indice)"
+                >
+                  Quitar
+                </button>
               }
             </div>
           } @empty {
@@ -204,12 +303,14 @@
           }
         </div>
         @if (!soloLectura) {
-          <button type="button" class="boton boton--secundario" (click)="agregarBordado()">Agregar bordado</button>
+          <button type="button" class="boton boton--secundario" (click)="agregarBordado()">
+            Agregar bordado
+          </button>
         }
         @if (pendientes().length > 0) {
           <p class="nota nota--adv">
             Diseños pendientes de digitalizar: {{ pendientes().join(', ') }}. El consumo de hilo se
-           ajusta a 0 m hasta capturar los metros por color en la biblioteca de diseños.
+            ajusta a 0 m hasta capturar los metros por color en la biblioteca de diseños.
           </p>
         }
       </section>
@@ -219,38 +320,107 @@
         <div class="rejilla">
           <label class="campo">
             Mano de obra
-            <input class="campo__entrada" type="number" min="0" step="0.01" formControlName="manoObra"
-              [attr.aria-invalid]="invalido('manoObra')" />
-            @if (invalido('manoObra')) { <span class="campo__error">Captura un valor mayor o igual a cero.</span> }
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="manoObra"
+              [attr.aria-invalid]="invalido('manoObra')"
+            />
+            @if (invalido('manoObra')) {
+              <span class="campo__error">Captura un valor mayor o igual a cero.</span>
+            }
           </label>
           <label class="campo">
             Bordado
-            <input class="campo__entrada" type="number" min="0" step="0.01" formControlName="costoBordado"
-              [attr.aria-invalid]="invalido('costoBordado')" />
-            @if (invalido('costoBordado')) { <span class="campo__error">Captura un valor mayor o igual a cero.</span> }
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="costoBordado"
+              [attr.aria-invalid]="invalido('costoBordado')"
+            />
+            @if (invalido('costoBordado')) {
+              <span class="campo__error">Captura un valor mayor o igual a cero.</span>
+            }
           </label>
           <label class="campo">
             Costos indirectos
-            <input class="campo__entrada" type="number" min="0" step="0.01" formControlName="costosIndirectos"
-              [attr.aria-invalid]="invalido('costosIndirectos')" />
-            @if (invalido('costosIndirectos')) { <span class="campo__error">Captura un valor mayor o igual a cero.</span> }
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="costosIndirectos"
+              [attr.aria-invalid]="invalido('costosIndirectos')"
+            />
+            @if (invalido('costosIndirectos')) {
+              <span class="campo__error">Captura un valor mayor o igual a cero.</span>
+            }
           </label>
         </div>
-        <p class="ayuda">Estos valores no tenían dato en la fuente; se capturan por receta y son editables.</p>
+        <p class="ayuda">
+          Estos valores no tenían dato en la fuente; se capturan por receta y son editables.
+        </p>
       </fieldset>
 
       <section class="tarjeta seccion">
         <h2 class="seccion__titulo">5 · Vista previa en vivo</h2>
         <div class="resumen">
-          <div class="resumen__dato"><span>Materia prima</span><strong>{{ costeo().materiaPrima | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div class="resumen__dato"><span>Hilo de bordado (incluido arriba)</span><strong>{{ costeo().hiloBordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div class="resumen__dato"><span>Empaque por prenda</span><strong>{{ costeo().empaque | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div class="resumen__dato"><span>Mano de obra</span><strong>{{ costeo().manoObra | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div class="resumen__dato"><span>Bordado</span><strong>{{ costeo().bordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div class="resumen__dato"><span>Indirectos</span><strong>{{ costeo().indirectos | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div class="resumen__dato resumen__dato--destacado"><span>Costo estándar</span><strong>{{ costeo().costoEstandar | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div class="resumen__dato"><span>Precio sugerido (IVA incluido)</span><strong>{{ costeo().precioSugerido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div class="resumen__dato"><span>Margen con precio vigente</span><strong>{{ margen() === null ? '—' : margen() + '%' }}</strong></div>
+          <div class="resumen__dato">
+            <span>Materia prima</span
+            ><strong>{{
+              costeo().materiaPrima | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+            }}</strong>
+          </div>
+          <div class="resumen__dato">
+            <span>Hilo de bordado (incluido arriba)</span
+            ><strong>{{
+              costeo().hiloBordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+            }}</strong>
+          </div>
+          <div class="resumen__dato">
+            <span>Empaque por prenda</span
+            ><strong>{{
+              costeo().empaque | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+            }}</strong>
+          </div>
+          <div class="resumen__dato">
+            <span>Mano de obra</span
+            ><strong>{{
+              costeo().manoObra | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+            }}</strong>
+          </div>
+          <div class="resumen__dato">
+            <span>Bordado</span
+            ><strong>{{
+              costeo().bordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+            }}</strong>
+          </div>
+          <div class="resumen__dato">
+            <span>Indirectos</span
+            ><strong>{{
+              costeo().indirectos | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+            }}</strong>
+          </div>
+          <div class="resumen__dato resumen__dato--destacado">
+            <span>Costo estándar</span
+            ><strong>{{
+              costeo().costoEstandar | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+            }}</strong>
+          </div>
+          <div class="resumen__dato">
+            <span>Precio sugerido (IVA incluido)</span
+            ><strong>{{
+              costeo().precioSugerido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+            }}</strong>
+          </div>
+          <div class="resumen__dato">
+            <span>Margen con precio vigente</span
+            ><strong>{{ margen() === null ? '—' : margen() + '%' }}</strong>
+          </div>
           <div class="resumen__dato">
             <span>Alcanza para</span>
             <strong>{{ alcanza() === null ? '—' : alcanza() + ' prendas' }}</strong>
@@ -263,7 +433,9 @@
 
         @if (razones().length > 0) {
           <ul class="razones">
-            @for (razon of razones(); track razon) { <li>{{ razon }}</li> }
+            @for (razon of razones(); track razon) {
+              <li>{{ razon }}</li>
+            }
           </ul>
         } @else {
           <p class="nota nota--exito">La receta cumple las reglas para activarse.</p>
@@ -279,7 +451,11 @@
           <div class="copiar">
             <label class="campo">
               Producto de destino
-              <select class="campo__entrada" [value]="copiarProducto()" (change)="alCambiarProductoCopia($event)">
+              <select
+                class="campo__entrada"
+                [value]="copiarProducto()"
+                (change)="alCambiarProductoCopia($event)"
+              >
                 @for (producto of servicio.productos; track producto.id) {
                   <option [value]="producto.id">{{ producto.nombre }}</option>
                 }
@@ -287,11 +463,19 @@
             </label>
             <label class="campo">
               Talla de destino
-              <select class="campo__entrada" [value]="copiarTalla()" (change)="alCambiarTallaCopia($event)">
-                @for (talla of tallasDeCopia(); track talla) { <option [value]="talla">{{ talla }}</option> }
+              <select
+                class="campo__entrada"
+                [value]="copiarTalla()"
+                (change)="alCambiarTallaCopia($event)"
+              >
+                @for (talla of tallasDeCopia(); track talla) {
+                  <option [value]="talla">{{ talla }}</option>
+                }
               </select>
             </label>
-            <button type="button" class="boton boton--secundario" (click)="copiar()">Crear copia</button>
+            <button type="button" class="boton boton--secundario" (click)="copiar()">
+              Crear copia
+            </button>
           </div>
         </section>
       }
@@ -315,10 +499,14 @@
       <div class="acciones-forma">
         @if (!soloLectura) {
           <button type="submit" class="boton boton--primario">Guardar borrador</button>
-          <button type="button" class="boton boton--primario" (click)="activar()">Activar versión</button>
+          <button type="button" class="boton boton--primario" (click)="activar()">
+            Activar versión
+          </button>
         }
         @if (!esNueva && actual.estado !== 'ARCHIVADA') {
-          <button type="button" class="boton boton--peligro" (click)="pedirArchivado()">Archivar</button>
+          <button type="button" class="boton boton--peligro" (click)="pedirArchivado()">
+            Archivar
+          </button>
         }
         <a routerLink="/admin/recetas" class="boton boton--secundario">Cancelar</a>
       </div>

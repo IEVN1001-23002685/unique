@@ -15,7 +15,9 @@ export class HistorialRecetas {
   protected readonly servicio = inject(RecetasServicio);
   private readonly ruta = inject(ActivatedRoute);
 
-  protected readonly producto = signal(Number(this.ruta.snapshot.queryParamMap.get('producto') ?? 1));
+  protected readonly producto = signal(
+    Number(this.ruta.snapshot.queryParamMap.get('producto') ?? 1),
+  );
   protected readonly talla = signal<CodigoTalla>(
     (this.ruta.snapshot.queryParamMap.get('talla') as CodigoTalla | null) ?? 'CH',
   );

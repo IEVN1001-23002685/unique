@@ -46,7 +46,9 @@ export class CatalogoMaestro {
         ].some((valor) => valor.toLowerCase().includes(termino));
 
       const categoriaOk = categoria === 'TODAS' || String(producto.categoriaId) === categoria;
-      return coincide && categoriaOk && (estatus === 'TODOS' || this.estatusDe(producto) === estatus);
+      return (
+        coincide && categoriaOk && (estatus === 'TODOS' || this.estatusDe(producto) === estatus)
+      );
     });
   });
 

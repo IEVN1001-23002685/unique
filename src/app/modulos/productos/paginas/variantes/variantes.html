@@ -48,7 +48,11 @@
       </label>
       <label class="campo filtro">
         Producto
-        <select class="campo__entrada" [value]="productoFiltro()" (change)="alCambiarProducto($event)">
+        <select
+          class="campo__entrada"
+          [value]="productoFiltro()"
+          (change)="alCambiarProducto($event)"
+        >
           <option value="TODOS">Todos los productos</option>
           @for (producto of servicio.productos(); track producto.id) {
             <option [value]="producto.id">{{ producto.nombre }}</option>
@@ -70,7 +74,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Variantes de producto con SKU y estado</caption>
+          <caption class="sr-only">
+            Variantes de producto con SKU y estado
+          </caption>
           <thead>
             <tr>
               <th scope="col">SKU</th>
@@ -88,12 +94,13 @@
           <tbody>
             @for (fila of filtradas(); track fila.variante.id) {
               <tr [class.fila--inactiva]="!fila.variante.activa">
-                <td data-etiqueta="SKU"><span class="mono">{{ fila.variante.sku }}</span></td>
+                <td data-etiqueta="SKU">
+                  <span class="mono">{{ fila.variante.sku }}</span>
+                </td>
                 <td data-etiqueta="Producto">
-                  <a
-                    class="accion"
-                    [routerLink]="['/admin/productos/editar', fila.productoId]"
-                  >{{ fila.productoNombre }}</a>
+                  <a class="accion" [routerLink]="['/admin/productos/editar', fila.productoId]">{{
+                    fila.productoNombre
+                  }}</a>
                 </td>
                 <td data-etiqueta="Categoría">{{ fila.categoria }}</td>
                 <td data-etiqueta="Talla">

@@ -5,8 +5,8 @@
     <div class="modal__icono" aria-hidden="true">!</div>
     <h2 class="modal__titulo" id="titulo-cancelar">Cancelar pedido</h2>
     <p class="modal__mensaje">
-      El pedido <strong class="mono">{{ folio() }}</strong> pasará a CANCELADO. El motivo quedará en el
-      historial interno y se mostrará en la vista de cancelados.
+      El pedido <strong class="mono">{{ folio() }}</strong> pasará a CANCELADO. El motivo quedará en
+      el historial interno y se mostrará en la vista de cancelados.
     </p>
 
     <form [formGroup]="forma" (ngSubmit)="confirmarAccion()">

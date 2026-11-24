@@ -1,0 +1,37 @@
+.alerta__detalle {
+  display: block;
+  margin-top: 0.2rem;
+  font-family: var(--font-texto);
+}
+.grafica__barras {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.25rem;
+  height: 7rem;
+}
+.grafica__barra--material {
+  background: var(--color-unique-orquidea);
+}
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font: 0.72rem var(--font-interfaz);
+  color: var(--color-unique-texto-suave);
+}
+.leyenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.leyenda__muestra {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 4px;
+  background: var(--color-unique-ciruela);
+}
+.leyenda__muestra--material {
+  background: var(--color-unique-orquidea);
+}

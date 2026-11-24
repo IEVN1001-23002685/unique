@@ -1,0 +1,33 @@
+.tabla-contenedor--ancha {
+  overflow-x: auto;
+}
+.tabla-contenedor--ancha .tabla {
+  min-width: 66rem;
+}
+.campo__entrada--tabla {
+  width: 7.5rem;
+  min-height: 2.4rem;
+  padding: 0.4rem 0.6rem;
+  font-variant-numeric: tabular-nums;
+}
+.tabla--politicas td {
+  vertical-align: top;
+}
+.tabla--politicas .campo__error {
+  display: block;
+  max-width: 9rem;
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 900px) {
+  .tabla-contenedor--ancha {
+    overflow-x: visible;
+  }
+  .tabla-contenedor--ancha .tabla {
+    min-width: 0;
+  }
+  .campo__entrada--tabla {
+    width: 100%;
+    max-width: 12rem;
+  }
+}
