@@ -404,6 +404,7 @@ export class AdministracionSistemaServicio {
       const empalme = this.catalogosLista().some(
         (entrada) =>
           entrada.tipo === 'TARIFA_ENVIO' &&
+          entrada.activo &&
           entrada.activa &&
           entrada.id !== id &&
           entrada.cpInicio !== undefined &&

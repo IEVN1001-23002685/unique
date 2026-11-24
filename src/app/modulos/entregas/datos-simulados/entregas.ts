@@ -161,6 +161,7 @@ export const ENTREGAS_SIMULADAS: Entrega[] = [
     salidaEn: haceHoras(2 * 24 + 2),
     resultadoEn: haceHoras(2 * 24),
     receptor: 'Ana Sofía Torres',
+    motivoFallo: null,
     notas: 'Entregada en puerta a la titular del pedido.',
     decision: null,
     lineas: [prenda('HOODIE-M-ROJA', 'Hoodie roja', 'M', 'Roja', 1)],
