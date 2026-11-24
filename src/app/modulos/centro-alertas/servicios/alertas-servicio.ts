@@ -3,6 +3,7 @@ import { AvisosServicio } from '../../../nucleo/servicios/avisos-servicio';
 import { EntregasServicio } from '../../entregas/servicios/entregas-servicio';
 import { InventarioProductoServicio } from '../../inventario-producto-terminado/servicios/inventario-producto-terminado-servicio';
 import { ETIQUETAS_ESTADO, PedidosServicio } from '../../pedidos/servicios/pedidos-servicio';
+import { ProveedoresServicio } from '../../proveedores/servicios/proveedores-servicio';
 import { VentasServicio } from '../../ventas/servicios/ventas-servicio';
 import { ALERTAS_DEMO, REGLAS_INICIALES, TIPOS_ALERTA } from '../datos-simulados/alertas';
 import type {
@@ -35,6 +36,7 @@ export class AlertasServicio {
   private readonly inventario = inject(InventarioProductoServicio);
   private readonly entregas = inject(EntregasServicio);
   private readonly pedidos = inject(PedidosServicio);
+  private readonly proveedores = inject(ProveedoresServicio);
   private readonly ventas = inject(VentasServicio);
   private readonly avisos = inject(AvisosServicio);
 
@@ -193,7 +195,12 @@ export class AlertasServicio {
   /** Estado actual de las condiciones que puede observar este frontend. */
   private condicionesActuales(): AlertaCentro[] {
     const lista: AlertaCentro[] = [];
-    const limitePago = this.reglasLista().find((regla) => regla.clave === 'horas_max_recibido')?.valor ?? 2;
+    const limitePago =
+      this.reglasLista().find((regla) => regla.clave === 'horas_max_recibido')?.valor ?? 2;
+    const minimoATiempo =
+      this.reglasLista().find(
+        (regla) => regla.clave === 'proveedor_minimo_a_tiempo_pct',
+      )?.valor ?? 80;
 
     const pedidosEspera = this.pedidos
       .pedidos()
@@ -346,6 +353,35 @@ export class AlertasServicio {
         atendidaEn: null,
         ruta: ['/ventas', venta.folio],
         origen: 'M08 · Ventas',
+        demo: false,
+      });
+    }
+
+    for (const evaluacion of this.proveedores
+      .evaluacionesRegistradas()
+      .filter((item) => item.entregasATiempoPct < minimoATiempo)
+      .slice(0, 3)) {
+      const proveedor = this.proveedores.obtenerPorId(evaluacion.proveedorId);
+      if (!proveedor || proveedor.estatus === 'INACTIVO') {
+        continue;
+      }
+      lista.push({
+        id: `proveedor-${evaluacion.proveedorId}`,
+        tipo: 'PROVEEDOR_EN_REVISION',
+        severidad: 'INFORMATIVA',
+        titulo: `${proveedor.nombreComercial} por debajo del mínimo de entregas a tiempo`,
+        detalle: `Entregas a tiempo del periodo: ${evaluacion.entregasATiempoPct} % frente al mínimo de ${minimoATiempo} %. Estatus actual: ${proveedor.estatus}.`,
+        entidadTipo: 'proveedor',
+        entidadId: String(proveedor.id),
+        rolDestino: 'ADMIN',
+        accionSugerida: 'Ver proveedor',
+        estado: 'ABIERTA',
+        claveUnica: `PROVEEDOR_EN_REVISION:proveedor:${proveedor.id}`,
+        abiertaEn: isoHace(26),
+        atendidaPor: null,
+        atendidaEn: null,
+        ruta: ['/proveedores', 'evaluacion'],
+        origen: 'M13 · Proveedores',
         demo: false,
       });
     }

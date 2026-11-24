@@ -7,7 +7,7 @@ import type {
 /**
  * DATOS DE DEMOSTRACIÓN DE M21. Las condiciones de M12, M09, M08 y M19 se
  * derivan en el servicio; aquí solo se declaran las alertas cuyos módulos de
- * origen (M14, M15, M16, M17, M07 y M22) todavía no existen en el frontend.
+ * origen (M14, M15, M16, M17 y M07) todavía no existen en el frontend.
  * Nada de esto se persiste ni representa una operación ejecutada.
  */
 
@@ -124,7 +124,7 @@ export const TIPOS_ALERTA: RegistroTipoAlerta[] = [
     condicion: 'Menos de 80 % de entregas a tiempo',
     paraQuien: 'ADMIN',
     accion: 'Ver proveedor',
-    origen: 'M22 · Proveedores',
+    origen: 'M13 · Proveedores',
   },
   {
     tipo: 'DISENO_PENDIENTE',
@@ -281,7 +281,7 @@ const demo = (
   };
 };
 
-/** Ocho tipos de los módulos aún no implementados; el resto se deriva en el servicio. */
+/** Siete tipos de los módulos aún no implementados; el resto se deriva en el servicio. */
 export const ALERTAS_DEMO: AlertaCentro[] = [
   demo(
     'mp-insuficiente',
@@ -378,22 +378,6 @@ export const ALERTAS_DEMO: AlertaCentro[] = [
       origen: 'M07 · Devoluciones (pendiente)',
     },
     52,
-  ),
-  demo(
-    'proveedor-revision',
-    {
-      tipo: 'PROVEEDOR_EN_REVISION',
-      severidad: 'INFORMATIVA',
-      titulo: 'Textiles León en revisión',
-      detalle: 'Entregas a tiempo del periodo: 81.3 %; el parámetro de referencia es 80 %.',
-      entidadTipo: 'proveedor',
-      entidadId: 'Textiles León',
-      rolDestino: 'ADMIN',
-      accionSugerida: 'Ver proveedor',
-      ruta: ['/proveedores', 'evaluacion'],
-      origen: 'M22 · Proveedores',
-    },
-    26,
   ),
   demo(
     'diseno-pendiente',
