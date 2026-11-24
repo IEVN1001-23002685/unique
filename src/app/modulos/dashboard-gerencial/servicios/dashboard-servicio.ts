@@ -626,7 +626,7 @@ export class DashboardServicio {
       {
         etiqueta: 'Alertas abiertas',
         valor: numero(this.alertasCriticas().length),
-        detalle: 'Proyección local; M21 pendiente de implementar',
+        detalle: 'Proyección local; revisar centro de alertas M21',
         tono: this.alertasCriticas().length > 0 ? 'ROJO' : 'VERDE',
       },
       {

@@ -1,0 +1,13 @@
+.pagina{display:block}
+.umbrales{display:grid;gap:.65rem}
+.umbral{padding:.8rem .9rem;border:1px solid #eadcea;border-radius:14px;background-color:#fff}
+.umbral--error{border-color:var(--color-unique-error);background-color:var(--color-unique-error-suave)}
+.umbral__descripcion{display:block;margin-top:.15rem;color:var(--color-unique-texto-suave);font-family:var(--font-texto);font-size:.72rem;font-weight:400;line-height:1.4}
+.umbral__control{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:.45rem}
+.umbral__control .campo__entrada{width:6.5rem;min-height:2.3rem}
+.umbral__unidad{color:var(--color-unique-ciruela);font-family:var(--font-interfaz);font-size:.76rem;font-weight:600}
+.umbral__propuesta{padding:.2rem .5rem;border-radius:999px;background-color:var(--color-unique-adv-suave);color:#745008;font-size:.68rem}
+.umbral__error{display:block;margin-top:.35rem;color:#a3263a;font-size:.72rem}
+.reglas__acciones{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1rem}
+.nota-final{margin-top:.9rem}
+@media (min-width:900px){.umbrales{grid-template-columns:repeat(2,minmax(0,1fr))}}
