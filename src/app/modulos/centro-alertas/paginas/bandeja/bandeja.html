@@ -70,11 +70,15 @@
             </div>
           </dl>
           <div class="alerta__acciones">
-            <a class="boton boton--primario" [routerLink]="alerta.ruta">
+            <button
+              type="button"
+              class="boton boton--primario"
+              (click)="pedirAtencion(alerta, true)"
+            >
               {{ alerta.accionSugerida ?? 'Ver origen' }}
-            </a>
+            </button>
             <button type="button" class="boton boton--secundario" (click)="pedirAtencion(alerta)">
-              Marcar atendida
+              Solo marcar atendida
             </button>
           </div>
         </article>
@@ -83,22 +87,16 @@
   }
 
   <p class="nota nota--adv nota-final">
-    El botón de acción abre la pantalla de origen. La resolución real (emitir solicitud, generar
-    orden, reprogramar o cancelar) se ejecutará en Flask; «Marcar atendida» solo deja constancia
-    local en la bitácora de esta sesión.
+    El botón de acción abre la pantalla de origen y registra la alerta como atendida en esta sesión.
+    La resolución real (emitir solicitud, generar orden, reprogramar o cancelar) se ejecutará en
+    Flask. «Solo marcar atendida» deja constancia sin navegar.
   </p>
 
-  @if (pendiente(); as seleccionada) {
+  @if (pendiente(); as seleccion) {
     <app-modal-confirmacion
-      titulo="Marcar alerta como atendida"
-      [mensaje]="
-        '¿Registrar como atendida «' +
-        seleccionada.titulo +
-        '»? No se ejecutará la acción «' +
-        (seleccionada.accionSugerida ?? 'correspondiente') +
-        '» ni se guardará en el servidor.'
-      "
-      etiquetaConfirmar="Marcar atendida"
+      [titulo]="tituloModal()"
+      [mensaje]="mensajeModal()"
+      [etiquetaConfirmar]="seleccion.ejecutarAccion ? 'Continuar' : 'Marcar atendida'"
       (confirmar)="confirmarAtencion()"
       (cancelar)="cancelarAtencion()"
     />
