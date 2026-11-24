@@ -155,6 +155,17 @@ export const routes: Routes = [
     loadChildren: () => import('./modulos/centro-alertas/centro-alertas.routes').then((m) => m.ALERTAS_RUTAS),
   },
   {
+    // M22 se monta en /sistema según el mapa del §10 y es exclusivo del Administrador.
+    // Sin guards reales todavía: la etiqueta de rol es demostrativa.
+    path: 'sistema',
+    component: Administracion,
+    data: { titulo: 'Administración del sistema', rol: 'Administrador', roles: ['Administrador'] },
+    loadChildren: () =>
+      import('./modulos/administracion-sistema/administracion-sistema.routes').then(
+        (m) => m.SISTEMA_RUTAS,
+      ),
+  },
+  {
     path: 'proveedores',
     component: Administracion,
     data: { titulo: 'Proveedores', rol: 'Administrador', roles: ['Administrador'] },
