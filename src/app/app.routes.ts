@@ -147,6 +147,14 @@ export const routes: Routes = [
       import('./modulos/dashboard-gerencial/dashboard.routes').then((m) => m.DASHBOARD_RUTAS),
   },
   {
+    // M21 se monta en /alertas según el mapa del §10. Cada rol ve las suyas;
+    // el selector de rol de la pantalla es demostrativo, no un guard real.
+    path: 'alertas',
+    component: Administracion,
+    data: { titulo: 'Centro de alertas', rol: 'Administrador', roles: ['Administrador', 'Operativo'] },
+    loadChildren: () => import('./modulos/centro-alertas/centro-alertas.routes').then((m) => m.ALERTAS_RUTAS),
+  },
+  {
     path: 'proveedores',
     component: Administracion,
     data: { titulo: 'Proveedores', rol: 'Administrador', roles: ['Administrador'] },

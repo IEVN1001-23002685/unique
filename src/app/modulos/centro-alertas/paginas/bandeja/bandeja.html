@@ -1,0 +1,106 @@
+<section class="pagina">
+  <div class="tarjeta controles">
+    <div class="subpestanas" role="group" aria-label="Filtrar alertas por severidad">
+      @for (filtro of filtros; track filtro) {
+        <button
+          type="button"
+          class="subpestana"
+          [class.subpestana--activa]="severidad() === filtro"
+          (click)="severidad.set(filtro)"
+        >
+          {{ etiquetas[filtro] }}
+          <span class="subpestana__conteo">{{ contar(filtro) }}</span>
+        </button>
+      }
+    </div>
+    <label class="campo campo--busqueda">
+      Buscar alerta
+      <input
+        class="campo__entrada"
+        type="search"
+        placeholder="Título, SKU, folio u origen"
+        [value]="busqueda()"
+        (input)="alCambiarBusqueda($event)"
+      />
+    </label>
+  </div>
+
+  @if (visibles().length === 0) {
+    <p class="vacio">
+      @if (servicio.abiertas().length === 0) {
+        No hay alertas abiertas para el rol seleccionado. Las condiciones se revisan al recargar o
+        con «Revisar condiciones».
+      } @else {
+        Ninguna alerta coincide con el filtro o la búsqueda actual.
+      }
+    </p>
+  } @else {
+    <div class="lista">
+      @for (alerta of visibles(); track alerta.id) {
+        <article
+          class="tarjeta alerta"
+          [class.alerta--critica]="alerta.severidad === 'CRITICA'"
+          [class.alerta--preventiva]="alerta.severidad === 'PREVENTIVA'"
+        >
+          <div class="alerta__cabecera">
+            <app-chip-severidad [severidad]="alerta.severidad" />
+            <span class="alerta__tiempo">Abierta {{ tiempo(alerta) }}</span>
+            @if (alerta.demo) {
+              <span class="alerta__demo">Dato de demostración</span>
+            }
+          </div>
+          <h2 class="alerta__titulo">{{ alerta.titulo }}</h2>
+          <p class="alerta__detalle">{{ alerta.detalle }}</p>
+          <dl class="alerta__meta">
+            <div>
+              <dt>Entidad</dt>
+              <dd>{{ alerta.entidadTipo }} · {{ alerta.entidadId }}</dd>
+            </div>
+            <div>
+              <dt>Abierta desde</dt>
+              <dd>{{ fecha(alerta.abiertaEn) }}</dd>
+            </div>
+            <div>
+              <dt>Origen</dt>
+              <dd>{{ alerta.origen }}</dd>
+            </div>
+            <div>
+              <dt>Destinatario</dt>
+              <dd>{{ alerta.rolDestino }}</dd>
+            </div>
+          </dl>
+          <div class="alerta__acciones">
+            <a class="boton boton--primario" [routerLink]="alerta.ruta">
+              {{ alerta.accionSugerida ?? 'Ver origen' }}
+            </a>
+            <button type="button" class="boton boton--secundario" (click)="pedirAtencion(alerta)">
+              Marcar atendida
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  <p class="nota nota--adv nota-final">
+    El botón de acción abre la pantalla de origen. La resolución real (emitir solicitud, generar
+    orden, reprogramar o cancelar) se ejecutará en Flask; «Marcar atendida» solo deja constancia
+    local en la bitácora de esta sesión.
+  </p>
+
+  @if (pendiente(); as seleccionada) {
+    <app-modal-confirmacion
+      titulo="Marcar alerta como atendida"
+      [mensaje]="
+        '¿Registrar como atendida «' +
+        seleccionada.titulo +
+        '»? No se ejecutará la acción «' +
+        (seleccionada.accionSugerida ?? 'correspondiente') +
+        '» ni se guardará en el servidor.'
+      "
+      etiquetaConfirmar="Marcar atendida"
+      (confirmar)="confirmarAtencion()"
+      (cancelar)="cancelarAtencion()"
+    />
+  }
+</section>
