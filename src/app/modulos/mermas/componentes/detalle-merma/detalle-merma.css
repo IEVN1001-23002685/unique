@@ -1,6 +1,19 @@
-.etiquetas { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; }
-.detalle { margin: 0.75rem 0 0; font-size: 0.85rem; line-height: 1.5; color: var(--color-unique-texto); }
+.etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+.detalle {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-unique-texto);
+}
 .eyebrow {
-  margin: 0 0 0.25rem; font: 600 0.68rem var(--font-interfaz);
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-unique-ciruela);
+  margin: 0 0 0.25rem;
+  font: 600 0.68rem var(--font-interfaz);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-unique-ciruela);
 }

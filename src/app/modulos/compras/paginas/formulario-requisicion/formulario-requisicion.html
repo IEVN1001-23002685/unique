@@ -6,8 +6,8 @@
       <p class="eyebrow">Bloque 4 · Abastecimiento · M14</p>
       <h1 class="titulo">{{ esEdicion ? 'Editar cantidades' : 'Nueva requisición' }}</h1>
       <p class="subtitulo">
-        La cantidad base faltante se convierte a la presentación comercial del material. El
-        redondeo hacia arriba y el mínimo se calculan para la interfaz; Flask confirmará la regla.
+        La cantidad base faltante se convierte a la presentación comercial del material. El redondeo
+        hacia arriba y el mínimo se calculan para la interfaz; Flask confirmará la regla.
       </p>
     </div>
     <a routerLink="/compras" class="boton boton--secundario">Volver a requisiciones</a>
@@ -83,14 +83,21 @@
                 Material
                 <select class="campo__entrada" formControlName="materialId">
                   @for (material of materiales; track material.id) {
-                    <option [value]="material.id">{{ material.codigo }} · {{ material.nombre }}</option>
+                    <option [value]="material.id">
+                      {{ material.codigo }} · {{ material.nombre }}
+                    </option>
                   }
                 </select>
               </label>
 
               <label class="campo">
                 Color
-                <input class="campo__entrada" type="text" formControlName="color" placeholder="Gris" />
+                <input
+                  class="campo__entrada"
+                  type="text"
+                  formControlName="color"
+                  placeholder="Gris"
+                />
                 @if (lineaInvalida(i, 'color')) {
                   <span class="campo__error">Indica el color del material.</span>
                 }
@@ -129,8 +136,8 @@
 
             <p class="linea__pista">
               Presentación: {{ materialDe(i)?.presentacion }} · mínimo
-              {{ materialDe(i)?.minimoCompra }} {{ materialDe(i)?.unidadPresentacion }}(s).
-              Equivale a {{ baseSugerida(i) }} {{ materialDe(i)?.unidadBase }}.
+              {{ materialDe(i)?.minimoCompra }} {{ materialDe(i)?.unidadPresentacion }}(s). Equivale
+              a {{ baseSugerida(i) }} {{ materialDe(i)?.unidadBase }}.
             </p>
             <button type="button" class="accion" (click)="calcularSugerida(i)">
               Recalcular presentación
@@ -158,7 +165,7 @@
   }
 
   <p class="nota">
-    Editar conserva el origen, el material y la cantidad faltante; únicamente se ajustan la
-    cantidad sugerida, la prioridad y las notas. Ningún cambio se envía a Flask en esta etapa.
+    Editar conserva el origen, el material y la cantidad faltante; únicamente se ajustan la cantidad
+    sugerida, la prioridad y las notas. Ningún cambio se envía a Flask en esta etapa.
   </p>
 </section>

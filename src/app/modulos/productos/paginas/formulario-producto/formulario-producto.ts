@@ -72,10 +72,7 @@ export class FormularioProducto {
       descripcion: [this.producto?.descripcion ?? ''],
       composicionTextil: [this.producto?.composicionTextil ?? ''],
       guiaMedidas: [this.producto?.guiaMedidas ?? ''],
-      precioVenta: [
-        this.producto?.precioVenta ?? 0,
-        [Validators.required, Validators.min(1)],
-      ],
+      precioVenta: [this.producto?.precioVenta ?? 0, [Validators.required, Validators.min(1)]],
       permiteBajoPedido: [this.producto?.permiteBajoPedido ?? true],
       colores: this.fb.nonNullable.array(
         COLORES_PRODUCTO.map((color) =>

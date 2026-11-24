@@ -55,7 +55,9 @@ export const decimalPositivo: ValidatorFn = (control: AbstractControl): Validati
 };
 
 /** Igual que decimalPositivo pero acepta cero; útil en mínimos y seguridad. */
-export const decimalNoNegativo: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+export const decimalNoNegativo: ValidatorFn = (
+  control: AbstractControl,
+): ValidationErrors | null => {
   const valor = control.value;
   if (typeof valor !== 'number' || !Number.isFinite(valor) || valor < 0) {
     return { decimalNoNegativo: true };

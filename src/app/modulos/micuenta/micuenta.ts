@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 export interface DireccionCliente {
   id: number;
@@ -37,9 +38,11 @@ export interface MedioPagoSimulado {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './micuenta.html',
-  styles: []
+  styles: [],
 })
 export class Micuenta {
+  private readonly router = inject(Router);
+
   @Output() cerrar = new EventEmitter<void>();
   @Output() cuentaDesactivada = new EventEmitter<void>();
   @Output() cerrarTodasSesiones = new EventEmitter<void>();
@@ -54,7 +57,7 @@ export class Micuenta {
     telefono: '',
     correo: '',
     correoOriginal: '',
-    contrasenaConfirmacion: ''
+    contrasenaConfirmacion: '',
   };
 
   // 2. Direcciones
@@ -73,8 +76,8 @@ export class Micuenta {
       estado: '',
       cp: '',
       referencia: '',
-      predeterminada: true
-    }
+      predeterminada: true,
+    },
   ];
 
   mostrandoFormDireccion = false;
@@ -83,23 +86,23 @@ export class Micuenta {
 
   // 3. Medios de pago simulados
   mediosPago: MedioPagoSimulado[] = [
-  {
-    id: 1,
-    tipo: 'tarjeta',
-    alias: 'Tarjeta de prueba',
-    titular: 'Cliente Demo',
-    marca: 'Visa',
-    ultimos4: '1234',
-    vencimiento: '12/28'
-  },
-  {
-    id: 2,
-    tipo: 'cuenta',
-    alias: 'Cuenta de prueba',
-    titular: 'Cliente Demo',
-    saldo: 500
-  }
-];
+    {
+      id: 1,
+      tipo: 'tarjeta',
+      alias: 'Tarjeta de prueba',
+      titular: 'Cliente Demo',
+      marca: 'Visa',
+      ultimos4: '1234',
+      vencimiento: '12/28',
+    },
+    {
+      id: 2,
+      tipo: 'cuenta',
+      alias: 'Cuenta de prueba',
+      titular: 'Cliente Demo',
+      saldo: 500,
+    },
+  ];
 
   mostrandoFormPago = false;
   tipoNuevoPago: 'tarjeta' | 'cuenta' = 'tarjeta';
@@ -108,20 +111,25 @@ export class Micuenta {
     numero: '',
     titular: '',
     vencimiento: '',
-    cvv: ''
+    cvv: '',
   };
   formCuenta = {
     alias: '',
     titular: '',
-    saldoInicial: 1000
+    saldoInicial: 1000,
   };
 
   // 4. Seguridad
   seguridad = {
     contrasenaActual: '',
     nuevaContrasena: '',
-    confirmarContrasena: ''
+    confirmarContrasena: '',
   };
+
+  cerrarCuenta(): void {
+    this.cerrar.emit();
+    void this.router.navigate(['/catalogo']);
+  }
 
   cambiarPestana(tab: 'datos' | 'direcciones' | 'pagos' | 'seguridad'): void {
     this.pestanaActiva = tab;
@@ -160,7 +168,7 @@ export class Micuenta {
       referencia: '',
       predeterminada: false,
       rfc: '',
-      razonSocial: ''
+      razonSocial: '',
     };
   }
 
@@ -194,7 +202,7 @@ export class Micuenta {
     } else {
       this.direcciones.push({
         ...this.formDireccion,
-        id: Date.now()
+        id: Date.now(),
       });
       this.mensajeAviso = 'Dirección agregada.';
     }
@@ -222,7 +230,7 @@ export class Micuenta {
         titular: this.formTarjeta.titular,
         marca: limpio.startsWith('5') ? 'Mastercard' : 'Visa',
         ultimos4,
-        vencimiento: this.formTarjeta.vencimiento
+        vencimiento: this.formTarjeta.vencimiento,
       });
       // Se descartan número completo y CVV
       this.formTarjeta = { alias: '', numero: '', titular: '', vencimiento: '', cvv: '' };
@@ -232,7 +240,7 @@ export class Micuenta {
         tipo: 'cuenta',
         alias: this.formCuenta.alias || 'Cuenta simulada',
         titular: this.formCuenta.titular,
-        saldo: this.formCuenta.saldoInicial
+        saldo: this.formCuenta.saldoInicial,
       });
       this.formCuenta = { alias: '', titular: '', saldoInicial: 1000 };
     }

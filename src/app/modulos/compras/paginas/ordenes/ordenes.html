@@ -10,9 +10,7 @@
         recepción parcial o total se registra desde la pestaña Recepciones.
       </p>
     </div>
-    <a routerLink="/compras/cotizaciones" class="boton boton--primario">
-      Ver cotizaciones
-    </a>
+    <a routerLink="/compras/cotizaciones" class="boton boton--primario"> Ver cotizaciones </a>
   </div>
 
   <div class="indicadores" aria-label="Resumen de órdenes">
@@ -73,7 +71,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Órdenes de compra de UNIQUE</caption>
+          <caption class="sr-only">
+            Órdenes de compra de UNIQUE
+          </caption>
           <thead>
             <tr>
               <th scope="col">Folio</th>
@@ -91,11 +91,17 @@
                 <td data-etiqueta="Folio">
                   <span class="celda-principal">{{ orden.folio }}</span>
                   <span class="celda-secundaria">
-                    {{ orden.fechaEmision ? ('Emitida ' + (orden.fechaEmision | date: 'dd/MM/yyyy' : 'es-MX')) : 'Sin emitir' }}
+                    {{
+                      orden.fechaEmision
+                        ? 'Emitida ' + (orden.fechaEmision | date: 'dd/MM/yyyy' : 'es-MX')
+                        : 'Sin emitir'
+                    }}
                   </span>
                 </td>
                 <td data-etiqueta="Proveedor">
-                  <span class="celda-principal">{{ servicio.proveedorNombre(orden.proveedorId) }}</span>
+                  <span class="celda-principal">{{
+                    servicio.proveedorNombre(orden.proveedorId)
+                  }}</span>
                   <span class="celda-secundaria">{{ orden.condicionesPago }}</span>
                 </td>
                 <td data-etiqueta="Materiales">{{ materiales(orden) }}</td>

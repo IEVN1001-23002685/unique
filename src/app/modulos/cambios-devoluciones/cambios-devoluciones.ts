@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 export type TipoSolicitudCaso = 'Cambio' | 'Devolución';
 export type EstadoCaso = 'Solicitada' | 'En inspección' | 'Aprobada' | 'Rechazada' | 'Completada';
@@ -24,9 +25,11 @@ export interface SolicitudCambioDevolucion {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './cambios-devoluciones.html',
-  styles: []
+  styles: [],
 })
-export class CambiosDevoluciones {
+export class CambiosDevoluciones implements OnInit {
+  private readonly router = inject(Router);
+
   @Input() solicitudes: SolicitudCambioDevolucion[] = [
     {
       id: 1,
@@ -37,8 +40,8 @@ export class CambiosDevoluciones {
       motivo: 'Talla ajustada',
       comentario: 'Me gustaría cambiarla a talla G del mismo modelo.',
       estado: 'En inspección',
-      estadoFisico: 'Buen estado'
-    }
+      estadoFisico: 'Buen estado',
+    },
   ];
 
   @Output() cerrar = new EventEmitter<void>();
@@ -52,7 +55,7 @@ export class CambiosDevoluciones {
     tipo: 'Cambio' as TipoSolicitudCaso,
     prendaResumen: '',
     motivo: 'Talla ajustada',
-    comentario: ''
+    comentario: '',
   };
 
   // Selección para Inspección
@@ -60,11 +63,16 @@ export class CambiosDevoluciones {
   revisionFisica = {
     estadoFisico: 'Buen estado' as EstadoFisicoPrenda,
     observaciones: '',
-    dictamenTexto: ''
+    dictamenTexto: '',
   };
 
   ngOnInit(): void {
     this.casoEnInspeccion = this.solicitudes[0] || null;
+  }
+
+  cerrarCasos(): void {
+    this.cerrar.emit();
+    void this.router.navigate(['/catalogo']);
   }
 
   cambiarSeccion(sec: 'solicitar' | 'mis-solicitudes' | 'bandeja' | 'inspeccion'): void {
@@ -89,7 +97,7 @@ export class CambiosDevoluciones {
       prendaResumen: this.nuevaSolicitud.prendaResumen.trim(),
       motivo: this.nuevaSolicitud.motivo,
       comentario: this.nuevaSolicitud.comentario.trim(),
-      estado: 'Solicitada'
+      estado: 'Solicitada',
     };
 
     this.solicitudes = [creado, ...this.solicitudes];
@@ -105,7 +113,7 @@ export class CambiosDevoluciones {
     this.revisionFisica = {
       estadoFisico: caso.estadoFisico || 'Buen estado',
       observaciones: '',
-      dictamenTexto: caso.dictamen || ''
+      dictamenTexto: caso.dictamen || '',
     };
     this.seccionActiva = 'inspeccion';
     this.mensajeAviso = `El caso ${caso.folioCaso} pasó a inspección física.`;

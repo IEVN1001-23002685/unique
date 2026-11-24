@@ -17,10 +17,7 @@
     <div class="tarjeta bloque cabecera-orden">
       <div class="etiquetas">
         <app-chip-estado-produccion [estado]="orden.estado" />
-        <app-semaforo-produccion
-          [tono]="orden.semaforo"
-          [texto]="etiquetasTono[orden.semaforo]"
-        />
+        <app-semaforo-produccion [tono]="orden.semaforo" [texto]="etiquetasTono[orden.semaforo]" />
         <span class="etiqueta etiqueta--neutro">Origen: {{ etiquetasOrigen[orden.origen] }}</span>
         @if (orden.vencida) {
           <span class="etiqueta etiqueta--error">Fecha requerida vencida</span>
@@ -29,12 +26,48 @@
       <p class="motivo">{{ orden.motivoSemaforo }}</p>
 
       <dl class="lector">
-        <div><dt>Fecha requerida</dt><dd>{{ orden.fechaRequerida === null ? 'Sin fecha' : (orden.fechaRequerida | date: 'dd/MM/yyyy' : '' : 'es-MX') }}</dd></div>
-        <div><dt>Iniciada</dt><dd>{{ orden.iniciadaEn === null ? 'Aún no' : (orden.iniciadaEn | date: 'dd/MM/yyyy' : '' : 'es-MX') }}</dd></div>
-        <div><dt>Cerrada</dt><dd>{{ orden.cerradaEn === null ? 'Aún no' : (orden.cerradaEn | date: 'dd/MM/yyyy' : '' : 'es-MX') }}</dd></div>
-        <div><dt>Creada por</dt><dd>{{ orden.creadaPor }}</dd></div>
-        <div><dt>Cumplimiento del plan</dt><dd>{{ orden.cumplimientoPct | number: '1.0-1' : 'es-MX' }}%</dd></div>
-        <div><dt>Merma real</dt><dd>{{ orden.mermaRealPct | number: '1.0-1' : 'es-MX' }}%</dd></div>
+        <div>
+          <dt>Fecha requerida</dt>
+          <dd>
+            {{
+              orden.fechaRequerida === null
+                ? 'Sin fecha'
+                : (orden.fechaRequerida | date: 'dd/MM/yyyy' : '' : 'es-MX')
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>Iniciada</dt>
+          <dd>
+            {{
+              orden.iniciadaEn === null
+                ? 'Aún no'
+                : (orden.iniciadaEn | date: 'dd/MM/yyyy' : '' : 'es-MX')
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>Cerrada</dt>
+          <dd>
+            {{
+              orden.cerradaEn === null
+                ? 'Aún no'
+                : (orden.cerradaEn | date: 'dd/MM/yyyy' : '' : 'es-MX')
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>Creada por</dt>
+          <dd>{{ orden.creadaPor }}</dd>
+        </div>
+        <div>
+          <dt>Cumplimiento del plan</dt>
+          <dd>{{ orden.cumplimientoPct | number: '1.0-1' : 'es-MX' }}%</dd>
+        </div>
+        <div>
+          <dt>Merma real</dt>
+          <dd>{{ orden.mermaRealPct | number: '1.0-1' : 'es-MX' }}%</dd>
+        </div>
       </dl>
 
       @if (orden.notas) {
@@ -82,7 +115,9 @@
     <div class="tarjeta bloque">
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Líneas de producción en unidades</caption>
+          <caption class="sr-only">
+            Líneas de producción en unidades
+          </caption>
           <thead>
             <tr>
               <th scope="col">SKU</th>
@@ -97,13 +132,23 @@
           <tbody>
             @for (linea of orden.lineas; track linea.id) {
               <tr>
-                <td data-etiqueta="SKU"><span class="celda-principal">{{ linea.sku }}</span></td>
+                <td data-etiqueta="SKU">
+                  <span class="celda-principal">{{ linea.sku }}</span>
+                </td>
                 <td data-etiqueta="Producto">{{ linea.nombreProducto }}</td>
                 <td data-etiqueta="Talla / color">{{ linea.talla }} / {{ linea.color }}</td>
-                <td data-etiqueta="Planeada" class="celda-numero celda-derecha">{{ linea.cantidadPlaneada | number: '1.0-0' : 'es-MX' }}</td>
-                <td data-etiqueta="Aprobada" class="celda-numero celda-derecha">{{ linea.cantidadAprobada | number: '1.0-0' : 'es-MX' }}</td>
-                <td data-etiqueta="Merma" class="celda-numero celda-derecha">{{ linea.cantidadMerma | number: '1.0-0' : 'es-MX' }}</td>
-                <td data-etiqueta="Reproceso" class="celda-numero celda-derecha">{{ linea.cantidadReproceso | number: '1.0-0' : 'es-MX' }}</td>
+                <td data-etiqueta="Planeada" class="celda-numero celda-derecha">
+                  {{ linea.cantidadPlaneada | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Aprobada" class="celda-numero celda-derecha">
+                  {{ linea.cantidadAprobada | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Merma" class="celda-numero celda-derecha">
+                  {{ linea.cantidadMerma | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Reproceso" class="celda-numero celda-derecha">
+                  {{ linea.cantidadReproceso | number: '1.0-0' : 'es-MX' }}
+                </td>
               </tr>
             }
           </tbody>
@@ -115,7 +160,9 @@
     <div class="tarjeta bloque">
       <div class="tabla-contenedor tabla-contenedor--ancha">
         <table class="tabla">
-          <caption class="sr-only">Materiales requeridos, reservados, disponibles y faltantes</caption>
+          <caption class="sr-only">
+            Materiales requeridos, reservados, disponibles y faltantes
+          </caption>
           <thead>
             <tr>
               <th scope="col">Material</th>
@@ -132,12 +179,20 @@
           <tbody>
             @for (material of orden.materiales; track material.id) {
               <tr>
-                <td data-etiqueta="Material"><span class="celda-principal">{{ material.nombreMaterial }}</span></td>
+                <td data-etiqueta="Material">
+                  <span class="celda-principal">{{ material.nombreMaterial }}</span>
+                </td>
                 <td data-etiqueta="Color">{{ material.color }}</td>
                 <td data-etiqueta="Unidad">{{ material.unidadBase }}</td>
-                <td data-etiqueta="Requerido" class="celda-numero celda-derecha">{{ material.cantidadRequerida | number: '1.0-4' : 'es-MX' }}</td>
-                <td data-etiqueta="Reservado" class="celda-numero celda-derecha">{{ material.cantidadReservada | number: '1.0-4' : 'es-MX' }}</td>
-                <td data-etiqueta="Disponible M15" class="celda-numero celda-derecha">{{ material.disponibleM15 | number: '1.0-4' : 'es-MX' }}</td>
+                <td data-etiqueta="Requerido" class="celda-numero celda-derecha">
+                  {{ material.cantidadRequerida | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Reservado" class="celda-numero celda-derecha">
+                  {{ material.cantidadReservada | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Disponible M15" class="celda-numero celda-derecha">
+                  {{ material.disponibleM15 | number: '1.0-4' : 'es-MX' }}
+                </td>
                 <td data-etiqueta="Faltante" class="celda-numero celda-derecha">
                   <strong>{{ material.faltante | number: '1.0-4' : 'es-MX' }}</strong>
                 </td>
@@ -148,7 +203,12 @@
                   />
                 </td>
                 <td data-etiqueta="Cobertura">
-                  <span class="etiqueta" [class.etiqueta--error]="material.cobertura === 'RETRASADA' || material.cobertura === 'NINGUNA'">
+                  <span
+                    class="etiqueta"
+                    [class.etiqueta--error]="
+                      material.cobertura === 'RETRASADA' || material.cobertura === 'NINGUNA'
+                    "
+                  >
                     {{ material.etiquetaCobertura }}
                   </span>
                 </td>
@@ -197,7 +257,10 @@
           @for (faltante of faltantes(); track faltante.materialId) {
             <li>
               <strong>{{ faltante.nombreMaterial }} · {{ faltante.color }}</strong>
-              <span>{{ faltante.faltante | number: '1.0-4' : 'es-MX' }} {{ faltante.unidadBase }} faltantes</span>
+              <span
+                >{{ faltante.faltante | number: '1.0-4' : 'es-MX' }}
+                {{ faltante.unidadBase }} faltantes</span
+              >
               <span class="etiqueta" [class.etiqueta--error]="faltante.ordenRetrasada">
                 @if (faltante.ordenRetrasada) {
                   Orden de compra retrasada
@@ -222,21 +285,26 @@
         </div>
         <p class="nota nota--advertencia">
           Esta pantalla no crea la requisición ni propaga cantidades: Flask debe generarla con su
-          folio REQ, verificar que no exista otra abierta y reevaluar el semáforo al recibir material.
+          folio REQ, verificar que no exista otra abierta y reevaluar el semáforo al recibir
+          material.
         </p>
       </section>
     }
 
     <p class="nota nota--advertencia">
-      Aprobar sube las unidades a M12 y las asigna al pedido más antiguo en espera (FIFO), que pasa a
-      CONFIRMADO al quedar completo. La merma o el defecto se reportan a M17 con causa y etapa. Nada
-      de eso se ejecuta en esta demostración.
+      Aprobar sube las unidades a M12 y las asigna al pedido más antiguo en espera (FIFO), que pasa
+      a CONFIRMADO al quedar completo. La merma o el defecto se reportan a M17 con causa y etapa.
+      Nada de eso se ejecuta en esta demostración.
     </p>
 
     @if (cancelando()) {
       <app-modal-confirmacion
         titulo="Cancelar orden de producción"
-        [mensaje]="'¿Cancelar la orden ' + orden.folio + '? Solo se permite desde PLANEADA o LISTA. No se liberarán reservas reales en M15.'
+        [mensaje]="
+          '¿Cancelar la orden ' +
+          orden.folio +
+          '? Solo se permite desde PLANEADA o LISTA. No se liberarán reservas reales en M15.'
+        "
         etiquetaConfirmar="Cancelar orden"
         (confirmar)="cancelar()"
         (cancelar)="cancelando.set(false)"

@@ -85,9 +85,7 @@ export class RevisionCalidad {
   });
 
   protected readonly candidatas = computed(() =>
-    this.servicio
-      .vistas()
-      .filter((orden) => ['EN_REVISION', 'EN_PROCESO'].includes(orden.estado)),
+    this.servicio.vistas().filter((orden) => ['EN_REVISION', 'EN_PROCESO'].includes(orden.estado)),
   );
 
   protected readonly revisiones = computed(() => this.servicio.revisiones().slice(0, 5));
@@ -110,8 +108,7 @@ export class RevisionCalidad {
     return orden.lineas.map((linea, indice) => {
       const grupo = this.lineas.controls[indice];
       const valor = grupo.getRawValue();
-      const pendiente =
-        linea.cantidadPlaneada - linea.cantidadAprobada - linea.cantidadMerma;
+      const pendiente = linea.cantidadPlaneada - linea.cantidadAprobada - linea.cantidadMerma;
       const revisada = valor.cantidadRevisada ?? 0;
       const aprobada = valor.cantidadAprobada ?? 0;
       const reproceso = valor.cantidadReproceso ?? 0;
@@ -154,8 +151,7 @@ export class RevisionCalidad {
         'lineas',
         this.fb.array(
           (orden?.lineas ?? []).map((linea) => {
-            const pendiente =
-              linea.cantidadPlaneada - linea.cantidadAprobada - linea.cantidadMerma;
+            const pendiente = linea.cantidadPlaneada - linea.cantidadAprobada - linea.cantidadMerma;
             return this.fb.group({
               medidasOk: this.fb.control(true),
               costurasOk: this.fb.control(true),

@@ -4,8 +4,8 @@
       <p class="eyebrow">M17 · Mermas · Historial</p>
       <h1 class="titulo">Zona de merma</h1>
       <p class="subtitulo">
-        Consulta las salidas por daño o defecto, su origen y su causa. Los registros son
-        inmutables: las correcciones se hacen con un asiento inverso del Administrador.
+        Consulta las salidas por daño o defecto, su origen y su causa. Los registros son inmutables:
+        las correcciones se hacen con un asiento inverso del Administrador.
       </p>
     </div>
     <a routerLink="/mermas/registro" class="boton boton--primario">Registrar merma</a>
@@ -67,7 +67,14 @@
 
     <div class="barra">
       <label class="buscador">
-        <svg class="buscador__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <svg
+          class="buscador__icono"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
           <circle cx="11" cy="11" r="7" />
           <path d="m16.5 16.5 4 4" stroke-linecap="round" />
         </svg>
@@ -96,7 +103,11 @@
     <div class="form-grid form-grid--tres filtros-secundarios">
       <label class="campo">
         Periodo
-        <select class="campo__entrada" [value]="filtroPeriodo()" (change)="alCambiarPeriodo($event)">
+        <select
+          class="campo__entrada"
+          [value]="filtroPeriodo()"
+          (change)="alCambiarPeriodo($event)"
+        >
           @for (periodo of periodos(); track periodo.clave) {
             <option [value]="periodo.clave">{{ periodo.etiqueta }}</option>
           }
@@ -135,7 +146,14 @@
 
     <p class="resultados">
       {{ registros().length }} {{ registros().length === 1 ? 'resultado' : 'resultados' }}
-      @if (filtroTexto() !== '' || filtroPeriodo() !== 'TODOS' || filtroEtapa() !== 'TODAS' || filtroCausa() !== 'TODAS' || filtroOrigen() !== 'TODOS' || filtroProducto() !== '') {
+      @if (
+        filtroTexto() !== '' ||
+        filtroPeriodo() !== 'TODOS' ||
+        filtroEtapa() !== 'TODAS' ||
+        filtroCausa() !== 'TODAS' ||
+        filtroOrigen() !== 'TODOS' ||
+        filtroProducto() !== ''
+      ) {
         <button type="button" class="accion" (click)="limpiarFiltros()">Limpiar filtros</button>
       }
     </p>
@@ -162,7 +180,10 @@
               <tr>
                 <td data-etiqueta="Folio">
                   <span class="celda-principal">{{ merma.folio }}</span>
-                  <span class="celda-secundario">{{ merma.fecha | date: 'dd/MM/yyyy' : '' : 'es-MX' }} · {{ merma.etiquetaProcedencia }}</span>
+                  <span class="celda-secundario"
+                    >{{ merma.fecha | date: 'dd/MM/yyyy' : '' : 'es-MX' }} ·
+                    {{ merma.etiquetaProcedencia }}</span
+                  >
                 </td>
                 <td data-etiqueta="Ítem">
                   <span class="celda-principal">{{ merma.etiquetaItem }}</span>
@@ -188,13 +209,21 @@
                   </td>
                 }
                 <td data-etiqueta="Estado">
-                  <span class="etiqueta" [ngClass]="claseEstado(merma)">{{ etiquetaEstado(merma) }}</span>
+                  <span class="etiqueta" [ngClass]="claseEstado(merma)">{{
+                    etiquetaEstado(merma)
+                  }}</span>
                 </td>
                 <td data-etiqueta="Acciones">
                   <div class="acciones">
-                    <button type="button" class="accion" (click)="verDetalle(merma)">Ver detalle</button>
+                    <button type="button" class="accion" (click)="verDetalle(merma)">
+                      Ver detalle
+                    </button>
                     @if (esAdministrador() && !merma.reversada && !merma.esReversion) {
-                      <button type="button" class="accion accion--peligro" (click)="solicitarReverso(merma)">
+                      <button
+                        type="button"
+                        class="accion accion--peligro"
+                        (click)="solicitarReverso(merma)"
+                      >
                         Reversar
                       </button>
                     }
@@ -207,11 +236,21 @@
       </div>
 
       <nav class="paginacion" aria-label="Paginación del historial">
-        <button type="button" class="boton boton--secundario" [disabled]="paginaSegura() === 1" (click)="irAPagina(paginaSegura() - 1)">
+        <button
+          type="button"
+          class="boton boton--secundario"
+          [disabled]="paginaSegura() === 1"
+          (click)="irAPagina(paginaSegura() - 1)"
+        >
           Anterior
         </button>
         <span>Página {{ paginaSegura() }} de {{ totalPaginas() }}</span>
-        <button type="button" class="boton boton--secundario" [disabled]="paginaSegura() === totalPaginas()" (click)="irAPagina(paginaSegura() + 1)">
+        <button
+          type="button"
+          class="boton boton--secundario"
+          [disabled]="paginaSegura() === totalPaginas()"
+          (click)="irAPagina(paginaSegura() + 1)"
+        >
           Siguiente
         </button>
       </nav>
@@ -219,7 +258,9 @@
       <div class="estado" role="status">
         <strong>No hay mermas con estos filtros.</strong>
         <p>Prueba con otro periodo, etapa o término de búsqueda.</p>
-        <button type="button" class="boton boton--enlace" (click)="limpiarFiltros()">Limpiar filtros</button>
+        <button type="button" class="boton boton--enlace" (click)="limpiarFiltros()">
+          Limpiar filtros
+        </button>
       </div>
     }
 

@@ -6,8 +6,7 @@ export const INVENTARIO_RUTAS: Routes = [
     path: '',
     pathMatch: 'full',
     title: 'Existencias · UNIQUE',
-    loadComponent: () =>
-      import('./paginas/existencias/existencias').then((c) => c.Existencias),
+    loadComponent: () => import('./paginas/existencias/existencias').then((c) => c.Existencias),
   },
   {
     path: 'lotes',
@@ -30,27 +29,21 @@ export const INVENTARIO_RUTAS: Routes = [
     title: 'Catálogo de materiales · UNIQUE',
     data: { modo: 'listado' },
     loadComponent: () =>
-      import('./paginas/catalogo-materiales/catalogo-materiales').then(
-        (c) => c.CatalogoMateriales,
-      ),
+      import('./paginas/catalogo-materiales/catalogo-materiales').then((c) => c.CatalogoMateriales),
   },
   {
     path: 'catalogo/nuevo',
     title: 'Alta de material · UNIQUE',
     data: { modo: 'nuevo' },
     loadComponent: () =>
-      import('./paginas/catalogo-materiales/catalogo-materiales').then(
-        (c) => c.CatalogoMateriales,
-      ),
+      import('./paginas/catalogo-materiales/catalogo-materiales').then((c) => c.CatalogoMateriales),
   },
   {
     path: 'catalogo/:id/editar',
     title: 'Editar material · UNIQUE',
     data: { modo: 'editar' },
     loadComponent: () =>
-      import('./paginas/catalogo-materiales/catalogo-materiales').then(
-        (c) => c.CatalogoMateriales,
-      ),
+      import('./paginas/catalogo-materiales/catalogo-materiales').then((c) => c.CatalogoMateriales),
   },
   {
     path: 'politicas',

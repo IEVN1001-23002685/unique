@@ -20,7 +20,14 @@ import { InventarioServicio } from '../../servicios/inventario-servicio';
 
 @Component({
   selector: 'app-catalogo-materiales',
-  imports: [CurrencyPipe, DecimalPipe, ReactiveFormsModule, RouterLink, NavegacionInventario, ModalConfirmacion],
+  imports: [
+    CurrencyPipe,
+    DecimalPipe,
+    ReactiveFormsModule,
+    RouterLink,
+    NavegacionInventario,
+    ModalConfirmacion,
+  ],
   templateUrl: './catalogo-materiales.html',
   styleUrls: ['./catalogo-materiales.css', '../../inventario-compartido.css'],
 })

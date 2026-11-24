@@ -123,12 +123,8 @@ export class Politicas {
       this.filas.push(
         this.fb.group({
           existenciaId: this.fb.nonNullable.control(vista.id),
-          stockMinimo: this.fb.nonNullable.control(vista.stockMinimo, [
-            decimalNoNegativo,
-          ]),
-          stockSeguridad: this.fb.nonNullable.control(vista.stockSeguridad, [
-            decimalNoNegativo,
-          ]),
+          stockMinimo: this.fb.nonNullable.control(vista.stockMinimo, [decimalNoNegativo]),
+          stockSeguridad: this.fb.nonNullable.control(vista.stockSeguridad, [decimalNoNegativo]),
           consumoDiarioManual: this.fb.nonNullable.control(vista.consumoDiarioManual, [
             decimalNoNegativo,
           ]),

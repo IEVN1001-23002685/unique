@@ -35,9 +35,7 @@ export class Indicadores {
 
   protected altura(fila: FilaEvolucion, tipo: 'producto' | 'material'): number {
     const valor =
-      tipo === 'producto'
-        ? Math.max(fila.cantidadProducto, 0)
-        : Math.max(fila.cantidadMaterial, 0);
+      tipo === 'producto' ? Math.max(fila.cantidadProducto, 0) : Math.max(fila.cantidadMaterial, 0);
     return Math.max(3, Math.round((valor / this.maximoEvolucion()) * 100));
   }
 }

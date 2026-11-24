@@ -7,8 +7,8 @@
         <p class="eyebrow">M16 · Revisión de calidad</p>
         <h1 class="titulo">Dictamen de {{ orden.folio }}</h1>
         <p class="subtitulo">
-          Lista de verificación por línea y destino de cada unidad: aprobadas, reproceso o merma. Las
-          unidades en merma piden causa y etapa; el historial definitivo lo conserva Flask.
+          Lista de verificación por línea y destino de cada unidad: aprobadas, reproceso o merma.
+          Las unidades en merma piden causa y etapa; el historial definitivo lo conserva Flask.
         </p>
       </div>
       <a routerLink="/produccion/revision" class="boton boton--secundario">Ver todas</a>
@@ -17,14 +17,17 @@
     <div class="tarjeta bloque resumen-orden">
       <div class="etiquetas">
         <app-chip-estado-produccion [estado]="orden.estado" />
-        <span class="etiqueta etiqueta--neutro">{{ orden.unidadesPlaneadas | number: '1.0-0' : 'es-MX' }} unidades planeadas</span>
+        <span class="etiqueta etiqueta--neutro"
+          >{{ orden.unidadesPlaneadas | number: '1.0-0' : 'es-MX' }} unidades planeadas</span
+        >
         <span class="etiqueta etiqueta--info">{{ filas().length }} línea(s) a dictaminar</span>
       </div>
       @if (orden.estado !== 'EN_REVISION') {
         <p class="nota nota--advertencia">
-          Esta orden está {{ orden.estado === 'EN_PROCESO' ? 'en proceso' : 'cerrada o cancelada' }}.
-          El dictamen solo se captura cuando la orden está EN_REVISION; usa «Enviar a revisión» en el
-          detalle. El formulario se muestra solo para consulta.
+          Esta orden está
+          {{ orden.estado === 'EN_PROCESO' ? 'en proceso' : 'cerrada o cancelada' }}. El dictamen
+          solo se captura cuando la orden está EN_REVISION; usa «Enviar a revisión» en el detalle.
+          El formulario se muestra solo para consulta.
         </p>
       }
     </div>
@@ -42,7 +45,9 @@
             <label><input type="checkbox" formControlName="medidasOk" /> Medidas</label>
             <label><input type="checkbox" formControlName="costurasOk" /> Costuras</label>
             <label><input type="checkbox" formControlName="bordadoOk" /> Bordado</label>
-            <label><input type="checkbox" formControlName="etiquetasOk" /> Etiquetas completas</label>
+            <label
+              ><input type="checkbox" formControlName="etiquetasOk" /> Etiquetas completas</label
+            >
           </div>
 
           <div class="form-grid form-grid--tres">
@@ -59,15 +64,33 @@
             </label>
             <label class="campo">
               Aprobadas
-              <input type="number" class="campo__entrada" formControlName="cantidadAprobada" min="0" step="1" />
+              <input
+                type="number"
+                class="campo__entrada"
+                formControlName="cantidadAprobada"
+                min="0"
+                step="1"
+              />
             </label>
             <label class="campo">
               Reproceso
-              <input type="number" class="campo__entrada" formControlName="cantidadReproceso" min="0" step="1" />
+              <input
+                type="number"
+                class="campo__entrada"
+                formControlName="cantidadReproceso"
+                min="0"
+                step="1"
+              />
             </label>
             <label class="campo">
               Merma
-              <input type="number" class="campo__entrada" formControlName="cantidadMerma" min="0" step="1" />
+              <input
+                type="number"
+                class="campo__entrada"
+                formControlName="cantidadMerma"
+                min="0"
+                step="1"
+              />
             </label>
             <label class="campo">
               Etapa de la merma
@@ -93,7 +116,11 @@
               {{ fila.reproceso | number: '1.0-0' : 'es-MX' }} · Merma
               {{ fila.merma | number: '1.0-0' : 'es-MX' }}
             </span>
-            <span class="etiqueta" [class.etiqueta--error]="!fila.valida" [class.etiqueta--exito]="fila.valida">
+            <span
+              class="etiqueta"
+              [class.etiqueta--error]="!fila.valida"
+              [class.etiqueta--exito]="fila.valida"
+            >
               @if (fila.excede) {
                 Excede lo revisado o lo pendiente
               } @else if (fila.verificacionIncompleta) {
@@ -124,10 +151,10 @@
     </form>
 
     <p class="nota">
-      Regla de cierre: aprobadas + merma = planeadas. Si hay reproceso, la orden regresa a EN_PROCESO
-      sin consumir material adicional. Aprobar debe subir las unidades a M12 y asignarlas al pedido
-      más antiguo en espera (FIFO); la merma se reporta a M17 con causa y etapa. Nada de eso se
-      ejecuta en esta demostración.
+      Regla de cierre: aprobadas + merma = planeadas. Si hay reproceso, la orden regresa a
+      EN_PROCESO sin consumir material adicional. Aprobar debe subir las unidades a M12 y asignarlas
+      al pedido más antiguo en espera (FIFO); la merma se reporta a M17 con causa y etapa. Nada de
+      eso se ejecuta en esta demostración.
     </p>
   } @else {
     <div class="cabecera">
@@ -151,7 +178,9 @@
       } @else {
         <div class="tabla-contenedor">
           <table class="tabla">
-            <caption class="sr-only">Órdenes que requieren revisión de calidad</caption>
+            <caption class="sr-only">
+              Órdenes que requieren revisión de calidad
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Folio</th>
@@ -164,13 +193,21 @@
             <tbody>
               @for (orden of candidatas(); track orden.id) {
                 <tr>
-                  <td data-etiqueta="Folio"><span class="celda-principal">{{ orden.folio }}</span></td>
+                  <td data-etiqueta="Folio">
+                    <span class="celda-principal">{{ orden.folio }}</span>
+                  </td>
                   <td data-etiqueta="SKU">{{ skus(orden) }}</td>
-                  <td data-etiqueta="Unidades planeadas" class="celda-numero">{{ orden.unidadesPlaneadas | number: '1.0-0' : 'es-MX' }}</td>
-                  <td data-etiqueta="Estado"><app-chip-estado-produccion [estado]="orden.estado" /></td>
+                  <td data-etiqueta="Unidades planeadas" class="celda-numero">
+                    {{ orden.unidadesPlaneadas | number: '1.0-0' : 'es-MX' }}
+                  </td>
+                  <td data-etiqueta="Estado">
+                    <app-chip-estado-produccion [estado]="orden.estado" />
+                  </td>
                   <td data-etiqueta="Acción">
                     <div class="acciones">
-                      <a class="accion" [routerLink]="['/produccion/revision', orden.id]">Capturar dictamen</a>
+                      <a class="accion" [routerLink]="['/produccion/revision', orden.id]"
+                        >Capturar dictamen</a
+                      >
                       <a class="accion" [routerLink]="['/produccion', orden.id]">Ver detalle</a>
                     </div>
                   </td>
@@ -192,7 +229,9 @@
       } @else {
         <div class="tabla-contenedor">
           <table class="tabla">
-            <caption class="sr-only">Historial de revisiones de calidad de demostración</caption>
+            <caption class="sr-only">
+              Historial de revisiones de calidad de demostración
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Folio</th>
@@ -205,9 +244,13 @@
             <tbody>
               @for (revision of revisiones(); track revision.id) {
                 <tr>
-                  <td data-etiqueta="Folio"><span class="celda-principal">{{ revision.folio }}</span></td>
+                  <td data-etiqueta="Folio">
+                    <span class="celda-principal">{{ revision.folio }}</span>
+                  </td>
                   <td data-etiqueta="Orden">
-                    <a class="accion" [routerLink]="['/produccion', revision.ordenId]">{{ revision.ordenFolio }}</a>
+                    <a class="accion" [routerLink]="['/produccion', revision.ordenId]">{{
+                      revision.ordenFolio
+                    }}</a>
                   </td>
                   <td data-etiqueta="Líneas">{{ revision.lineas.length }}</td>
                   <td data-etiqueta="Aprobadas" class="celda-numero">

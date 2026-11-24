@@ -13,7 +13,51 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./modulos/catalogo/catalogo.routes').then((m) => m.CATALOGO_RUTAS),
       },
-     
+      {
+        // M04 · Carrito de la tienda (solo demostración local, sin persistencia).
+        path: 'carrito',
+        loadComponent: () => import('./modulos/carrito/carrito').then((c) => c.Carrito),
+      },
+      {
+        // M05 · Pago simulado; no se envía nada a una pasarela real.
+        path: 'pago',
+        loadComponent: () => import('./modulos/pago/pago').then((c) => c.Pago),
+      },
+      {
+        // M02 · Mi cuenta del Cliente.
+        path: 'cuenta',
+        loadComponent: () => import('./modulos/micuenta/micuenta').then((c) => c.Micuenta),
+      },
+      {
+        // M06 · Mis pedidos y seguimiento del Cliente.
+        path: 'pedidos',
+        loadComponent: () => import('./modulos/mispedidos/mispedidos').then((c) => c.MisPedidos),
+      },
+      {
+        // M07 · Cambios y devoluciones del Cliente.
+        path: 'devoluciones',
+        loadComponent: () =>
+          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+            (c) => c.CambiosDevoluciones,
+          ),
+      },
+      {
+        // M01 · Acceso (la fuente de verdad de roles será Flask).
+        path: 'login',
+        loadComponent: () =>
+          import('./modulos/inicio-sesion/inicio-sesion').then((c) => c.InicioSesion),
+      },
+      {
+        path: 'registro',
+        loadComponent: () => import('./modulos/registro/registro').then((c) => c.Registro),
+      },
+      {
+        path: 'recuperar',
+        loadComponent: () =>
+          import('./modulos/recuperar-password/recuperar-password').then(
+            (c) => c.RecuperarPassword,
+          ),
+      },
     ],
   },
   {

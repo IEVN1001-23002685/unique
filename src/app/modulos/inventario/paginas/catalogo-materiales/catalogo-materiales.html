@@ -5,7 +5,13 @@
     <div>
       <p class="eyebrow">Bloque 5 · Administración de M15</p>
       <h1 class="titulo">
-        {{ esFormulario ? (esEdicion ? 'Editar material' : 'Alta de material') : 'Catálogo de materiales' }}
+        {{
+          esFormulario
+            ? esEdicion
+              ? 'Editar material'
+              : 'Alta de material'
+            : 'Catálogo de materiales'
+        }}
       </h1>
       <p class="subtitulo">
         Catálogo único con categoría, unidad base, presentación de compra, costo estándar, merma
@@ -14,7 +20,9 @@
       </p>
     </div>
     @if (!esFormulario) {
-      <a routerLink="/inventario-mp/catalogo/nuevo" class="boton boton--primario">+ Nuevo material</a>
+      <a routerLink="/inventario-mp/catalogo/nuevo" class="boton boton--primario"
+        >+ Nuevo material</a
+      >
     } @else {
       <a routerLink="/inventario-mp/catalogo" class="boton boton--secundario">Volver al catálogo</a>
     }
@@ -42,16 +50,27 @@
             />
             @if (esInvalido('codigo')) {
               <span class="campo__error">
-                {{ formulario.controls.codigo.hasError('codigoDuplicado') ? 'El código ya existe.' : 'Captura un código válido.' }}
+                {{
+                  formulario.controls.codigo.hasError('codigoDuplicado')
+                    ? 'El código ya existe.'
+                    : 'Captura un código válido.'
+                }}
               </span>
             }
             @if (esEdicion) {
-              <span class="campo__pista">El código no se modifica porque otras áreas lo referencian.</span>
+              <span class="campo__pista"
+                >El código no se modifica porque otras áreas lo referencian.</span
+              >
             }
           </label>
           <label class="campo">
             Nombre
-            <input class="campo__entrada" type="text" formControlName="nombre" placeholder="Felpa" />
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="nombre"
+              placeholder="Felpa"
+            />
             @if (esInvalido('nombre')) {
               <span class="campo__error">El nombre es obligatorio.</span>
             }
@@ -78,14 +97,25 @@
         <div class="form-grid">
           <label class="campo">
             Unidad de compra
-            <input class="campo__entrada" type="text" formControlName="unidadCompra" placeholder="rollo" />
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="unidadCompra"
+              placeholder="rollo"
+            />
             @if (esInvalido('unidadCompra')) {
               <span class="campo__error">Indica la presentación comercial.</span>
             }
           </label>
           <label class="campo">
             Factor a unidades base
-            <input class="campo__entrada" type="number" min="0.0001" step="0.0001" formControlName="factorCompraBase" />
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0.0001"
+              step="0.0001"
+              formControlName="factorCompraBase"
+            />
             @if (esInvalido('factorCompraBase')) {
               <span class="campo__error">Mayor que 0 con hasta 4 decimales.</span>
             }
@@ -104,21 +134,41 @@
           </label>
           <label class="campo">
             Costo estándar por unidad base (MXN)
-            <input class="campo__entrada" type="number" min="0.0001" step="0.0001" formControlName="costoEstandarBase" />
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0.0001"
+              step="0.0001"
+              formControlName="costoEstandarBase"
+            />
             @if (esInvalido('costoEstandarBase')) {
               <span class="campo__error">Mayor o igual a 0 con hasta 4 decimales.</span>
             }
           </label>
           <label class="campo">
             Merma estándar (%)
-            <input class="campo__entrada" type="number" min="0" max="99.99" step="0.01" formControlName="mermaEstandarPct" />
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              max="99.99"
+              step="0.01"
+              formControlName="mermaEstandarPct"
+            />
             @if (esInvalido('mermaEstandarPct')) {
               <span class="campo__error">Entre 0 y menor que 100, con hasta 2 decimales.</span>
             }
           </label>
           <label class="campo">
             Plazo del proveedor principal (días)
-            <input class="campo__entrada" type="number" min="1" max="365" step="1" formControlName="plazoDias" />
+            <input
+              class="campo__entrada"
+              type="number"
+              min="1"
+              max="365"
+              step="1"
+              formControlName="plazoDias"
+            />
             @if (esInvalido('plazoDias')) {
               <span class="campo__error">Captura un plazo entre 1 y 365 días.</span>
             }
@@ -138,8 +188,9 @@
           <a routerLink="/inventario-mp/catalogo" class="boton boton--secundario">Cancelar</a>
         </div>
         <p class="nota nota--advertencia">
-          La unicidad del código y la baja sin referencias se validan aquí solo de forma local. Flask
-          debe repetir la validación de forma autoritativa (codigoUnico asíncrono y recetas de M11).
+          La unicidad del código y la baja sin referencias se validan aquí solo de forma local.
+          Flask debe repetir la validación de forma autoritativa (codigoUnico asíncrono y recetas de
+          M11).
         </p>
       </form>
     }
@@ -153,7 +204,9 @@
       } @else {
         <div class="tabla-contenedor tabla-contenedor--ancha">
           <table class="tabla">
-            <caption class="sr-only">Catálogo de materiales de UNIQUE</caption>
+            <caption class="sr-only">
+              Catálogo de materiales de UNIQUE
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Código</th>
@@ -179,13 +232,18 @@
                   <td data-etiqueta="Categoría">{{ material.categoria }}</td>
                   <td data-etiqueta="Unidad base">{{ material.unidadBase }}</td>
                   <td data-etiqueta="Compra">
-                    1 {{ material.unidadCompra }} = {{ material.factorCompraBase | number: '1.0-4' : 'es-MX' }}
+                    1 {{ material.unidadCompra }} =
+                    {{ material.factorCompraBase | number: '1.0-4' : 'es-MX' }}
                     {{ material.unidadBase }}
                   </td>
                   <td data-etiqueta="Costo estándar" class="celda-numero celda-derecha">
-                    {{ material.costoEstandarBase | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX' }}
+                    {{
+                      material.costoEstandarBase | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX'
+                    }}
                   </td>
-                  <td data-etiqueta="Merma %" class="celda-numero celda-derecha">{{ material.mermaEstandarPct }}</td>
+                  <td data-etiqueta="Merma %" class="celda-numero celda-derecha">
+                    {{ material.mermaEstandarPct }}
+                  </td>
                   <td data-etiqueta="Color">
                     {{ material.porColor ? 'Blanco, Negro y Gris' : 'NA' }}
                   </td>
@@ -196,7 +254,10 @@
                   </td>
                   <td data-etiqueta="Acciones">
                     <div class="acciones">
-                      <a class="accion" [routerLink]="['/inventario-mp/catalogo', material.id, 'editar']">
+                      <a
+                        class="accion"
+                        [routerLink]="['/inventario-mp/catalogo', material.id, 'editar']"
+                      >
                         Editar
                       </a>
                       <button
@@ -227,7 +288,13 @@
   @if (materialEliminar(); as material) {
     <app-modal-confirmacion
       titulo="Eliminar material"
-      [mensaje]="'¿Eliminar ' + material.codigo + ' · ' + material.nombre + ' del catálogo? Si tiene lotes se desactivará en su lugar.'
+      [mensaje]="
+        '¿Eliminar ' +
+        material.codigo +
+        ' · ' +
+        material.nombre +
+        ' del catálogo? Si tiene lotes se desactivará en su lugar.'
+      "
       etiquetaConfirmar="Confirmar"
       (confirmar)="eliminar()"
       (cancelar)="materialEliminar.set(null)"

@@ -3,13 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter, map } from 'rxjs';
 
-type SeccionInventario =
-  | 'existencias'
-  | 'lotes'
-  | 'kardex'
-  | 'ajuste'
-  | 'catalogo'
-  | 'politicas';
+type SeccionInventario = 'existencias' | 'lotes' | 'kardex' | 'ajuste' | 'catalogo' | 'politicas';
 
 /** Pestañas tipo píldora compartidas por las seis pantallas de M15. */
 @Component({
@@ -31,11 +25,21 @@ export class NavegacionInventario {
 
   protected readonly activa = computed<SeccionInventario>(() => {
     const url = this.url();
-    if (url.startsWith('/inventario-mp/lotes')) { return 'lotes'; }
-    if (url.startsWith('/inventario-mp/kardex')) { return 'kardex'; }
-    if (url.startsWith('/inventario-mp/ajuste')) { return 'ajuste'; }
-    if (url.startsWith('/inventario-mp/catalogo')) { return 'catalogo'; }
-    if (url.startsWith('/inventario-mp/politicas')) { return 'politicas'; }
+    if (url.startsWith('/inventario-mp/lotes')) {
+      return 'lotes';
+    }
+    if (url.startsWith('/inventario-mp/kardex')) {
+      return 'kardex';
+    }
+    if (url.startsWith('/inventario-mp/ajuste')) {
+      return 'ajuste';
+    }
+    if (url.startsWith('/inventario-mp/catalogo')) {
+      return 'catalogo';
+    }
+    if (url.startsWith('/inventario-mp/politicas')) {
+      return 'politicas';
+    }
     return 'existencias';
   });
 }

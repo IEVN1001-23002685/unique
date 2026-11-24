@@ -82,8 +82,7 @@ export class InventarioServicio {
     const consumoHistorico = this.consumoDiarioHistorico(existencia);
     const consumoDiario = consumoHistorico ?? existencia.consumoDiarioManual;
     const puntoReorden = redondear4(consumoDiario * material.plazoDias + existencia.stockSeguridad);
-    const coberturaDias =
-      consumoDiario > 0 ? redondear4(disponible / consumoDiario) : null;
+    const coberturaDias = consumoDiario > 0 ? redondear4(disponible / consumoDiario) : null;
     const requisicionAbierta = this.tieneRequisicionAbierta(existencia);
 
     let semaforo: TonoSemaforo = 'VERDE';
@@ -139,20 +138,25 @@ export class InventarioServicio {
     if (consumos.length === 0) {
       return null;
     }
-    const total = consumos.reduce((suma, movimiento) => suma + Math.abs(movimiento.cantidadBase), 0);
+    const total = consumos.reduce(
+      (suma, movimiento) => suma + Math.abs(movimiento.cantidadBase),
+      0,
+    );
     return redondear4(total / 30);
   }
 
   /** Consulta de solo lectura a M14: M15 no escribe requisiciones. */
   private tieneRequisicionAbierta(existencia: Existencia): boolean {
-    return this.compras.requisiciones().some(
-      (requisicion) =>
-        !['ATENDIDA', 'CANCELADA'].includes(requisicion.estado) &&
-        requisicion.lineas.some(
-          (linea) =>
-            linea.materialId === existencia.materialId && linea.color === existencia.color,
-        ),
-    );
+    return this.compras
+      .requisiciones()
+      .some(
+        (requisicion) =>
+          !['ATENDIDA', 'CANCELADA'].includes(requisicion.estado) &&
+          requisicion.lineas.some(
+            (linea) =>
+              linea.materialId === existencia.materialId && linea.color === existencia.color,
+          ),
+      );
   }
 
   obtenerMaterial(id: number): Material | undefined {
@@ -185,7 +189,8 @@ export class InventarioServicio {
   lotesDe(materialId: number, color?: string): LoteMaterial[] {
     return this.lotesOrdenadosPorFecha().filter(
       (lote) =>
-        lote.materialId === materialId && (color === undefined || color === '' || lote.color === color),
+        lote.materialId === materialId &&
+        (color === undefined || color === '' || lote.color === color),
     );
   }
 
@@ -328,7 +333,9 @@ export class InventarioServicio {
 
     this.listaExistencias.update((actuales) =>
       actuales.map((actual) =>
-        actual.id === existencia.id ? { ...actual, fisico: redondear4(datos.cantidadContada) } : actual,
+        actual.id === existencia.id
+          ? { ...actual, fisico: redondear4(datos.cantidadContada) }
+          : actual,
       ),
     );
 

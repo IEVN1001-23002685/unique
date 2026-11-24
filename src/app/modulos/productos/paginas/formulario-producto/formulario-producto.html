@@ -87,7 +87,9 @@
           <p class="ayuda">
             La categoría <strong>{{ categoria.nombre }}</strong> usa el prefijo
             <span class="mono">{{ categoria.prefijo }}</span> y
-            {{ categoria.usaTallas ? 'trabaja con tallas CH, MD y GD' : 'usa únicamente la talla UN' }}.
+            {{
+              categoria.usaTallas ? 'trabaja con tallas CH, MD y GD' : 'usa únicamente la talla UN'
+            }}.
           </p>
         }
       </fieldset>
@@ -166,8 +168,14 @@
             <div formArrayName="colores" class="opciones">
               @for (color of colores; track color.codigo; let indice = $index) {
                 <label class="casilla" [attr.for]="'color-' + color.codigo">
-                  <input type="checkbox" [formControlName]="indice" [id]="'color-' + color.codigo" />
-                  <span>{{ color.nombre }} <small>{{ color.codigo }}</small></span>
+                  <input
+                    type="checkbox"
+                    [formControlName]="indice"
+                    [id]="'color-' + color.codigo"
+                  />
+                  <span
+                    >{{ color.nombre }} <small>{{ color.codigo }}</small></span
+                  >
                 </label>
               }
             </div>
@@ -181,15 +189,23 @@
             <div formArrayName="tallas" class="opciones">
               @for (talla of tallas; track talla.codigo; let indice = $index) {
                 <label class="casilla" [attr.for]="'talla-' + talla.codigo">
-                  <input type="checkbox" [formControlName]="indice" [id]="'talla-' + talla.codigo" />
-                  <span>{{ talla.nombre }} <small>{{ talla.codigo }}</small></span>
+                  <input
+                    type="checkbox"
+                    [formControlName]="indice"
+                    [id]="'talla-' + talla.codigo"
+                  />
+                  <span
+                    >{{ talla.nombre }} <small>{{ talla.codigo }}</small></span
+                  >
                 </label>
               }
             </div>
             @if (sinTalla()) {
               <span class="campo__error">Selecciona al menos una talla.</span>
             }
-            <p class="ayuda">Las tallas disponibles dependen de la categoría; GO y BO solo usan UN.</p>
+            <p class="ayuda">
+              Las tallas disponibles dependen de la categoría; GO y BO solo usan UN.
+            </p>
           </div>
         </div>
       </fieldset>

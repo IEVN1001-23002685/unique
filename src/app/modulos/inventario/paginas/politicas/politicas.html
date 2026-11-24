@@ -39,7 +39,9 @@
     } @else {
       <div class="tabla-contenedor tabla-contenedor--ancha">
         <table class="tabla tabla--politicas">
-          <caption class="sr-only">Políticas de inventario por material y color</caption>
+          <caption class="sr-only">
+            Políticas de inventario por material y color
+          </caption>
           <thead>
             <tr>
               <th scope="col">Material</th>
@@ -58,31 +60,57 @@
               <tr [formGroupName]="indice">
                 <td data-etiqueta="Material">
                   <span class="celda-principal">{{ vista.material.nombre }}</span>
-                  <span class="celda-secundaria">{{ vista.material.codigo }} · {{ vista.material.unidadBase }}</span>
+                  <span class="celda-secundaria"
+                    >{{ vista.material.codigo }} · {{ vista.material.unidadBase }}</span
+                  >
                 </td>
                 <td data-etiqueta="Color">{{ vista.color }}</td>
                 <td data-etiqueta="Mínimo">
-                  <input class="campo__entrada campo__entrada--tabla" type="number" min="0" step="0.0001" formControlName="stockMinimo" />
+                  <input
+                    class="campo__entrada campo__entrada--tabla"
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    formControlName="stockMinimo"
+                  />
                   @if (campoInvalido(indice, 'stockMinimo')) {
                     <span class="campo__error">Mayor o igual a 0, hasta 4 decimales.</span>
                   }
                 </td>
                 <td data-etiqueta="Seguridad">
-                  <input class="campo__entrada campo__entrada--tabla" type="number" min="0" step="0.0001" formControlName="stockSeguridad" />
+                  <input
+                    class="campo__entrada campo__entrada--tabla"
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    formControlName="stockSeguridad"
+                  />
                   @if (campoInvalido(indice, 'stockSeguridad')) {
                     <span class="campo__error">Valor no válido.</span>
                   }
                 </td>
                 <td data-etiqueta="Consumo manual">
-                  <input class="campo__entrada campo__entrada--tabla" type="number" min="0" step="0.0001" formControlName="consumoDiarioManual" />
+                  <input
+                    class="campo__entrada campo__entrada--tabla"
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    formControlName="consumoDiarioManual"
+                  />
                   @if (campoInvalido(indice, 'consumoDiarioManual')) {
                     <span class="campo__error">Valor no válido.</span>
                   }
                 </td>
                 <td data-etiqueta="Consumo usado">
-                  <span class="celda-numero">{{ vista.consumoDiario | number: '1.0-4' : 'es-MX' }}</span>
+                  <span class="celda-numero">{{
+                    vista.consumoDiario | number: '1.0-4' : 'es-MX'
+                  }}</span>
                   <span class="celda-secundaria">
-                    {{ servicio.tieneHistoricoConsumo(vista.materialId, vista.color) ? 'Promedio 30 días' : 'Valor manual' }}
+                    {{
+                      servicio.tieneHistoricoConsumo(vista.materialId, vista.color)
+                        ? 'Promedio 30 días'
+                        : 'Valor manual'
+                    }}
                   </span>
                 </td>
                 <td data-etiqueta="Pto. reorden" class="celda-numero">

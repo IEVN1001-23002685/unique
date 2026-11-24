@@ -21,7 +21,9 @@
           <option value="0">No hay órdenes pendientes de recepción</option>
         }
         @for (opcion of ordenesDisponibles(); track opcion.id) {
-          <option [value]="opcion.id">{{ opcion.folio }} · {{ servicio.proveedorNombre(opcion.proveedorId) }}</option>
+          <option [value]="opcion.id">
+            {{ opcion.folio }} · {{ servicio.proveedorNombre(opcion.proveedorId) }}
+          </option>
         }
       </select>
     </label>
@@ -93,15 +95,33 @@
             <div class="linea__campos">
               <label class="campo">
                 Peso (kg)
-                <input class="campo__entrada" type="number" min="0" step="0.0001" formControlName="pesoKg" />
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  formControlName="pesoKg"
+                />
               </label>
               <label class="campo">
                 Ancho (cm)
-                <input class="campo__entrada" type="number" min="0" step="0.0001" formControlName="anchoCm" />
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  formControlName="anchoCm"
+                />
               </label>
               <label class="campo">
                 Largo (m)
-                <input class="campo__entrada" type="number" min="0" step="0.0001" formControlName="largoM" />
+                <input
+                  class="campo__entrada"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  formControlName="largoM"
+                />
               </label>
               <label class="campo">
                 Medida (base)
@@ -198,8 +218,8 @@
           @for (lote of visto.lotes; track lote.folio) {
             <li>
               <strong>{{ lote.folio }}</strong> ·
-              {{ servicio.obtenerMaterial(lote.materialId)?.nombre }} ·
-              {{ lote.cantidadBase }} {{ lote.unidadBase }} · {{ lote.medidas }} · costo real
+              {{ servicio.obtenerMaterial(lote.materialId)?.nombre }} · {{ lote.cantidadBase }}
+              {{ lote.unidadBase }} · {{ lote.medidas }} · costo real
               {{ lote.costoReal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
             </li>
           }

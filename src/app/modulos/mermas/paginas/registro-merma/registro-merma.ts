@@ -87,7 +87,10 @@ export class RegistroMerma {
       decimalPositivo,
       cantidadSegunOrigen,
     ]),
-    etapa: new FormControl<EtapaMerma | ''>('', [Validators.required]),
+    etapa: new FormControl<EtapaMerma | ''>('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
     causaId: new FormControl<number | null>(null, [Validators.required]),
     ordenFolio: new FormControl('', { nonNullable: true }),
     descripcion: new FormControl('', {

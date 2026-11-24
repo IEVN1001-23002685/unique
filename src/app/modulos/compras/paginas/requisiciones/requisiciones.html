@@ -73,7 +73,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Requisiciones de compras de UNIQUE</caption>
+          <caption class="sr-only">
+            Requisiciones de compras de UNIQUE
+          </caption>
           <thead>
             <tr>
               <th scope="col">Folio</th>
@@ -96,9 +98,15 @@
                 <td data-etiqueta="Origen">
                   <span class="celda-principal">
                     @switch (requisicion.origen) {
-                      @case ('ALERTA') { Alerta }
-                      @case ('ORDEN_PRODUCCION') { Orden de producción }
-                      @case ('MANUAL') { Manual }
+                      @case ('ALERTA') {
+                        Alerta
+                      }
+                      @case ('ORDEN_PRODUCCION') {
+                        Orden de producción
+                      }
+                      @case ('MANUAL') {
+                        Manual
+                      }
                     }
                   </span>
                   @if (requisicion.ordenProduccion) {
@@ -132,7 +140,10 @@
                   }
                 </td>
                 <td data-etiqueta="Prioridad">
-                  <span class="etiqueta" [class.etiqueta--neutro]="requisicion.prioridad === 'NORMAL'">
+                  <span
+                    class="etiqueta"
+                    [class.etiqueta--neutro]="requisicion.prioridad === 'NORMAL'"
+                  >
                     {{ requisicion.prioridad === 'URGENTE' ? 'Urgente' : 'Normal' }}
                   </span>
                 </td>

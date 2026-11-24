@@ -6,8 +6,8 @@
       <p class="eyebrow">Bloque 5 · Producción y merma · M16</p>
       <h1 class="titulo">Plan sugerido de producción</h1>
       <p class="subtitulo">
-        Demanda de pedidos (M09) y reposición de stock mínimo (M12) convertidas en una sugerencia por
-        SKU. Cantidad sugerida = mayor entre lo pendiente no cubierto y la reposición cuando el
+        Demanda de pedidos (M09) y reposición de stock mínimo (M12) convertidas en una sugerencia
+        por SKU. Cantidad sugerida = mayor entre lo pendiente no cubierto y la reposición cuando el
         disponible está en el mínimo o menos.
       </p>
     </div>
@@ -51,7 +51,9 @@
           Solo con sugerencia
         </button>
       </div>
-      <p class="barra__texto">Cifras de demostración en unidades enteras; precios y costos no se muestran.</p>
+      <p class="barra__texto">
+        Cifras de demostración en unidades enteras; precios y costos no se muestran.
+      </p>
     </div>
 
     @if (filas().length === 0) {
@@ -62,7 +64,9 @@
     } @else {
       <div class="tabla-contenedor tabla-contenedor--ancha">
         <table class="tabla tabla--plan">
-          <caption class="sr-only">Sugerencias de producción por SKU</caption>
+          <caption class="sr-only">
+            Sugerencias de producción por SKU
+          </caption>
           <thead>
             <tr>
               <th scope="col">SKU y producto</th>
@@ -82,17 +86,31 @@
               <tr>
                 <td data-etiqueta="SKU y producto" class="celda-sku">
                   <span class="celda-principal">{{ fila.sku }}</span>
-                  <span class="celda-secundaria">{{ fila.nombreProducto }} · {{ fila.talla }} / {{ fila.color }}</span>
+                  <span class="celda-secundaria"
+                    >{{ fila.nombreProducto }} · {{ fila.talla }} / {{ fila.color }}</span
+                  >
                   @if (fila.pedidos.length > 0) {
                     <span class="celda-secundaria">Folios: {{ fila.pedidos.join(', ') }}</span>
                   }
                 </td>
-                <td data-etiqueta="Disponible" class="celda-numero celda-derecha">{{ fila.disponible | number: '1.0-0' : 'es-MX' }}</td>
-                <td data-etiqueta="Mínimo" class="celda-numero celda-derecha">{{ fila.minimo | number: '1.0-0' : 'es-MX' }}</td>
-                <td data-etiqueta="Pedidos" class="celda-numero celda-derecha">{{ fila.pendientePedidos | number: '1.0-0' : 'es-MX' }}</td>
-                <td data-etiqueta="En curso" class="celda-numero celda-derecha">{{ fila.produccionEnCurso | number: '1.0-0' : 'es-MX' }}</td>
-                <td data-etiqueta="No cubierto" class="celda-numero celda-derecha">{{ fila.pendienteNoCubierto | number: '1.0-0' : 'es-MX' }}</td>
-                <td data-etiqueta="Reposición" class="celda-numero celda-derecha">{{ fila.cantidadReposicion | number: '1.0-0' : 'es-MX' }}</td>
+                <td data-etiqueta="Disponible" class="celda-numero celda-derecha">
+                  {{ fila.disponible | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Mínimo" class="celda-numero celda-derecha">
+                  {{ fila.minimo | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Pedidos" class="celda-numero celda-derecha">
+                  {{ fila.pendientePedidos | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="En curso" class="celda-numero celda-derecha">
+                  {{ fila.produccionEnCurso | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="No cubierto" class="celda-numero celda-derecha">
+                  {{ fila.pendienteNoCubierto | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Reposición" class="celda-numero celda-derecha">
+                  {{ fila.cantidadReposicion | number: '1.0-0' : 'es-MX' }}
+                </td>
                 <td data-etiqueta="Sugerida" class="celda-numero celda-derecha">
                   <strong [class.sugerida]="fila.cantidadSugerida > 0">
                     {{ fila.cantidadSugerida | number: '1.0-0' : 'es-MX' }}
@@ -126,8 +144,9 @@
 
     <p class="nota">
       «En curso» descuenta lo pendiente de órdenes abiertas del mismo SKU para no duplicar demanda.
-      Si ya existe una orden abierta, la nueva sugerencia se suma a ella; esta demostración lo resuelve
-      solo en memoria. El plan real debe recalcularse con las existencias y los pedidos vigentes en Flask.
+      Si ya existe una orden abierta, la nueva sugerencia se suma a ella; esta demostración lo
+      resuelve solo en memoria. El plan real debe recalcularse con las existencias y los pedidos
+      vigentes en Flask.
     </p>
   </div>
 

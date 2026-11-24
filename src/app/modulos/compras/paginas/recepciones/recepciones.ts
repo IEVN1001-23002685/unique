@@ -16,11 +16,7 @@ import { decimalPositivo } from '../../../../compartido/validadores/validadores-
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { ChipEstadoCompra } from '../../componentes/chip-estado-compra/chip-estado-compra';
 import { NavegacionCompras } from '../../componentes/navegacion-compras/navegacion-compras';
-import type {
-  DatosRecepcion,
-  LineaOrdenCompra,
-  ResultadoRecepcion,
-} from '../../modelos/compra';
+import type { DatosRecepcion, LineaOrdenCompra, ResultadoRecepcion } from '../../modelos/compra';
 import { ComprasServicio, redondear4 } from '../../servicios/compras-servicio';
 
 type LineaRecepcionForma = FormGroup<{
@@ -63,7 +59,14 @@ const validarLineaRecepcion: ValidatorFn = (control): ValidationErrors | null =>
 
 @Component({
   selector: 'app-recepciones',
-  imports: [CurrencyPipe, ReactiveFormsModule, RouterLink, ChipEstadoCompra, NavegacionCompras, ModalConfirmacion],
+  imports: [
+    CurrencyPipe,
+    ReactiveFormsModule,
+    RouterLink,
+    ChipEstadoCompra,
+    NavegacionCompras,
+    ModalConfirmacion,
+  ],
   templateUrl: './recepciones.html',
   styleUrls: ['./recepciones.css', '../../compras-compartido.css'],
 })
@@ -74,9 +77,7 @@ export class Recepciones {
   protected readonly servicio = inject(ComprasServicio);
 
   protected readonly ordenesDisponibles = computed(() =>
-    this.servicio
-      .ordenes()
-      .filter((orden) => ['EMITIDA', 'PARCIAL'].includes(orden.estado)),
+    this.servicio.ordenes().filter((orden) => ['EMITIDA', 'PARCIAL'].includes(orden.estado)),
   );
 
   protected readonly ordenId = signal<number>(this.inicial());
@@ -138,14 +139,13 @@ export class Recepciones {
 
   protected errorLinea(indice: number, clave: string): boolean {
     const linea = this.formulario.controls.lineas.at(indice);
-    return (
-      linea.invalid &&
-      linea.hasError(clave) &&
-      (linea.touched || this.intentoEnvio())
-    );
+    return linea.invalid && linea.hasError(clave) && (linea.touched || this.intentoEnvio());
   }
 
-  protected campoInvalido(indice: number, campo: 'cantidadBaseMedida' | 'cantidadBaseAceptada'): boolean {
+  protected campoInvalido(
+    indice: number,
+    campo: 'cantidadBaseMedida' | 'cantidadBaseAceptada',
+  ): boolean {
     const control = this.formulario.controls.lineas.at(indice).controls[campo];
     return control.invalid && (control.touched || this.intentoEnvio());
   }
@@ -154,7 +154,10 @@ export class Recepciones {
     this.intentoEnvio.set(true);
     if (this.formulario.invalid || !this.orden()) {
       this.formulario.markAllAsTouched();
-      this.avisos.mostrar('error', 'Revisa las medidas: aceptada más rechazada debe igualar la medida.');
+      this.avisos.mostrar(
+        'error',
+        'Revisa las medidas: aceptada más rechazada debe igualar la medida.',
+      );
       return;
     }
 

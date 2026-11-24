@@ -47,7 +47,10 @@ export class BibliotecaRecetas {
           (estado === 'TODOS' || receta.estado === estado)
         );
       })
-      .sort((a, b) => a.productoId - b.productoId || a.talla.localeCompare(b.talla) || b.version - a.version);
+      .sort(
+        (a, b) =>
+          a.productoId - b.productoId || a.talla.localeCompare(b.talla) || b.version - a.version,
+      );
   });
 
   protected alBuscar(evento: Event): void {

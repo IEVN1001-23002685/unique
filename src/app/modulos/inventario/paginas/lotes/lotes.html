@@ -31,7 +31,11 @@
       <div class="filtros-selects">
         <label class="campo campo--compacto">
           Material
-          <select class="campo__entrada" [value]="materialId()" (change)="alCambiarMaterial($event)">
+          <select
+            class="campo__entrada"
+            [value]="materialId()"
+            (change)="alCambiarMaterial($event)"
+          >
             <option value="0">Todos los materiales</option>
             @for (material of materiales(); track material.id) {
               <option [value]="material.id">{{ material.codigo }} · {{ material.nombre }}</option>
@@ -59,7 +63,9 @@
     } @else {
       <div class="tabla-contenedor tabla-contenedor--ancha">
         <table class="tabla">
-          <caption class="sr-only">Lotes de materiales de UNIQUE</caption>
+          <caption class="sr-only">
+            Lotes de materiales de UNIQUE
+          </caption>
           <thead>
             <tr>
               <th scope="col">Lote</th>
@@ -84,14 +90,18 @@
                   }
                 </td>
                 <td data-etiqueta="Material">
-                  <span class="celda-principal">{{ servicio.nombreMaterial(lote.materialId) }}</span>
+                  <span class="celda-principal">{{
+                    servicio.nombreMaterial(lote.materialId)
+                  }}</span>
                   <span class="celda-secundaria">{{ lote.color }}</span>
                 </td>
                 <td data-etiqueta="Proveedor">{{ servicio.nombreProveedor(lote.proveedorId) }}</td>
                 <td data-etiqueta="Entrada" class="celda-numero">{{ lote.fechaEntrada }}</td>
                 <td data-etiqueta="Recibida" class="celda-numero celda-derecha">
                   {{ lote.cantidadRecibida | number: '1.0-4' : 'es-MX' }}
-                  <span class="celda-secundaria">{{ servicio.obtenerMaterial(lote.materialId)?.unidadBase }}</span>
+                  <span class="celda-secundaria">{{
+                    servicio.obtenerMaterial(lote.materialId)?.unidadBase
+                  }}</span>
                 </td>
                 <td data-etiqueta="Disponible" class="celda-numero celda-derecha">
                   <strong>{{ lote.cantidadDisponible | number: '1.0-4' : 'es-MX' }}</strong>
@@ -122,8 +132,8 @@
     }
 
     <p class="nota">
-      El físico de existencias es la suma de los disponibles de sus lotes. Los folios, el costo real y
-      las medidas los crea M14 al recibir; M15 solo los consulta. Los movimientos históricos no se
+      El físico de existencias es la suma de los disponibles de sus lotes. Los folios, el costo real
+      y las medidas los crea M14 al recibir; M15 solo los consulta. Los movimientos históricos no se
       editan ni se eliminan.
     </p>
   </div>

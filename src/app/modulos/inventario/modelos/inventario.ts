@@ -5,13 +5,7 @@
  * consultan mediante servicios, nunca se copian como reglas propias.
  */
 
-export type CategoriaMaterial =
-  | 'Tela'
-  | 'Hilo'
-  | 'Estabilizador'
-  | 'Avío'
-  | 'Etiqueta'
-  | 'Empaque';
+export type CategoriaMaterial = 'Tela' | 'Hilo' | 'Estabilizador' | 'Avío' | 'Etiqueta' | 'Empaque';
 
 export type UnidadBase = 'm²' | 'm' | 'pieza';
 

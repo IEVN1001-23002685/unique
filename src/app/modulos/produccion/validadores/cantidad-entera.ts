@@ -4,9 +4,7 @@ import type { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/fo
  * Cantidad en unidades enteras (§6 y §7 de M16). Solo valida la forma: la
  * disponibilidad real y la conversión a unidades base las confirma Flask.
  */
-export const enteroPositivo: ValidatorFn = (
-  control: AbstractControl,
-): ValidationErrors | null => {
+export const enteroPositivo: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const valor = control.value;
   if (
     typeof valor !== 'number' ||

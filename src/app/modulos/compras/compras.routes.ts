@@ -28,8 +28,7 @@ export const COMPRAS_RUTAS: Routes = [
   {
     path: 'cotizaciones',
     title: 'Cotizaciones · UNIQUE',
-    loadComponent: () =>
-      import('./paginas/cotizaciones/cotizaciones').then((c) => c.Cotizaciones),
+    loadComponent: () => import('./paginas/cotizaciones/cotizaciones').then((c) => c.Cotizaciones),
   },
   {
     path: 'ordenes',

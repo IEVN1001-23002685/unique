@@ -21,23 +21,31 @@
 
   <div class="indicadores">
     <article class="tarjeta indicador" [attr.data-tono]="tonoMeta(datos().mermaProductoPct)">
-      <span class="indicador__numero">{{ datos().mermaProductoPct | number: '1.0-2' : 'es-MX' }}%</span>
+      <span class="indicador__numero"
+        >{{ datos().mermaProductoPct | number: '1.0-2' : 'es-MX' }}%</span
+      >
       <span class="indicador__etiqueta">Merma de producto</span>
       <span class="indicador__detalle">
         {{ datos().cantidadProducto }} de {{ datos().referenciaProducto }} piezas del periodo
       </span>
     </article>
     <article class="tarjeta indicador" [attr.data-tono]="tonoMeta(datos().mermaMaterialPct)">
-      <span class="indicador__numero">{{ datos().mermaMaterialPct | number: '1.0-2' : 'es-MX' }}%</span>
+      <span class="indicador__numero"
+        >{{ datos().mermaMaterialPct | number: '1.0-2' : 'es-MX' }}%</span
+      >
       <span class="indicador__etiqueta">Merma de materiales (m²)</span>
       <span class="indicador__detalle">
         {{ datos().cantidadMaterial }} de {{ datos().referenciaMaterial }} m² consumidos
       </span>
     </article>
     <article class="tarjeta indicador" data-tono="info">
-      <span class="indicador__numero">{{ datos().costoPerdidoMes | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</span>
+      <span class="indicador__numero">{{
+        datos().costoPerdidoMes | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+      }}</span>
       <span class="indicador__etiqueta">Costo perdido del mes</span>
-      <span class="indicador__detalle">Acumulado {{ datos().costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</span>
+      <span class="indicador__detalle"
+        >Acumulado {{ datos().costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</span
+      >
     </article>
     <article class="tarjeta indicador">
       <span class="indicador__numero">{{ datos().totalRegistros }}</span>
@@ -55,7 +63,9 @@
             <strong>{{ alerta.etiqueta }}</strong>
             <span class="alerta__detalle">{{ alerta.detalle }}</span>
           </span>
-          <span class="etiqueta etiqueta--error">{{ alerta.porcentaje | number: '1.0-2' : 'es-MX' }}%</span>
+          <span class="etiqueta etiqueta--error"
+            >{{ alerta.porcentaje | number: '1.0-2' : 'es-MX' }}%</span
+          >
         </div>
       }
       <p class="nota nota--advertencia">
@@ -124,9 +134,15 @@
               @for (fila of datos().causasTop5; track fila.clave) {
                 <tr>
                   <td data-etiqueta="Causa">{{ fila.etiqueta }}</td>
-                  <td data-etiqueta="Registros" class="celda-numero celda-derecha">{{ fila.referencia }}</td>
+                  <td data-etiqueta="Registros" class="celda-numero celda-derecha">
+                    {{ fila.referencia }}
+                  </td>
                   <td data-etiqueta="Participación">
-                    <app-barra-meta [porcentaje]="fila.porcentaje" [meta]="meta()" base="participacion" />
+                    <app-barra-meta
+                      [porcentaje]="fila.porcentaje"
+                      [meta]="meta()"
+                      base="participacion"
+                    />
                   </td>
                   <td data-etiqueta="Costo" class="celda-numero celda-derecha">
                     {{ fila.costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
@@ -197,7 +213,8 @@
                 <tr>
                   <td data-etiqueta="Material">{{ fila.etiqueta }}</td>
                   <td data-etiqueta="Merma" class="celda-numero celda-derecha">
-                    {{ fila.cantidad | number: '1.0-4' : 'es-MX' }} {{ fila.unidad }} / {{ fila.referencia }}
+                    {{ fila.cantidad | number: '1.0-4' : 'es-MX' }} {{ fila.unidad }} /
+                    {{ fila.referencia }}
                   </td>
                   <td data-etiqueta="Meta">
                     <app-barra-meta [porcentaje]="fila.porcentaje" [meta]="meta()" />
@@ -230,17 +247,24 @@
             <div
               class="grafica__barra grafica__barra--material"
               [style.height.%]="altura(fila, 'material')"
-              [attr.title]="fila.etiqueta + ': ' + fila.cantidadMaterial + ' unidades base en merma'"
+              [attr.title]="
+                fila.etiqueta + ': ' + fila.cantidadMaterial + ' unidades base en merma'
+              "
             ></div>
           </div>
           <span class="grafica__etiqueta">{{ fila.etiqueta }}</span>
-          <span class="grafica__valor">{{ fila.costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</span>
+          <span class="grafica__valor">{{
+            fila.costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+          }}</span>
         </div>
       }
     </div>
     <div class="leyenda">
       <span><i class="leyenda__muestra" aria-hidden="true"></i> Producto (piezas)</span>
-      <span><i class="leyenda__muestra leyenda__muestra--material" aria-hidden="true"></i> Material (unidades base)</span>
+      <span
+        ><i class="leyenda__muestra leyenda__muestra--material" aria-hidden="true"></i> Material
+        (unidades base)</span
+      >
     </div>
     <p class="nota">
       El porcentaje de merma de producto usa unidades en merma entre unidades producidas; el de

@@ -57,9 +57,7 @@ function mesesDelPeriodo(periodo: string, cantidad: number): string[] {
   const resultado: string[] = [];
   for (let indice = cantidad - 1; indice >= 0; indice -= 1) {
     const fecha = new Date(anio, mes - 1 - indice, 1);
-    resultado.push(
-      `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`,
-    );
+    resultado.push(`${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`);
   }
   return resultado;
 }
@@ -236,11 +234,13 @@ export class MermasServicio {
       return 0;
     }
     if (origen === 'MATERIAL') {
-      const lote = loteId === null ? undefined : this.inventario.lotes().find((item) => item.id === loteId);
+      const lote =
+        loteId === null ? undefined : this.inventario.lotes().find((item) => item.id === loteId);
       if (lote) {
         return redondear2(lote.costoUnitario * cantidad);
       }
-      const material = materialId === null ? undefined : this.inventario.obtenerMaterial(materialId);
+      const material =
+        materialId === null ? undefined : this.inventario.obtenerMaterial(materialId);
       return material ? redondear2(material.costoEstandarBase * cantidad) : 0;
     }
     const fila = this.productos.filasVariantes().find((item) => item.variante.sku === sku);
@@ -251,7 +251,10 @@ export class MermasServicio {
   registrar(datos: DatosNuevaMerma): ResultadoRegistro {
     const controlCantidad = new FormControl<number | null>(datos.cantidad);
     if (decimalPositivo(controlCantidad) !== null) {
-      return { ok: false, mensaje: 'La cantidad debe ser mayor que cero y tener hasta 4 decimales.' };
+      return {
+        ok: false,
+        mensaje: 'La cantidad debe ser mayor que cero y tener hasta 4 decimales.',
+      };
     }
     if (datos.origen === 'PRODUCTO' && !Number.isInteger(datos.cantidad)) {
       return { ok: false, mensaje: 'Las prendas se registran en unidades enteras.' };
@@ -294,7 +297,12 @@ export class MermasServicio {
       materialId: material?.id ?? null,
       materialCodigo: material?.codigo ?? null,
       materialNombre: material?.nombre ?? null,
-      color: datos.origen === 'MATERIAL' ? (datos.color || lote?.color || 'NA') : (variante ? this.productos.nombreColor(variante.variante.color) : null),
+      color:
+        datos.origen === 'MATERIAL'
+          ? datos.color || lote?.color || 'NA'
+          : variante
+            ? this.productos.nombreColor(variante.variante.color)
+            : null,
       loteId: lote?.id ?? null,
       loteFolio: lote?.folio ?? null,
       unidadBase: material?.unidadBase ?? 'pieza',
@@ -378,12 +386,12 @@ export class MermasServicio {
       suma(delMes, (merma) => (merma.origen === 'PRODUCTO' ? merma.cantidad : 0)),
     );
     const cantidadMaterialM2 = redondear4(
-      suma(
-        delMes,
-        (merma) =>
-          merma.origen === 'MATERIAL' && merma.materialId !== null && materialesM2.has(merma.materialId)
-            ? merma.cantidad
-            : 0,
+      suma(delMes, (merma) =>
+        merma.origen === 'MATERIAL' &&
+        merma.materialId !== null &&
+        materialesM2.has(merma.materialId)
+          ? merma.cantidad
+          : 0,
       ),
     );
     const mermaProductoPct =
@@ -422,8 +430,7 @@ export class MermasServicio {
     const porCausa: FilaIndicador[] = this.listaCausas()
       .map((causa) => {
         const filas = delMes.filter((merma) => merma.causaId === causa.id);
-        const porcentaje =
-          delMes.length > 0 ? redondear2((filas.length / delMes.length) * 100) : 0;
+        const porcentaje = delMes.length > 0 ? redondear2((filas.length / delMes.length) * 100) : 0;
         return {
           clave: String(causa.id),
           etiqueta: causa.nombre,
@@ -445,7 +452,9 @@ export class MermasServicio {
       .sort((a, b) => b.porcentaje - a.porcentaje);
 
     const skus = new Set(
-      delMes.filter((merma) => merma.origen === 'PRODUCTO' && merma.sku !== null).map((merma) => merma.sku as string),
+      delMes
+        .filter((merma) => merma.origen === 'PRODUCTO' && merma.sku !== null)
+        .map((merma) => merma.sku as string),
     );
     const porProducto: FilaIndicador[] = [...skus]
       .map((sku) => {
@@ -469,7 +478,9 @@ export class MermasServicio {
       .sort((a, b) => b.porcentaje - a.porcentaje);
 
     const materiales = new Set(
-      delMes.filter((merma) => merma.origen === 'MATERIAL' && merma.materialId !== null).map((merma) => merma.materialId as number),
+      delMes
+        .filter((merma) => merma.origen === 'MATERIAL' && merma.materialId !== null)
+        .map((merma) => merma.materialId as number),
     );
     const porMaterial: FilaIndicador[] = [...materiales]
       .map((materialId) => {
@@ -497,7 +508,9 @@ export class MermasServicio {
       const fecha = new Date(`${mes}-01T12:00:00`);
       return {
         mes,
-        etiqueta: new Intl.DateTimeFormat('es-MX', { month: 'short' }).format(fecha).replace('.', ''),
+        etiqueta: new Intl.DateTimeFormat('es-MX', { month: 'short' })
+          .format(fecha)
+          .replace('.', ''),
         cantidadProducto: redondear4(
           suma(filas, (merma) => (merma.origen === 'PRODUCTO' ? merma.cantidad : 0)),
         ),

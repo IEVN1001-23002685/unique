@@ -1,3 +1,9 @@
-.lista-lineas { min-width: 13rem; }
-.lista-lineas .celda-principal + .celda-secundaria { margin-bottom: 0.5rem; }
-.lista-lineas .celda-secundaria:last-child { margin-bottom: 0; }
+.lista-lineas {
+  min-width: 13rem;
+}
+.lista-lineas .celda-principal + .celda-secundaria {
+  margin-bottom: 0.5rem;
+}
+.lista-lineas .celda-secundaria:last-child {
+  margin-bottom: 0;
+}

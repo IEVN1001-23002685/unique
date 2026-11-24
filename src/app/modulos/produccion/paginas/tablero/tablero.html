@@ -7,7 +7,8 @@
       <h1 class="titulo">Tablero de órdenes de producción</h1>
       <p class="subtitulo">
         Fabricación en unidades enteras con semáforo de materiales. El semáforo se reevalúa con cada
-        cambio de materiales, reserva, disponibilidad o compra; ninguna operación se guarda en servidor.
+        cambio de materiales, reserva, disponibilidad o compra; ninguna operación se guarda en
+        servidor.
       </p>
     </div>
     <a routerLink="/produccion/nueva" class="boton boton--primario">Nueva orden</a>
@@ -23,11 +24,15 @@
       <span class="indicador__etiqueta">Órdenes rojas</span>
     </div>
     <div class="indicador" data-tono="exito">
-      <span class="indicador__numero">{{ indicadores().cumplimientoPct | number: '1.0-1' : 'es-MX' }}%</span>
+      <span class="indicador__numero"
+        >{{ indicadores().cumplimientoPct | number: '1.0-1' : 'es-MX' }}%</span
+      >
       <span class="indicador__etiqueta">Cumplimiento del plan</span>
     </div>
     <div class="indicador" data-tono="adv">
-      <span class="indicador__numero">{{ indicadores().mermaRealPct | number: '1.0-1' : 'es-MX' }}%</span>
+      <span class="indicador__numero"
+        >{{ indicadores().mermaRealPct | number: '1.0-1' : 'es-MX' }}%</span
+      >
       <span class="indicador__etiqueta">Merma real</span>
     </div>
   </div>
@@ -70,7 +75,9 @@
     } @else {
       <div class="tabla-contenedor tabla-contenedor--ancha">
         <table class="tabla">
-          <caption class="sr-only">Órdenes de producción por semáforo</caption>
+          <caption class="sr-only">
+            Órdenes de producción por semáforo
+          </caption>
           <thead>
             <tr>
               <th scope="col">Folio</th>
@@ -88,12 +95,18 @@
               <tr>
                 <td data-etiqueta="Folio">
                   <span class="celda-principal">{{ orden.folio }}</span>
-                  <span class="celda-secundaria">{{ orden.unidadesPlaneadas | number: '1.0-0' : 'es-MX' }} unidades planeadas</span>
+                  <span class="celda-secundaria"
+                    >{{ orden.unidadesPlaneadas | number: '1.0-0' : 'es-MX' }} unidades
+                    planeadas</span
+                  >
                 </td>
                 <td data-etiqueta="SKU y cantidad" class="lista-lineas">
                   @for (linea of orden.lineas; track linea.id) {
                     <span class="celda-principal">{{ linea.sku }}</span>
-                    <span class="celda-secundaria">{{ linea.cantidadPlaneada | number: '1.0-0' : 'es-MX' }} uds. · {{ linea.nombreProducto }}</span>
+                    <span class="celda-secundaria"
+                      >{{ linea.cantidadPlaneada | number: '1.0-0' : 'es-MX' }} uds. ·
+                      {{ linea.nombreProducto }}</span
+                    >
                   }
                 </td>
                 <td data-etiqueta="Origen">{{ etiquetasOrigen[orden.origen] }}</td>
@@ -116,16 +129,26 @@
                   <app-chip-estado-produccion [estado]="orden.estado" />
                 </td>
                 <td data-etiqueta="Fecha requerida" class="celda-numero">
-                  {{ orden.fechaRequerida === null ? 'Sin fecha' : (orden.fechaRequerida | date: 'dd/MM/yyyy' : '' : 'es-MX') }}
+                  {{
+                    orden.fechaRequerida === null
+                      ? 'Sin fecha'
+                      : (orden.fechaRequerida | date: 'dd/MM/yyyy' : '' : 'es-MX')
+                  }}
                 </td>
                 <td data-etiqueta="Acciones">
                   <div class="acciones">
                     <a class="accion" [routerLink]="['/produccion', orden.id]">Ver detalle</a>
                     @if (orden.estado === 'EN_PROCESO' || orden.estado === 'EN_REVISION') {
-                      <a class="accion" [routerLink]="['/produccion/revision', orden.id]">Revisar</a>
+                      <a class="accion" [routerLink]="['/produccion/revision', orden.id]"
+                        >Revisar</a
+                      >
                     }
                     @if (orden.estado === 'PLANEADA' || orden.estado === 'LISTA') {
-                      <button type="button" class="accion accion--peligro" (click)="cancelando.set(orden)">
+                      <button
+                        type="button"
+                        class="accion accion--peligro"
+                        (click)="cancelando.set(orden)"
+                      >
                         Cancelar
                       </button>
                     }
@@ -155,7 +178,11 @@
   @if (cancelando(); as orden) {
     <app-modal-confirmacion
       titulo="Cancelar orden de producción"
-      [mensaje]="'¿Cancelar la orden ' + orden.folio + '? Solo es posible desde PLANEADA o LISTA. Esta demostración no libera reservas en M15.'
+      [mensaje]="
+        '¿Cancelar la orden ' +
+        orden.folio +
+        '? Solo es posible desde PLANEADA o LISTA. Esta demostración no libera reservas en M15.'
+      "
       etiquetaConfirmar="Cancelar orden"
       (confirmar)="confirmarCancelacion()"
       (cancelar)="cancelando.set(null)"

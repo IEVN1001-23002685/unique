@@ -17,7 +17,8 @@ export const MERMAS_RUTAS: Routes = [
     path: 'registro',
     title: 'Registro de merma · UNIQUE',
     data: { rol: 'Operativo', soloAdministrador: false },
-    loadComponent: () => import('./paginas/registro-merma/registro-merma').then((c) => c.RegistroMerma),
+    loadComponent: () =>
+      import('./paginas/registro-merma/registro-merma').then((c) => c.RegistroMerma),
   },
   {
     path: 'indicadores',

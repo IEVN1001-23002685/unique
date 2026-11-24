@@ -1,6 +1,8 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { CarritoServicio } from '../carrito/servicios/carrito-servicio';
 
 export interface ResumenItemCheckout {
   idLinea: string;
@@ -50,20 +52,29 @@ export interface ConfirmacionPedidoCheckout {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './pago.html',
-  styles: []
+  styles: [],
 })
 export class Pago implements OnInit {
-  @Input() items: ResumenItemCheckout[] = [
-    {
-      idLinea: '101',
-      nombre: 'Sudadera Lila Oversize',
-      sku: 'UNQ-SUD-LIL-CH',
-      colorNombre: 'Lila',
-      talla: 'CH',
-      cantidad: 1,
-      precioUnitarioConIva: 549
-    }
-  ];
+  private readonly router = inject(Router);
+  private readonly carrito = inject(CarritoServicio);
+  private itemsRecibidos: ResumenItemCheckout[] | null = null;
+
+  /** Compatibilidad con un padre que pase el resumen; si no, se toma del carrito en memoria. */
+  @Input() set items(items: ResumenItemCheckout[]) {
+    this.itemsRecibidos = items;
+  }
+  get items(): ResumenItemCheckout[] {
+    if (this.itemsRecibidos) return this.itemsRecibidos;
+    return this.carrito.items().map((item) => ({
+      idLinea: item.idLinea,
+      nombre: item.nombre,
+      sku: item.sku,
+      colorNombre: item.colorNombre,
+      talla: item.talla,
+      cantidad: item.cantidad,
+      precioUnitarioConIva: item.precioUnitarioConIva,
+    }));
+  }
 
   @Input() direccionesEnvio: OpcionDireccionCheckout[] = [
     {
@@ -77,8 +88,8 @@ export class Pago implements OnInit {
       municipio: 'León',
       estado: 'Guanajuato',
       cp: '37670',
-      predeterminada: true
-    }
+      predeterminada: true,
+    },
   ];
 
   @Input() direccionesFacturacion: OpcionDireccionCheckout[] = [
@@ -95,8 +106,8 @@ export class Pago implements OnInit {
       cp: '37670',
       predeterminada: true,
       rfc: 'XAXX010101000',
-      razonSocial: 'Cliente Demo'
-    }
+      razonSocial: 'Cliente Demo',
+    },
   ];
 
   @Input() mediosPago: OpcionPagoCheckout[] = [
@@ -104,15 +115,15 @@ export class Pago implements OnInit {
       id: 1,
       tipo: 'tarjeta',
       alias: 'Tarjeta principal',
-      detalle: 'Visa •••• 4242 · Vence 08/29'
+      detalle: 'Visa •••• 4242 · Vence 08/29',
     },
     {
       id: 2,
       tipo: 'cuenta',
       alias: 'Monedero UNIQUE',
       detalle: 'Cuenta simulada',
-      saldoDisponible: 1500
-    }
+      saldoDisponible: 1500,
+    },
   ];
 
   @Output() volverAlCarrito = new EventEmitter<void>();
@@ -128,7 +139,7 @@ export class Pago implements OnInit {
     colonia: '',
     municipio: '',
     estado: '',
-    cp: ''
+    cp: '',
   };
 
   metodoEnvio: 'estandar' | 'expres' = 'estandar';
@@ -142,7 +153,8 @@ export class Pago implements OnInit {
   folioGenerado = '';
 
   ngOnInit(): void {
-    const predetEnvio = this.direccionesEnvio.find((d) => d.predeterminada) || this.direccionesEnvio[0];
+    const predetEnvio =
+      this.direccionesEnvio.find((d) => d.predeterminada) || this.direccionesEnvio[0];
     this.direccionSeleccionadaId = predetEnvio ? predetEnvio.id : 'nueva';
 
     const predetFact =
@@ -188,6 +200,20 @@ export class Pago implements OnInit {
     return this.mediosPago.find((m) => m.id === this.medioPagoSeleccionadoId);
   }
 
+  irAlCarrito(): void {
+    this.volverAlCarrito.emit();
+    void this.router.navigate(['/carrito']);
+  }
+
+  cerrarPago(): void {
+    this.cerrar.emit();
+    void this.router.navigate(['/catalogo']);
+  }
+
+  verMisPedidos(): void {
+    void this.router.navigate(['/pedidos']);
+  }
+
   onSeleccionarDireccionFact(id: number | null): void {
     this.direccionFactId = id;
     const dir = this.direccionesFacturacion.find((d) => d.id === id);
@@ -215,18 +241,21 @@ export class Pago implements OnInit {
         !this.nuevaDireccion.estado.trim() ||
         !this.coberturaValida
       ) {
-        this.mensajeError = 'Completa los campos de la nueva dirección y un código postal válido de 5 dígitos.';
+        this.mensajeError =
+          'Completa los campos de la nueva dirección y un código postal válido de 5 dígitos.';
         return;
       }
     } else if (!this.coberturaValida) {
-      this.mensajeError = 'La dirección seleccionada no cuenta con código postal válido de 5 dígitos.';
+      this.mensajeError =
+        'La dirección seleccionada no cuenta con código postal válido de 5 dígitos.';
       return;
     }
 
     if (this.requiereFactura) {
       const rfcLimpio = this.rfcFactura.trim().toUpperCase();
       if (!/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(rfcLimpio) || !this.razonSocialFactura.trim()) {
-        this.mensajeError = 'Para facturar ingresa un RFC válido (12 o 13 caracteres) y la razón social.';
+        this.mensajeError =
+          'Para facturar ingresa un RFC válido (12 o 13 caracteres) y la razón social.';
         return;
       }
     }
@@ -251,7 +280,7 @@ export class Pago implements OnInit {
       metodoEnvio: this.metodoEnvio,
       requiereFactura: this.requiereFactura,
       medioPagoId: pago.id,
-      totalPagado: this.totalPagar
+      totalPagado: this.totalPagar,
     });
   }
 }

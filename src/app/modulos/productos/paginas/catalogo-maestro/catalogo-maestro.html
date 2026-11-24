@@ -80,7 +80,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Catálogo maestro de productos</caption>
+          <caption class="sr-only">
+            Catálogo maestro de productos
+          </caption>
           <thead>
             <tr>
               <th scope="col">Imagen</th>
@@ -115,8 +117,12 @@
                   <span class="celda-principal">{{ producto.nombre }}</span>
                   <span class="celda-secundaria">{{ producto.descripcion }}</span>
                 </td>
-                <td data-etiqueta="Categoría">{{ servicio.nombreCategoria(producto.categoriaId) }}</td>
-                <td data-etiqueta="Código base"><span class="mono">{{ producto.codigoSku }}</span></td>
+                <td data-etiqueta="Categoría">
+                  {{ servicio.nombreCategoria(producto.categoriaId) }}
+                </td>
+                <td data-etiqueta="Código base">
+                  <span class="mono">{{ producto.codigoSku }}</span>
+                </td>
                 <td data-etiqueta="Variantes">{{ producto.variantes.length }}</td>
                 <td data-etiqueta="Precio">
                   {{ producto.precioVenta | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}

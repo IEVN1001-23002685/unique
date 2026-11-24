@@ -13,17 +13,13 @@ export const PRODUCTOS_RUTAS: Routes = [
     path: 'nuevo',
     title: 'Nuevo producto · UNIQUE',
     loadComponent: () =>
-      import('./paginas/formulario-producto/formulario-producto').then(
-        (c) => c.FormularioProducto,
-      ),
+      import('./paginas/formulario-producto/formulario-producto').then((c) => c.FormularioProducto),
   },
   {
     path: 'editar/:id',
     title: 'Editar producto · UNIQUE',
     loadComponent: () =>
-      import('./paginas/formulario-producto/formulario-producto').then(
-        (c) => c.FormularioProducto,
-      ),
+      import('./paginas/formulario-producto/formulario-producto').then((c) => c.FormularioProducto),
   },
   {
     path: 'variantes',

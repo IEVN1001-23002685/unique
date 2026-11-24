@@ -54,7 +54,11 @@
         <div class="form-grid">
           <label class="campo">
             Origen del ítem
-            <select class="campo__entrada" formControlName="origen" (change)="alCambiarOrigen($event)">
+            <select
+              class="campo__entrada"
+              formControlName="origen"
+              (change)="alCambiarOrigen($event)"
+            >
               <option value="MATERIAL">Material (materia prima)</option>
               <option value="PRODUCTO">Producto (prenda terminada)</option>
             </select>
@@ -62,7 +66,11 @@
 
           <label class="campo">
             Etapa en que se detectó
-            <select class="campo__entrada" formControlName="etapa" [attr.aria-invalid]="forma.controls.etapa.invalid && forma.controls.etapa.touched">
+            <select
+              class="campo__entrada"
+              formControlName="etapa"
+              [attr.aria-invalid]="forma.controls.etapa.invalid && forma.controls.etapa.touched"
+            >
               <option value="">Selecciona una etapa</option>
               @for (etapa of etapas; track etapa) {
                 <option [value]="etapa">{{ etiquetasEtapa[etapa] }}</option>
@@ -79,7 +87,14 @@
           <div class="form-grid form-grid--tres">
             <label class="campo">
               Material
-              <select class="campo__entrada" formControlName="materialId" [attr.aria-invalid]="forma.controls.materialId.invalid && forma.controls.materialId.touched" (change)="alCambiarMaterial($event)">
+              <select
+                class="campo__entrada"
+                formControlName="materialId"
+                [attr.aria-invalid]="
+                  forma.controls.materialId.invalid && forma.controls.materialId.touched
+                "
+                (change)="alCambiarMaterial($event)"
+              >
                 <option [ngValue]="null">Selecciona material</option>
                 @for (material of materiales(); track material.materialId) {
                   <option [ngValue]="material.materialId">{{ material.etiqueta }}</option>
@@ -104,7 +119,11 @@
 
             <label class="campo">
               Lote afectado
-              <select class="campo__entrada" formControlName="loteId" [attr.aria-invalid]="forma.controls.loteId.invalid && forma.controls.loteId.touched">
+              <select
+                class="campo__entrada"
+                formControlName="loteId"
+                [attr.aria-invalid]="forma.controls.loteId.invalid && forma.controls.loteId.touched"
+              >
                 <option [ngValue]="null">Selecciona lote</option>
                 @for (lote of lotes(); track lote.id) {
                   <option [ngValue]="lote.id">{{ lote.etiqueta }}</option>
@@ -122,7 +141,11 @@
           <div class="form-grid">
             <label class="campo">
               SKU generado por M10
-              <select class="campo__entrada" formControlName="sku" [attr.aria-invalid]="forma.controls.sku.invalid && forma.controls.sku.touched">
+              <select
+                class="campo__entrada"
+                formControlName="sku"
+                [attr.aria-invalid]="forma.controls.sku.invalid && forma.controls.sku.touched"
+              >
                 <option value="">Selecciona una variante</option>
                 @for (variante of variantes(); track variante.varianteId) {
                   <option [value]="variante.sku">{{ variante.etiqueta }}</option>
@@ -139,7 +162,9 @@
               </div>
               <div>
                 <dt>Costo unitario</dt>
-                <dd>{{ esAdministrador() ? 'Solo Administrador' : 'No disponible para Operativo' }}</dd>
+                <dd>
+                  {{ esAdministrador() ? 'Solo Administrador' : 'No disponible para Operativo' }}
+                </dd>
               </div>
             </div>
           </div>
@@ -156,7 +181,9 @@
               [attr.step]="forma.controls.origen.value === 'PRODUCTO' ? '1' : '0.0001'"
               inputmode="decimal"
               formControlName="cantidad"
-              [attr.aria-invalid]="forma.controls.cantidad.invalid && forma.controls.cantidad.touched"
+              [attr.aria-invalid]="
+                forma.controls.cantidad.invalid && forma.controls.cantidad.touched
+              "
               placeholder="0.0000"
             />
             @if (forma.controls.cantidad.touched && forma.controls.cantidad.invalid) {
@@ -172,7 +199,12 @@
 
           <label class="campo">
             Causa (catálogo M22)
-            <select class="campo__entrada" formControlName="causaId" [attr.aria-invalid]="forma.controls.causaId.invalid && forma.controls.causaId.touched" (change)="alCambiarCausa($event)">
+            <select
+              class="campo__entrada"
+              formControlName="causaId"
+              [attr.aria-invalid]="forma.controls.causaId.invalid && forma.controls.causaId.touched"
+              (change)="alCambiarCausa($event)"
+            >
               <option [ngValue]="null">Selecciona causa</option>
               @for (causa of causas(); track causa.id) {
                 <option [ngValue]="causa.id">{{ causa.nombre }}</option>
@@ -201,7 +233,9 @@
             rows="3"
             formControlName="descripcion"
             maxlength="500"
-            [attr.aria-invalid]="forma.controls.descripcion.invalid && forma.controls.descripcion.touched"
+            [attr.aria-invalid]="
+              forma.controls.descripcion.invalid && forma.controls.descripcion.touched
+            "
             placeholder="Describe el daño, error o sobrante y cómo se detectó"
           ></textarea>
           @if (forma.controls.descripcion.touched && forma.controls.descripcion.invalid) {
@@ -244,10 +278,25 @@
     <aside class="tarjeta bloque resumen" aria-labelledby="titulo-resumen">
       <h2 class="titulo-section" id="titulo-resumen">Resumen de la captura</h2>
       <dl class="lector">
-        <div><dt>Origen</dt><dd>{{ forma.controls.origen.value === 'MATERIAL' ? 'Material' : 'Producto' }}</dd></div>
-        <div><dt>Etapa</dt><dd>{{ etiquetaEtapaForma() }}</dd></div>
-        <div><dt>Cantidad</dt><dd>{{ forma.controls.cantidad.value ?? 0 }} {{ forma.controls.origen.value === 'MATERIAL' ? 'u. base' : 'piezas' }}</dd></div>
-        <div><dt>Evidencia</dt><dd>{{ forma.controls.evidenciaNombre.value ?? 'Sin archivo' }}</dd></div>
+        <div>
+          <dt>Origen</dt>
+          <dd>{{ forma.controls.origen.value === 'MATERIAL' ? 'Material' : 'Producto' }}</dd>
+        </div>
+        <div>
+          <dt>Etapa</dt>
+          <dd>{{ etiquetaEtapaForma() }}</dd>
+        </div>
+        <div>
+          <dt>Cantidad</dt>
+          <dd>
+            {{ forma.controls.cantidad.value ?? 0 }}
+            {{ forma.controls.origen.value === 'MATERIAL' ? 'u. base' : 'piezas' }}
+          </dd>
+        </div>
+        <div>
+          <dt>Evidencia</dt>
+          <dd>{{ forma.controls.evidenciaNombre.value ?? 'Sin archivo' }}</dd>
+        </div>
       </dl>
 
       @if (esAdministrador()) {
@@ -267,7 +316,10 @@
       <ul class="reglas">
         <li>Las prendas se registran en unidades enteras; los materiales, en unidades base.</li>
         <li>El SKU se elige del catálogo de M10: no se escribe manualmente.</li>
-        <li>Las llegadas de recepciones, calidad y devoluciones las generan sus módulos, no esta captura.</li>
+        <li>
+          Las llegadas de recepciones, calidad y devoluciones las generan sus módulos, no esta
+          captura.
+        </li>
         <li>Un error se corrige con un reverso del Administrador; este registro no se modifica.</li>
       </ul>
       <p class="nota nota--advertencia">

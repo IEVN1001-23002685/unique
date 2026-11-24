@@ -1,20 +1,39 @@
 .pestanas {
-  display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 .pestana {
-  display: inline-flex; align-items: center; gap: 0.35rem;
-  padding: 0.55rem 1.1rem; border-radius: 999px;
-  background-color: var(--color-unique-rosa-lavanda); color: var(--color-unique-ciruela);
-  font-family: var(--font-interfaz); font-size: 0.85rem; font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  background-color: var(--color-unique-rosa-lavanda);
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.85rem;
+  font-weight: 600;
   text-decoration: none;
 }
-.pestana:hover { background-color: var(--color-unique-orquidea); color: #ffffff; }
-.pestana--activa, .pestana--activa:hover {
-  background-color: var(--color-unique-morado); color: #ffffff;
+.pestana:hover {
+  background-color: var(--color-unique-orquidea);
+  color: #ffffff;
+}
+.pestana--activa,
+.pestana--activa:hover {
+  background-color: var(--color-unique-morado);
+  color: #ffffff;
 }
 .pestana__rol {
-  padding: 0.05rem 0.4rem; border-radius: 999px;
-  background: #ffffff; color: var(--color-unique-ciruela);
-  font-size: 0.62rem; letter-spacing: 0.04em;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--color-unique-ciruela);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
 }
-.pestana--activa .pestana__rol { background: var(--color-unique-rosa-lavanda); }
+.pestana--activa .pestana__rol {
+  background: var(--color-unique-rosa-lavanda);
+}

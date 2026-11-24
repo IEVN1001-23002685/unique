@@ -1,15 +1,18 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-recuperar-password',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './recuperar-password.html',
-  styles: []
+  styles: [],
 })
 export class RecuperarPassword {
+  private readonly router = inject(Router);
+
   @Output() volverALogin = new EventEmitter<void>();
   @Output() cerrar = new EventEmitter<void>();
 
@@ -29,9 +32,11 @@ export class RecuperarPassword {
 
   onVolverALogin(): void {
     this.volverALogin.emit();
+    void this.router.navigate(['/login']);
   }
 
   onCerrar(): void {
     this.cerrar.emit();
+    void this.router.navigate(['/catalogo']);
   }
 }

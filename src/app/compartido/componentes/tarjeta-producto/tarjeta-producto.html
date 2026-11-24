@@ -20,7 +20,7 @@
     <h2 class="tarjeta__titulo">{{ producto().nombre }}</h2>
     <p class="tarjeta__descripcion">{{ producto().descripcion }}</p>
     <p class="tarjeta__precio">
-      {{ producto().precio | currency: 'USD' : 'symbol' : '1.0-0' }}
+      {{ producto().precio | currency: 'MXN' : 'symbol' : '1.2-2' }}
     </p>
     <div class="tarjeta__acciones">
       <a [routerLink]="['/catalogo/producto', producto().slug]" class="boton-informacion">

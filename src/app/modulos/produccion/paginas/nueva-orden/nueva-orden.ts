@@ -102,7 +102,10 @@ export class NuevaOrden {
   protected guardar(): void {
     if (this.form.invalid || this.enviando()) {
       this.form.markAllAsTouched();
-      this.avisos.mostrar('error', 'Revisa las líneas: cada variante necesita una cantidad entera mayor a cero.');
+      this.avisos.mostrar(
+        'error',
+        'Revisa las líneas: cada variante necesita una cantidad entera mayor a cero.',
+      );
       return;
     }
     this.enviando.set(true);
@@ -112,11 +115,12 @@ export class NuevaOrden {
         varianteId: Number(linea.varianteId),
         sku: String(linea.sku),
         nombreProducto:
-          this.opciones().find((item) => item.varianteId === Number(linea.varianteId))?.nombreProducto ?? '',
+          this.opciones().find((item) => item.varianteId === Number(linea.varianteId))
+            ?.nombreProducto ?? '',
         cantidad: Number(linea.cantidad),
       })),
       fechaRequerida: valores.fechaRequerida || null,
-      notas: valores.notas,
+      notas: valores.notas ?? '',
     });
 
     this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);

@@ -54,7 +54,10 @@ export class Cotizaciones {
     return this.servicio.obtenerMaterial(materialId)?.unidadPresentacion ?? 'pieza';
   }
 
-  protected lineaDe(cotizacion: Cotizacion, requisicionLineaId: number): LineaCotizacion | undefined {
+  protected lineaDe(
+    cotizacion: Cotizacion,
+    requisicionLineaId: number,
+  ): LineaCotizacion | undefined {
     return cotizacion.lineas.find((linea) => linea.requisicionLineaId === requisicionLineaId);
   }
 
@@ -97,8 +100,10 @@ export class Cotizaciones {
     if (porFolio) {
       return porFolio.id;
     }
-    return this.servicio.requisiciones().find((requisicion) =>
-      ['PENDIENTE', 'EN_COTIZACION'].includes(requisicion.estado),
-    )?.id ?? 0;
+    return (
+      this.servicio
+        .requisiciones()
+        .find((requisicion) => ['PENDIENTE', 'EN_COTIZACION'].includes(requisicion.estado))?.id ?? 0
+    );
   }
 }

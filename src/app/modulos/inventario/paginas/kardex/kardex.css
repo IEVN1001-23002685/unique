@@ -1,10 +1,25 @@
-.filtros-kardex { margin-bottom: 0.5rem; }
-.kardex__acciones { margin-top: 0; margin-bottom: 1.25rem; }
-.celda-negativa { color: var(--color-unique-error); }
-.tabla-contenedor--ancha { overflow-x: auto; }
-.tabla-contenedor--ancha .tabla { min-width: 64rem; }
+.filtros-kardex {
+  margin-bottom: 0.5rem;
+}
+.kardex__acciones {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+}
+.celda-negativa {
+  color: var(--color-unique-error);
+}
+.tabla-contenedor--ancha {
+  overflow-x: auto;
+}
+.tabla-contenedor--ancha .tabla {
+  min-width: 64rem;
+}
 
 @media (max-width: 900px) {
-  .tabla-contenedor--ancha { overflow-x: visible; }
-  .tabla-contenedor--ancha .tabla { min-width: 0; }
+  .tabla-contenedor--ancha {
+    overflow-x: visible;
+  }
+  .tabla-contenedor--ancha .tabla {
+    min-width: 0;
+  }
 }

@@ -1,5 +1,7 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { ModalAutenticacionServicio } from '../../nucleo/servicios/modal-autenticacion-servicio';
 
 @Component({
   selector: 'app-registro',
@@ -9,6 +11,9 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './registro.css',
 })
 export class Registro {
+  private readonly router = inject(Router);
+  private readonly modal = inject(ModalAutenticacionServicio);
+
   @Output() cerrar = new EventEmitter<void>();
   @Output() irAIniciarSesion = new EventEmitter<void>();
 
@@ -17,7 +22,7 @@ export class Registro {
     telefono: '',
     correo: '',
     contrasena: '',
-    repetirContrasena: ''
+    repetirContrasena: '',
   };
 
   onSubmit(): void {
@@ -31,9 +36,15 @@ export class Registro {
 
   onCerrar(): void {
     this.cerrar.emit();
+    if (this.modal.modalActiva() === null) {
+      void this.router.navigate(['/catalogo']);
+    }
   }
 
   onIrAIniciarSesion(): void {
     this.irAIniciarSesion.emit();
+    if (this.modal.modalActiva() === null) {
+      void this.router.navigate(['/login']);
+    }
   }
 }

@@ -19,9 +19,7 @@ export const VENTAS_RUTAS: Routes = [
     pathMatch: 'full',
     title: 'Descuentos y cupones · UNIQUE',
     loadComponent: () =>
-      import('./paginas/descuentos-cupones/descuentos-cupones').then(
-        (c) => c.DescuentosCupones,
-      ),
+      import('./paginas/descuentos-cupones/descuentos-cupones').then((c) => c.DescuentosCupones),
   },
   {
     path: 'descuentos/nuevo',

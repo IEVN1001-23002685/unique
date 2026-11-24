@@ -1,4 +1,6 @@
-.cabecera-orden { margin-bottom: 1.5rem; }
+.cabecera-orden {
+  margin-bottom: 1.5rem;
+}
 .motivo {
   margin: 0.75rem 0 1rem;
   padding: 0.6rem 0.85rem;
@@ -32,8 +34,16 @@
   font-weight: 600;
   text-align: right;
 }
-.acciones-orden { margin-top: 0.5rem; }
-.pedidos { display: grid; gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+.acciones-orden {
+  margin-top: 0.5rem;
+}
+.pedidos {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 .pedidos li {
   display: flex;
   flex-wrap: wrap;
@@ -45,9 +55,15 @@
   background: var(--color-unique-fila);
   font-size: 0.82rem;
 }
-.pedidos li strong { color: var(--color-unique-morado); }
-.pedidos li .celda-secundaria { flex-basis: 100%; }
-.panel-solicitud { margin-top: 1.25rem; }
+.pedidos li strong {
+  color: var(--color-unique-morado);
+}
+.pedidos li .celda-secundaria {
+  flex-basis: 100%;
+}
+.panel-solicitud {
+  margin-top: 1.25rem;
+}
 .panel-solicitud__cabecera {
   display: flex;
   flex-wrap: wrap;
@@ -56,5 +72,7 @@
   gap: 0.75rem;
 }
 @media (max-width: 640px) {
-  .lector { grid-template-columns: 1fr; }
+  .lector {
+    grid-template-columns: 1fr;
+  }
 }

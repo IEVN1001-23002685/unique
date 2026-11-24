@@ -1,8 +1,4 @@
-import type {
-  MaterialOrden,
-  OrdenProduccion,
-  RecetaCopiada,
-} from '../modelos/produccion';
+import type { MaterialOrden, OrdenProduccion, RecetaCopiada } from '../modelos/produccion';
 
 /**
  * DATOS DEMOSTRATIVOS de M16. Nada de esto viene de Flask: al integrarse se
@@ -71,13 +67,38 @@ export const RECETAS_COPIADAS: RecetaCopiada[] = [
     familia: 'HOODIE',
     nombre: 'Sudadera con capucha',
     materiales: [
-      { materialId: 1, color: null, cantidadBrutaPorUnidad: 1.85, descripcion: 'Felpa cuerpo y capucha' },
-      { materialId: 3, color: null, cantidadBrutaPorUnidad: 0.28, descripcion: 'Rib de puños y cintura' },
-      { materialId: 4, color: null, cantidadBrutaPorUnidad: 120, descripcion: 'Estambre de bordado' },
+      {
+        materialId: 1,
+        color: null,
+        cantidadBrutaPorUnidad: 1.85,
+        descripcion: 'Felpa cuerpo y capucha',
+      },
+      {
+        materialId: 3,
+        color: null,
+        cantidadBrutaPorUnidad: 0.28,
+        descripcion: 'Rib de puños y cintura',
+      },
+      {
+        materialId: 4,
+        color: null,
+        cantidadBrutaPorUnidad: 120,
+        descripcion: 'Estambre de bordado',
+      },
       { materialId: 5, color: 'NA', cantidadBrutaPorUnidad: 45, descripcion: 'Hilo de costura' },
-      { materialId: 6, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Estabilizador de bordado' },
+      {
+        materialId: 6,
+        color: 'NA',
+        cantidadBrutaPorUnidad: 1,
+        descripcion: 'Estabilizador de bordado',
+      },
       { materialId: 7, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Etiqueta tejida' },
-      { materialId: 19, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Etiqueta de cuidado' },
+      {
+        materialId: 19,
+        color: 'NA',
+        cantidadBrutaPorUnidad: 1,
+        descripcion: 'Etiqueta de cuidado',
+      },
     ],
   },
   {
@@ -89,7 +110,12 @@ export const RECETAS_COPIADAS: RecetaCopiada[] = [
       { materialId: 5, color: 'NA', cantidadBrutaPorUnidad: 32, descripcion: 'Hilo de costura' },
       { materialId: 6, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Estabilizador' },
       { materialId: 7, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Etiqueta tejida' },
-      { materialId: 20, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Etiqueta de cuidado' },
+      {
+        materialId: 20,
+        color: 'NA',
+        cantidadBrutaPorUnidad: 1,
+        descripcion: 'Etiqueta de cuidado',
+      },
     ],
   },
   {
@@ -100,7 +126,12 @@ export const RECETAS_COPIADAS: RecetaCopiada[] = [
       { materialId: 5, color: 'NA', cantidadBrutaPorUnidad: 40, descripcion: 'Hilo de costura' },
       { materialId: 9, color: 'NA', cantidadBrutaPorUnidad: 2, descripcion: 'Ojillos' },
       { materialId: 10, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Cordón' },
-      { materialId: 21, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Etiqueta de cuidado' },
+      {
+        materialId: 21,
+        color: 'NA',
+        cantidadBrutaPorUnidad: 1,
+        descripcion: 'Etiqueta de cuidado',
+      },
     ],
   },
   {
@@ -111,7 +142,12 @@ export const RECETAS_COPIADAS: RecetaCopiada[] = [
       { materialId: 3, color: null, cantidadBrutaPorUnidad: 0.12, descripcion: 'Rib' },
       { materialId: 5, color: 'NA', cantidadBrutaPorUnidad: 18, descripcion: 'Hilo de costura' },
       { materialId: 7, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Etiqueta tejida' },
-      { materialId: 22, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Etiqueta de cuidado' },
+      {
+        materialId: 22,
+        color: 'NA',
+        cantidadBrutaPorUnidad: 1,
+        descripcion: 'Etiqueta de cuidado',
+      },
     ],
   },
   {
@@ -120,7 +156,12 @@ export const RECETAS_COPIADAS: RecetaCopiada[] = [
     materiales: [
       { materialId: 11, color: null, cantidadBrutaPorUnidad: 0.9, descripcion: 'Loneta' },
       { materialId: 5, color: 'NA', cantidadBrutaPorUnidad: 25, descripcion: 'Hilo de costura' },
-      { materialId: 23, color: 'NA', cantidadBrutaPorUnidad: 1, descripcion: 'Etiqueta de cuidado' },
+      {
+        materialId: 23,
+        color: 'NA',
+        cantidadBrutaPorUnidad: 1,
+        descripcion: 'Etiqueta de cuidado',
+      },
     ],
   },
 ];
@@ -197,8 +238,7 @@ export function explosionarMateriales(
       continue;
     }
 
-    const reservada =
-      sinReservar === 'todos' || sinReservar.includes(materialId) ? 0 : requerida;
+    const reservada = sinReservar === 'todos' || sinReservar.includes(materialId) ? 0 : requerida;
     acumulados.set(clave, {
       id: 0,
       materialId,

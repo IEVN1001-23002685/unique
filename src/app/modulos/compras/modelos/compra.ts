@@ -7,19 +7,10 @@
 
 export type OrigenRequisicion = 'ALERTA' | 'ORDEN_PRODUCCION' | 'MANUAL';
 export type EstadoRequisicion =
-  | 'PENDIENTE'
-  | 'EN_COTIZACION'
-  | 'COMPRA_EMITIDA'
-  | 'ATENDIDA'
-  | 'CANCELADA';
+  'PENDIENTE' | 'EN_COTIZACION' | 'COMPRA_EMITIDA' | 'ATENDIDA' | 'CANCELADA';
 export type Prioridad = 'NORMAL' | 'URGENTE';
 export type EstadoCotizacion = 'PENDIENTE' | 'ELEGIDA' | 'DESCARTADA';
-export type EstadoOrdenCompra =
-  | 'BORRADOR'
-  | 'EMITIDA'
-  | 'PARCIAL'
-  | 'RECIBIDA'
-  | 'CANCELADA';
+export type EstadoOrdenCompra = 'BORRADOR' | 'EMITIDA' | 'PARCIAL' | 'RECIBIDA' | 'CANCELADA';
 
 /** Unión de estados para el chip reutilizable del módulo. */
 export type EstadoCompra = EstadoRequisicion | EstadoCotizacion | EstadoOrdenCompra | 'RETRASADA';

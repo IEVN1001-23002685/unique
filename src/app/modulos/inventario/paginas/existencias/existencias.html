@@ -69,7 +69,9 @@
     } @else {
       <div class="tabla-contenedor tabla-contenedor--ancha">
         <table class="tabla">
-          <caption class="sr-only">Existencias de materiales por categoría</caption>
+          <caption class="sr-only">
+            Existencias de materiales por categoría
+          </caption>
           <thead>
             <tr>
               <th scope="col">Material</th>
@@ -91,23 +93,42 @@
               <tr>
                 <td data-etiqueta="Material">
                   <span class="celda-principal">{{ vista.material.nombre }}</span>
-                  <span class="celda-secundaria">{{ vista.material.codigo }} · {{ vista.material.categoria }}</span>
+                  <span class="celda-secundaria"
+                    >{{ vista.material.codigo }} · {{ vista.material.categoria }}</span
+                  >
                 </td>
                 <td data-etiqueta="Color">{{ vista.color }}</td>
                 <td data-etiqueta="Unidad">{{ vista.material.unidadBase }}</td>
-                <td data-etiqueta="Físico" class="celda-numero celda-derecha">{{ vista.fisico | number: '1.0-4' : 'es-MX' }}</td>
-                <td data-etiqueta="Reservado" class="celda-numero celda-derecha">{{ vista.reservado | number: '1.0-4' : 'es-MX' }}</td>
+                <td data-etiqueta="Físico" class="celda-numero celda-derecha">
+                  {{ vista.fisico | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Reservado" class="celda-numero celda-derecha">
+                  {{ vista.reservado | number: '1.0-4' : 'es-MX' }}
+                </td>
                 <td data-etiqueta="Disponible" class="celda-numero celda-derecha">
                   <strong>{{ vista.disponible | number: '1.0-4' : 'es-MX' }}</strong>
                 </td>
-                <td data-etiqueta="En compra" class="celda-numero celda-derecha">{{ vista.enCompra | number: '1.0-4' : 'es-MX' }}</td>
-                <td data-etiqueta="Mínimo" class="celda-numero celda-derecha">{{ vista.stockMinimo | number: '1.0-4' : 'es-MX' }}</td>
-                <td data-etiqueta="Pto. reorden" class="celda-numero celda-derecha">{{ vista.puntoReorden | number: '1.0-4' : 'es-MX' }}</td>
+                <td data-etiqueta="En compra" class="celda-numero celda-derecha">
+                  {{ vista.enCompra | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Mínimo" class="celda-numero celda-derecha">
+                  {{ vista.stockMinimo | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Pto. reorden" class="celda-numero celda-derecha">
+                  {{ vista.puntoReorden | number: '1.0-4' : 'es-MX' }}
+                </td>
                 <td data-etiqueta="Cobertura" class="celda-numero celda-derecha">
-                  {{ vista.coberturaDias === null ? 'Sin consumo' : (vista.coberturaDias | number: '1.0-1' : 'es-MX') + ' días' }}
+                  {{
+                    vista.coberturaDias === null
+                      ? 'Sin consumo'
+                      : (vista.coberturaDias | number: '1.0-1' : 'es-MX') + ' días'
+                  }}
                 </td>
                 <td data-etiqueta="Semáforo">
-                  <app-semaforo-inventario [tono]="vista.semaforo" [texto]="etiquetaSemaforo(vista)" />
+                  <app-semaforo-inventario
+                    [tono]="vista.semaforo"
+                    [texto]="etiquetaSemaforo(vista)"
+                  />
                   @if (vista.requiereAtencion) {
                     <span class="etiqueta etiqueta--alerta">Sin requisición</span>
                   }
@@ -158,11 +179,33 @@
       </div>
 
       <dl class="lector">
-        <div><dt>Material y color</dt><dd>{{ vista.material.nombre }} · {{ vista.color }}</dd></div>
-        <div><dt>Disponible</dt><dd>{{ vista.disponible | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}</dd></div>
-        <div><dt>Posición (disponible + compras)</dt><dd>{{ vista.posicion | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}</dd></div>
-        <div><dt>Punto de reorden</dt><dd>{{ vista.puntoReorden | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}</dd></div>
-        <div><dt>Faltante sugerido</dt><dd>{{ faltanteSugerido(vista) | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}</dd></div>
+        <div>
+          <dt>Material y color</dt>
+          <dd>{{ vista.material.nombre }} · {{ vista.color }}</dd>
+        </div>
+        <div>
+          <dt>Disponible</dt>
+          <dd>
+            {{ vista.disponible | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}
+          </dd>
+        </div>
+        <div>
+          <dt>Posición (disponible + compras)</dt>
+          <dd>{{ vista.posicion | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}</dd>
+        </div>
+        <div>
+          <dt>Punto de reorden</dt>
+          <dd>
+            {{ vista.puntoReorden | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}
+          </dd>
+        </div>
+        <div>
+          <dt>Faltante sugerido</dt>
+          <dd>
+            {{ faltanteSugerido(vista) | number: '1.0-4' : 'es-MX' }}
+            {{ vista.material.unidadBase }}
+          </dd>
+        </div>
         <div>
           <dt>Requisición abierta</dt>
           <dd>{{ vista.requisicionAbierta ? 'Sí, ya existe en M14' : 'No detectada' }}</dd>

@@ -154,11 +154,9 @@ export class ComprasServicio {
       return null;
     }
 
-    const porProveedor = new Map<
-      number,
-      { opcion: MaterialProveedor & { proveedorId: number }; linea: LineaCotizacion }[]
-    >();
+    const porProveedor = new Map<number, LineaCotizacion[]>();
     let conAlterno = false;
+    let idLinea = 1;
 
     for (const lineaReq of requisicion.lineas) {
       const opciones = this.coberturaMaterial(lineaReq.materialId);
@@ -176,7 +174,7 @@ export class ComprasServicio {
         const cantidad = Math.max(lineaReq.cantidadCompraSugerida, opcion.minimoCompra);
         const lineas = porProveedor.get(opcion.proveedorId) ?? [];
         lineas.push({
-          id: 0,
+          id: idLinea++,
           requisicionLineaId: lineaReq.id,
           cantidadCompra: cantidad,
           precioUnitarioCompra: opcion.precioCompra,
@@ -220,9 +218,7 @@ export class ComprasServicio {
     ]);
     this.listaRequisiciones.update((actuales) =>
       actuales.map((actual) =>
-        actual.id === requisicionId
-          ? { ...actual, estado: 'EN_COTIZACION' as const }
-          : actual,
+        actual.id === requisicionId ? { ...actual, estado: 'EN_COTIZACION' as const } : actual,
       ),
     );
 
@@ -268,10 +264,7 @@ export class ComprasServicio {
           ? actual
           : {
               ...actual,
-              estado:
-                actual.id === cotizacion.id
-                  ? ('ELEGIDA' as const)
-                  : ('DESCARTADA' as const),
+              estado: actual.id === cotizacion.id ? ('ELEGIDA' as const) : ('DESCARTADA' as const),
             },
       ),
     );
@@ -291,8 +284,7 @@ export class ComprasServicio {
 
     for (const [indice, lineaReq] of requisicion.lineas.entries()) {
       const opciones = this.coberturaMaterial(lineaReq.materialId);
-      const opcion =
-        opciones.find((item) => item.esPrincipal) ?? opciones[0] ?? undefined;
+      const opcion = opciones.find((item) => item.esPrincipal) ?? opciones[0] ?? undefined;
       if (!opcion) {
         continue;
       }
@@ -454,7 +446,9 @@ export class ComprasServicio {
 
     this.listaOrdenes.update((actuales) =>
       actuales.map((actual) =>
-        actual.id === orden.id ? { ...actual, lineas: lineasActualizadas, estado: estadoOrden } : actual,
+        actual.id === orden.id
+          ? { ...actual, lineas: lineasActualizadas, estado: estadoOrden }
+          : actual,
       ),
     );
 
@@ -500,9 +494,7 @@ export class ComprasServicio {
   private marcarCompraEmitida(requisicionId: number): void {
     this.listaRequisiciones.update((actuales) =>
       actuales.map((actual) =>
-        actual.id === requisicionId
-          ? { ...actual, estado: 'COMPRA_EMITIDA' as const }
-          : actual,
+        actual.id === requisicionId ? { ...actual, estado: 'COMPRA_EMITIDA' as const } : actual,
       ),
     );
   }

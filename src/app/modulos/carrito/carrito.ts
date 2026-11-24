@@ -1,6 +1,8 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { CarritoServicio } from './servicios/carrito-servicio';
 
 export interface ItemCarrito {
   idLinea: string;
@@ -22,36 +24,22 @@ export interface ItemCarrito {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './carrito.html',
-  styles: []
+  styles: [],
 })
 export class Carrito {
-  @Input() items: ItemCarrito[] = [
-    {
-      idLinea: '101',
-      productoId: 1,
-      nombre: 'Sudadera Lila Oversize',
-      sku: 'UNQ-SUD-LIL-CH',
-      colorNombre: 'Lila',
-      talla: 'CH',
-      precioUnitarioConIva: 549,
-      cantidad: 1,
-      estadoDisponibilidad: 'Disponible',
-      imagenUrl: '/Logo1.png'
-    },
-    {
-      idLinea: '202',
-      productoId: 2,
-      nombre: 'Playera Básica UNIQUE',
-      sku: 'UNQ-PLY-BLA-G',
-      colorNombre: 'Blanco',
-      talla: 'G',
-      precioUnitarioConIva: 299,
-      cantidad: 1,
-      estadoDisponibilidad: 'Agotado',
-      imagenUrl: '/Logo1.png',
-      cambioDetectado: 'Esta variante se agotó; retírala para continuar.'
-    }
-  ];
+  private readonly router = inject(Router);
+  private readonly carrito = inject(CarritoServicio);
+
+  /**
+   * Fuente única del carrito de demostración. El setter conserva la posibilidad de
+   * recibir items desde un padre; sin enlace externo se usa el estado en memoria.
+   */
+  @Input() set items(items: ItemCarrito[]) {
+    this.carrito.reemplazar(items);
+  }
+  get items(): ItemCarrito[] {
+    return this.carrito.items();
+  }
 
   @Output() seguirComprando = new EventEmitter<void>();
   @Output() procederAlPago = new EventEmitter<{ items: ItemCarrito[]; totalEstimado: number }>();
@@ -92,16 +80,16 @@ export class Carrito {
       return;
     }
     if (siguiente > 10) {
-      item.cantidad = 10;
+      this.carrito.cambiarCantidad(item.idLinea, 10);
       this.mensajeCarrito = 'Máximo 10 unidades permitidas por línea de producto.';
       return;
     }
-    item.cantidad = siguiente;
+    this.carrito.cambiarCantidad(item.idLinea, siguiente);
     this.mensajeCarrito = '';
   }
 
   eliminarItem(idLinea: string): void {
-    this.items = this.items.filter((i) => i.idLinea !== idLinea);
+    this.carrito.eliminar(idLinea);
     this.mensajeCarrito = 'Producto eliminado del carrito.';
   }
 
@@ -120,6 +108,16 @@ export class Carrito {
     }
   }
 
+  irAlCatalogo(): void {
+    this.seguirComprando.emit();
+    void this.router.navigate(['/catalogo']);
+  }
+
+  cerrarCarrito(): void {
+    this.cerrar.emit();
+    void this.router.navigate(['/catalogo']);
+  }
+
   onProcederPago(): void {
     if (!this.items.length) {
       this.mensajeCarrito = 'Tu carrito está vacío.';
@@ -131,8 +129,9 @@ export class Carrito {
     }
     this.procederAlPago.emit({
       items: this.items,
-      totalEstimado: this.totalEstimado
+      totalEstimado: this.totalEstimado,
     });
     this.mensajeCarrito = `Listo para pasar al checkout con un total estimado de $${this.totalEstimado}.`;
+    void this.router.navigate(['/pago']);
   }
 }

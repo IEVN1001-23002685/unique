@@ -41,9 +41,7 @@ export class Tablero {
   protected readonly busqueda = signal('');
   protected readonly cancelando = signal<OrdenVista | null>(null);
 
-  protected readonly filtradas = computed(() =>
-    this.servicio.filtrar(this.tab(), this.busqueda()),
-  );
+  protected readonly filtradas = computed(() => this.servicio.filtrar(this.tab(), this.busqueda()));
   protected readonly indicadores = computed(() => this.servicio.indicadores());
 
   protected alBuscar(evento: Event): void {

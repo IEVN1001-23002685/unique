@@ -40,7 +40,9 @@
           [attr.aria-invalid]="esInvalido('cantidadContada')"
         />
         @if (esInvalido('cantidadContada')) {
-          <span class="campo__error">Captura un número mayor o igual a cero con hasta 4 decimales.</span>
+          <span class="campo__error"
+            >Captura un número mayor o igual a cero con hasta 4 decimales.</span
+          >
         }
       </label>
       <label class="campo">
@@ -52,7 +54,9 @@
           }
         </select>
         @if (esInvalido('motivo')) {
-          <span class="campo__error">El motivo es obligatorio para dejar rastro del movimiento.</span>
+          <span class="campo__error"
+            >El motivo es obligatorio para dejar rastro del movimiento.</span
+          >
         }
       </label>
       <label class="campo campo--casilla">
@@ -80,7 +84,10 @@
         </div>
         <div>
           <dt>Disponible proyectado</dt>
-          <dd>{{ redondear(vista.disponible + diferencia()) | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}</dd>
+          <dd>
+            {{ redondear(vista.disponible + diferencia()) | number: '1.0-4' : 'es-MX' }}
+            {{ vista.material.unidadBase }}
+          </dd>
         </div>
         <div>
           <dt>Lotes del material</dt>
@@ -107,10 +114,22 @@
     <section class="tarjeta bloque resultado" aria-live="polite">
       <h2 class="titulo-section">{{ visto.movimiento.documento }} · vista previa</h2>
       <dl class="lector">
-        <div><dt>Tipo de movimiento</dt><dd>{{ visto.movimiento.tipo }}</dd></div>
-        <div><dt>Diferencia</dt><dd>{{ visto.diferencia | number: '1.0-4' : 'es-MX' }}</dd></div>
-        <div><dt>Lote PEPS afectado</dt><dd>{{ visto.loteAfectado ?? 'Sin lote (sobrante)' }}</dd></div>
-        <div><dt>Motivo</dt><dd>{{ visto.movimiento.motivo }}</dd></div>
+        <div>
+          <dt>Tipo de movimiento</dt>
+          <dd>{{ visto.movimiento.tipo }}</dd>
+        </div>
+        <div>
+          <dt>Diferencia</dt>
+          <dd>{{ visto.diferencia | number: '1.0-4' : 'es-MX' }}</dd>
+        </div>
+        <div>
+          <dt>Lote PEPS afectado</dt>
+          <dd>{{ visto.loteAfectado ?? 'Sin lote (sobrante)' }}</dd>
+        </div>
+        <div>
+          <dt>Motivo</dt>
+          <dd>{{ visto.movimiento.motivo }}</dd>
+        </div>
       </dl>
 
       @if (visto.merma; as merma) {
@@ -124,7 +143,8 @@
 
       <p class="nota nota--advertencia">
         El ajuste y su movimiento viven solo en memoria. Flask debe aplicar PEPS sobre los lotes,
-        conservar la bitácora del movimiento y, si aplica, crear la merma en M17 con Idempotency-Key.
+        conservar la bitácora del movimiento y, si aplica, crear la merma en M17 con
+        Idempotency-Key.
       </p>
     </section>
   }

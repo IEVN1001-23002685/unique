@@ -21,10 +21,15 @@
         <span class="linea__numero" aria-hidden="true">{{ i + 1 }}</span>
         <label class="campo">
           Variante
-          <select class="campo__entrada" formControlName="varianteId" (change)="alCambiarVariante(grupo)">
+          <select
+            class="campo__entrada"
+            formControlName="varianteId"
+            (change)="alCambiarVariante(grupo)"
+          >
             @for (opcion of opciones(); track opcion.sku) {
               <option [value]="opcion.varianteId">
-                {{ opcion.sku }} · {{ opcion.nombreProducto }} · {{ opcion.talla }} / {{ opcion.color }}
+                {{ opcion.sku }} · {{ opcion.nombreProducto }} · {{ opcion.talla }} /
+                {{ opcion.color }}
               </option>
             }
           </select>
@@ -69,7 +74,11 @@
       </label>
       <label class="campo">
         Notas de la orden (opcional)
-        <input class="campo__entrada" formControlName="notas" placeholder="Ej. Prioridad por campaña" />
+        <input
+          class="campo__entrada"
+          formControlName="notas"
+          placeholder="Ej. Prioridad por campaña"
+        />
       </label>
     </div>
 
@@ -98,7 +107,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Materiales estimados por la receta copiada</caption>
+          <caption class="sr-only">
+            Materiales estimados por la receta copiada
+          </caption>
           <thead>
             <tr>
               <th scope="col">Material</th>

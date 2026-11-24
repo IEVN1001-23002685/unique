@@ -196,6 +196,10 @@ export class DetalleVenta {
     this.accion.set(null);
   }
 
+  protected cerrarAccion(): void {
+    this.accion.set(null);
+  }
+
   protected descargarComprobante(): void {
     const venta = this.venta();
     if (!venta) {

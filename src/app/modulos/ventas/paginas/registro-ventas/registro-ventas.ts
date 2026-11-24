@@ -63,9 +63,7 @@ export class RegistroVentas {
       .filter((venta) => {
         const coincidePeriodo =
           periodo === 'TODOS' ||
-          (periodo === 'HOY'
-            ? venta.fecha.startsWith(hoy)
-            : venta.fecha.startsWith(mes));
+          (periodo === 'HOY' ? venta.fecha.startsWith(hoy) : venta.fecha.startsWith(mes));
         const coincideCanal = canal === 'TODOS' || venta.canal === canal;
         const coincideEstado = estado === 'TODOS' || venta.estadoPago === estado;
         const coincideTexto =
@@ -138,8 +136,7 @@ export class RegistroVentas {
       return;
     }
 
-    const escapar = (valor: string | number): string =>
-      `"${String(valor).replace(/"/g, '""')}"`;
+    const escapar = (valor: string | number): string => `"${String(valor).replace(/"/g, '""')}"`;
     const cabecera = [
       'Folio',
       'Cliente',
@@ -158,9 +155,7 @@ export class RegistroVentas {
       venta.estadoPago,
       venta.estadoPedido,
     ]);
-    const contenido = [cabecera, ...cuerpo]
-      .map((fila) => fila.map(escapar).join(','))
-      .join('\r\n');
+    const contenido = [cabecera, ...cuerpo].map((fila) => fila.map(escapar).join(',')).join('\r\n');
     const url = URL.createObjectURL(
       new Blob([`\uFEFF${contenido}`], { type: 'text/csv;charset=utf-8;' }),
     );

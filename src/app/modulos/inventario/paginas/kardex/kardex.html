@@ -69,16 +69,28 @@
       </label>
       <label class="campo">
         Desde
-        <input class="campo__entrada" type="date" [value]="desde()" (change)="alCambiarDesde($event)" />
+        <input
+          class="campo__entrada"
+          type="date"
+          [value]="desde()"
+          (change)="alCambiarDesde($event)"
+        />
       </label>
       <label class="campo">
         Hasta
-        <input class="campo__entrada" type="date" [value]="hasta()" (change)="alCambiarHasta($event)" />
+        <input
+          class="campo__entrada"
+          type="date"
+          [value]="hasta()"
+          (change)="alCambiarHasta($event)"
+        />
       </label>
     </div>
 
     <div class="form-acciones kardex__acciones">
-      <button type="button" class="boton boton--secundario" (click)="limpiar()">Limpiar filtros</button>
+      <button type="button" class="boton boton--secundario" (click)="limpiar()">
+        Limpiar filtros
+      </button>
     </div>
 
     @if (movimientos().length === 0) {
@@ -89,7 +101,9 @@
     } @else {
       <div class="tabla-contenedor tabla-contenedor--ancha">
         <table class="tabla">
-          <caption class="sr-only">Movimientos de inventario de materia prima</caption>
+          <caption class="sr-only">
+            Movimientos de inventario de materia prima
+          </caption>
           <thead>
             <tr>
               <th scope="col">Fecha</th>
@@ -109,8 +123,12 @@
               <tr>
                 <td data-etiqueta="Fecha" class="celda-numero">{{ movimiento.fecha }}</td>
                 <td data-etiqueta="Material">
-                  <span class="celda-principal">{{ servicio.nombreMaterial(movimiento.materialId) }}</span>
-                  <span class="celda-secundaria">{{ servicio.obtenerMaterial(movimiento.materialId)?.unidadBase }}</span>
+                  <span class="celda-principal">{{
+                    servicio.nombreMaterial(movimiento.materialId)
+                  }}</span>
+                  <span class="celda-secundaria">{{
+                    servicio.obtenerMaterial(movimiento.materialId)?.unidadBase
+                  }}</span>
                 </td>
                 <td data-etiqueta="Color">{{ movimiento.color }}</td>
                 <td data-etiqueta="Lote">{{ movimiento.loteFolio ?? 'Sin lote' }}</td>
@@ -138,8 +156,9 @@
     }
 
     <p class="nota">
-      Solo lectura: los movimientos no se editan ni se eliminan. Las cantidades negativas son salidas
-      por consumo, merma o ajuste a la baja; las positivas son entradas, sobrantes o reversas.
+      Solo lectura: los movimientos no se editan ni se eliminan. Las cantidades negativas son
+      salidas por consumo, merma o ajuste a la baja; las positivas son entradas, sobrantes o
+      reversas.
     </p>
   </div>
 </section>

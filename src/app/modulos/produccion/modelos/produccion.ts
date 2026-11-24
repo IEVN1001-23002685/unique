@@ -8,25 +8,14 @@
 export type TonoSemaforo = 'VERDE' | 'AMBAR' | 'ROJO';
 
 export type EstadoOrden =
-  | 'PLANEADA'
-  | 'LISTA'
-  | 'EN_PROCESO'
-  | 'EN_REVISION'
-  | 'CERRADA'
-  | 'CANCELADA';
+  'PLANEADA' | 'LISTA' | 'EN_PROCESO' | 'EN_REVISION' | 'CERRADA' | 'CANCELADA';
 
 export type OrigenOrden = 'PEDIDO' | 'STOCK_MINIMO' | 'MANUAL';
 
 export type EstadoMaterial = 'COMPLETO' | 'PARCIAL' | 'FALTANTE';
 
 /** Etapas de merma documentadas en M16/M17 (sin cuarentena). */
-export type EtapaMerma =
-  | 'CORTE'
-  | 'TEJIDO'
-  | 'BORDADO'
-  | 'CONFECCION'
-  | 'ACABADOS'
-  | 'ALMACEN';
+export type EtapaMerma = 'CORTE' | 'TEJIDO' | 'BORDADO' | 'CONFECCION' | 'ACABADOS' | 'ALMACEN';
 
 export interface LineaOrden {
   id: number;
@@ -190,13 +179,7 @@ export interface ResultadoCrearOrden extends ResultadoAccion {
 }
 
 export type FiltroTablero =
-  | 'TODAS'
-  | 'ROJAS'
-  | 'AMBAR'
-  | 'VERDES'
-  | 'EN_PROCESO'
-  | 'EN_REVISION'
-  | 'CERRADAS';
+  'TODAS' | 'ROJAS' | 'AMBAR' | 'VERDES' | 'EN_PROCESO' | 'EN_REVISION' | 'CERRADAS';
 
 export interface OpcionFiltro {
   clave: FiltroTablero;

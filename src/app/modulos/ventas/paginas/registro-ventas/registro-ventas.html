@@ -14,15 +14,21 @@
 
   <div class="indicadores" aria-label="Indicadores de ventas">
     <div class="indicador">
-      <span class="indicador__numero">{{ indicadores().dia | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</span>
+      <span class="indicador__numero">{{
+        indicadores().dia | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+      }}</span>
       <span class="indicador__etiqueta">Ventas del día</span>
     </div>
     <div class="indicador">
-      <span class="indicador__numero">{{ indicadores().mes | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</span>
+      <span class="indicador__numero">{{
+        indicadores().mes | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+      }}</span>
       <span class="indicador__etiqueta">Ventas del mes</span>
     </div>
     <div class="indicador" data-tono="info">
-      <span class="indicador__numero">{{ indicadores().ticket | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</span>
+      <span class="indicador__numero">{{
+        indicadores().ticket | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+      }}</span>
       <span class="indicador__etiqueta">Ticket promedio</span>
     </div>
     <div class="indicador" data-tono="adv">
@@ -99,7 +105,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Registro de ventas de UNIQUE</caption>
+          <caption class="sr-only">
+            Registro de ventas de UNIQUE
+          </caption>
           <thead>
             <tr>
               <th scope="col">Folio</th>
@@ -122,7 +130,9 @@
                   <span class="celda-principal">{{ venta.cliente }}</span>
                   <span class="celda-secundaria">{{ venta.lineas.length }} línea(s)</span>
                 </td>
-                <td data-etiqueta="Fecha">{{ venta.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}</td>
+                <td data-etiqueta="Fecha">
+                  {{ venta.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+                </td>
                 <td data-etiqueta="Canal">{{ venta.canal }}</td>
                 <td data-etiqueta="Total">
                   {{ venta.total | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}

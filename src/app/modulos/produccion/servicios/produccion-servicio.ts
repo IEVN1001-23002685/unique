@@ -33,11 +33,7 @@ import type {
   RevisionCalidad,
   TonoSemaforo,
 } from '../modelos/produccion';
-import {
-  ETIQUETAS_ESTADO,
-  ETIQUETAS_ORIGEN,
-  ETIQUETAS_TONO,
-} from '../modelos/produccion';
+import { ETIQUETAS_ESTADO, ETIQUETAS_ORIGEN, ETIQUETAS_TONO } from '../modelos/produccion';
 
 export { hoyISO, redondear4 };
 
@@ -68,12 +64,16 @@ export class ProduccionServicio {
   readonly revisiones = this.listaRevisiones.asReadonly();
 
   /** Proyecciones derivadas: semáforo, faltantes y métricas se recalculan solos. */
-  readonly vistas = computed<OrdenVista[]>(() => this.lista().map((orden) => this.proyectar(orden)));
+  readonly vistas = computed<OrdenVista[]>(() =>
+    this.lista().map((orden) => this.proyectar(orden)),
+  );
 
   private proyectar(orden: OrdenProduccion): OrdenVista {
     const hoy = hoyISO();
     const materiales = orden.materiales.map((material) => this.proyectarMaterial(material));
-    const completos = materiales.filter((material) => material.estadoMaterial === 'COMPLETO').length;
+    const completos = materiales.filter(
+      (material) => material.estadoMaterial === 'COMPLETO',
+    ).length;
     const faltantes = materiales.filter((material) => material.faltante > TOLERANCIA);
     const vencida =
       orden.fechaRequerida !== null &&
@@ -174,20 +174,24 @@ export class ProduccionServicio {
   /** Consulta de solo lectura a M14: la orden retrasada tiene prioridad sobre la requisición. */
   private coberturaDeCompra(material: MaterialOrden): CoberturaCompra {
     const hoy = hoyISO();
-    const requisicion = this.compras.requisiciones().some(
-      (item) =>
-        !['ATENDIDA', 'CANCELADA'].includes(item.estado) &&
-        item.lineas.some(
-          (linea) =>
-            linea.materialId === material.materialId &&
-            (linea.color === null || linea.color === material.color),
-        ),
-    );
-    const ordenes = this.compras.ordenes().filter(
-      (item) =>
-        ['EMITIDA', 'PARCIAL'].includes(item.estado) &&
-        item.lineas.some((linea) => linea.materialId === material.materialId),
-    );
+    const requisicion = this.compras
+      .requisiciones()
+      .some(
+        (item) =>
+          !['ATENDIDA', 'CANCELADA'].includes(item.estado) &&
+          item.lineas.some(
+            (linea) =>
+              linea.materialId === material.materialId &&
+              (linea.color === null || linea.color === material.color),
+          ),
+      );
+    const ordenes = this.compras
+      .ordenes()
+      .filter(
+        (item) =>
+          ['EMITIDA', 'PARCIAL'].includes(item.estado) &&
+          item.lineas.some((linea) => linea.materialId === material.materialId),
+      );
     const retrasada = ordenes.some(
       (item) => item.fechaPrometida !== null && item.fechaPrometida < hoy,
     );
@@ -335,13 +339,13 @@ export class ProduccionServicio {
     origen: OrdenProduccion['origen'] = 'MANUAL',
   ): ResultadoCrearOrden {
     const lineasValidas = datos.lineas.filter(
-      (linea) =>
-        Number.isInteger(linea.cantidad) &&
-        linea.cantidad > 0 &&
-        linea.sku.trim() !== '',
+      (linea) => Number.isInteger(linea.cantidad) && linea.cantidad > 0 && linea.sku.trim() !== '',
     );
     if (lineasValidas.length === 0) {
-      return { ok: false, mensaje: 'Agrega al menos una variante con cantidad entera mayor a cero.' };
+      return {
+        ok: false,
+        mensaje: 'Agrega al menos una variante con cantidad entera mayor a cero.',
+      };
     }
 
     const sumadas: string[] = [];
@@ -391,7 +395,8 @@ export class ProduccionServicio {
       folio,
       origen,
       estado: 'PLANEADA',
-      fechaRequerida: datos.fechaRequerida && datos.fechaRequerida !== '' ? datos.fechaRequerida : null,
+      fechaRequerida:
+        datos.fechaRequerida && datos.fechaRequerida !== '' ? datos.fechaRequerida : null,
       iniciadaEn: null,
       cerradaEn: null,
       creadaPor: 'Operativo · demostración',
@@ -451,9 +456,7 @@ export class ProduccionServicio {
             const indice = materiales.indexOf(actual);
             materiales[indice] = {
               ...actual,
-              cantidadRequerida: redondear4(
-                actual.cantidadRequerida + extra.cantidadRequerida,
-              ),
+              cantidadRequerida: redondear4(actual.cantidadRequerida + extra.cantidadRequerida),
             };
           } else {
             materiales.push({
@@ -471,7 +474,12 @@ export class ProduccionServicio {
   reservar(id: number): ResultadoReserva {
     const orden = this.lista().find((item) => item.id === id);
     if (!orden) {
-      return { ok: false, mensaje: 'No se encontró la orden.', materialesReservados: 0, materialesCompletos: 0 };
+      return {
+        ok: false,
+        mensaje: 'No se encontró la orden.',
+        materialesReservados: 0,
+        materialesCompletos: 0,
+      };
     }
     if (!['PLANEADA', 'LISTA'].includes(orden.estado)) {
       return {
@@ -567,7 +575,9 @@ export class ProduccionServicio {
 
     const cambio = vista.materiales.find(
       (material) =>
-        this.disponibleEnM15(material.materialId, material.color) + material.cantidadReservada + TOLERANCIA <
+        this.disponibleEnM15(material.materialId, material.color) +
+          material.cantidadReservada +
+          TOLERANCIA <
         material.cantidadRequerida,
     );
     if (cambio) {
@@ -629,9 +639,7 @@ export class ProduccionServicio {
       const dictamen = porLinea.get(lineaOrden.id);
       // El reproceso vuelve a revisión: sigue pendiente hasta aprobarse o mermarse.
       const pendiente =
-        lineaOrden.cantidadPlaneada -
-        lineaOrden.cantidadAprobada -
-        lineaOrden.cantidadMerma;
+        lineaOrden.cantidadPlaneada - lineaOrden.cantidadAprobada - lineaOrden.cantidadMerma;
       if (!dictamen) {
         return { ok: false, mensaje: `Falta el dictamen de ${lineaOrden.sku}.` };
       }
@@ -646,9 +654,11 @@ export class ProduccionServicio {
           mensaje: `Completa la lista de verificación de ${lineaOrden.sku} antes de dictaminar.`,
         };
       }
-      const total =
-        dictamen.cantidadAprobada + dictamen.cantidadMerma + dictamen.cantidadReproceso;
-      if (dictamen.cantidadRevisada > pendiente + TOLERANCIA || total > dictamen.cantidadRevisada + TOLERANCIA) {
+      const total = dictamen.cantidadAprobada + dictamen.cantidadMerma + dictamen.cantidadReproceso;
+      if (
+        dictamen.cantidadRevisada > pendiente + TOLERANCIA ||
+        total > dictamen.cantidadRevisada + TOLERANCIA
+      ) {
         return {
           ok: false,
           mensaje: `Las cantidades de ${lineaOrden.sku} no pueden superar lo revisado ni lo pendiente.`,
@@ -796,7 +806,8 @@ export class ProduccionServicio {
 
       return {
         sku,
-        nombreProducto: opcion?.nombreProducto ?? demanda?.nombreProducto ?? nombreProductoDeSku(sku),
+        nombreProducto:
+          opcion?.nombreProducto ?? demanda?.nombreProducto ?? nombreProductoDeSku(sku),
         talla: opcion?.talla ?? demanda?.talla ?? 'UN',
         color: opcion?.color ?? demanda?.color ?? colorDeSku(sku),
         disponible: redondear4(disponible),

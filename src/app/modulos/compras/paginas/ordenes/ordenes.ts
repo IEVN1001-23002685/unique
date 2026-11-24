@@ -10,7 +10,14 @@ import { ComprasServicio } from '../../servicios/compras-servicio';
 
 @Component({
   selector: 'app-ordenes',
-  imports: [CurrencyPipe, DatePipe, RouterLink, ChipEstadoCompra, NavegacionCompras, ModalConfirmacion],
+  imports: [
+    CurrencyPipe,
+    DatePipe,
+    RouterLink,
+    ChipEstadoCompra,
+    NavegacionCompras,
+    ModalConfirmacion,
+  ],
   templateUrl: './ordenes.html',
   styleUrls: ['./ordenes.css', '../../compras-compartido.css'],
 })
