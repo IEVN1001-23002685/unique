@@ -33,11 +33,7 @@ export class FormularioProveedor {
     'Crédito 30 días',
     'Crédito 45 días',
   ];
-  protected readonly estatusPosibles: EstadoProveedor[] = [
-    'ACTIVO',
-    'EN_REVISION',
-    'INACTIVO',
-  ];
+  protected readonly estatusPosibles: EstadoProveedor[] = ['ACTIVO', 'EN_REVISION', 'INACTIVO'];
 
   protected readonly formulario = this.fb.nonNullable.group({
     razonSocial: ['', [Validators.required, Validators.minLength(3)]],

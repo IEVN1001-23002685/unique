@@ -151,7 +151,9 @@ export function crearMovimientosSimulados(filas: readonly FilaInventario[]): Mov
   return movimientos.sort((a, b) => b.fecha.localeCompare(a.fecha));
 }
 
-export function crearAlertasSimuladas(filas: readonly FilaInventario[]): AlertaInventarioProducto[] {
+export function crearAlertasSimuladas(
+  filas: readonly FilaInventario[],
+): AlertaInventarioProducto[] {
   return filas
     .filter((fila) => fila.existencia - fila.reservado <= fila.stockMinimo)
     .slice(0, 3)

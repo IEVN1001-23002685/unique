@@ -1,0 +1,140 @@
+<section class="vista">
+  <app-navegacion-inventario />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 5 · Producción y merma · M15</p>
+      <h1 class="titulo">Lotes de material</h1>
+      <p class="subtitulo">
+        Cada recepción de M14 crea un lote con folio, proveedor, fecha, medidas y costo real. El
+        consumo se descuenta por PEPS: primero el lote más antiguo con disponible.
+      </p>
+    </div>
+    <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra barra--lotes">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por folio de lote"
+          aria-label="Buscar lotes"
+        />
+      </label>
+      <div class="filtros-selects">
+        <label class="campo campo--compacto">
+          Material
+          <select
+            class="campo__entrada"
+            [value]="materialId()"
+            (change)="alCambiarMaterial($event)"
+          >
+            <option value="0">Todos los materiales</option>
+            @for (material of materiales(); track material.id) {
+              <option [value]="material.id">{{ material.codigo }} · {{ material.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="campo campo--compacto">
+          Color
+          <select class="campo__entrada" [value]="color()" (change)="alCambiarColor($event)">
+            <option value="">Todos los colores</option>
+            @for (opcion of colores(); track opcion) {
+              <option [value]="opcion">{{ opcion }}</option>
+            }
+          </select>
+        </label>
+        <button type="button" class="boton boton--secundario" (click)="limpiar()">Limpiar</button>
+      </div>
+    </div>
+
+    @if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>No hay lotes con estos filtros.</strong>
+        <p>Registra una recepción en M14 o cambia el material y el color seleccionados.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor tabla-contenedor--ancha">
+        <table class="tabla">
+          <caption class="sr-only">
+            Lotes de materiales de UNIQUE
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Lote</th>
+              <th scope="col">Material</th>
+              <th scope="col">Proveedor</th>
+              <th scope="col">Entrada</th>
+              <th scope="col" class="celda-derecha">Recibida</th>
+              <th scope="col" class="celda-derecha">Disponible</th>
+              <th scope="col" class="celda-derecha">Costo unitario</th>
+              <th scope="col">Medidas</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (lote of filtrados(); track lote.id) {
+              <tr>
+                <td data-etiqueta="Lote">
+                  <span class="celda-principal">{{ lote.folio }}</span>
+                  @if (servicio.esPrimerLotePEPS(lote)) {
+                    <span class="etiqueta etiqueta--exito">Primero PEPS</span>
+                  }
+                </td>
+                <td data-etiqueta="Material">
+                  <span class="celda-principal">{{
+                    servicio.nombreMaterial(lote.materialId)
+                  }}</span>
+                  <span class="celda-secundaria">{{ lote.color }}</span>
+                </td>
+                <td data-etiqueta="Proveedor">{{ servicio.nombreProveedor(lote.proveedorId) }}</td>
+                <td data-etiqueta="Entrada" class="celda-numero">{{ lote.fechaEntrada }}</td>
+                <td data-etiqueta="Recibida" class="celda-numero celda-derecha">
+                  {{ lote.cantidadRecibida | number: '1.0-4' : 'es-MX' }}
+                  <span class="celda-secundaria">{{
+                    servicio.obtenerMaterial(lote.materialId)?.unidadBase
+                  }}</span>
+                </td>
+                <td data-etiqueta="Disponible" class="celda-numero celda-derecha">
+                  <strong>{{ lote.cantidadDisponible | number: '1.0-4' : 'es-MX' }}</strong>
+                </td>
+                <td data-etiqueta="Costo unitario" class="celda-numero celda-derecha">
+                  {{ lote.costoUnitario | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Medidas">{{ lote.medidas }}</td>
+                <td data-etiqueta="Estado">
+                  <span class="etiqueta" [class.etiqueta--neutro]="lote.estado === 'AGOTADO'">
+                    {{ lote.estado === 'DISPONIBLE' ? 'Disponible' : 'Agotado' }}
+                  </span>
+                </td>
+                <td data-etiqueta="Acciones">
+                  <a
+                    class="accion"
+                    routerLink="/inventario-mp/kardex"
+                    [queryParams]="{ lote: lote.folio }"
+                  >
+                    Ver movimientos
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      El físico de existencias es la suma de los disponibles de sus lotes. Los folios, el costo real
+      y las medidas los crea M14 al recibir; M15 solo los consulta. Los movimientos históricos no se
+      editan ni se eliminan.
+    </p>
+  </div>
+</section>

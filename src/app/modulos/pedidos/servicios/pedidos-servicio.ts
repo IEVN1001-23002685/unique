@@ -154,7 +154,8 @@ export class PedidosServicio {
     const cambios = new Map<string, Pedido>();
     const ahora = fechaAhoraIso();
     let siguienteId = this.siguienteEventoId();
-    let siguientePedidoId = this.lista().reduce((maximo, pedido) => Math.max(maximo, pedido.id), 0) + 1;
+    let siguientePedidoId =
+      this.lista().reduce((maximo, pedido) => Math.max(maximo, pedido.id), 0) + 1;
 
     for (const venta of this.ventas.ventas()) {
       const pedido = this.lista().find((item) => item.folio === venta.pedidoFolio);
@@ -231,8 +232,7 @@ export class PedidosServicio {
   horasEnEstado(pedido: Pedido): number {
     const fin = pedido.entregadoEn ?? pedido.canceladoEn;
     const referencia = fin ?? fechaAhoraIso();
-    const diferencia =
-      new Date(referencia).getTime() - new Date(pedido.estadoDesde).getTime();
+    const diferencia = new Date(referencia).getTime() - new Date(pedido.estadoDesde).getTime();
     return Math.max(0, diferencia / 3_600_000);
   }
 
@@ -441,10 +441,12 @@ export class PedidosServicio {
   }
 
   private siguienteEventoId(): number {
-    return this.lista().reduce(
-      (maximo, pedido) =>
-        pedido.eventos.reduce((interno, evento) => Math.max(interno, evento.id), maximo),
-      0,
-    ) + 1;
+    return (
+      this.lista().reduce(
+        (maximo, pedido) =>
+          pedido.eventos.reduce((interno, evento) => Math.max(interno, evento.id), maximo),
+        0,
+      ) + 1
+    );
   }
 }

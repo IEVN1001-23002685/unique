@@ -2,13 +2,7 @@
 
 export type EstadoProveedor = 'ACTIVO' | 'EN_REVISION' | 'INACTIVO';
 
-export type CategoriaMaterial =
-  | 'Tela'
-  | 'Hilo'
-  | 'Estabilizador'
-  | 'Avío'
-  | 'Etiqueta'
-  | 'Empaque';
+export type CategoriaMaterial = 'Tela' | 'Hilo' | 'Estabilizador' | 'Avío' | 'Etiqueta' | 'Empaque';
 
 /** Catálogo de materiales de M15, consultado aquí solo como referencia. */
 export interface MaterialReferencia {

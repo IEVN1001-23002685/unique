@@ -12,7 +12,9 @@
           {{ pedido.cliente }} · Creado el
           {{ pedido.fechaCreacion | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }} · Venta
           @if (servicio.tieneVentaRegistrada(pedido.ventaFolio)) {
-            <a class="enlace" [routerLink]="['/ventas', pedido.ventaFolio]">{{ pedido.ventaFolio }}</a>
+            <a class="enlace" [routerLink]="['/ventas', pedido.ventaFolio]">{{
+              pedido.ventaFolio
+            }}</a>
           } @else {
             <span>{{ pedido.ventaFolio }} (solo demo)</span>
           }
@@ -31,8 +33,8 @@
 
     @if (pedido.estado === 'RECIBIDO' && pedido.estadoPago === 'PENDIENTE') {
       <div class="aviso" role="status">
-        <strong>Pago pendiente.</strong> El pedido permanece en RECIBIDO hasta que M08 valide el pago.
-        Pasadas 2 horas se genera la alerta PAGO_PENDIENTE en M21.
+        <strong>Pago pendiente.</strong> El pedido permanece en RECIBIDO hasta que M08 valide el
+        pago. Pasadas 2 horas se genera la alerta PAGO_PENDIENTE en M21.
       </div>
     }
 
@@ -40,8 +42,8 @@
       <div class="aviso aviso--error" role="status">
         <strong>Pedido cancelado.</strong>
         {{ pedido.motivoCancelacion }} · Cancelado por {{ pedido.canceladoPor }} el
-        {{ pedido.canceladoEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}. La liberación de reservas
-        y el reembolso real quedan pendientes de integración.
+        {{ pedido.canceladoEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}. La liberación de
+        reservas y el reembolso real quedan pendientes de integración.
       </div>
     }
 
@@ -138,7 +140,12 @@
       </div>
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Líneas del pedido {{ pedido.folio }}</caption>
+          <caption class="sr-only">
+            Líneas del pedido
+            {{
+              pedido.folio
+            }}
+          </caption>
           <thead>
             <tr>
               <th scope="col">SKU</th>
@@ -153,7 +160,9 @@
           <tbody>
             @for (linea of pedido.lineas; track linea.sku) {
               <tr>
-                <td data-etiqueta="SKU"><span class="mono">{{ linea.sku }}</span></td>
+                <td data-etiqueta="SKU">
+                  <span class="mono">{{ linea.sku }}</span>
+                </td>
                 <td data-etiqueta="Prenda">
                   <span class="celda-principal">{{ linea.nombreProducto }}</span>
                   <span class="celda-secundaria">Talla {{ linea.talla }} · {{ linea.color }}</span>
@@ -161,7 +170,9 @@
                 <td data-etiqueta="Cant.">{{ linea.cantidad }}</td>
                 <td data-etiqueta="Reservada">{{ linea.cantReservada }}</td>
                 <td data-etiqueta="Pendiente">
-                  <span [class.dato-alerta]="linea.cantPendiente > 0">{{ linea.cantPendiente }}</span>
+                  <span [class.dato-alerta]="linea.cantPendiente > 0">{{
+                    linea.cantPendiente
+                  }}</span>
                 </td>
                 <td data-etiqueta="Preparada">{{ linea.cantPreparada }}</td>
                 <td data-etiqueta="Orden / estimada">
@@ -268,7 +279,7 @@
     </div>
   }
 
-  @if (cancelando) {
+  @if (cancelando()) {
     <app-modal-cancelar-pedido
       [folio]="folio"
       (confirmar)="cancelar($event)"

@@ -43,7 +43,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Historial de pedidos cancelados</caption>
+          <caption class="sr-only">
+            Historial de pedidos cancelados
+          </caption>
           <thead>
             <tr>
               <th scope="col">Folio</th>
@@ -58,7 +60,9 @@
           <tbody>
             @for (pedido of filtrados(); track pedido.folio) {
               <tr>
-                <td data-etiqueta="Folio"><span class="mono">{{ pedido.folio }}</span></td>
+                <td data-etiqueta="Folio">
+                  <span class="mono">{{ pedido.folio }}</span>
+                </td>
                 <td data-etiqueta="Cliente">
                   <span class="celda-principal">{{ pedido.cliente }}</span>
                   <span class="celda-secundaria">{{ servicio.articulos(pedido) }} artículo(s)</span>

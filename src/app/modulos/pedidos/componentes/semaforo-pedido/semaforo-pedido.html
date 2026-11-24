@@ -1,4 +1,8 @@
-<span class="semaforo" [attr.data-tono]="tono()" [attr.aria-label]="'Tiempo en el estado: ' + texto()">
+<span
+  class="semaforo"
+  [attr.data-tono]="tono()"
+  [attr.aria-label]="'Tiempo en el estado: ' + texto()"
+>
   <span class="semaforo__circulo" aria-hidden="true"></span>
   <span>{{ texto() }}</span>
 </span>

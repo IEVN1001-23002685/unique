@@ -18,13 +18,7 @@ import type {
   Receta,
   ResultadoM11,
 } from '../modelos/receta';
-import {
-  cantidadBruta,
-  costear,
-  margenReal,
-  prendasPosibles,
-  redondear,
-} from './calculos-receta';
+import { cantidadBruta, costear, margenReal, prendasPosibles, redondear } from './calculos-receta';
 
 /**
  * Estado de M11 en memoria. Sustituir por HttpClient cuando Flask esté disponible.
@@ -47,7 +41,10 @@ export class RecetasServicio {
   /** Productos de M10 como instantánea de solo lectura (nombre, tallas y precio). */
   private readonly catalogo: readonly ProductoMaestro[] = PRODUCTOS_MAESTRO_SIMULADOS;
 
-  readonly productos = this.catalogo.map((producto) => ({ id: producto.id, nombre: producto.nombre }));
+  readonly productos = this.catalogo.map((producto) => ({
+    id: producto.id,
+    nombre: producto.nombre,
+  }));
 
   readonly totales = computed(() => {
     const recetas = this.lista();
@@ -102,7 +99,8 @@ export class RecetasServicio {
   recetasDeProducto(productoId: number, talla?: CodigoTalla): Receta[] {
     return this.lista()
       .filter(
-        (receta) => receta.productoId === productoId && (talla === undefined || receta.talla === talla),
+        (receta) =>
+          receta.productoId === productoId && (talla === undefined || receta.talla === talla),
       )
       .sort((a, b) => b.version - a.version);
   }
@@ -148,7 +146,9 @@ export class RecetasServicio {
   disenosPendientes(receta: Receta): string[] {
     return receta.bordados
       .map((bordado) => this.disenoDe(bordado.disenoId))
-      .filter((diseno): diseno is DisenoBordado => diseno !== undefined && diseno.estado === 'PENDIENTE')
+      .filter(
+        (diseno): diseno is DisenoBordado => diseno !== undefined && diseno.estado === 'PENDIENTE',
+      )
       .map((diseno) => diseno.codigo);
   }
 
@@ -212,11 +212,15 @@ export class RecetasServicio {
     if (actual?.estado === 'VIGENTE') {
       return {
         ok: false,
-        mensaje: 'Una receta VIGENTE no se edita: usa «Copiar a borrador» para crear una versión nueva.',
+        mensaje:
+          'Una receta VIGENTE no se edita: usa «Copiar a borrador» para crear una versión nueva.',
       };
     }
     if (actual?.estado === 'ARCHIVADA') {
-      return { ok: false, mensaje: 'Una receta ARCHIVADA no se edita: cópiala a un borrador nuevo.' };
+      return {
+        ok: false,
+        mensaje: 'Una receta ARCHIVADA no se edita: cópiala a un borrador nuevo.',
+      };
     }
 
     const producto = this.productoDe(datos.productoId);
@@ -226,10 +230,11 @@ export class RecetasServicio {
 
     const lineas: LineaReceta[] = datos.lineas.map((linea, indice) => {
       const material = this.materialDe(linea.materialCodigo);
-      const factor = Number.isFinite(linea.factorConsumo) && linea.factorConsumo > 0 ? linea.factorConsumo : 1;
+      const factor =
+        Number.isFinite(linea.factorConsumo) && linea.factorConsumo > 0 ? linea.factorConsumo : 1;
       const merma = Number.isFinite(linea.mermaPct) ? linea.mermaPct : (material?.mermaPct ?? 0);
       return {
-        id: (actual?.lineas[indice]?.id ?? this.siguienteLineaId() + indice),
+        id: actual?.lineas[indice]?.id ?? this.siguienteLineaId() + indice,
         materialCodigo: linea.materialCodigo,
         cantidadNeta: redondear(linea.cantidadNeta, 6),
         unidadCaptura: linea.unidadCaptura,
@@ -241,8 +246,13 @@ export class RecetasServicio {
       };
     });
 
-    if (lineas.some((linea) => linea.cantidadNeta < 0 || linea.mermaPct < 0 || linea.mermaPct >= 100)) {
-      return { ok: false, mensaje: 'Revisa las cantidades y mermas: la merma debe ser menor a 100 %.' };
+    if (
+      lineas.some((linea) => linea.cantidadNeta < 0 || linea.mermaPct < 0 || linea.mermaPct >= 100)
+    ) {
+      return {
+        ok: false,
+        mensaje: 'Revisa las cantidades y mermas: la merma debe ser menor a 100 %.',
+      };
     }
 
     const ahora = new Date().toISOString();
@@ -391,7 +401,8 @@ export class RecetasServicio {
 
     return {
       ok: true,
-      mensaje: 'Versión activada en memoria. La anterior pasó a ARCHIVADA; M10 ya consulta el nuevo costo.',
+      mensaje:
+        'Versión activada en memoria. La anterior pasó a ARCHIVADA; M10 ya consulta el nuevo costo.',
     };
   }
 
@@ -423,7 +434,8 @@ export class RecetasServicio {
     );
     return {
       ok: true,
-      mensaje: 'Receta archivada. Si era vigente, el producto dejará de cumplir la regla de activación en M10.',
+      mensaje:
+        'Receta archivada. Si era vigente, el producto dejará de cumplir la regla de activación en M10.',
     };
   }
 
@@ -435,7 +447,10 @@ export class RecetasServicio {
     }
 
     const filas: FilaHistorial[] = [];
-    const claves = new Set([...a.lineas.map((l) => l.materialCodigo), ...b.lineas.map((l) => l.materialCodigo)]);
+    const claves = new Set([
+      ...a.lineas.map((l) => l.materialCodigo),
+      ...b.lineas.map((l) => l.materialCodigo),
+    ]);
     for (const clave of claves) {
       const lineaA = a.lineas.find((linea) => linea.materialCodigo === clave);
       const lineaB = b.lineas.find((linea) => linea.materialCodigo === clave);
@@ -449,8 +464,13 @@ export class RecetasServicio {
         descripcion: this.nombreMaterial(clave),
         detalleA: detalle(lineaA),
         detalleB: detalle(lineaB),
-        estado:
-          !lineaA ? 'NUEVA' : !lineaB ? 'ELIMINADA' : detalle(lineaA) === detalle(lineaB) ? 'IGUAL' : 'CAMBIO',
+        estado: !lineaA
+          ? 'NUEVA'
+          : !lineaB
+            ? 'ELIMINADA'
+            : detalle(lineaA) === detalle(lineaB)
+              ? 'IGUAL'
+              : 'CAMBIO',
       });
     }
 
@@ -472,13 +492,21 @@ export class RecetasServicio {
         id: filas.length + 1,
         clave: 'BORDADOS',
         descripcion: 'Diseños de bordado enlazados',
-        detalleA: a.bordados.map((bordado) => `${this.nombreDiseno(bordado.disenoId)} ×${bordado.aplicaciones}`).join('; ') || '—',
-        detalleB: b.bordados.map((bordado) => `${this.nombreDiseno(bordado.disenoId)} ×${bordado.aplicaciones}`).join('; ') || '—',
+        detalleA:
+          a.bordados
+            .map((bordado) => `${this.nombreDiseno(bordado.disenoId)} ×${bordado.aplicaciones}`)
+            .join('; ') || '—',
+        detalleB:
+          b.bordados
+            .map((bordado) => `${this.nombreDiseno(bordado.disenoId)} ×${bordado.aplicaciones}`)
+            .join('; ') || '—',
         estado:
           a.bordados.length === b.bordados.length &&
-          a.bordados.every((bordado, indice) =>
-            bordado.disenoId === b.bordados[indice]?.disenoId &&
-            bordado.aplicaciones === b.bordados[indice]?.aplicaciones)
+          a.bordados.every(
+            (bordado, indice) =>
+              bordado.disenoId === b.bordados[indice]?.disenoId &&
+              bordado.aplicaciones === b.bordados[indice]?.aplicaciones,
+          )
             ? 'IGUAL'
             : 'CAMBIO',
       },
@@ -558,7 +586,9 @@ export class RecetasServicio {
     if (!diseno) {
       return { ok: false, mensaje: 'No encontramos el diseño.' };
     }
-    const usado = this.lista().some((receta) => receta.bordados.some((bordado) => bordado.disenoId === id));
+    const usado = this.lista().some((receta) =>
+      receta.bordados.some((bordado) => bordado.disenoId === id),
+    );
     if (usado) {
       return {
         ok: false,
@@ -579,7 +609,10 @@ export class RecetasServicio {
 
   private siguienteVersion(productoId: number, talla: CodigoTalla): number {
     return (
-      this.recetasDeProducto(productoId, talla).reduce((maximo, receta) => Math.max(maximo, receta.version), 0) + 1
+      this.recetasDeProducto(productoId, talla).reduce(
+        (maximo, receta) => Math.max(maximo, receta.version),
+        0,
+      ) + 1
     );
   }
 

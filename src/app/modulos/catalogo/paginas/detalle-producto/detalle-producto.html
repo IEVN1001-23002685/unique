@@ -19,20 +19,19 @@
           {{ productoActual.descripcionDetalle ?? productoActual.descripcion }}
         </p>
         <p class="detalle__precio">
-          {{ productoActual.precio | currency: 'USD' : 'symbol' : '1.0-0' }}
+          {{ productoActual.precio | currency: 'MXN' : 'symbol' : '1.2-2' }}
         </p>
 
         <div class="detalle__accion">
-          <!-- Pendiente: el módulo de carrito aún no existe; no se simula una compra -->
-          <button type="button" class="boton-carrito">Agregar al carrito</button>
+          <button type="button" class="boton-carrito" (click)="agregarAlCarrito()">
+            Agregar al carrito
+          </button>
         </div>
       </div>
     </article>
   } @else {
     <div class="detalle__no-encontrado" role="alert">
-      <p class="detalle__no-encontrado-texto">
-        No se encontró el producto solicitado.
-      </p>
+      <p class="detalle__no-encontrado-texto">No se encontró el producto solicitado.</p>
       <a routerLink="/catalogo" class="detalle__enlace">Volver al catálogo</a>
     </div>
   }

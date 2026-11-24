@@ -102,10 +102,7 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     canceladoPor: null,
     preparacionFolio: 'PREP-0481',
     entregaGuia: null,
-    lineas: [
-      linea('HOODIE-M-ROJA', 1, 1, 1),
-      linea('PLAYERA-CH-GRIS', 2, 2, 2),
-    ],
+    lineas: [linea('HOODIE-M-ROJA', 1, 1, 1), linea('PLAYERA-CH-GRIS', 2, 2, 2)],
     eventos: [
       evento(1, 26, 'Sistema', 'Pedido creado a partir de la venta confirmada.', 'RECIBIDO'),
       evento(2, 25, 'Sistema', 'Pago aprobado y líneas reservadas.', 'CONFIRMADO'),
@@ -139,7 +136,13 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     entregaGuia: null,
     lineas: [linea('PANTS-28-CAFE', 1, 0)],
     eventos: [
-      evento(4, 2.5, 'Sistema', 'Venta manual creada; transferencia por validar en M08.', 'RECIBIDO'),
+      evento(
+        4,
+        2.5,
+        'Sistema',
+        'Venta manual creada; transferencia por validar en M08.',
+        'RECIBIDO',
+      ),
     ],
     notas: [],
   },
@@ -166,7 +169,13 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     ],
     eventos: [
       evento(5, 96, 'Sistema', 'Pedido creado y pago recibido.', 'RECIBIDO'),
-      evento(6, 95, 'Sistema', 'Faltó existencia de una prenda; se envió demanda a M16.', 'EN_PRODUCCION'),
+      evento(
+        6,
+        95,
+        'Sistema',
+        'Faltó existencia de una prenda; se envió demanda a M16.',
+        'EN_PRODUCCION',
+      ),
       evento(7, 90, 'Sistema', 'Orden de producción vinculada al pedido.', 'EN_PRODUCCION', false),
     ],
     notas: [],

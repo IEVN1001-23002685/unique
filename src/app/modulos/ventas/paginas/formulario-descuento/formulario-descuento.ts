@@ -99,7 +99,7 @@ export class FormularioDescuento {
       this.avisos.mostrar(
         'error',
         `El límite no puede ser menor a los ${previo.usosActuales} usos ya registrados.`,
-        );
+      );
       return;
     }
 

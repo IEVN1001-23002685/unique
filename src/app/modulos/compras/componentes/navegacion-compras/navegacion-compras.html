@@ -1,0 +1,34 @@
+<nav class="pestanas" aria-label="Pantallas de compras">
+  <a
+    routerLink="/compras"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'requisiciones'"
+    [attr.aria-current]="activa() === 'requisiciones' ? 'page' : null"
+  >
+    Requisiciones
+  </a>
+  <a
+    routerLink="/compras/cotizaciones"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'cotizaciones'"
+    [attr.aria-current]="activa() === 'cotizaciones' ? 'page' : null"
+  >
+    Cotizaciones
+  </a>
+  <a
+    routerLink="/compras/ordenes"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'ordenes'"
+    [attr.aria-current]="activa() === 'ordenes' ? 'page' : null"
+  >
+    Órdenes de compra
+  </a>
+  <a
+    routerLink="/recepciones"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'recepciones'"
+    [attr.aria-current]="activa() === 'recepciones' ? 'page' : null"
+  >
+    Recepciones
+  </a>
+</nav>

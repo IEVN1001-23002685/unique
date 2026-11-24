@@ -6,14 +6,12 @@ export const INVENTARIO_PT_RUTAS: Routes = [
     path: '',
     pathMatch: 'full',
     title: 'Existencias de producto terminado · UNIQUE',
-    loadComponent: () =>
-      import('./paginas/existencias/existencias').then((c) => c.Existencias),
+    loadComponent: () => import('./paginas/existencias/existencias').then((c) => c.Existencias),
   },
   {
     path: 'movimientos',
     title: 'Movimientos de producto terminado · UNIQUE',
-    loadComponent: () =>
-      import('./paginas/movimientos/movimientos').then((c) => c.Movimientos),
+    loadComponent: () => import('./paginas/movimientos/movimientos').then((c) => c.Movimientos),
   },
   {
     path: 'ajuste',

@@ -1,13 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
-import type {
-  EvaluacionProveedor,
-  MaterialProveedor,
-  Proveedor,
-} from '../modelos/proveedor';
-import {
-  EVALUACIONES_SIMULADAS,
-  PROVEEDORES_SIMULADOS,
-} from '../datos-simulados/proveedores';
+import type { EvaluacionProveedor, MaterialProveedor, Proveedor } from '../modelos/proveedor';
+import { EVALUACIONES_SIMULADAS, PROVEEDORES_SIMULADOS } from '../datos-simulados/proveedores';
 
 export type ResultadoEliminacion = 'eliminado' | 'desactivado' | 'no-encontrado';
 

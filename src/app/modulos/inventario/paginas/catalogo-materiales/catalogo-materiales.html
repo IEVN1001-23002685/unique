@@ -1,0 +1,303 @@
+<section class="vista">
+  <app-navegacion-inventario />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 5 · Administración de M15</p>
+      <h1 class="titulo">
+        {{
+          esFormulario
+            ? esEdicion
+              ? 'Editar material'
+              : 'Alta de material'
+            : 'Catálogo de materiales'
+        }}
+      </h1>
+      <p class="subtitulo">
+        Catálogo único con categoría, unidad base, presentación de compra, costo estándar, merma
+        estándar y manejo de color. Dar de alta un material por color crea sus registros de
+        inventario para Blanco, Negro y Gris.
+      </p>
+    </div>
+    @if (!esFormulario) {
+      <a routerLink="/inventario-mp/catalogo/nuevo" class="boton boton--primario"
+        >+ Nuevo material</a
+      >
+    } @else {
+      <a routerLink="/inventario-mp/catalogo" class="boton boton--secundario">Volver al catálogo</a>
+    }
+  </div>
+
+  @if (esFormulario) {
+    @if (noEncontrado()) {
+      <div class="tarjeta bloque estado" role="status">
+        <strong>Material no encontrado.</strong>
+        <p>El registro pudo haberse eliminado en esta demostración.</p>
+      </div>
+    } @else {
+      <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+        <h2 class="titulo-section">Identificación y unidades</h2>
+        <div class="form-grid">
+          <label class="campo">
+            Código (máximo 12 caracteres)
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="codigo"
+              maxlength="12"
+              placeholder="TEL-NUE"
+              [attr.aria-invalid]="esInvalido('codigo')"
+            />
+            @if (esInvalido('codigo')) {
+              <span class="campo__error">
+                {{
+                  formulario.controls.codigo.hasError('codigoDuplicado')
+                    ? 'El código ya existe.'
+                    : 'Captura un código válido.'
+                }}
+              </span>
+            }
+            @if (esEdicion) {
+              <span class="campo__pista"
+                >El código no se modifica porque otras áreas lo referencian.</span
+              >
+            }
+          </label>
+          <label class="campo">
+            Nombre
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="nombre"
+              placeholder="Felpa"
+            />
+            @if (esInvalido('nombre')) {
+              <span class="campo__error">El nombre es obligatorio.</span>
+            }
+          </label>
+          <label class="campo">
+            Categoría
+            <select class="campo__entrada" formControlName="categoria">
+              @for (categoria of categorias; track categoria) {
+                <option [value]="categoria">{{ categoria }}</option>
+              }
+            </select>
+          </label>
+          <label class="campo">
+            Unidad base
+            <select class="campo__entrada" formControlName="unidadBase">
+              @for (unidad of unidades; track unidad) {
+                <option [value]="unidad">{{ unidad }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <h2 class="titulo-section">Compra y costos</h2>
+        <div class="form-grid">
+          <label class="campo">
+            Unidad de compra
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="unidadCompra"
+              placeholder="rollo"
+            />
+            @if (esInvalido('unidadCompra')) {
+              <span class="campo__error">Indica la presentación comercial.</span>
+            }
+          </label>
+          <label class="campo">
+            Factor a unidades base
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0.0001"
+              step="0.0001"
+              formControlName="factorCompraBase"
+            />
+            @if (esInvalido('factorCompraBase')) {
+              <span class="campo__error">Mayor que 0 con hasta 4 decimales.</span>
+            }
+          </label>
+          <label class="campo campo--amplio">
+            Presentación
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="presentacion"
+              placeholder="Rollo de 20 kg · 1.80 × 36.00 m = 64.80 m²"
+            />
+            @if (esInvalido('presentacion')) {
+              <span class="campo__error">Describe la presentación de compra.</span>
+            }
+          </label>
+          <label class="campo">
+            Costo estándar por unidad base (MXN)
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0.0001"
+              step="0.0001"
+              formControlName="costoEstandarBase"
+            />
+            @if (esInvalido('costoEstandarBase')) {
+              <span class="campo__error">Mayor o igual a 0 con hasta 4 decimales.</span>
+            }
+          </label>
+          <label class="campo">
+            Merma estándar (%)
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              max="99.99"
+              step="0.01"
+              formControlName="mermaEstandarPct"
+            />
+            @if (esInvalido('mermaEstandarPct')) {
+              <span class="campo__error">Entre 0 y menor que 100, con hasta 2 decimales.</span>
+            }
+          </label>
+          <label class="campo">
+            Plazo del proveedor principal (días)
+            <input
+              class="campo__entrada"
+              type="number"
+              min="1"
+              max="365"
+              step="1"
+              formControlName="plazoDias"
+            />
+            @if (esInvalido('plazoDias')) {
+              <span class="campo__error">Captura un plazo entre 1 y 365 días.</span>
+            }
+          </label>
+          <label class="campo campo--casilla">
+            <span class="campo__casilla">
+              <input type="checkbox" formControlName="porColor" />
+              Maneja color (crea existencias Blanco, Negro y Gris)
+            </span>
+          </label>
+        </div>
+
+        <div class="form-acciones">
+          <button type="submit" class="boton boton--primario">
+            {{ esEdicion ? 'Guardar cambios' : 'Dar de alta material' }}
+          </button>
+          <a routerLink="/inventario-mp/catalogo" class="boton boton--secundario">Cancelar</a>
+        </div>
+        <p class="nota nota--advertencia">
+          La unicidad del código y la baja sin referencias se validan aquí solo de forma local.
+          Flask debe repetir la validación de forma autoritativa (codigoUnico asíncrono y recetas de
+          M11).
+        </p>
+      </form>
+    }
+  } @else {
+    <div class="tarjeta bloque">
+      @if (materiales().length === 0) {
+        <div class="estado" role="status">
+          <strong>El catálogo está vacío.</strong>
+          <p>Da de alta un material para comenzar.</p>
+        </div>
+      } @else {
+        <div class="tabla-contenedor tabla-contenedor--ancha">
+          <table class="tabla">
+            <caption class="sr-only">
+              Catálogo de materiales de UNIQUE
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Código</th>
+                <th scope="col">Material</th>
+                <th scope="col">Categoría</th>
+                <th scope="col">Unidad base</th>
+                <th scope="col">Compra</th>
+                <th scope="col" class="celda-derecha">Costo estándar</th>
+                <th scope="col" class="celda-derecha">Merma %</th>
+                <th scope="col">Color</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (material of materiales(); track material.id) {
+                <tr>
+                  <td data-etiqueta="Código" class="celda-numero">{{ material.codigo }}</td>
+                  <td data-etiqueta="Material">
+                    <span class="celda-principal">{{ material.nombre }}</span>
+                    <span class="celda-secundaria">{{ material.presentacion }}</span>
+                  </td>
+                  <td data-etiqueta="Categoría">{{ material.categoria }}</td>
+                  <td data-etiqueta="Unidad base">{{ material.unidadBase }}</td>
+                  <td data-etiqueta="Compra">
+                    1 {{ material.unidadCompra }} =
+                    {{ material.factorCompraBase | number: '1.0-4' : 'es-MX' }}
+                    {{ material.unidadBase }}
+                  </td>
+                  <td data-etiqueta="Costo estándar" class="celda-numero celda-derecha">
+                    {{
+                      material.costoEstandarBase | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX'
+                    }}
+                  </td>
+                  <td data-etiqueta="Merma %" class="celda-numero celda-derecha">
+                    {{ material.mermaEstandarPct }}
+                  </td>
+                  <td data-etiqueta="Color">
+                    {{ material.porColor ? 'Blanco, Negro y Gris' : 'NA' }}
+                  </td>
+                  <td data-etiqueta="Estado">
+                    <span class="etiqueta" [class.etiqueta--neutro]="!material.activo">
+                      {{ material.activo ? 'Activo' : 'Desactivado' }}
+                    </span>
+                  </td>
+                  <td data-etiqueta="Acciones">
+                    <div class="acciones">
+                      <a
+                        class="accion"
+                        [routerLink]="['/inventario-mp/catalogo', material.id, 'editar']"
+                      >
+                        Editar
+                      </a>
+                      <button
+                        type="button"
+                        class="accion accion--peligro"
+                        [disabled]="!material.activo"
+                        (click)="confirmarEliminar(material)"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <p class="nota">
+        Eliminar solo es posible si el material no tiene lotes ni recetas. Con lotes, la interfaz lo
+        desactiva para conservar el historial; la revisión de recetas corresponde a M11 y debe
+        ejecutarse en Flask.
+      </p>
+    </div>
+  }
+
+  @if (materialEliminar(); as material) {
+    <app-modal-confirmacion
+      titulo="Eliminar material"
+      [mensaje]="
+        '¿Eliminar ' +
+        material.codigo +
+        ' · ' +
+        material.nombre +
+        ' del catálogo? Si tiene lotes se desactivará en su lugar.'
+      "
+      etiquetaConfirmar="Confirmar"
+      (confirmar)="eliminar()"
+      (cancelar)="materialEliminar.set(null)"
+    />
+  }
+</section>

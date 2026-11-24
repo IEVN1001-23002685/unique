@@ -1,0 +1,646 @@
+<div
+  style="
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #3b2d3e;
+    box-sizing: border-box;
+  "
+>
+  <div
+    style="
+      max-width: 920px;
+      margin: 0 auto;
+      background-color: #e6cce8;
+      border-radius: 28px;
+      padding: 28px 32px;
+      box-shadow: 0 12px 30px rgba(66, 33, 75, 0.14);
+      box-sizing: border-box;
+    "
+  >
+    <!-- Encabezado -->
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 14px">
+        <img src="/Logo1.png" alt="UNIQUE" style="height: 48px; width: auto" />
+        <div>
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #332736">Pago</h2>
+          <span style="font-size: 12px; color: #4f2857; font-weight: 600"
+            >Rol: Cliente · Confirmación de compra</span
+          >
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px">
+        <button
+          type="button"
+          (click)="irAlCarrito()"
+          style="
+            padding: 8px 16px;
+            border-radius: 999px;
+            border: 1px solid #4f2857;
+            background-color: #f3ecf4;
+            color: #4f2857;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+          "
+        >
+          ← Volver al carrito
+        </button>
+        <button
+          type="button"
+          (click)="cerrarPago()"
+          style="
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 2px solid #2b212d;
+            background-color: #ffffff;
+            color: #2b212d;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+          "
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- Confirmación exitosa -->
+    <div
+      *ngIf="folioGenerado"
+      style="
+        background-color: #f3ecf4;
+        border-radius: 22px;
+        padding: 26px;
+        text-align: center;
+        margin-bottom: 18px;
+      "
+    >
+      <h3 style="margin: 0 0 8px; font-size: 20px; color: #4f2857">¡Pedido confirmado!</h3>
+      <p style="margin: 0 0 6px; font-size: 14px">
+        Folio de seguimiento: <strong>{{ folioGenerado }}</strong>
+      </p>
+      <p style="margin: 0 0 16px; font-size: 13px; color: #534057">
+        Total pagado: <strong>${{ totalPagar }}</strong> · Envío:
+        {{ metodoEnvio === 'expres' ? 'Exprés' : 'Estándar' }}
+      </p>
+      <button
+        type="button"
+        (click)="verMisPedidos()"
+        style="
+          padding: 10px 22px;
+          border: none;
+          border-radius: 999px;
+          background-color: #4f2857;
+          color: #ffffff;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        "
+      >
+        Ver mis pedidos
+      </button>
+    </div>
+
+    <!-- Mensaje de error / validación -->
+    <div
+      *ngIf="mensajeError"
+      style="
+        margin-bottom: 16px;
+        background-color: #f3ecf4;
+        border-left: 4px solid #8b1e3f;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #8b1e3f;
+      "
+    >
+      {{ mensajeError }}
+    </div>
+
+    <!-- Formulario de checkout -->
+    <div
+      *ngIf="!folioGenerado"
+      style="
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        gap: 20px;
+        align-items: start;
+      "
+    >
+      <!-- Columna izquierda: dirección, envío, facturación y pago -->
+      <div
+        style="grid-column: span 2; display: flex; flex-direction: column; gap: 16px; min-width: 0"
+      >
+        <!-- 1. Dirección de entrega -->
+        <div
+          style="
+            background-color: #f3ecf4;
+            border-radius: 20px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-sizing: border-box;
+          "
+        >
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #332736">
+            1. Dirección de entrega
+          </h3>
+
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <label
+              *ngFor="let dir of direccionesEnvio"
+              style="
+                background-color: #ffffff;
+                border-radius: 14px;
+                padding: 10px 14px;
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                font-size: 13px;
+                cursor: pointer;
+              "
+            >
+              <input
+                type="radio"
+                name="dirEnvio"
+                [value]="dir.id"
+                [(ngModel)]="direccionSeleccionadaId"
+              />
+              <div>
+                <strong>{{ dir.alias }}</strong>
+                <span
+                  *ngIf="dir.predeterminada"
+                  style="
+                    margin-left: 6px;
+                    background-color: #4f2857;
+                    color: #ffffff;
+                    padding: 1px 8px;
+                    border-radius: 999px;
+                    font-size: 10px;
+                  "
+                >
+                  Predeterminada
+                </span>
+                <div style="color: #534057">
+                  {{ dir.destinatario }} · {{ dir.calle }} #{{ dir.numExt }}, Col.
+                  {{ dir.colonia }}, {{ dir.municipio }}, {{ dir.estado }} (CP {{ dir.cp }})
+                </div>
+              </div>
+            </label>
+
+            <label
+              style="
+                background-color: #ffffff;
+                border-radius: 14px;
+                padding: 10px 14px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+              "
+            >
+              <input
+                type="radio"
+                name="dirEnvio"
+                value="nueva"
+                [(ngModel)]="direccionSeleccionadaId"
+              />
+              <span>Usar una dirección nueva</span>
+            </label>
+          </div>
+
+          <!-- Campos nueva dirección -->
+          <div
+            *ngIf="direccionSeleccionadaId === 'nueva'"
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+              gap: 10px;
+              padding-top: 6px;
+            "
+          >
+            <input
+              name="nAlias"
+              [(ngModel)]="nuevaDireccion.alias"
+              placeholder="Alias (ej. Casa)"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="nDest"
+              [(ngModel)]="nuevaDireccion.destinatario"
+              placeholder="Destinatario *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="nCalle"
+              [(ngModel)]="nuevaDireccion.calle"
+              placeholder="Calle *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="nNum"
+              [(ngModel)]="nuevaDireccion.numExt"
+              placeholder="No. Ext *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="nCol"
+              [(ngModel)]="nuevaDireccion.colonia"
+              placeholder="Colonia *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="nMun"
+              [(ngModel)]="nuevaDireccion.municipio"
+              placeholder="Municipio *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="nEst"
+              [(ngModel)]="nuevaDireccion.estado"
+              placeholder="Estado *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="nCp"
+              maxlength="5"
+              [(ngModel)]="nuevaDireccion.cp"
+              placeholder="C.P. 5 dígitos *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+
+          <div
+            style="font-size: 12px; font-weight: 600"
+            [style.color]="coberturaValida ? '#2e7d32' : '#8b1e3f'"
+          >
+            {{
+              coberturaValida
+                ? '✓ Cobertura disponible para C.P. ' + cpActivo
+                : 'Ingresa un C.P. de 5 dígitos para validar cobertura'
+            }}
+          </div>
+        </div>
+
+        <!-- 2. Método de envío -->
+        <div
+          style="
+            background-color: #f3ecf4;
+            border-radius: 20px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-sizing: border-box;
+          "
+        >
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #332736">
+            2. Método de envío
+          </h3>
+
+          <label
+            style="
+              background-color: #ffffff;
+              border-radius: 14px;
+              padding: 10px 14px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              font-size: 13px;
+              cursor: pointer;
+            "
+          >
+            <span style="display: flex; align-items: center; gap: 8px">
+              <input type="radio" name="mEnvio" value="estandar" [(ngModel)]="metodoEnvio" />
+              <span>Envío estándar (3 a 5 días hábiles)</span>
+            </span>
+            <strong>{{ subtotalConIva >= 900 ? 'Gratis' : '$99' }}</strong>
+          </label>
+
+          <label
+            style="
+              background-color: #ffffff;
+              border-radius: 14px;
+              padding: 10px 14px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              font-size: 13px;
+              cursor: pointer;
+            "
+          >
+            <span style="display: flex; align-items: center; gap: 8px">
+              <input type="radio" name="mEnvio" value="expres" [(ngModel)]="metodoEnvio" />
+              <span>Envío exprés (1 a 2 días hábiles)</span>
+            </span>
+            <strong>$149</strong>
+          </label>
+        </div>
+
+        <!-- 3. Facturación -->
+        <div
+          style="
+            background-color: #f3ecf4;
+            border-radius: 20px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-sizing: border-box;
+          "
+        >
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 14px;
+              font-weight: 700;
+              color: #332736;
+              cursor: pointer;
+            "
+          >
+            <input type="checkbox" name="reqFact" [(ngModel)]="requiereFactura" />
+            <span>3. Requiero factura</span>
+          </label>
+
+          <div
+            *ngIf="requiereFactura"
+            style="display: flex; flex-direction: column; gap: 10px; padding-top: 4px"
+          >
+            <div *ngIf="direccionesFacturacion.length > 0">
+              <label style="font-size: 12px; font-weight: 600">Dirección fiscal guardada:</label>
+              <select
+                name="selFact"
+                [(ngModel)]="direccionFactId"
+                (ngModelChange)="onSeleccionarDireccionFact($event)"
+                style="
+                  width: 100%;
+                  height: 36px;
+                  border: none;
+                  border-radius: 999px;
+                  background-color: #ffffff;
+                  padding: 0 12px;
+                  font-size: 12px;
+                  margin-top: 4px;
+                "
+              >
+                <option *ngFor="let df of direccionesFacturacion" [ngValue]="df.id">
+                  {{ df.alias }} — {{ df.rfc }} ({{ df.razonSocial }})
+                </option>
+              </select>
+            </div>
+
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 10px;
+              "
+            >
+              <div>
+                <label style="font-size: 12px; font-weight: 600">RFC (12 o 13 caracteres):</label>
+                <input
+                  name="rfcFact"
+                  maxlength="13"
+                  [(ngModel)]="rfcFactura"
+                  style="
+                    width: 100%;
+                    height: 36px;
+                    border: none;
+                    border-radius: 999px;
+                    background-color: #ffffff;
+                    padding: 0 12px;
+                    font-size: 12px;
+                    box-sizing: border-box;
+                  "
+                />
+              </div>
+              <div>
+                <label style="font-size: 12px; font-weight: 600">Razón social:</label>
+                <input
+                  name="razonFact"
+                  [(ngModel)]="razonSocialFactura"
+                  style="
+                    width: 100%;
+                    height: 36px;
+                    border: none;
+                    border-radius: 999px;
+                    background-color: #ffffff;
+                    padding: 0 12px;
+                    font-size: 12px;
+                    box-sizing: border-box;
+                  "
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Medio de pago simulado -->
+        <div
+          style="
+            background-color: #f3ecf4;
+            border-radius: 20px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-sizing: border-box;
+          "
+        >
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #332736">
+            4. Medio de pago simulado
+          </h3>
+
+          <label
+            *ngFor="let pago of mediosPago"
+            style="
+              background-color: #ffffff;
+              border-radius: 14px;
+              padding: 10px 14px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              font-size: 13px;
+              cursor: pointer;
+            "
+          >
+            <span style="display: flex; align-items: center; gap: 8px">
+              <input
+                type="radio"
+                name="mPago"
+                [value]="pago.id"
+                [(ngModel)]="medioPagoSeleccionadoId"
+              />
+              <span>
+                <strong>{{ pago.alias }}</strong> · {{ pago.detalle }}
+              </span>
+            </span>
+            <span
+              *ngIf="pago.tipo === 'cuenta'"
+              style="font-size: 12px; font-weight: 700; color: #4f2857"
+            >
+              Saldo: ${{ pago.saldoDisponible }}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Columna derecha: resumen y confirmar -->
+      <div
+        style="
+          background-color: #f3ecf4;
+          border-radius: 22px;
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          box-sizing: border-box;
+        "
+      >
+        <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #332736">
+          Resumen del pedido
+        </h3>
+
+        <div
+          *ngFor="let item of items"
+          style="
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 12px;
+            color: #534057;
+          "
+        >
+          <span>{{ item.nombre }} ({{ item.talla }}) x{{ item.cantidad }}</span>
+          <strong>${{ item.precioUnitarioConIva * item.cantidad }}</strong>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid rgba(79, 40, 87, 0.2); margin: 4px 0" />
+
+        <div style="display: flex; justify-content: space-between; font-size: 13px">
+          <span>Subtotal (IVA incluido)</span>
+          <strong>${{ subtotalConIva }}</strong>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 13px">
+          <span>Envío</span>
+          <strong>{{ costoEnvio === 0 ? 'Gratis' : '$' + costoEnvio }}</strong>
+        </div>
+
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: 700;
+            color: #332736;
+            margin-top: 4px;
+          "
+        >
+          <span>Total a pagar</span>
+          <span style="color: #4f2857">${{ totalPagar }}</span>
+        </div>
+
+        <button
+          type="button"
+          (click)="confirmarCompra()"
+          style="
+            margin-top: 8px;
+            width: 100%;
+            height: 42px;
+            border: none;
+            border-radius: 999px;
+            background-color: #4f2857;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+          "
+        >
+          Confirmar pedido
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

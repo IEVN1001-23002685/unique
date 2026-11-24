@@ -1,5 +1,7 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { ModalAutenticacionServicio } from '../../nucleo/servicios/modal-autenticacion-servicio';
 
 export interface CredencialesLogin {
   correo: string;
@@ -14,13 +16,16 @@ export interface CredencialesLogin {
   styleUrl: './inicio-sesion.css',
 })
 export class InicioSesion {
+  private readonly router = inject(Router);
+  private readonly modal = inject(ModalAutenticacionServicio);
+
   @Output() cerrar = new EventEmitter<void>();
   @Output() irARegistro = new EventEmitter<void>();
   @Output() enviarLogin = new EventEmitter<CredencialesLogin>();
 
   credenciales: CredencialesLogin = {
     correo: '',
-    contrasena: ''
+    contrasena: '',
   };
 
   onSubmit(): void {
@@ -29,9 +34,16 @@ export class InicioSesion {
 
   onCerrar(): void {
     this.cerrar.emit();
+    // Dentro del modal, el contenedor cierra la vista; como página, vuelve al catálogo.
+    if (this.modal.modalActiva() === null) {
+      void this.router.navigate(['/catalogo']);
+    }
   }
 
   onIrARegistro(): void {
     this.irARegistro.emit();
+    if (this.modal.modalActiva() === null) {
+      void this.router.navigate(['/registro']);
+    }
   }
 }

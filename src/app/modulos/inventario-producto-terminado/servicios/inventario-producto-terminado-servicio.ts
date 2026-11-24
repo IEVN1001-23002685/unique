@@ -157,7 +157,10 @@ export class InventarioProductoServicio {
   guardarReglas(cambios: ReglaReposicion[]): ResultadoReglas {
     const actuales = this.filasLista();
     const porId = new Map(actuales.map((fila) => [fila.varianteId, fila]));
-    if (cambios.length === 0 || new Set(cambios.map((cambio) => cambio.varianteId)).size !== cambios.length) {
+    if (
+      cambios.length === 0 ||
+      new Set(cambios.map((cambio) => cambio.varianteId)).size !== cambios.length
+    ) {
       return { ok: false, mensaje: 'No hay reglas válidas para guardar.' };
     }
 
@@ -189,12 +192,13 @@ export class InventarioProductoServicio {
 
     return {
       ok: true,
-      mensaje: 'Reglas actualizadas en memoria. Flask aplicará PATCH por variante; editar el mínimo no crea órdenes por sí mismo.',
+      mensaje:
+        'Reglas actualizadas en memoria. Flask aplicará PATCH por variante; editar el mínimo no crea órdenes por sí mismo.',
     };
   }
 
   private crearEstadoInicial(): { filas: FilaInventario[]; movimientos: MovimientoProducto[] } {
-    const filas: FilaInventario[] = this.catalogo.filasVariantes.map((fila) => {
+    const filas: FilaInventario[] = this.catalogo.filasVariantes().map((fila) => {
       const producto = this.catalogo.obtenerProducto(fila.productoId);
       return {
         varianteId: fila.variante.id,
@@ -239,12 +243,9 @@ export class InventarioProductoServicio {
 
   private conDetalle(fila: FilaInventario): FilaExistencia {
     const disponible = Math.max(0, fila.existencia - fila.reservado);
-    const semaforo =
-      disponible === 0 ? 'ROJO' : disponible <= fila.stockMinimo ? 'AMBAR' : 'VERDE';
+    const semaforo = disponible === 0 ? 'ROJO' : disponible <= fila.stockMinimo ? 'AMBAR' : 'VERDE';
     const diasCobertura =
-      fila.ventasDiarias30 > 0
-        ? Math.round((disponible / fila.ventasDiarias30) * 10) / 10
-        : null;
+      fila.ventasDiarias30 > 0 ? Math.round((disponible / fila.ventasDiarias30) * 10) / 10 : null;
     return { ...fila, disponible, semaforo, diasCobertura };
   }
 

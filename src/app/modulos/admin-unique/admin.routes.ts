@@ -14,14 +14,41 @@ export const ADMIN_UNIQUE_ROUTES: Routes = [
   { path: 'login-admin', component: LoginPageComponent },
   { path: 'sin-acceso-admin', component: SinAccesoComponent },
   {
-    path: 'panel-admin', component: PanelAdminComponent, canActivate: [authGuard],
+    path: 'panel-admin',
+    component: PanelAdminComponent,
+    canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-      { path: 'dashboard', component: DashboardM20Component, canActivate: [roleGuard], data: { roles: ['ADMIN', 'OPERATIVO'] } },
-      { path: 'preparacion', component: PreparacionM18Component, canActivate: [roleGuard], data: { roles: ['ADMIN', 'OPERATIVO'] } },
-      { path: 'entregas', component: EntregasM19Component, canActivate: [roleGuard], data: { roles: ['ADMIN', 'OPERATIVO'] } },
-      { path: 'alertas', component: AlertasM21Component, canActivate: [roleGuard], data: { roles: ['ADMIN', 'OPERATIVO'] } },
-      { path: 'sistema', component: AdministracionM22Component, canActivate: [roleGuard], data: { roles: ['ADMIN'] } },
-    ]
-  }
+      {
+        path: 'dashboard',
+        component: DashboardM20Component,
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'OPERATIVO'] },
+      },
+      {
+        path: 'preparacion',
+        component: PreparacionM18Component,
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'OPERATIVO'] },
+      },
+      {
+        path: 'entregas',
+        component: EntregasM19Component,
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'OPERATIVO'] },
+      },
+      {
+        path: 'alertas',
+        component: AlertasM21Component,
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'OPERATIVO'] },
+      },
+      {
+        path: 'sistema',
+        component: AdministracionM22Component,
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] },
+      },
+    ],
+  },
 ];

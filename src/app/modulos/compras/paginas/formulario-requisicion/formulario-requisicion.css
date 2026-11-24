@@ -1,0 +1,10 @@
+.titulo-section {
+  margin: 0 0 0.9rem;
+  font-family: var(--font-titulo);
+  font-size: 1.1rem;
+  color: var(--color-unique-morado);
+}
+
+.form-notas {
+  margin-top: 1.25rem;
+}

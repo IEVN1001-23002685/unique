@@ -196,7 +196,10 @@ export class VentaManual {
     }
 
     this.descuentoAplicado.set(descuento);
-    this.avisos.mostrar('exito', `Cupón «${descuento.nombre}» aplicado. Solo se permite uno por venta.`);
+    this.avisos.mostrar(
+      'exito',
+      `Cupón «${descuento.nombre}» aplicado. Solo se permite uno por venta.`,
+    );
   }
 
   protected aplicarAutomatico(): void {
@@ -289,9 +292,7 @@ export class VentaManual {
     };
 
     const ultimos4 =
-      valor.metodoPago === 'TARJETA' && valor.ultimos4.trim() !== ''
-        ? valor.ultimos4.trim()
-        : null;
+      valor.metodoPago === 'TARJETA' && valor.ultimos4.trim() !== '' ? valor.ultimos4.trim() : null;
 
     const venta = this.servicio.crearVentaManual({
       cliente,
@@ -383,10 +384,12 @@ export class VentaManual {
         return false;
       }
 
-      return !this.requiereFactura() ||
+      return (
+        !this.requiereFactura() ||
         (valor.razonSocial.trim() !== '' &&
           valor.rfc.trim() !== '' &&
-          rfcValido(this.formulario.controls.rfc) === null);
+          rfcValido(this.formulario.controls.rfc) === null)
+      );
     }
 
     if (valor.metodoPago === 'TARJETA' && valor.ultimos4.trim() !== '') {

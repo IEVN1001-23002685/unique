@@ -32,8 +32,7 @@ export class DescuentosCupones {
     return this.servicio.descuentos().filter((descuento) => {
       const coincideAplicacion = aplicacion === 'TODOS' || descuento.aplicacion === aplicacion;
       const coincideActivo =
-        activo === 'TODOS' ||
-        (activo === 'ACTIVOS' ? descuento.activo : !descuento.activo);
+        activo === 'TODOS' || (activo === 'ACTIVOS' ? descuento.activo : !descuento.activo);
       const coincideTexto =
         termino === '' ||
         descuento.nombre.toLowerCase().includes(termino) ||
