@@ -1,7 +1,12 @@
 <div class="modal" (keydown)="alPulsarTecla($event)">
   <div class="modal__telon" (click)="cancelar.emit()" aria-hidden="true"></div>
 
-  <section class="modal__panel" role="dialog" aria-modal="true" [attr.aria-label]="'Asignar ' + pedido().folio">
+  <section
+    class="modal__panel"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'Asignar ' + pedido().folio"
+  >
     <form [formGroup]="forma" (ngSubmit)="alEnviar()">
       <h2 class="modal__titulo">Asignar entrega</h2>
       <p class="modal__contexto">
@@ -61,7 +66,9 @@
       </div>
 
       <div class="modal__acciones">
-        <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">Cancelar</button>
+        <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">
+          Cancelar
+        </button>
         <button type="submit" class="boton boton--primario">Programar entrega</button>
       </div>
     </form>

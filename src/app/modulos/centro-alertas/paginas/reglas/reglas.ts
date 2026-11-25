@@ -38,7 +38,10 @@ export class Reglas {
   protected guardar(): void {
     this.formulario.markAllAsTouched();
     if (this.formulario.invalid) {
-      this.avisos.mostrar('error', 'Revisa los umbrales: deben ser enteros dentro del rango indicado.');
+      this.avisos.mostrar(
+        'error',
+        'Revisa los umbrales: deben ser enteros dentro del rango indicado.',
+      );
       return;
     }
 

@@ -10,8 +10,7 @@ import {
 } from '../../modelos/entrega';
 
 export type ResultadoEntrega =
-  | { tipo: 'ENTREGADO'; datos: DatosEntregado }
-  | { tipo: 'FALLIDA'; datos: DatosFallida };
+  { tipo: 'ENTREGADO'; datos: DatosEntregado } | { tipo: 'FALLIDA'; datos: DatosFallida };
 
 /** Registra receptor y hora, o el motivo de un intento fallido. */
 @Component({

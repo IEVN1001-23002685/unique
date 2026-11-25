@@ -155,13 +155,15 @@ export class DashboardServicio {
   readonly devoluciones = signal(DEVOLUCIONES_DEMO).asReadonly();
 
   readonly coloresVendidos = computed(() =>
-    [...new Set(this.ventas.ventas().flatMap((venta) => venta.lineas.map((linea) => linea.color)))]
-      .sort((a, b) => a.localeCompare(b, 'es-MX')),
+    [
+      ...new Set(this.ventas.ventas().flatMap((venta) => venta.lineas.map((linea) => linea.color))),
+    ].sort((a, b) => a.localeCompare(b, 'es-MX')),
   );
 
   readonly tallasVendidas = computed(() =>
-    [...new Set(this.ventas.ventas().flatMap((venta) => venta.lineas.map((linea) => linea.talla)))]
-      .sort((a, b) => a.localeCompare(b, 'es-MX')),
+    [
+      ...new Set(this.ventas.ventas().flatMap((venta) => venta.lineas.map((linea) => linea.talla))),
+    ].sort((a, b) => a.localeCompare(b, 'es-MX')),
   );
 
   private readonly catalogo = computed(() => this.productos.productos());
@@ -225,14 +227,16 @@ export class DashboardServicio {
 
   private ventasEn(rango: Rango): Venta[] {
     const filtros = this.filtrosLista();
-    return this.ventas.ventas().filter(
-      (venta) =>
-        venta.estado === 'ACTIVA' &&
-        this.pagoAprobado(venta) &&
-        venta.fecha >= rango.inicio &&
-        venta.fecha < rango.fin &&
-        (filtros.canal === 'TODOS' || venta.canal === filtros.canal),
-    );
+    return this.ventas
+      .ventas()
+      .filter(
+        (venta) =>
+          venta.estado === 'ACTIVA' &&
+          this.pagoAprobado(venta) &&
+          venta.fecha >= rango.inicio &&
+          venta.fecha < rango.fin &&
+          (filtros.canal === 'TODOS' || venta.canal === filtros.canal),
+      );
   }
 
   private lineasEn(rango: Rango): LineaVenta[] {
@@ -280,7 +284,9 @@ export class DashboardServicio {
   );
 
   readonly variacionVentas = computed(() =>
-    this.totalAnterior() === 0 ? 0 : ((this.totalActual() - this.totalAnterior()) / this.totalAnterior()) * 100,
+    this.totalAnterior() === 0
+      ? 0
+      : ((this.totalActual() - this.totalAnterior()) / this.totalAnterior()) * 100,
   );
 
   readonly ticketPromedio = computed(() =>
@@ -304,7 +310,9 @@ export class DashboardServicio {
       .map(([clave, valor]) => {
         const fecha = new Date(`${clave}-01T12:00:00`);
         return {
-          etiqueta: new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit' }).format(fecha),
+          etiqueta: new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit' }).format(
+            fecha,
+          ),
           valor,
         };
       });
@@ -350,7 +358,9 @@ export class DashboardServicio {
     return [...agrupado.values()].sort((a, b) => b.ingresos - a.ingresos);
   }
 
-  readonly ingresosPorCategoria = computed(() => this.agruparLineas((linea) => this.categoriaDeLinea(linea)));
+  readonly ingresosPorCategoria = computed(() =>
+    this.agruparLineas((linea) => this.categoriaDeLinea(linea)),
+  );
   readonly ingresosPorColor = computed(() => this.agruparLineas((linea) => linea.color));
   readonly ingresosPorTalla = computed(() => this.agruparLineas((linea) => linea.talla));
 
@@ -393,7 +403,9 @@ export class DashboardServicio {
   readonly pedidosATiempo = computed(() => {
     const entregados = this.pedidos
       .pedidos()
-      .filter((pedido) => pedido.estado === 'ENTREGADO' && pedido.entregadoEn && pedido.fechaPromesa);
+      .filter(
+        (pedido) => pedido.estado === 'ENTREGADO' && pedido.entregadoEn && pedido.fechaPromesa,
+      );
     const aTiempo = entregados.filter(
       (pedido) => (pedido.entregadoEn ?? '') <= (pedido.fechaPromesa ?? ''),
     ).length;
@@ -405,7 +417,9 @@ export class DashboardServicio {
     if (terminadas.length === 0) {
       return 100;
     }
-    const conIncidencia = new Set(this.preparacion.incidencias().map((item) => item.preparacionFolio));
+    const conIncidencia = new Set(
+      this.preparacion.incidencias().map((item) => item.preparacionFolio),
+    );
     const limpias = terminadas.filter((item) => !conIncidencia.has(item.folio)).length;
     return (limpias / terminadas.length) * 100;
   });
@@ -436,11 +450,14 @@ export class DashboardServicio {
       .entregas()
       .filter(
         (entrega) =>
-          entrega.estado === 'ENTREGADA' && entrega.salidaEn !== null && entrega.resultadoEn !== null,
+          entrega.estado === 'ENTREGADA' &&
+          entrega.salidaEn !== null &&
+          entrega.resultadoEn !== null,
       )
-      .map((entrega) =>
-        (new Date(entrega.resultadoEn!).getTime() - new Date(entrega.salidaEn!).getTime()) /
-        3_600_000,
+      .map(
+        (entrega) =>
+          (new Date(entrega.resultadoEn!).getTime() - new Date(entrega.salidaEn!).getTime()) /
+          3_600_000,
       );
     return tiempos.length === 0
       ? 0
@@ -463,7 +480,9 @@ export class DashboardServicio {
             3_600_000,
         );
       const tiempoHoras =
-        tiempos.length === 0 ? 0 : tiempos.reduce((suma, horas) => suma + horas, 0) / tiempos.length;
+        tiempos.length === 0
+          ? 0
+          : tiempos.reduce((suma, horas) => suma + horas, 0) / tiempos.length;
       return {
         repartidor: this.entregas.nombreRepartidor(id),
         entregas: lista.length,
@@ -496,8 +515,8 @@ export class DashboardServicio {
 
   readonly costoPerdido = computed(() => MERMAS_DEMO.reduce((suma, fila) => suma + fila.costo, 0));
 
-  readonly materialesEnRiesgo = computed(() =>
-    MATERIALES_DEMO.filter((material) => material.tono !== 'VERDE').length,
+  readonly materialesEnRiesgo = computed(
+    () => MATERIALES_DEMO.filter((material) => material.tono !== 'VERDE').length,
   );
 
   readonly comprasPendientes = computed(
@@ -511,7 +530,10 @@ export class DashboardServicio {
   readonly alertasCriticas = computed<AlertaDashboard[]>(() => {
     const lista: AlertaDashboard[] = [];
 
-    for (const fila of this.inventario.existencias().filter((item) => item.semaforo === 'ROJO').slice(0, 2)) {
+    for (const fila of this.inventario
+      .existencias()
+      .filter((item) => item.semaforo === 'ROJO')
+      .slice(0, 2)) {
       lista.push({
         id: `pt-${fila.varianteId}`,
         clave: 'PT_AGOTADO_DEMANDA',
@@ -751,9 +773,7 @@ export class DashboardServicio {
 
     const contenido = [datos.encabezados, ...datos.filas]
       .map((fila) =>
-        fila
-          .map((celda) => `"${String(celda ?? '').replaceAll('"', '""')}"`)
-          .join(','),
+        fila.map((celda) => `"${String(celda ?? '').replaceAll('"', '""')}"`).join(','),
       )
       .join('\r\n');
     const url = URL.createObjectURL(
@@ -861,12 +881,14 @@ export class DashboardServicio {
         return {
           nombre: 'dashboard-logistica',
           encabezados: ['Pedido', 'Cliente', 'Estado', 'Días en estado'],
-          filas: this.pedidos.pedidos().map((pedido: Pedido) => [
-            pedido.folio,
-            pedido.cliente,
-            ETIQUETAS_ESTADO_PEDIDO_DASH[pedido.estado],
-            Math.round(this.pedidos.horasEnEstado(pedido) / 24),
-          ]),
+          filas: this.pedidos
+            .pedidos()
+            .map((pedido: Pedido) => [
+              pedido.folio,
+              pedido.cliente,
+              ETIQUETAS_ESTADO_PEDIDO_DASH[pedido.estado],
+              Math.round(this.pedidos.horasEnEstado(pedido) / 24),
+            ]),
         };
     }
   }

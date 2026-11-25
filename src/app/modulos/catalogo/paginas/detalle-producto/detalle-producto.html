@@ -27,7 +27,9 @@
               class="detalle__miniatura"
               [class.detalle__miniatura--activa]="color === colorSeleccionado()"
               [style.background-color]="coloresCatalogo[color].hex"
-              [attr.aria-label]="'Ver ' + productoActual.nombre + ' en ' + coloresCatalogo[color].nombre"
+              [attr.aria-label]="
+                'Ver ' + productoActual.nombre + ' en ' + coloresCatalogo[color].nombre
+              "
               [attr.aria-pressed]="color === colorSeleccionado()"
               (click)="seleccionarColor(color)"
             ></button>

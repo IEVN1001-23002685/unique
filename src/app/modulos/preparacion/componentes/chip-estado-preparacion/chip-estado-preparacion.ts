@@ -1,8 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import {
-  ETIQUETAS_ESTADO_PREPARACION,
-  type EstadoPreparacion,
-} from '../../modelos/preparacion';
+import { ETIQUETAS_ESTADO_PREPARACION, type EstadoPreparacion } from '../../modelos/preparacion';
 
 /** Chip de estado con círculo de color y etiqueta textual. */
 @Component({

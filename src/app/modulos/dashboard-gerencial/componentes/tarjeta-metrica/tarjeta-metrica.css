@@ -11,11 +11,21 @@
   box-shadow: 0 6px 18px rgb(84 45 89 / 0.06);
 }
 
-.metrica[data-tono='ROJO'] { border-left-color: var(--color-unique-error); }
-.metrica[data-tono='AMBAR'] { border-left-color: var(--color-unique-adv); }
-.metrica[data-tono='VERDE'] { border-left-color: var(--color-unique-exito); }
-.metrica[data-tono='INFO'] { border-left-color: var(--color-unique-info); }
-.metrica[data-tono='NEUTRO'] { border-left-color: var(--color-unique-orquidea); }
+.metrica[data-tono='ROJO'] {
+  border-left-color: var(--color-unique-error);
+}
+.metrica[data-tono='AMBAR'] {
+  border-left-color: var(--color-unique-adv);
+}
+.metrica[data-tono='VERDE'] {
+  border-left-color: var(--color-unique-exito);
+}
+.metrica[data-tono='INFO'] {
+  border-left-color: var(--color-unique-info);
+}
+.metrica[data-tono='NEUTRO'] {
+  border-left-color: var(--color-unique-orquidea);
+}
 
 .metrica__etiqueta {
   color: var(--color-unique-texto-suave);

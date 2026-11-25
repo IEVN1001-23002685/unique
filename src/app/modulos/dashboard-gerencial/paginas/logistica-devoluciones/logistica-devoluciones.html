@@ -17,9 +17,14 @@
     </div>
     <div class="tabla-contenedor">
       <table class="tabla tabla--corta">
-        <caption class="sr-only">Pedidos agrupados por estado</caption>
+        <caption class="sr-only">
+          Pedidos agrupados por estado
+        </caption>
         <thead>
-          <tr><th scope="col">Estado</th><th scope="col">Pedidos</th></tr>
+          <tr>
+            <th scope="col">Estado</th>
+            <th scope="col">Pedidos</th>
+          </tr>
         </thead>
         <tbody>
           @for (estado of servicio.pedidosPorEstado(); track estado.estado) {
@@ -64,7 +69,9 @@
   </div>
   <div class="tabla-contenedor">
     <table class="tabla tabla--repartidores">
-      <caption class="sr-only">Indicadores de entrega por repartidor</caption>
+      <caption class="sr-only">
+        Indicadores de entrega por repartidor
+      </caption>
       <thead>
         <tr>
           <th scope="col">Repartidor</th>
@@ -84,13 +91,17 @@
             <td data-etiqueta="Tiempo promedio">{{ item.tiempoHoras.toFixed(1) }} h</td>
           </tr>
         } @empty {
-          <tr><td colspan="5" class="vacio">Aún no hay repartidores con entregas registradas.</td></tr>
+          <tr>
+            <td colspan="5" class="vacio">Aún no hay repartidores con entregas registradas.</td>
+          </tr>
         }
       </tbody>
     </table>
   </div>
   <p class="filtros__acciones">
-    <a class="boton boton--secundario" routerLink="/entregas/seguimiento">Ver seguimiento de entregas</a>
+    <a class="boton boton--secundario" routerLink="/entregas/seguimiento"
+      >Ver seguimiento de entregas</a
+    >
   </p>
 </div>
 
@@ -101,7 +112,9 @@
   </div>
   <div class="tabla-contenedor">
     <table class="tabla tabla--devoluciones">
-      <caption class="sr-only">Devoluciones de demostración</caption>
+      <caption class="sr-only">
+        Devoluciones de demostración
+      </caption>
       <thead>
         <tr>
           <th scope="col">Motivo</th>

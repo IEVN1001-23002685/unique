@@ -1,9 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import {
-  ETIQUETAS_PASO,
-  PASOS_PREPARACION,
-  type PasoPreparacion,
-} from '../../modelos/preparacion';
+import { ETIQUETAS_PASO, PASOS_PREPARACION, type PasoPreparacion } from '../../modelos/preparacion';
 
 /** Indicador de los cuatro pasos documentados: Picking, Verificación, Empaque y Lista. */
 @Component({

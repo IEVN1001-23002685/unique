@@ -23,11 +23,13 @@ export class Clientes {
     if (texto.length === 0) {
       return this.servicio.clientes();
     }
-    return this.servicio.clientes().filter((cliente) =>
-      [cliente.nombre, cliente.correo, cliente.telefono].some((campo) =>
-        campo.toLocaleLowerCase('es-MX').includes(texto),
-      ),
-    );
+    return this.servicio
+      .clientes()
+      .filter((cliente) =>
+        [cliente.nombre, cliente.correo, cliente.telefono].some((campo) =>
+          campo.toLocaleLowerCase('es-MX').includes(texto),
+        ),
+      );
   });
 
   protected readonly detalle = computed<ClienteSistema | null>(() => {

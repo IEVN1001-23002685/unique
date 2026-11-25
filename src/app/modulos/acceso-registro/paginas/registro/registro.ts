@@ -3,7 +3,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ModalAutenticacionServicio } from '../../../../nucleo/servicios/modal-autenticacion-servicio';
 import { AccesoRegistroServicio } from '../../servicios/acceso-registro-servicio';
-import { coincide, passwordFuerte, telefono10 } from '../../validadores/acceso-registro.validadores';
+import {
+  coincide,
+  passwordFuerte,
+  telefono10,
+} from '../../validadores/acceso-registro.validadores';
 
 type CampoRegistro =
   | 'nombre'

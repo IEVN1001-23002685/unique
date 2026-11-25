@@ -17,22 +17,35 @@
         <label class="campo">
           Nombre
           <input class="campo__entrada" formControlName="nombre" autocomplete="given-name" />
-          @if (errorEn('nombre')) { <span class="campo__error">Escribe al menos 2 caracteres.</span> }
+          @if (errorEn('nombre')) {
+            <span class="campo__error">Escribe al menos 2 caracteres.</span>
+          }
         </label>
         <label class="campo">
           Apellidos
           <input class="campo__entrada" formControlName="apellidos" autocomplete="family-name" />
-          @if (errorEn('apellidos')) { <span class="campo__error">Escribe al menos 2 caracteres.</span> }
+          @if (errorEn('apellidos')) {
+            <span class="campo__error">Escribe al menos 2 caracteres.</span>
+          }
         </label>
         <label class="campo">
           Correo electrónico
-          <input class="campo__entrada" type="email" formControlName="correo" autocomplete="email" />
-          @if (errorEn('correo')) { <span class="campo__error">Captura un correo válido y único.</span> }
+          <input
+            class="campo__entrada"
+            type="email"
+            formControlName="correo"
+            autocomplete="email"
+          />
+          @if (errorEn('correo')) {
+            <span class="campo__error">Captura un correo válido y único.</span>
+          }
         </label>
         <label class="campo">
           Teléfono a 10 dígitos
           <input class="campo__entrada" inputmode="numeric" formControlName="telefono" />
-          @if (errorEn('telefono')) { <span class="campo__error">Debe tener exactamente 10 dígitos.</span> }
+          @if (errorEn('telefono')) {
+            <span class="campo__error">Debe tener exactamente 10 dígitos.</span>
+          }
         </label>
         <label class="campo">
           Rol
@@ -43,24 +56,35 @@
         </label>
         <label class="campo">
           Contraseña {{ editando() === null ? '(obligatoria)' : '(dejar vacía para no cambiarla)' }}
-          <input class="campo__entrada" type="password" formControlName="contrasena" autocomplete="new-password" />
+          <input
+            class="campo__entrada"
+            type="password"
+            formControlName="contrasena"
+            autocomplete="new-password"
+          />
           @if (errorEn('contrasena')) {
-            <span class="campo__error">Mínimo 8 caracteres con mayúscula, minúscula, número y símbolo.</span>
+            <span class="campo__error"
+              >Mínimo 8 caracteres con mayúscula, minúscula, número y símbolo.</span
+            >
           }
         </label>
       </div>
-      @if (errorFormulario(); as error) { <p class="nota nota--adv error-servicio">{{ error }}</p> }
+      @if (errorFormulario(); as error) {
+        <p class="nota nota--adv error-servicio">{{ error }}</p>
+      }
       <div class="acciones acciones--form">
         <button type="submit" class="boton boton--primario">Guardar cuenta</button>
-        <button type="button" class="boton boton--secundario" (click)="cerrarFormulario()">Cancelar</button>
+        <button type="button" class="boton boton--secundario" (click)="cerrarFormulario()">
+          Cancelar
+        </button>
       </div>
     </form>
   }
 
   @if (temporal(); as contrasena) {
     <p class="nota nota--adv temporal">
-      Contraseña temporal de demostración: <span class="mono">{{ contrasena }}</span>. Cópiala antes de
-      cerrar esta vista: no se guarda, no se envía y Flask generará la real con su propio token.
+      Contraseña temporal de demostración: <span class="mono">{{ contrasena }}</span>. Cópiala antes
+      de cerrar esta vista: no se guarda, no se envía y Flask generará la real con su propio token.
     </p>
   }
 
@@ -89,16 +113,30 @@
             <td data-etiqueta="Último acceso">{{ fecha(usuario.ultimoAcceso) }}</td>
             <td data-etiqueta="Acciones">
               <div class="acciones">
-                <button type="button" class="boton boton--enlace" (click)="editar(usuario)">Editar</button>
-                <button type="button" class="boton boton--enlace" (click)="pedirAccion(usuario, 'RESTABLECER')">
+                <button type="button" class="boton boton--enlace" (click)="editar(usuario)">
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  class="boton boton--enlace"
+                  (click)="pedirAccion(usuario, 'RESTABLECER')"
+                >
                   Restablecer contraseña
                 </button>
                 @if (usuario.estado === 'ACTIVA') {
-                  <button type="button" class="boton boton--enlace" (click)="pedirAccion(usuario, 'DESACTIVAR')">
+                  <button
+                    type="button"
+                    class="boton boton--enlace"
+                    (click)="pedirAccion(usuario, 'DESACTIVAR')"
+                  >
                     Desactivar
                   </button>
                 } @else {
-                  <button type="button" class="boton boton--enlace" (click)="pedirAccion(usuario, 'ACTIVAR')">
+                  <button
+                    type="button"
+                    class="boton boton--enlace"
+                    (click)="pedirAccion(usuario, 'ACTIVAR')"
+                  >
                     Activar
                   </button>
                 }
@@ -111,15 +149,21 @@
   </div>
 
   <p class="nota nota-final">
-    No se puede desactivar ni degradar al último Administrador activo. Los cambios de rol y de estado
-    quedan registrados en la <a routerLink="/sistema/bitacora">bitácora</a>.
+    No se puede desactivar ni degradar al último Administrador activo. Los cambios de rol y de
+    estado quedan registrados en la <a routerLink="/sistema/bitacora">bitácora</a>.
   </p>
 
   @if (pendiente(); as seleccion) {
     <app-modal-confirmacion
       titulo="Confirmar acción de cuenta"
       [mensaje]="mensajeModal()"
-      [etiquetaConfirmar]="seleccion.accion === 'RESTABLECER' ? 'Generar temporal' : (seleccion.accion === 'ACTIVAR' ? 'Activar' : 'Desactivar')"
+      [etiquetaConfirmar]="
+        seleccion.accion === 'RESTABLECER'
+          ? 'Generar temporal'
+          : seleccion.accion === 'ACTIVAR'
+            ? 'Activar'
+            : 'Desactivar'
+      "
       (confirmar)="confirmarAccion()"
       (cancelar)="cancelarAccion()"
     />

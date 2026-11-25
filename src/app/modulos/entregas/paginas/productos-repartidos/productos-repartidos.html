@@ -24,7 +24,11 @@
     <div class="barra">
       <label class="campo filtro">
         Repartidor
-        <select class="campo__entrada" [value]="repartidorId()" (change)="alCambiarRepartidor($event)">
+        <select
+          class="campo__entrada"
+          [value]="repartidorId()"
+          (change)="alCambiarRepartidor($event)"
+        >
           <option value="0">Todos los repartidores</option>
           @for (repartidor of repartidores(); track repartidor.id) {
             <option [value]="repartidor.id">{{ repartidor.nombre }}</option>
@@ -33,7 +37,12 @@
       </label>
       <label class="campo filtro">
         Fecha programada
-        <input class="campo__entrada" type="date" [value]="fecha()" (change)="alCambiarFecha($event)" />
+        <input
+          class="campo__entrada"
+          type="date"
+          [value]="fecha()"
+          (change)="alCambiarFecha($event)"
+        />
       </label>
       <div class="resumen" aria-live="polite">
         <strong>{{ totalPiezas() }} piezas</strong>
@@ -43,7 +52,9 @@
 
     @if (repartidorId() !== 0 || fecha() !== '') {
       <p class="filtros">
-        <button type="button" class="boton boton--enlace" (click)="restablecer()">Limpiar filtros</button>
+        <button type="button" class="boton boton--enlace" (click)="restablecer()">
+          Limpiar filtros
+        </button>
       </p>
     }
 
@@ -60,7 +71,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Productos repartidos según los filtros seleccionados</caption>
+          <caption class="sr-only">
+            Productos repartidos según los filtros seleccionados
+          </caption>
           <thead>
             <tr>
               <th scope="col">SKU</th>
@@ -75,7 +88,9 @@
           <tbody>
             @for (item of filtrados(); track item.sku + item.fechaProgramada + item.repartidorId) {
               <tr>
-                <td data-etiqueta="SKU"><span class="mono">{{ item.sku }}</span></td>
+                <td data-etiqueta="SKU">
+                  <span class="mono">{{ item.sku }}</span>
+                </td>
                 <td data-etiqueta="Prenda">{{ item.nombreProducto }}</td>
                 <td data-etiqueta="Talla / color">{{ item.talla }} / {{ item.color }}</td>
                 <td data-etiqueta="Cantidad">{{ item.cantidad }}</td>

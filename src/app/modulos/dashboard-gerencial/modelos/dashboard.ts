@@ -12,11 +12,7 @@ export type CanalDashboard = 'TODOS' | CanalVenta;
 export type RolDashboard = 'Administrador' | 'Operativo';
 export type TonoDashboard = 'ROJO' | 'AMBAR' | 'VERDE' | 'NEUTRO' | 'INFO';
 export type SeccionDashboard =
-  | 'resumen'
-  | 'ventas-productos'
-  | 'produccion-merma'
-  | 'abastecimiento'
-  | 'logistica-devoluciones';
+  'resumen' | 'ventas-productos' | 'produccion-merma' | 'abastecimiento' | 'logistica-devoluciones';
 
 export interface FiltrosDashboard {
   periodo: PeriodoDashboard;

@@ -38,7 +38,10 @@ export class Bitacora {
     const { usuario, entidad, desde, hasta, texto } = this.filtros();
     const busqueda = texto.trim().toLocaleLowerCase('es-MX');
     return this.servicio.bitacora().filter((registro) => {
-      if (usuario !== '' && !registro.usuario.toLocaleLowerCase('es-MX').includes(usuario.toLocaleLowerCase('es-MX'))) {
+      if (
+        usuario !== '' &&
+        !registro.usuario.toLocaleLowerCase('es-MX').includes(usuario.toLocaleLowerCase('es-MX'))
+      ) {
         return false;
       }
       if (entidad !== '' && registro.entidad !== entidad) {

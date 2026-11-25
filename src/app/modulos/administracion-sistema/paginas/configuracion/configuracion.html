@@ -2,7 +2,10 @@
   <div class="tarjeta bloque">
     <div class="bloque__titulo">
       <h2>Parámetros de configuración</h2>
-      <span>{{ propuestas() }} propuestos por confirmar · {{ cambiosPendientes() }} cambios sin guardar</span>
+      <span
+        >{{ propuestas() }} propuestos por confirmar · {{ cambiosPendientes() }} cambios sin
+        guardar</span
+      >
     </div>
     <p class="nota">
       Los valores iniciales provienen del documento v3.0 (§11.5). Los parámetros marcados como
@@ -29,7 +32,9 @@
                 <span class="celda-principal">{{ parametro.etiqueta }}</span>
                 <span class="celda-secundaria">{{ parametro.descripcion }}</span>
               </td>
-              <td data-etiqueta="Clave"><span class="mono">{{ parametro.clave }}</span></td>
+              <td data-etiqueta="Clave">
+                <span class="mono">{{ parametro.clave }}</span>
+              </td>
               <td data-etiqueta="Valor">
                 <div class="valor">
                   <input
@@ -43,12 +48,18 @@
                   />
                   <span>{{ parametro.unidad }}</span>
                   @if (!esValido(parametro)) {
-                    <span class="campo__error">Fuera de rango ({{ parametro.min }}–{{ parametro.max }}).</span>
+                    <span class="campo__error"
+                      >Fuera de rango ({{ parametro.min }}–{{ parametro.max }}).</span
+                    >
                   }
                 </div>
               </td>
               <td data-etiqueta="Origen">
-                <span class="chip" [class.chip--operativo]="!parametro.propuesta" [class.chip--admin]="parametro.propuesta">
+                <span
+                  class="chip"
+                  [class.chip--operativo]="!parametro.propuesta"
+                  [class.chip--admin]="parametro.propuesta"
+                >
                   <span class="chip__punto" aria-hidden="true"></span>
                   {{ parametro.propuesta ? 'Propuesta' : 'Documentado' }}
                 </span>
@@ -59,7 +70,9 @@
       </table>
     </div>
 
-    @if (errorGeneral(); as error) { <p class="nota nota--adv error-servicio">{{ error }}</p> }
+    @if (errorGeneral(); as error) {
+      <p class="nota nota--adv error-servicio">{{ error }}</p>
+    }
 
     <div class="acciones acciones--form">
       <button type="submit" class="boton boton--primario">Guardar parámetros</button>

@@ -11,7 +11,9 @@
       </p>
     </div>
     <div class="cabecera__acciones">
-      <button type="button" class="boton boton--primario" (click)="abrirAlta()">Nuevo repartidor</button>
+      <button type="button" class="boton boton--primario" (click)="abrirAlta()">
+        Nuevo repartidor
+      </button>
       <a routerLink="/entregas/hoja-reparto" class="boton boton--secundario">Hoja de reparto</a>
     </div>
   </div>
@@ -62,7 +64,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla tabla--repartidores">
-          <caption class="sr-only">Repartidores registrados</caption>
+          <caption class="sr-only">
+            Repartidores registrados
+          </caption>
           <thead>
             <tr>
               <th scope="col">Nombre</th>
@@ -85,7 +89,11 @@
                 <td data-etiqueta="Teléfono">{{ repartidor.telefono }}</td>
                 <td data-etiqueta="Vehículo">{{ repartidor.vehiculo ?? 'Sin vehículo' }}</td>
                 <td data-etiqueta="Estado">
-                  <span class="chip" [class.chip--exito]="repartidor.activo" [class.chip--neutro]="!repartidor.activo">
+                  <span
+                    class="chip"
+                    [class.chip--exito]="repartidor.activo"
+                    [class.chip--neutro]="!repartidor.activo"
+                  >
                     <span class="chip__punto" aria-hidden="true"></span>
                     {{ repartidor.activo ? 'Activo' : 'Inactivo' }}
                   </span>
@@ -93,9 +101,19 @@
                 <td data-etiqueta="Entregas">{{ entregasDe(repartidor.id) }}</td>
                 <td data-etiqueta="Acciones">
                   <div class="acciones">
-                    <button type="button" class="boton boton--enlace" (click)="abrirEdicion(repartidor)">Editar</button>
+                    <button
+                      type="button"
+                      class="boton boton--enlace"
+                      (click)="abrirEdicion(repartidor)"
+                    >
+                      Editar
+                    </button>
                     @if (repartidor.activo && repartidor.eliminadoEn === null) {
-                      <button type="button" class="boton boton--enlace" (click)="eliminando.set(repartidor)">
+                      <button
+                        type="button"
+                        class="boton boton--enlace"
+                        (click)="eliminando.set(repartidor)"
+                      >
                         Dar de baja
                       </button>
                     }

@@ -11,8 +11,7 @@ export const DASHBOARD_RUTAS: Routes = [
       {
         path: 'resumen',
         title: 'Resumen · Dashboard UNIQUE',
-        loadComponent: () =>
-          import('./paginas/resumen/resumen').then((c) => c.Resumen),
+        loadComponent: () => import('./paginas/resumen/resumen').then((c) => c.Resumen),
       },
       {
         path: 'ventas-productos',

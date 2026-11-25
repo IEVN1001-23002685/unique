@@ -32,7 +32,9 @@
             <tr>
               <td data-etiqueta="Alerta">
                 <span class="celda-principal">{{ alerta.titulo }}</span>
-                <span class="celda-secundaria">{{ alerta.entidadTipo }} · {{ alerta.entidadId }}</span>
+                <span class="celda-secundaria"
+                  >{{ alerta.entidadTipo }} · {{ alerta.entidadId }}</span
+                >
               </td>
               <td data-etiqueta="Severidad">
                 <app-chip-severidad [severidad]="alerta.severidad" />

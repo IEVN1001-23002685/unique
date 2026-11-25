@@ -2,11 +2,7 @@
 /** No son entidades MySQL: solo tipan lo que muestra y manipula el frontend. */
 
 export type EstadoPreparacion =
-  | 'POR_SURTIR'
-  | 'EN_PICKING'
-  | 'EN_VERIFICACION'
-  | 'EN_EMPAQUE'
-  | 'LISTA';
+  'POR_SURTIR' | 'EN_PICKING' | 'EN_VERIFICACION' | 'EN_EMPAQUE' | 'LISTA';
 
 export type PasoPreparacion = 'PICKING' | 'VERIFICACION' | 'EMPAQUE' | 'LISTA';
 
@@ -117,12 +113,7 @@ export const ETIQUETAS_PASO: Record<PasoPreparacion, string> = {
   LISTA: 'Lista',
 };
 
-export const PASOS_PREPARACION: PasoPreparacion[] = [
-  'PICKING',
-  'VERIFICACION',
-  'EMPAQUE',
-  'LISTA',
-];
+export const PASOS_PREPARACION: PasoPreparacion[] = ['PICKING', 'VERIFICACION', 'EMPAQUE', 'LISTA'];
 
 export const ETIQUETAS_TIPO_INCIDENCIA: Record<TipoIncidencia, string> = {
   SKU: 'Diferencia de SKU',

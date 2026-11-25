@@ -82,8 +82,7 @@ export class Incidencias {
   });
 
   protected readonly sinFiltros = computed(
-    () =>
-      this.busqueda().trim() === '' && this.estado() === 'TODAS' && this.tipo() === 'TODOS',
+    () => this.busqueda().trim() === '' && this.estado() === 'TODAS' && this.tipo() === 'TODOS',
   );
 
   protected readonly actual = computed(

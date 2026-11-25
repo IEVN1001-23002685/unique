@@ -1,12 +1,7 @@
 /** Modelos de interfaz de M19 · Entregas (§6 y §7 del documento UNIQUE v3.0). */
 /** No son entidades MySQL: solo tipan lo que muestra y manipula el frontend. */
 
-export type EstadoEntrega =
-  | 'PROGRAMADA'
-  | 'EN_RUTA'
-  | 'ENTREGADA'
-  | 'FALLIDA'
-  | 'CANCELADA';
+export type EstadoEntrega = 'PROGRAMADA' | 'EN_RUTA' | 'ENTREGADA' | 'FALLIDA' | 'CANCELADA';
 
 export type MotivoFallo = 'AUSENTE' | 'DIRECCION_INCORRECTA' | 'RECHAZADO' | 'OTRO';
 

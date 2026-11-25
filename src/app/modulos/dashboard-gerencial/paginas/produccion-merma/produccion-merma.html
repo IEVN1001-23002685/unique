@@ -16,7 +16,9 @@
   </div>
   <div class="tabla-contenedor">
     <table class="tabla">
-      <caption class="sr-only">Órdenes de producción de demostración</caption>
+      <caption class="sr-only">
+        Órdenes de producción de demostración
+      </caption>
       <thead>
         <tr>
           <th scope="col">Orden</th>
@@ -32,13 +34,19 @@
       <tbody>
         @for (orden of servicio.ordenes(); track orden.folio) {
           <tr>
-            <td data-etiqueta="Orden"><span class="mono">{{ orden.folio }}</span></td>
-            <td data-etiqueta="SKU"><span class="mono">{{ orden.sku }}</span></td>
+            <td data-etiqueta="Orden">
+              <span class="mono">{{ orden.folio }}</span>
+            </td>
+            <td data-etiqueta="SKU">
+              <span class="mono">{{ orden.sku }}</span>
+            </td>
             <td data-etiqueta="Semáforo"><app-chip-semaforo [tono]="orden.tono" /></td>
             <td data-etiqueta="Planeadas">{{ numero(orden.planeadas) }}</td>
             <td data-etiqueta="Aprobadas">{{ numero(orden.aprobadas) }}</td>
             <td data-etiqueta="Cumplimiento">
-              {{ porcentaje(orden.planeadas === 0 ? 0 : (orden.aprobadas / orden.planeadas) * 100) }}
+              {{
+                porcentaje(orden.planeadas === 0 ? 0 : (orden.aprobadas / orden.planeadas) * 100)
+              }}
             </td>
             <td data-etiqueta="Alcanza para">{{ numero(orden.alcanzaPara) }} pedido(s)</td>
             <td data-etiqueta="Etapa">{{ orden.etapa }}</td>
@@ -56,7 +64,9 @@
   </div>
   <div class="tabla-contenedor">
     <table class="tabla tabla--mermas">
-      <caption class="sr-only">Mermas de demostración por etapa y causa</caption>
+      <caption class="sr-only">
+        Mermas de demostración por etapa y causa
+      </caption>
       <thead>
         <tr>
           <th scope="col">Etapa</th>

@@ -51,9 +51,7 @@ export class PreparacionServicio {
 
   readonly preparaciones = this.lista.asReadonly();
   readonly incidencias = this.incidenciasLista.asReadonly();
-  readonly reglasEmpaque: ReglaEmpaque[] = REGLAS_EMPAQUE_SIMULADAS.filter(
-    (regla) => regla.activa,
-  );
+  readonly reglasEmpaque: ReglaEmpaque[] = REGLAS_EMPAQUE_SIMULADAS.filter((regla) => regla.activa);
 
   /** Pedidos CONFIRMADO que aún no tienen hoja, ordenados por prioridad y fecha prometida. */
   readonly cola = computed<Pedido[]>(() =>
@@ -88,9 +86,8 @@ export class PreparacionServicio {
     porTomar: this.cola().length,
     enCurso: this.enCurso().length,
     listas: this.terminadas().length,
-    incidenciasAbiertas: this.incidencias().filter(
-      (incidencia) => incidencia.estado === 'ABIERTA',
-    ).length,
+    incidenciasAbiertas: this.incidencias().filter((incidencia) => incidencia.estado === 'ABIERTA')
+      .length,
   }));
 
   obtener(folioPreparacion: string): Preparacion | undefined {
@@ -118,15 +115,12 @@ export class PreparacionServicio {
   }
 
   todoSurtido(preparacion: Preparacion): boolean {
-    return preparacion.lineas.every(
-      (linea) => linea.cantidadSurtida >= linea.cantidadRequerida,
-    );
+    return preparacion.lineas.every((linea) => linea.cantidadSurtida >= linea.cantidadRequerida);
   }
 
   todoVerificado(preparacion: Preparacion): boolean {
     return preparacion.lineas.every(
-      (linea) =>
-        linea.skuVerificado && linea.disenoVerificado && linea.etiquetasVerificadas,
+      (linea) => linea.skuVerificado && linea.disenoVerificado && linea.etiquetasVerificadas,
     );
   }
 
@@ -211,9 +205,7 @@ export class PreparacionServicio {
 
     this.actualizarLineas(folioPreparacion, (lineas) =>
       lineas.map((item) =>
-        item.id === linea.id
-          ? { ...item, cantidadSurtida: item.cantidadSurtida + 1 }
-          : item,
+        item.id === linea.id ? { ...item, cantidadSurtida: item.cantidadSurtida + 1 } : item,
       ),
     );
 
@@ -323,10 +315,7 @@ export class PreparacionServicio {
     if (!preparacion) {
       return [];
     }
-    const prendas = preparacion.lineas.reduce(
-      (suma, linea) => suma + linea.cantidadRequerida,
-      0,
-    );
+    const prendas = preparacion.lineas.reduce((suma, linea) => suma + linea.cantidadRequerida, 0);
     return this.reglasEmpaque.map((regla) => ({
       materialId: regla.materialId,
       nombre: regla.nombre,
@@ -336,10 +325,7 @@ export class PreparacionServicio {
     }));
   }
 
-  registrarIncidencia(
-    folioPreparacion: string,
-    datos: DatosIncidencia,
-  ): ResultadoOperacion {
+  registrarIncidencia(folioPreparacion: string, datos: DatosIncidencia): ResultadoOperacion {
     const preparacion = this.obtener(folioPreparacion);
     if (!preparacion) {
       return { ok: false, mensaje: 'No encontramos la hoja de preparación.' };
@@ -379,11 +365,7 @@ export class PreparacionServicio {
     };
   }
 
-  resolverIncidencia(
-    id: number,
-    resolucion: string,
-    conReposicion: boolean,
-  ): ResultadoOperacion {
+  resolverIncidencia(id: number, resolucion: string, conReposicion: boolean): ResultadoOperacion {
     const incidencia = this.incidenciasLista().find((item) => item.id === id);
     if (!incidencia || incidencia.estado !== 'ABIERTA') {
       return { ok: false, mensaje: 'La incidencia ya no está abierta.' };
@@ -402,9 +384,7 @@ export class PreparacionServicio {
         : 'Incidencia resuelta en la demo. No se persistió ningún movimiento.';
 
     this.incidenciasLista.update((actuales) =>
-      actuales.map((item) =>
-        item.id === id ? { ...item, estado, resolucion: texto } : item,
-      ),
+      actuales.map((item) => (item.id === id ? { ...item, estado, resolucion: texto } : item)),
     );
     return { ok: true, mensaje };
   }
@@ -412,9 +392,7 @@ export class PreparacionServicio {
   private crearIniciales(): Preparacion[] {
     return this.pedidos
       .pedidos()
-      .filter(
-        (pedido) => pedido.estado === 'EN_PREPARACION' || pedido.estado === 'LISTO_ENVIO',
-      )
+      .filter((pedido) => pedido.estado === 'EN_PREPARACION' || pedido.estado === 'LISTO_ENVIO')
       .map((pedido) => {
         const detalle = DETALLES_PREPARACION[pedido.folio];
         const terminada = pedido.estado === 'LISTO_ENVIO';
@@ -467,18 +445,14 @@ export class PreparacionServicio {
   ): void {
     this.lista.update((actuales) =>
       actuales.map((item) =>
-        item.folio === folioPreparacion
-          ? { ...item, lineas: transformar(item.lineas) }
-          : item,
+        item.folio === folioPreparacion ? { ...item, lineas: transformar(item.lineas) } : item,
       ),
     );
   }
 
   private cambiarEstado(folioPreparacion: string, estado: EstadoPreparacion): void {
     this.lista.update((actuales) =>
-      actuales.map((item) =>
-        item.folio === folioPreparacion ? { ...item, estado } : item,
-      ),
+      actuales.map((item) => (item.folio === folioPreparacion ? { ...item, estado } : item)),
     );
   }
 }

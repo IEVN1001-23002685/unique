@@ -2,7 +2,10 @@
   <div class="tarjeta bloque">
     <div class="bloque__titulo">
       <h2>Clientes registrados</h2>
-      <span>{{ visibles().length }} de {{ servicio.clientes().length }} · {{ totalPendiente() }} pagos pendientes</span>
+      <span
+        >{{ visibles().length }} de {{ servicio.clientes().length }} · {{ totalPendiente() }} pagos
+        pendientes</span
+      >
     </div>
     <label class="campo buscador">
       Buscar por nombre, correo o teléfono
@@ -37,7 +40,11 @@
               <span class="celda-secundaria">{{ cliente.correo }}</span>
             </td>
             <td data-etiqueta="Acceso">
-              <span class="chip" [class.chip--activa]="cliente.acceso === 'REGISTRADO'" [class.chip--sin-acceso]="cliente.acceso === 'SIN_ACCESO'">
+              <span
+                class="chip"
+                [class.chip--activa]="cliente.acceso === 'REGISTRADO'"
+                [class.chip--sin-acceso]="cliente.acceso === 'SIN_ACCESO'"
+              >
                 <span class="chip__punto" aria-hidden="true"></span>
                 {{ cliente.acceso === 'REGISTRADO' ? 'Registrado' : 'Sin acceso' }}
               </span>
@@ -63,7 +70,9 @@
                 <div class="detalle">
                   <p class="detalle__titulo">Historial de compras y cuenta simulada</p>
                   @if (cliente.historial.length === 0) {
-                    <p class="vacio">Este cliente no tiene compras registradas en la demo de M08.</p>
+                    <p class="vacio">
+                      Este cliente no tiene compras registradas en la demo de M08.
+                    </p>
                   } @else {
                     <ul class="historial">
                       @for (compra of cliente.historial; track compra.folio) {
@@ -77,7 +86,8 @@
                     </ul>
                   }
                   <p class="detalle__saldo">
-                    Saldo de cuenta simulada: <strong>{{ formatoMXN(cliente.saldoSimulado) }}</strong>
+                    Saldo de cuenta simulada:
+                    <strong>{{ formatoMXN(cliente.saldoSimulado) }}</strong>
                   </p>
                 </div>
               </td>
@@ -96,6 +106,7 @@
 
   <p class="nota nota-final">
     Esta pantalla es de consulta: no se puede editar la cuenta del cliente ni modificar sus compras,
-    pagos o devoluciones. El saldo es una cuenta simulada definida en parámetros; no representa dinero real.
+    pagos o devoluciones. El saldo es una cuenta simulada definida en parámetros; no representa
+    dinero real.
   </p>
 </section>

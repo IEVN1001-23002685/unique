@@ -1,5 +1,21 @@
-.filtros{display:grid;gap:.75rem}
-.error-servicio{margin:.85rem 0 0}
-.acciones--form{margin-top:1rem}
-.nota-final{margin-top:1.25rem}
-@media (min-width:768px){.filtros{grid-template-columns:repeat(4,minmax(0,1fr))}.campo--texto{grid-column:1/-1}}
+.filtros {
+  display: grid;
+  gap: 0.75rem;
+}
+.error-servicio {
+  margin: 0.85rem 0 0;
+}
+.acciones--form {
+  margin-top: 1rem;
+}
+.nota-final {
+  margin-top: 1.25rem;
+}
+@media (min-width: 768px) {
+  .filtros {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .campo--texto {
+    grid-column: 1/-1;
+  }
+}

@@ -1,11 +1,60 @@
-.tabla-incidencias{min-width:72rem}
-.filtros{margin:-.4rem 0 1rem}
-.resolucion{margin-top:1.25rem;padding:1rem;border:1px solid var(--color-unique-orquidea);border-radius:16px;background-color:var(--color-unique-fila)}
-.resolucion h3{margin:0;color:var(--color-unique-morado);font-family:var(--font-titulo);font-size:1rem}
-.resolucion__contexto{margin:.5rem 0 1rem;font-size:.82rem;line-height:1.5}
-.opciones{display:grid;gap:.4rem;margin:0 0 1rem;padding:.75rem;border:1px solid #d9bfdb;border-radius:12px;background-color:#fff}
-.opciones legend{padding:0 .3rem;color:var(--color-unique-morado);font-family:var(--font-interfaz);font-size:.78rem;font-weight:600}
-.opciones label{display:flex;align-items:flex-start;gap:.5rem;font-size:.8rem;line-height:1.4}
-.opciones input{margin-top:.15rem;accent-color:var(--color-unique-morado)}
-.resolucion__formulario{display:flex;flex-wrap:wrap;align-items:end;gap:.75rem}
-.resolucion__formulario .campo{flex:1 1 18rem}
+.tabla-incidencias {
+  min-width: 72rem;
+}
+.filtros {
+  margin: -0.4rem 0 1rem;
+}
+.resolucion {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--color-unique-orquidea);
+  border-radius: 16px;
+  background-color: var(--color-unique-fila);
+}
+.resolucion h3 {
+  margin: 0;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: 1rem;
+}
+.resolucion__contexto {
+  margin: 0.5rem 0 1rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.opciones {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid #d9bfdb;
+  border-radius: 12px;
+  background-color: #fff;
+}
+.opciones legend {
+  padding: 0 0.3rem;
+  color: var(--color-unique-morado);
+  font-family: var(--font-interfaz);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.opciones label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.opciones input {
+  margin-top: 0.15rem;
+  accent-color: var(--color-unique-morado);
+}
+.resolucion__formulario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+}
+.resolucion__formulario .campo {
+  flex: 1 1 18rem;
+}

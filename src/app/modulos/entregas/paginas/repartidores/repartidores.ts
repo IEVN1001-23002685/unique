@@ -28,13 +28,15 @@ export class Repartidores {
 
   protected readonly filtrados = computed<Repartidor[]>(() => {
     const termino = this.busqueda().trim().toLowerCase();
-    return this.servicio.repartidores().filter(
-      (item) =>
-        termino === '' ||
-        item.nombre.toLowerCase().includes(termino) ||
-        item.telefono.includes(termino) ||
-        (item.vehiculo ?? '').toLowerCase().includes(termino),
-    );
+    return this.servicio
+      .repartidores()
+      .filter(
+        (item) =>
+          termino === '' ||
+          item.nombre.toLowerCase().includes(termino) ||
+          item.telefono.includes(termino) ||
+          (item.vehiculo ?? '').toLowerCase().includes(termino),
+      );
   });
 
   protected alBuscar(evento: Event): void {

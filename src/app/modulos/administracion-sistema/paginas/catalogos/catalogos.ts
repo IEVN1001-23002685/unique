@@ -3,9 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
-import {
-  AdministracionSistemaServicio,
-} from '../../servicios/administracion-sistema-servicio';
+import { AdministracionSistemaServicio } from '../../servicios/administracion-sistema-servicio';
 import {
   ETIQUETAS_APLICA,
   ETIQUETAS_TIPO_CATALOGO,
@@ -57,12 +55,10 @@ export class Catalogos {
   protected readonly pendiente = signal<EntradaCatalogo | null>(null);
 
   constructor() {
-    this.formulario.controls.tipo.valueChanges
-      .pipe(takeUntilDestroyed())
-      .subscribe((tipo) => {
-        this.tipoSeleccionado.set(tipo);
-        this.cancelar();
-      });
+    this.formulario.controls.tipo.valueChanges.pipe(takeUntilDestroyed()).subscribe((tipo) => {
+      this.tipoSeleccionado.set(tipo);
+      this.cancelar();
+    });
   }
 
   protected entradas(): EntradaCatalogo[] {
@@ -77,7 +73,9 @@ export class Catalogos {
     const entrada = this.entradas().find((item) => item.id === id);
     return entrada
       ? this.servicio.codigoUsadoEnSku(entrada.tipo, entrada.codigo) &&
-          (entrada.tipo === 'COLOR' || entrada.tipo === 'TALLA' || entrada.tipo === 'CATEGORIA_PRODUCTO')
+          (entrada.tipo === 'COLOR' ||
+            entrada.tipo === 'TALLA' ||
+            entrada.tipo === 'CATEGORIA_PRODUCTO')
       : false;
   }
 
@@ -188,7 +186,16 @@ export class Catalogos {
   }
 
   protected errorEn(
-    control: 'codigo' | 'nombre' | 'hex' | 'orden' | 'prefijo' | 'cpInicio' | 'cpFin' | 'costo' | 'diasEstimados',
+    control:
+      | 'codigo'
+      | 'nombre'
+      | 'hex'
+      | 'orden'
+      | 'prefijo'
+      | 'cpInicio'
+      | 'cpFin'
+      | 'costo'
+      | 'diasEstimados',
   ): boolean {
     const campo = this.formulario.controls[control];
     return campo.invalid && (campo.touched || campo.dirty);
