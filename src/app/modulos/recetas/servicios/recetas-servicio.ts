@@ -164,7 +164,7 @@ export class RecetasServicio {
       5: 'ETQ-COM-BO',
     };
     return [
-      'ETQ-MAR',
+      'ETI-TEJ',
       ...(conTalla ? [`ETQ-TAL-${talla}`] : []),
       composicion[productoId] ?? 'ETQ-COM-SD',
     ];

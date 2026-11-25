@@ -113,13 +113,13 @@ const PRODUCTO_SEED: Record<
   string,
   { nombre: string; talla: string; color: string; varianteId: number }
 > = {
-  'SD-CH-NG': { nombre: 'HOODIE ROJA', talla: 'CH', color: 'Negro', varianteId: 3 },
-  'SD-CH-BL': { nombre: 'HOODIE ROJA', talla: 'CH', color: 'Blanco', varianteId: 1 },
-  'PL-MD-GR': { nombre: 'PLAYERA GRIS', talla: 'MD', color: 'Gris', varianteId: 5 },
-  'PN-GD-NG': { nombre: 'PANTS CAFE', talla: 'GD', color: 'Negro', varianteId: 8 },
-  'PN-GD-BL': { nombre: 'PANTS CAFE', talla: 'GD', color: 'Blanco', varianteId: 6 },
-  'GO-UN-BL': { nombre: 'GORRO BLANCO', talla: 'UN', color: 'Blanco', varianteId: 10 },
-  'BO-UN-NG': { nombre: 'TOTE BAG', talla: 'UN', color: 'Negro', varianteId: 12 },
+  'SD-CH-NG': { nombre: 'SUDADERA', talla: 'CH', color: 'Negro', varianteId: 2 },
+  'SD-CH-BL': { nombre: 'SUDADERA', talla: 'CH', color: 'Blanco', varianteId: 1 },
+  'PL-MD-GR': { nombre: 'PLAYERA', talla: 'MD', color: 'Gris', varianteId: 15 },
+  'PN-GD-NG': { nombre: 'PANTALÓN', talla: 'GD', color: 'Negro', varianteId: 26 },
+  'PN-GD-BL': { nombre: 'PANTALÓN', talla: 'GD', color: 'Blanco', varianteId: 25 },
+  'GO-UN-BL': { nombre: 'GORRO', talla: 'UN', color: 'Blanco', varianteId: 28 },
+  'BO-UN-NG': { nombre: 'BOLSA DE TELA', talla: 'UN', color: 'Negro', varianteId: 32 },
 };
 
 type FilaMerma = [

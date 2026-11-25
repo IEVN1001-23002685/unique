@@ -64,7 +64,7 @@ function etiquetaTallaDe(talla: string): number {
 
 export const RECETAS_COPIADAS: RecetaCopiada[] = [
   {
-    familia: 'HOODIE',
+    familia: 'SUDADERA',
     nombre: 'Sudadera con capucha',
     materiales: [
       {
@@ -119,7 +119,7 @@ export const RECETAS_COPIADAS: RecetaCopiada[] = [
     ],
   },
   {
-    familia: 'PANTS',
+    familia: 'PANTALÓN',
     nombre: 'Pantalón',
     materiales: [
       { materialId: 11, color: null, cantidadBrutaPorUnidad: 1.4, descripcion: 'Loneta' },
@@ -151,8 +151,8 @@ export const RECETAS_COPIADAS: RecetaCopiada[] = [
     ],
   },
   {
-    familia: 'TOTE',
-    nombre: 'Tote bag',
+    familia: 'BOLSA DE TELA',
+    nombre: 'Bolsa de tela',
     materiales: [
       { materialId: 11, color: null, cantidadBrutaPorUnidad: 0.9, descripcion: 'Loneta' },
       { materialId: 5, color: 'NA', cantidadBrutaPorUnidad: 25, descripcion: 'Hilo de costura' },
@@ -168,24 +168,18 @@ export const RECETAS_COPIADAS: RecetaCopiada[] = [
 
 /** Alias de familias del catálogo de M10 (SD, PL, PN, GO, BO). */
 const ALIAS_FAMILIA: Record<string, string> = {
-  SD: 'HOODIE',
-  SD2: 'HOODIE',
+  SD: 'SUDADERA',
   PL: 'PLAYERA',
-  PN: 'PANTS',
+  PN: 'PANTALÓN',
   GO: 'GORRO',
-  BO: 'TOTE',
+  BO: 'BOLSA DE TELA',
 };
 
+/** Únicos colores comerciales del catálogo oficial (§6.5). */
 const COLOR_SKU: Record<string, string> = {
   NG: 'Negro',
   BL: 'Blanco',
   GR: 'Gris',
-  ROJA: 'Rojo',
-  GRIS: 'Gris',
-  CAFE: 'NA',
-  BLANCO: 'Blanco',
-  CRUDO: 'Natural',
-  UNICA: 'NA',
 };
 
 export function familiaDeSku(sku: string): string {
@@ -199,9 +193,8 @@ export function colorDeSku(sku: string): string {
 
 export function nombreProductoDeSku(sku: string): string {
   const familia = familiaDeSku(sku);
-  const receta = RECETAS_COPIADAS.find(
-    (item) => item.familia === familia || ALIAS_FAMILIA[item.familia] === ALIAS_FAMILIA[familia],
-  );
+  const familiaBase = ALIAS_FAMILIA[familia] ?? familia;
+  const receta = RECETAS_COPIADAS.find((item) => item.familia === familiaBase);
   return receta?.nombre ?? 'Prenda UNIQUE';
 }
 
@@ -276,7 +269,7 @@ const SEMILLAS: SemillaOrden[] = [
     folio: 'OP-2026-0031',
     origen: 'PEDIDO',
     estado: 'LISTA',
-    sku: 'HOODIE-M-ROJA',
+    sku: 'SD-GD-NG',
     unidades: 24,
     diasRequerida: 4,
     notas: 'Materiales reservados; lista para iniciar.',
@@ -285,7 +278,7 @@ const SEMILLAS: SemillaOrden[] = [
     folio: 'OP-2026-0032',
     origen: 'STOCK_MINIMO',
     estado: 'PLANEADA',
-    sku: 'HOODIE-CH-GRIS',
+    sku: 'SD-CH-GR',
     unidades: 70,
     diasRequerida: 6,
     sinReservar: [1],
@@ -295,7 +288,7 @@ const SEMILLAS: SemillaOrden[] = [
     folio: 'OP-2026-0033',
     origen: 'MANUAL',
     estado: 'CANCELADA',
-    sku: 'PLAYERA-CH-GRIS',
+    sku: 'PL-GD-GR',
     unidades: 12,
     diasRequerida: null,
     sinReservar: 'todos',
@@ -305,7 +298,7 @@ const SEMILLAS: SemillaOrden[] = [
     folio: 'OP-2026-0034',
     origen: 'PEDIDO',
     estado: 'EN_PROCESO',
-    sku: 'PLAYERA-CH-GRIS',
+    sku: 'PL-GD-GR',
     unidades: 30,
     diasRequerida: 2,
     consumido: true,
@@ -315,7 +308,7 @@ const SEMILLAS: SemillaOrden[] = [
     folio: 'OP-2026-0035',
     origen: 'PEDIDO',
     estado: 'EN_REVISION',
-    sku: 'GORRO-UNICA-BLANCO',
+    sku: 'GO-UN-BL',
     unidades: 40,
     diasRequerida: 1,
     aprobadas: 30,
@@ -328,7 +321,7 @@ const SEMILLAS: SemillaOrden[] = [
     folio: 'OP-2026-0036',
     origen: 'MANUAL',
     estado: 'CERRADA',
-    sku: 'TOTE-UNICA-CRUD',
+    sku: 'BO-UN-GR',
     unidades: 25,
     diasRequerida: -3,
     aprobadas: 24,
@@ -341,7 +334,7 @@ const SEMILLAS: SemillaOrden[] = [
     folio: 'OP-2026-0037',
     origen: 'PEDIDO',
     estado: 'PLANEADA',
-    sku: 'PANTS-28-CAFE',
+    sku: 'PN-GD-NG',
     unidades: 20,
     diasRequerida: 7,
     sinReservar: [9],
@@ -351,7 +344,7 @@ const SEMILLAS: SemillaOrden[] = [
     folio: 'OP-2026-0038',
     origen: 'STOCK_MINIMO',
     estado: 'PLANEADA',
-    sku: 'SD2-GD-NG',
+    sku: 'SD-GD-NG',
     unidades: 15,
     diasRequerida: 5,
     sinReservar: [1],
@@ -361,7 +354,7 @@ const SEMILLAS: SemillaOrden[] = [
     folio: 'OP-2026-0039',
     origen: 'PEDIDO',
     estado: 'LISTA',
-    sku: 'PLAYERA-MD-NG',
+    sku: 'PL-MD-NG',
     unidades: 18,
     diasRequerida: -2,
     notas: 'Materiales completos, pero la fecha requerida ya venció.',
@@ -370,11 +363,11 @@ const SEMILLAS: SemillaOrden[] = [
     folio: 'OP-2026-0142',
     origen: 'PEDIDO',
     estado: 'PLANEADA',
-    sku: 'HOODIE-M-ROJA',
+    sku: 'SD-GD-NG',
     unidades: 12,
     diasRequerida: 3,
     sinReservar: [4],
-    notas: 'Estambre rojo en rojo: existe requisición, pero la orden de compra está retrasada.',
+    notas: 'Felpa negra sin existencia suficiente: existe requisición, pero la orden de compra está retrasada.',
   },
 ];
 

@@ -7,14 +7,18 @@ import {
   PRODUCTOS_MAESTRO_SIMULADOS,
   TALLAS_PRODUCTO,
 } from '../datos-simulados/productos-maestro';
+import { calcularCosteo } from './calculos-producto';
 import type {
   CategoriaProducto,
   CodigoColor,
   CodigoTalla,
+  DatosCategoria,
   DatosProducto,
+  DesgloseCosteo,
   FilaVariante,
   ImagenProducto,
   ProductoMaestro,
+  ResultadoCategoria,
   ResultadoProducto,
 } from '../modelos/producto-maestro';
 
@@ -23,7 +27,7 @@ const FACTOR_IVA = 1.16;
 /**
  * Estado de M10 en memoria. Sustituir por HttpClient cuando Flask esté disponible.
  * Genera los SKU con la regla 6.5 y conserva las fronteras de propiedad: el costo
- * y la existencia se leen (demo), M11 y M12 son los dueños reales.
+ * se lee de M11 y la existencia de M12; ninguno se modifica aquí.
  */
 @Injectable({
   providedIn: 'root',
@@ -32,6 +36,9 @@ export class ProductosServicio {
   private readonly recetas = inject(RecetasServicio);
 
   private readonly lista = signal<ProductoMaestro[]>(structuredClone(PRODUCTOS_MAESTRO_SIMULADOS));
+  private readonly listaCategorias = signal<CategoriaProducto[]>(
+    structuredClone(CATEGORIAS_PRODUCTO),
+  );
 
   /**
    * M10 conserva la propiedad del producto y del precio. El costo y las tallas con receta vigente
@@ -46,7 +53,7 @@ export class ProductosServicio {
   );
 
   readonly productos = this.conCosteo;
-  readonly categorias = CATEGORIAS_PRODUCTO;
+  readonly categorias = this.listaCategorias.asReadonly();
   readonly colores = COLORES_PRODUCTO;
   readonly tallas = TALLAS_PRODUCTO;
 
@@ -74,6 +81,7 @@ export class ProductosServicio {
       borradores: productos.filter((producto) => !producto.activo && producto.eliminadoEn === null)
         .length,
       variantes: productos.reduce((suma, producto) => suma + producto.variantes.length, 0),
+      categorias: this.listaCategorias().length,
     };
   });
 
@@ -82,7 +90,7 @@ export class ProductosServicio {
   }
 
   categoriaDe(id: number): CategoriaProducto | undefined {
-    return this.categorias.find((categoria) => categoria.id === id);
+    return this.listaCategorias().find((categoria) => categoria.id === id);
   }
 
   nombreCategoria(id: number): string {
@@ -145,6 +153,11 @@ export class ProductosServicio {
     return Math.round((precio / FACTOR_IVA) * 100) / 100;
   }
 
+  /** Desglose reactivo del precio; no se persiste y Flask lo recalculará. */
+  desglose(producto: ProductoMaestro): DesgloseCosteo {
+    return calcularCosteo(producto.costeo);
+  }
+
   /** Margen real (%) según §7 de M11: (precio / 1.16 − costo) ÷ (precio / 1.16). */
   margenReal(precio: number, costo: number | null): number | null {
     if (costo === null || precio <= 0) {
@@ -179,6 +192,7 @@ export class ProductosServicio {
     const tallas = this.tallasPorCategoria(datos.categoriaId).filter((talla) =>
       datos.tallas.includes(talla),
     );
+    const desglose = calcularCosteo(datos.costeo);
 
     if (!categoria) {
       return { ok: false, mensaje: 'Selecciona una categoría válida.' };
@@ -186,8 +200,11 @@ export class ProductosServicio {
     if (nombre.length < 3) {
       return { ok: false, mensaje: 'El nombre del producto debe tener al menos 3 caracteres.' };
     }
-    if (!Number.isFinite(datos.precioVenta) || datos.precioVenta <= 0) {
-      return { ok: false, mensaje: 'El precio de venta debe ser mayor a cero.' };
+    if (desglose.errores.length > 0) {
+      return { ok: false, mensaje: `Revisa el costeo: ${desglose.errores.join(' ')}` };
+    }
+    if (desglose.precioConIva <= 0) {
+      return { ok: false, mensaje: 'El precio calculado debe ser mayor a cero.' };
     }
     if (colores.length === 0 || tallas.length === 0) {
       return { ok: false, mensaje: 'Selecciona al menos un color y una talla.' };
@@ -209,13 +226,14 @@ export class ProductosServicio {
       datos.cantidadReposicion,
     );
     const bitacora = [...(actual?.bitacora ?? [])];
-    if (actual && actual.precioVenta !== datos.precioVenta) {
+    const precioVenta = desglose.precioConIva;
+    if (actual && actual.precioVenta !== precioVenta) {
       bitacora.push({
         id: bitacora.reduce((maximo, entrada) => Math.max(maximo, entrada.id), 0) + 1,
         fecha: new Date().toISOString(),
         usuario: 'Administrador',
         campo: 'precio_venta',
-        detalle: `De ${this.formatoMoneda(actual.precioVenta)} a ${this.formatoMoneda(datos.precioVenta)}. Las ventas anteriores no se modifican.`,
+        detalle: `De ${this.formatoMoneda(actual.precioVenta)} a ${this.formatoMoneda(precioVenta)} por fórmula de costeo. Las ventas anteriores no se modifican.`,
       });
     }
 
@@ -228,7 +246,7 @@ export class ProductosServicio {
       descripcion: datos.descripcion.trim(),
       composicionTextil: datos.composicionTextil.trim(),
       guiaMedidas: datos.guiaMedidas.trim(),
-      precioVenta: datos.precioVenta,
+      precioVenta,
       permiteBajoPedido: datos.permiteBajoPedido,
       activo: actual?.activo ?? false,
       eliminadoEn: actual?.eliminadoEn ?? null,
@@ -236,6 +254,7 @@ export class ProductosServicio {
       tallas,
       colores,
       variantes,
+      costeo: structuredClone(datos.costeo),
       // Costo y recetas vigentes se derivan de M11; no se guardan copias aquí.
       costoEstandar: null,
       recetasVigentes: [],
@@ -253,8 +272,8 @@ export class ProductosServicio {
       ok: true,
       productoId: producto.id,
       mensaje: actual
-        ? `Producto actualizado en memoria. ${variantes.length} variante(s), ningún SKU existente modificado.`
-        : `Producto creado en memoria con ${variantes.length} variante(s) y SKU generados. Queda como borrador hasta activar sus recetas en M11.`,
+        ? `Producto actualizado en memoria con precio calculado (${this.formatoMoneda(precioVenta)}). Ningún SKU existente modificado.`
+        : `Producto creado en memoria con ${variantes.length} variante(s) y precio calculado. Queda como borrador hasta activar sus recetas en M11.`,
     };
   }
 
@@ -333,6 +352,29 @@ export class ProductosServicio {
     };
   }
 
+  /** La biblioteca de imágenes asigna una imagen general o por color, sin duplicar URLs. */
+  asignarImagen(idProducto: number, color: CodigoColor | null, url: string): ResultadoProducto {
+    const producto = this.obtenerProducto(idProducto);
+    if (!producto || url === '') {
+      return { ok: false, mensaje: 'Selecciona un producto y una imagen válidos.' };
+    }
+
+    this.lista.update((productos) =>
+      productos.map((item) => {
+        if (item.id !== idProducto) {
+          return item;
+        }
+        const imagenes = item.imagenes.filter((imagen) => imagen.color !== color);
+        imagenes.push({ color, url, orden: color === null ? 1 : item.imagenes.length + 1 });
+        return { ...item, imagenes };
+      }),
+    );
+    return {
+      ok: true,
+      mensaje: `Imagen asignada a ${producto.nombre}${color === null ? '' : ` · ${this.nombreColor(color)}`} en memoria.`,
+    };
+  }
+
   /** Proyección para M03: solo productos activos, sin costos. */
   productosActivosParaTienda(): IProducto[] {
     return this.visibles().map((producto) => ({
@@ -345,6 +387,86 @@ export class ProductosServicio {
       categoria: this.nombreCategoria(producto.categoriaId),
       imagen: producto.imagenes[0]?.url ?? '',
     }));
+  }
+
+  // -- Categorías: propiedad de M10, creadas y gestionadas desde la interfaz. --
+
+  existePrefijo(prefijo: string, excluirId?: number): boolean {
+    const normalizado = prefijo.trim().toUpperCase();
+    return this.listaCategorias().some(
+      (categoria) =>
+        categoria.id !== excluirId && categoria.prefijo.toUpperCase() === normalizado,
+    );
+  }
+
+  existeNombreCategoria(nombre: string, excluirId?: number): boolean {
+    const normalizado = nombre.trim().toLocaleLowerCase('es-MX');
+    return this.listaCategorias().some(
+      (categoria) =>
+        categoria.id !== excluirId &&
+        categoria.nombre.trim().toLocaleLowerCase('es-MX') === normalizado,
+    );
+  }
+
+  guardarCategoria(datos: DatosCategoria, id?: number): ResultadoCategoria {
+    const nombre = datos.nombre.trim();
+    const prefijo = datos.prefijo.trim().toUpperCase();
+
+    if (nombre.length < 3) {
+      return { ok: false, mensaje: 'El nombre de la categoría debe tener al menos 3 caracteres.' };
+    }
+    if (!/^[A-Z]{2}$/.test(prefijo)) {
+      return { ok: false, mensaje: 'El prefijo debe tener exactamente dos letras, por ejemplo SD.' };
+    }
+    if (this.existeNombreCategoria(nombre, id) || this.existePrefijo(prefijo, id)) {
+      return { ok: false, mensaje: 'Ya existe una categoría con ese nombre o prefijo.' };
+    }
+
+    const actual = id === undefined ? undefined : this.categoriaDe(id);
+    if (id !== undefined && !actual) {
+      return { ok: false, mensaje: 'No encontramos la categoría solicitada.' };
+    }
+
+    const categoria: CategoriaProducto = {
+      id: actual?.id ?? this.siguienteCategoriaId(),
+      nombre,
+      prefijo,
+      usaTallas: datos.usaTallas,
+      activa: datos.activa,
+      descripcion: datos.descripcion.trim(),
+    };
+
+    this.listaCategorias.update((categorias) =>
+      actual
+        ? categorias.map((item) => (item.id === categoria.id ? categoria : item))
+        : [...categorias, categoria],
+    );
+
+    return {
+      ok: true,
+      categoriaId: categoria.id,
+      mensaje: actual
+        ? `Categoría ${categoria.nombre} actualizada en memoria. Los SKU existentes no se modifican.`
+        : `Categoría ${categoria.nombre} creada en memoria con prefijo ${prefijo}. Ya puedes usarla al crear un producto.`,
+    };
+  }
+
+  alternarCategoria(id: number): ResultadoCategoria {
+    const categoria = this.categoriaDe(id);
+    if (!categoria) {
+      return { ok: false, mensaje: 'No encontramos la categoría solicitada.' };
+    }
+    this.listaCategorias.update((categorias) =>
+      categorias.map((item) => (item.id === id ? { ...item, activa: !item.activa } : item)),
+    );
+    return {
+      ok: true,
+      mensaje: `Categoría ${categoria.nombre} ${categoria.activa ? 'desactivada' : 'activada'} en memoria.`,
+    };
+  }
+
+  private siguienteCategoriaId(): number {
+    return this.listaCategorias().reduce((maximo, categoria) => Math.max(maximo, categoria.id), 0) + 1;
   }
 
   private construirImagenes(

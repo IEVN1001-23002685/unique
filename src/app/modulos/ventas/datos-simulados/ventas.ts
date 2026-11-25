@@ -146,7 +146,7 @@ export const VENTAS_SIMULADAS: Venta[] = [
     motivoCancelacion: null,
     creadaPor: 'Cliente',
     notas: 'Envio local León.',
-    lineas: [linea('HOODIE-M-ROJA', 1), linea('PLAYERA-CH-GRIS', 2)],
+    lineas: [linea('SD-GD-NG', 1), linea('PL-GD-GR', 2)],
     direcciones: direcciones(
       'María Fernanda López',
       'Calle Madero',
@@ -190,7 +190,7 @@ export const VENTAS_SIMULADAS: Venta[] = [
     motivoCancelacion: null,
     creadaPor: 'Administrador',
     notas: 'Venta manual; transferencia por validar.',
-    lineas: [linea('PANTS-28-CAFE', 1)],
+    lineas: [linea('PN-GD-NG', 1)],
     direcciones: direcciones('Jorge Alberto Ruiz', 'Av. González de Cosío', '88', '37290'),
     pagos: [pago(2, 'COBRO', 'TRANSFERENCIA', 'PENDIENTE', 700, 'SIM-000122', fechaLocal(0, 9, 3))],
   }),
@@ -215,7 +215,7 @@ export const VENTAS_SIMULADAS: Venta[] = [
     motivoCancelacion: null,
     creadaPor: 'Cliente',
     notas: 'Incluye gorro para regalo.',
-    lineas: [linea('TOTE-UNICA-CRUD', 1), linea('GORRO-UNICA-BLANCO', 2)],
+    lineas: [linea('BO-UN-GR', 1), linea('GO-UN-BL', 2)],
     direcciones: direcciones('Lucía Martínez Soto', 'Calle Díaz de León', '210', '37050'),
     pagos: [pago(3, 'COBRO', 'CUENTA', 'APROBADO', 1610, 'SIM-000119', fechaLocal(1, 16, 42))],
   }),
@@ -240,7 +240,7 @@ export const VENTAS_SIMULADAS: Venta[] = [
     motivoCancelacion: null,
     creadaPor: 'Administrador',
     notas: 'Resolución de M07: reembolso parcial por talla.',
-    lineas: [linea('HOODIE-M-ROJA', 1)],
+    lineas: [linea('SD-GD-NG', 1)],
     direcciones: direcciones('Ana Sofía Torres', 'Calle 5 de Mayo', '45', '37120'),
     pagos: [
       pago(
@@ -289,7 +289,7 @@ export const VENTAS_SIMULADAS: Venta[] = [
     motivoCancelacion: null,
     creadaPor: 'Cliente',
     notas: 'Cupón aplicado en checkout.',
-    lineas: [linea('PLAYERA-CH-GRIS', 3)],
+    lineas: [linea('PL-GD-GR', 3)],
     direcciones: direcciones('Diego Hernández Cruz', 'Blvd. Adolfo López Mateos', '1500', '37260'),
     pagos: [
       pago(
@@ -326,7 +326,7 @@ export const VENTAS_SIMULADAS: Venta[] = [
     motivoCancelacion: null,
     creadaPor: 'Administrador',
     notas: 'Venta manual en efectivo.',
-    lineas: [linea('PANTS-28-CAFE', 2)],
+    lineas: [linea('PN-GD-NG', 2)],
     direcciones: direcciones(
       'Carmen Villalobos Pérez',
       'Calle Ignacio Zaragoza',
@@ -358,7 +358,7 @@ export const VENTAS_SIMULADAS: Venta[] = [
     motivoCancelacion: 'El cliente canceló antes de la preparación.',
     creadaPor: 'Cliente',
     notas: 'Reembolso simulado completo; reservas liberadas por M12.',
-    lineas: [linea('GORRO-UNICA-BLANCO', 1)],
+    lineas: [linea('GO-UN-BL', 1)],
     direcciones: direcciones('Rafael Medina Aguilar', 'Calle Corregidora', '302', '37300'),
     pagos: [
       pago(

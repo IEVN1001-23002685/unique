@@ -1,5 +1,5 @@
 <section class="vista">
-  <app-navegacion-productos [activo]="'nuevo'" />
+  <app-navegacion-productos [activo]="esEdicion ? null : 'nuevo'" />
 
   <a routerLink="/admin/productos" class="volver">← Volver al catálogo</a>
 
@@ -8,8 +8,8 @@
       <p class="eyebrow">M10 · Catálogo maestro</p>
       <h1 class="titulo">{{ esEdicion ? 'Editar producto' : 'Nuevo producto' }}</h1>
       <p class="subtitulo">
-        El código base y los SKU se generan solamente al guardar. Agregar un color o una talla crea
-        únicamente las variantes nuevas; las existentes conservan su SKU.
+        El código base y los SKU se generan al guardar. El precio NO se captura: se calcula con
+        materiales, mermas, mano de obra, bordado, indirectos y margen objetivo (§7.5).
       </p>
     </div>
   </div>
@@ -25,7 +25,7 @@
               class="campo__entrada"
               formControlName="nombre"
               maxlength="60"
-              placeholder="Ej. Sudadera universitaria"
+              placeholder="Ej. Sudadera"
               [attr.aria-invalid]="invalido('nombre')"
             />
             @if (invalido('nombre')) {
@@ -90,36 +90,225 @@
             {{
               categoria.usaTallas ? 'trabaja con tallas CH, MD y GD' : 'usa únicamente la talla UN'
             }}.
+            @if (!categoria.activa) {
+              <strong> La categoría está inactiva: actívala en Categorías antes de publicar.</strong>
+            }
           </p>
         }
       </fieldset>
 
-      <fieldset class="tarjeta seccion">
-        <legend class="seccion__titulo">2 · Precio y existencias iniciales</legend>
-        <div class="rejilla">
+      <fieldset class="tarjeta seccion" formGroupName="costeo">
+        <legend class="seccion__titulo">2 · Materiales, costos y precio calculado</legend>
+        <p class="nota">
+          Flujo guiado: <strong>Materiales + Porcentajes + Bordado → Receta → Precio</strong>. Los
+          costos base y las mermas se leen del catálogo de M11/M15; aquí solo se ajusta la captura
+          de demostración. Flask hará el cálculo autoritativo al integrarse.
+        </p>
+
+        <div class="selector-material">
           <label class="campo">
-            Precio de venta con IVA *
+            Tipo de material
+            <select class="campo__entrada" [value]="tipoMaterial()" (change)="alCambiarTipo($event)">
+              @for (tipo of tiposMaterial; track tipo) {
+                <option [value]="tipo">{{ tipo }}</option>
+              }
+            </select>
+          </label>
+          <label class="campo">
+            Material disponible
+            <select class="campo__entrada" [value]="idMaterial()" (change)="alCambiarMaterial($event)">
+              <option value="">Selecciona un material</option>
+              @for (material of materialesFiltrados(); track material.id) {
+                <option [value]="material.id">{{ material.codigo }} · {{ material.nombre }}</option>
+              }
+            </select>
+          </label>
+          <button type="button" class="boton boton--secundario boton--agregar" (click)="agregarMaterial()">
+            Agregar material
+          </button>
+        </div>
+        @if (materialesFiltrados().length === 0) {
+          <p class="ayuda">Ya agregaste todos los materiales de este tipo, o no hay disponibles.</p>
+        }
+
+        <div class="tabla-contenedor" formArrayName="lineas">
+          <table class="tabla tabla-costos">
+            <caption class="sr-only">Composición y costeos de la prenda</caption>
+            <thead>
+              <tr>
+                <th scope="col">Material</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Cantidad</th>
+                <th scope="col">Merma %</th>
+                <th scope="col">Composición %</th>
+                <th scope="col">Costo base</th>
+                <th scope="col">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (linea of lineas.controls; track linea.controls.id.value; let indice = $index) {
+                <tr [formGroupName]="indice">
+                  <td data-etiqueta="Material">
+                    <span class="celda-principal">{{ linea.controls.nombre.value }}</span>
+                    <span class="celda-secundaria mono">{{ linea.controls.codigo.value }}</span>
+                  </td>
+                  <td data-etiqueta="Tipo">{{ linea.controls.categoria.value }}</td>
+                  <td data-etiqueta="Cantidad">
+                    <input
+                      class="campo__entrada campo__entrada--compacto"
+                      type="number"
+                      min="0.0001"
+                      step="0.0001"
+                      formControlName="cantidad"
+                      [attr.aria-label]="'Cantidad de ' + linea.controls.nombre.value"
+                    />
+                    <span class="celda-secundaria">{{ linea.controls.unidad.value }}</span>
+                  </td>
+                  <td data-etiqueta="Merma">
+                    <input
+                      class="campo__entrada campo__entrada--compacto"
+                      type="number"
+                      min="0"
+                      max="90"
+                      step="0.5"
+                      formControlName="mermaPct"
+                      [attr.aria-label]="'Merma de ' + linea.controls.nombre.value"
+                    />
+                  </td>
+                  <td data-etiqueta="Composición">
+                    @if (linea.controls.categoria.value === 'Tela') {
+                      <input
+                        class="campo__entrada campo__entrada--compacto"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        formControlName="porcentaje"
+                        [attr.aria-label]="'Porcentaje de ' + linea.controls.nombre.value"
+                      />
+                    } @else {
+                      <span class="celda-secundaria">No aplica</span>
+                    }
+                  </td>
+                  <td data-etiqueta="Costo base">
+                    {{ linea.controls.costoBase.value | number: '1.4-4' : 'es-MX' }}
+                  </td>
+                  <td data-etiqueta="Acción">
+                    <button
+                      type="button"
+                      class="accion accion--peligro"
+                      (click)="quitarMaterial(indice)"
+                    >
+                      Quitar
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="estado-linea">
+                    Aún no hay materiales. Selecciona un tipo y agrega el primero.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <p class="composicion" [class.composicion--error]="totalPorcentajeTelas() !== 100">
+          Composición de telas: <strong>{{ totalPorcentajeTelas() }} %</strong> (debe sumar 100 %).
+        </p>
+
+        <div class="rejilla parametros">
+          <label class="campo">
+            Mano de obra por prenda (MXN) *
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="manoObra"
+              [attr.aria-invalid]="invalido('manoObra')"
+            />
+            @if (invalido('manoObra')) {
+              <span class="campo__error">Captura un valor mayor o igual a cero.</span>
+            }
+          </label>
+          <label class="campo">
+            Bordado (MXN) *
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="bordado"
+              [attr.aria-invalid]="invalido('bordado')"
+            />
+            @if (invalido('bordado')) {
+              <span class="campo__error">Captura un valor mayor o igual a cero.</span>
+            }
+          </label>
+          <label class="campo">
+            Indirectos (MXN) *
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="indirectos"
+              [attr.aria-invalid]="invalido('indirectos')"
+            />
+            @if (invalido('indirectos')) {
+              <span class="campo__error">Captura un valor mayor o igual a cero.</span>
+            }
+          </label>
+          <label class="campo">
+            Margen objetivo % *
             <input
               class="campo__entrada"
               type="number"
               min="1"
-              step="0.01"
-              formControlName="precioVenta"
-              [attr.aria-invalid]="invalido('precioVenta')"
+              max="90"
+              step="1"
+              formControlName="margenObjetivoPct"
+              [attr.aria-invalid]="invalido('margenObjetivoPct')"
             />
-            @if (invalido('precioVenta')) {
-              <span class="campo__error">Captura un precio mayor a $0.00.</span>
+            @if (invalido('margenObjetivoPct')) {
+              <span class="campo__error">Usa un margen entre 1 % y 90 %.</span>
             }
           </label>
+        </div>
 
-          <div class="campo">
-            <span class="campo__etiqueta">Precio sin IVA (16% incluido)</span>
-            <span class="dato-derivado">
-              {{ precioSinIva() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
-            </span>
-            <span class="ayuda">El precio de venta es el único precio del producto (§6).</span>
-          </div>
+        @if (desglose().errores.length > 0) {
+          <ul class="razones" role="alert">
+            @for (error of desglose().errores; track error) {
+              <li>{{ error }}</li>
+            }
+          </ul>
+        }
 
+        <div class="desglose">
+          <h3 class="subtitulo-seccion">Desglose transparente del precio</h3>
+          <dl class="desglose__lista">
+            <div><dt>Materia prima</dt><dd>{{ desglose().materiaPrima | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd></div>
+            <div><dt>Empaque por prenda</dt><dd>{{ desglose().empaque | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd></div>
+            <div><dt>Mano de obra</dt><dd>{{ desglose().manoObra | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd></div>
+            <div><dt>Bordado</dt><dd>{{ desglose().bordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd></div>
+            <div><dt>Indirectos</dt><dd>{{ desglose().indirectos | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd></div>
+            <div class="desglose__total"><dt>Costo estándar</dt><dd>{{ desglose().costoTotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd></div>
+            <div><dt>Precio sin IVA</dt><dd>{{ desglose().precioSinIva | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd></div>
+            <div><dt>IVA (16 %)</dt><dd>{{ desglose().iva | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd></div>
+          </dl>
+          <p class="desglose__precio">
+            Precio sugerido con IVA
+            <strong>{{ desglose().precioConIva | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+            <small>Margen real {{ desglose().margenReal === null ? '—' : desglose().margenReal + ' %' }}</small>
+          </p>
+        </div>
+      </fieldset>
+
+      <fieldset class="tarjeta seccion">
+        <legend class="seccion__titulo">3 · Existencias iniciales</legend>
+        <div class="rejilla">
           <label class="campo">
             Stock mínimo por defecto
             <input
@@ -134,7 +323,6 @@
               <span class="campo__error">Captura un número entero mayor o igual a cero.</span>
             }
           </label>
-
           <label class="campo">
             Cantidad de reposición por defecto
             <input
@@ -155,13 +343,13 @@
           <span>Permite bajo pedido</span>
         </label>
         <p class="ayuda">
-          Los valores de stock son propuesta inicial (5 y 20) y se ajustan en M12; aquí solo se
-          guardan como defaults para las variantes nuevas.
+          Los valores son propuesta inicial (5 y 20) y se ajustan en M12; aquí solo se guardan como
+          defaults para las variantes nuevas.
         </p>
       </fieldset>
 
       <fieldset class="tarjeta seccion">
-        <legend class="seccion__titulo">3 · Colores y tallas</legend>
+        <legend class="seccion__titulo">4 · Colores y tallas</legend>
         <div class="grupo-opciones">
           <div>
             <p class="grupo-opciones__titulo">Colores comerciales *</p>
@@ -173,9 +361,7 @@
                     [formControlName]="indice"
                     [id]="'color-' + color.codigo"
                   />
-                  <span
-                    >{{ color.nombre }} <small>{{ color.codigo }}</small></span
-                  >
+                  <span>{{ color.nombre }} <small>{{ color.codigo }}</small></span>
                 </label>
               }
             </div>
@@ -194,24 +380,20 @@
                     [formControlName]="indice"
                     [id]="'talla-' + talla.codigo"
                   />
-                  <span
-                    >{{ talla.nombre }} <small>{{ talla.codigo }}</small></span
-                  >
+                  <span>{{ talla.nombre }} <small>{{ talla.codigo }}</small></span>
                 </label>
               }
             </div>
             @if (sinTalla()) {
               <span class="campo__error">Selecciona al menos una talla.</span>
             }
-            <p class="ayuda">
-              Las tallas disponibles dependen de la categoría; GO y BO solo usan UN.
-            </p>
+            <p class="ayuda">Las tallas disponibles dependen de la categoría; GO y BO solo usan UN.</p>
           </div>
         </div>
       </fieldset>
 
       <fieldset class="tarjeta seccion">
-        <legend class="seccion__titulo">4 · Imágenes por color</legend>
+        <legend class="seccion__titulo">5 · Imágenes por color</legend>
         <label class="campo">
           Imagen general
           <select class="campo__entrada" formControlName="imagenGeneral">
@@ -235,13 +417,13 @@
           }
         </div>
         <p class="ayuda">
-          Solo se pueden elegir recursos de imagen que ya existen en el proyecto. No se descargan
-          fotografías externas.
+          Solo se pueden elegir recursos que existen en el proyecto. Para ampliar la biblioteca usa
+          la pestaña <a routerLink="/admin/productos/imagenes">Imágenes</a>.
         </p>
       </fieldset>
 
       <section class="tarjeta seccion">
-        <h2 class="seccion__titulo">5 · Vista previa de SKU</h2>
+        <h2 class="seccion__titulo">6 · Vista previa de SKU</h2>
         <p>
           Se generarán <strong>{{ skusVistaPrevia().length }}</strong> variantes con el código base
           <span class="mono">{{ codigoBase() || '—' }}</span>. Formato
@@ -260,7 +442,7 @@
 
       @if (esEdicion && producto) {
         <section class="tarjeta seccion">
-          <h2 class="seccion__titulo">6 · Activación y bitácora</h2>
+          <h2 class="seccion__titulo">7 · Activación y bitácora</h2>
           @if (razonesActivacion().length === 0) {
             <p class="nota nota--exito">
               Este producto cumple las condiciones de activación registradas en la demostración:

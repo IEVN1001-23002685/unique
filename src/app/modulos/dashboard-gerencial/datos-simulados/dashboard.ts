@@ -30,7 +30,7 @@ export const ENTREGAS_PROVEEDOR_DEMO = 87.5;
 export const ORDENES_PRODUCCION_DEMO: OrdenProduccionDemo[] = [
   { folio: `OP-${anio}-0112`, sku: 'SD-GD-NG', tono: 'ROJO', planeadas: 120, aprobadas: 74, alcanzaPara: 1, etapa: 'Producción' },
   { folio: `OP-${anio}-0114`, sku: 'PL-MD-GR', tono: 'ROJO', planeadas: 200, aprobadas: 118, alcanzaPara: 2, etapa: 'Revisión' },
-  { folio: `OP-${anio}-0118`, sku: 'PN-UN-BL', tono: 'AMBAR', planeadas: 80, aprobadas: 69, alcanzaPara: 4, etapa: 'Producción' },
+  { folio: `OP-${anio}-0118`, sku: 'PN-CH-BL', tono: 'AMBAR', planeadas: 80, aprobadas: 69, alcanzaPara: 4, etapa: 'Producción' },
   { folio: `OP-${anio}-0121`, sku: 'GO-UN-NG', tono: 'AMBAR', planeadas: 150, aprobadas: 136, alcanzaPara: 6, etapa: 'Bordado' },
   { folio: `OP-${anio}-0123`, sku: 'BO-UN-GR', tono: 'VERDE', planeadas: 90, aprobadas: 89, alcanzaPara: 11, etapa: 'Terminada' },
   { folio: `OP-${anio}-0127`, sku: 'SD-CH-BL', tono: 'VERDE', planeadas: 110, aprobadas: 108, alcanzaPara: 9, etapa: 'Revisión' },
@@ -69,9 +69,9 @@ export const PROVEEDORES_DEMO: ProveedorDemo[] = [
 ];
 
 export const DEVOLUCIONES_DEMO: DevolucionDemo[] = [
-  { motivo: 'Cambio de talla', producto: 'Hoodie roja', unidades: 14, tasa: 0.9 },
+  { motivo: 'Cambio de talla', producto: 'SUDADERA', unidades: 14, tasa: 0.9 },
   { motivo: 'Color diferente al esperado', producto: 'Playera gris', unidades: 8, tasa: 0.5 },
-  { motivo: 'Defecto de costura', producto: 'Pants café', unidades: 5, tasa: 0.3 },
+  { motivo: 'Defecto de costura', producto: 'PANTALÓN', unidades: 5, tasa: 0.3 },
   { motivo: 'Arrepentimiento', producto: 'Gorro blanco', unidades: 2, tasa: 0.1 },
 ];
 

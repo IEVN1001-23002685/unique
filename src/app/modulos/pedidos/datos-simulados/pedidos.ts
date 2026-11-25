@@ -32,11 +32,11 @@ const folioVenta = (numero: number): string => `UNQ-${anio}-${String(numero).pad
 
 /** SKU del catálogo (M10) tal como se proyectan en las ventas de demostración de M08. */
 const VARIANTES: Record<string, { nombreProducto: string; talla: string; color: string }> = {
-  'HOODIE-M-ROJA': { nombreProducto: 'Hoodie roja', talla: 'M', color: 'Roja' },
-  'PLAYERA-CH-GRIS': { nombreProducto: 'Playera gris', talla: 'CH', color: 'Gris' },
-  'PANTS-28-CAFE': { nombreProducto: 'Pants café', talla: '28', color: 'Café' },
-  'GORRO-UNICA-BLANCO': { nombreProducto: 'Gorro blanco', talla: 'Única', color: 'Blanco' },
-  'TOTE-UNICA-CRUD': { nombreProducto: 'Tote bag', talla: 'Única', color: 'Crudo' },
+  'SD-GD-NG': { nombreProducto: 'SUDADERA', talla: 'GD', color: 'Negro' },
+  'PL-GD-GR': { nombreProducto: 'PLAYERA', talla: 'GD', color: 'Gris' },
+  'PN-GD-NG': { nombreProducto: 'PANTALÓN', talla: 'MD', color: 'Negro' },
+  'GO-UN-BL': { nombreProducto: 'GORRO', talla: 'UN', color: 'Blanco' },
+  'BO-UN-GR': { nombreProducto: 'BOLSA DE TELA', talla: 'UN', color: 'Gris' },
 };
 
 function linea(
@@ -102,7 +102,7 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     canceladoPor: null,
     preparacionFolio: 'PREP-0481',
     entregaGuia: null,
-    lineas: [linea('HOODIE-M-ROJA', 1, 1, 1), linea('PLAYERA-CH-GRIS', 2, 2, 2)],
+    lineas: [linea('SD-GD-NG', 1, 1, 1), linea('PL-GD-GR', 2, 2, 2)],
     eventos: [
       evento(1, 26, 'Sistema', 'Pedido creado a partir de la venta confirmada.', 'RECIBIDO'),
       evento(2, 25, 'Sistema', 'Pago aprobado y líneas reservadas.', 'CONFIRMADO'),
@@ -134,7 +134,7 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     canceladoPor: null,
     preparacionFolio: null,
     entregaGuia: null,
-    lineas: [linea('PANTS-28-CAFE', 1, 0)],
+    lineas: [linea('PN-GD-NG', 1, 0)],
     eventos: [
       evento(
         4,
@@ -164,8 +164,8 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     preparacionFolio: null,
     entregaGuia: null,
     lineas: [
-      linea('TOTE-UNICA-CRUD', 1, 0, 0, `ORD-${anio}-0034`, enDias(4)),
-      linea('GORRO-UNICA-BLANCO', 2, 2, 0),
+      linea('BO-UN-GR', 1, 0, 0, `ORD-${anio}-0034`, enDias(4)),
+      linea('GO-UN-BL', 2, 2, 0),
     ],
     eventos: [
       evento(5, 96, 'Sistema', 'Pedido creado y pago recibido.', 'RECIBIDO'),
@@ -198,7 +198,7 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     canceladoPor: null,
     preparacionFolio: 'PREP-0479',
     entregaGuia: `GUI-${anio}-0479`,
-    lineas: [linea('HOODIE-M-ROJA', 1, 1, 1)],
+    lineas: [linea('SD-GD-NG', 1, 1, 1)],
     eventos: [
       evento(8, 9 * 24, 'Sistema', 'Pedido entregado; surgió un cambio de talla.', 'ENTREGADO'),
       evento(
@@ -236,7 +236,7 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     canceladoPor: null,
     preparacionFolio: 'PREP-0485',
     entregaGuia: null,
-    lineas: [linea('PLAYERA-CH-GRIS', 3, 3, 3)],
+    lineas: [linea('PL-GD-GR', 3, 3, 3)],
     eventos: [
       evento(10, 50, 'Sistema', 'Pedido confirmado con reserva completa.', 'CONFIRMADO'),
       evento(11, 30, 'Operativo Ramírez', 'Preparación iniciada.', 'EN_PREPARACION'),
@@ -261,7 +261,7 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     canceladoPor: null,
     preparacionFolio: null,
     entregaGuia: null,
-    lineas: [linea('PANTS-28-CAFE', 2, 2)],
+    lineas: [linea('PN-GD-NG', 2, 2)],
     eventos: [
       evento(13, 72, 'Sistema', 'Pedido creado con pago en efectivo por validar.', 'RECIBIDO'),
       evento(14, 8, 'Sistema', 'Pago aprobado y reserva completa; listo para M18.', 'CONFIRMADO'),
@@ -285,7 +285,7 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     canceladoPor: 'Cliente',
     preparacionFolio: null,
     entregaGuia: null,
-    lineas: [linea('GORRO-UNICA-BLANCO', 1, 0)],
+    lineas: [linea('GO-UN-BL', 1, 0)],
     eventos: [
       evento(16, 13 * 24, 'Sistema', 'Pedido recibido y pagado.', 'RECIBIDO'),
       evento(17, 12 * 24, 'Cliente', 'Cancelación solicitada: cambio de planes.', 'CANCELADO'),
@@ -309,7 +309,7 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     canceladoPor: null,
     preparacionFolio: 'PREP-0601',
     entregaGuia: `GUI-${anio}-0601`,
-    lineas: [linea('HOODIE-M-ROJA', 1, 1, 1)],
+    lineas: [linea('SD-GD-NG', 1, 1, 1)],
     eventos: [
       evento(18, 8 * 24, 'Sistema', 'Pedido confirmado.', 'CONFIRMADO'),
       evento(19, 6 * 24, 'Operativo Soto', 'Pedido listo para envío.', 'LISTO_ENVIO'),
@@ -334,7 +334,7 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     canceladoPor: null,
     preparacionFolio: null,
     entregaGuia: null,
-    lineas: [linea('PLAYERA-CH-GRIS', 2, 0)],
+    lineas: [linea('PL-GD-GR', 2, 0)],
     eventos: [
       evento(21, 1, 'Sistema', 'Venta manual creada; pendiente de validación de pago.', 'RECIBIDO'),
     ],
@@ -357,7 +357,7 @@ export const PEDIDOS_SIMULADOS: Pedido[] = [
     canceladoPor: 'Administradora Torres',
     preparacionFolio: null,
     entregaGuia: null,
-    lineas: [linea('TOTE-UNICA-CRUD', 1, 0)],
+    lineas: [linea('BO-UN-GR', 1, 0)],
     eventos: [
       evento(22, 5 * 24, 'Sistema', 'Pedido recibido con pago aprobado.', 'RECIBIDO'),
       evento(23, 3 * 24, 'Administradora Torres', 'Cancelado a petición del cliente.', 'CANCELADO'),

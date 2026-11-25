@@ -124,7 +124,7 @@ export const ENTREGAS_SIMULADAS: Entrega[] = [
     motivoFallo: 'AUSENTE',
     notas: 'No se localizó a la receptora en el domicilio; se dejó aviso.',
     decision: null,
-    lineas: [prenda('HOODIE-M-ROJA', 'Hoodie roja', 'M', 'Roja', 1)],
+    lineas: [prenda('SD-GD-NG', 'SUDADERA', 'GD', 'Negro', 1)],
   },
   {
     id: 13,
@@ -144,7 +144,7 @@ export const ENTREGAS_SIMULADAS: Entrega[] = [
     motivoFallo: 'DIRECCION_INCORRECTA',
     notas: 'La colonia indicada no coincide con el domicilio; se reprogramó por decisión del Administrador.',
     decision: 'REPROGRAMADA',
-    lineas: [prenda('HOODIE-M-ROJA', 'Hoodie roja', 'M', 'Roja', 1)],
+    lineas: [prenda('SD-GD-NG', 'SUDADERA', 'GD', 'Negro', 1)],
   },
   {
     id: 14,
@@ -164,7 +164,7 @@ export const ENTREGAS_SIMULADAS: Entrega[] = [
     motivoFallo: null,
     notas: 'Entregada en puerta a la titular del pedido.',
     decision: null,
-    lineas: [prenda('HOODIE-M-ROJA', 'Hoodie roja', 'M', 'Roja', 1)],
+    lineas: [prenda('SD-GD-NG', 'SUDADERA', 'GD', 'Negro', 1)],
   },
   {
     id: 15,
@@ -184,6 +184,6 @@ export const ENTREGAS_SIMULADAS: Entrega[] = [
     motivoFallo: null,
     notas: null,
     decision: null,
-    lineas: [prenda('HOODIE-M-ROJA', 'Hoodie roja', 'M', 'Roja', 1)],
+    lineas: [prenda('SD-GD-NG', 'SUDADERA', 'GD', 'Negro', 1)],
   },
 ];

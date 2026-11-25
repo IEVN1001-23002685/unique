@@ -25,7 +25,7 @@ const folioIncidencia = (numero: number): string =>
   `INC-${anio}-${String(numero).padStart(4, '0')}`;
 
 export const REGLAS_EMPAQUE_SIMULADAS: ReglaEmpaque[] = [
-  { materialId: 'EMP-BOL', nombre: 'Bolsa individual', base: 'POR_PRENDA', cantidad: 1, activa: true },
+  { materialId: 'EMP-KRA', nombre: 'Bolsa de kraft', base: 'POR_PRENDA', cantidad: 1, activa: true },
   { materialId: 'EMP-PAP', nombre: 'Papel protector', base: 'POR_PRENDA', cantidad: 1, activa: true },
   { materialId: 'EMP-TAR', nombre: 'Tarjeta con QR', base: 'POR_PEDIDO', cantidad: 1, activa: true },
   { materialId: 'EMP-ETE', nombre: 'Etiqueta de envío', base: 'POR_PEDIDO', cantidad: 1, activa: true },
@@ -87,13 +87,13 @@ export interface DetallePreparacionSimulado {
 export const DETALLES_PREPARACION: Record<string, DetallePreparacionSimulado> = {
   [folioPedidoDemo(481)]: {
     tomadaPor: 'Operativo Ramírez',
-    surtidas: { 'HOODIE-M-ROJA': 1, 'PLAYERA-CH-GRIS': 1 },
+    surtidas: { 'SD-GD-NG': 1, 'PL-GD-GR': 1 },
     verificado: false,
-    nota: 'Verificar que la talla M esté etiquetada antes del empaque.',
+    nota: 'Verificar que la talla GD esté etiquetada antes del empaque.',
   },
   [folioPedidoDemo(485)]: {
     tomadaPor: 'Operativo Ramírez',
-    surtidas: { 'PLAYERA-CH-GRIS': 3 },
+    surtidas: { 'PL-GD-GR': 3 },
     verificado: true,
     nota: '',
   },
@@ -105,7 +105,7 @@ export const INCIDENCIAS_SIMULADAS: Incidencia[] = [
     folio: folioIncidencia(241),
     preparacionFolio: 'PREP-0481',
     pedidoFolio: folioPedidoDemo(481),
-    sku: 'PLAYERA-CH-GRIS',
+    sku: 'PL-GD-GR',
     tipo: 'CANTIDAD',
     descripcion:
       'La reserva indicaba 2 unidades; físicamente se localizó 1. Falta surtir la segunda unidad.',
@@ -120,10 +120,10 @@ export const INCIDENCIAS_SIMULADAS: Incidencia[] = [
     folio: folioIncidencia(240),
     preparacionFolio: 'PREP-0481',
     pedidoFolio: folioPedidoDemo(481),
-    sku: 'HOODIE-L-ROJA',
+    sku: 'SD-GD-GR',
     tipo: 'SKU',
     descripcion:
-      'Se escaneó HOODIE-L-ROJA, que no pertenece al pedido. El sistema rechazó el escaneo.',
+      'Se escaneó SD-GD-GR, que no pertenece al pedido. El sistema rechazó el escaneo y se capturó el SKU correcto.',
     cantidad: 1,
     fecha: haceHoras(5),
     usuario: 'Operativo Ramírez',
@@ -135,7 +135,7 @@ export const INCIDENCIAS_SIMULADAS: Incidencia[] = [
     folio: folioIncidencia(239),
     preparacionFolio: 'PREP-0481',
     pedidoFolio: folioPedidoDemo(481),
-    sku: 'HOODIE-M-ROJA',
+    sku: 'SD-GD-NG',
     tipo: 'CALIDAD',
     descripcion:
       'Una unidad presentó bordado deshilado. Se separó para merma (etapa ALMACEN) y se tomó otra del inventario.',

@@ -1,21 +1,91 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AvisoToast } from '../../compartido/componentes/aviso-toast/aviso-toast';
+import { SelectorPerfilDemo } from '../../compartido/componentes/selector-perfil-demo/selector-perfil-demo';
+import {
+  PerfilDemoServicio,
+  type PerfilDemo,
+} from '../../nucleo/servicios/perfil-demo-servicio';
+
+interface EnlacePanel {
+  etiqueta: string;
+  ruta: string;
+  roles: PerfilDemo[];
+}
+
+interface GrupoPanel {
+  titulo: string;
+  enlaces: EnlacePanel[];
+}
 
 /**
- * Bandera superior del panel administrativo.
- * El título se toma de los datos de la ruta; sin guards reales, los roles son
- * únicamente una etiqueta demostrativa hasta la integración con Flask.
+ * Bandera superior del panel administrativo. La navegación se agrupa por
+ * responsabilidad y se filtra por el perfil de demostración; los guards y la
+ * autoridad definitiva corresponden a Flask (§3 y §10).
  */
 @Component({
   selector: 'app-administracion',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, AvisoToast],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AvisoToast, SelectorPerfilDemo],
   templateUrl: './administracion.html',
   styleUrl: './administracion.css',
 })
 export class Administracion {
   private readonly ruta = inject(ActivatedRoute);
+  protected readonly perfilDemo = inject(PerfilDemoServicio);
 
   protected readonly tituloModulo = String(this.ruta.snapshot.data['titulo'] ?? 'PANEL');
   protected readonly etiquetaRol = String(this.ruta.snapshot.data['rol'] ?? 'Administrador');
+  protected readonly perfil = this.perfilDemo.perfil;
+
+  private readonly admin: PerfilDemo[] = ['Administrador'];
+  private readonly operacion: PerfilDemo[] = ['Administrador', 'Operativo'];
+
+  /** Ruta guiada: Materiales + Porcentajes + Bordado → Receta → Precio → Producto. */
+  protected readonly grupos: GrupoPanel[] = [
+    {
+      titulo: 'Catálogos',
+      enlaces: [
+        { etiqueta: 'Productos', ruta: '/admin/productos', roles: this.admin },
+        { etiqueta: 'Categorías', ruta: '/admin/productos/categorias', roles: this.admin },
+        { etiqueta: 'Nuevas', ruta: '/admin/productos/nuevas', roles: this.admin },
+        { etiqueta: 'Imágenes', ruta: '/admin/productos/imagenes', roles: this.admin },
+        { etiqueta: 'Materiales', ruta: '/inventario-mp/catalogo', roles: this.admin },
+        { etiqueta: 'Recetas y costos', ruta: '/admin/recetas', roles: this.admin },
+      ],
+    },
+    {
+      titulo: 'Operación',
+      enlaces: [
+        { etiqueta: 'Pedidos', ruta: '/admin/pedidos', roles: this.operacion },
+        { etiqueta: 'Inventario PT', ruta: '/operacion/inventario-pt', roles: this.operacion },
+        { etiqueta: 'Inventario MP', ruta: '/inventario-mp', roles: this.operacion },
+        { etiqueta: 'Producción', ruta: '/produccion', roles: this.operacion },
+        { etiqueta: 'Mermas', ruta: '/mermas', roles: this.operacion },
+        { etiqueta: 'Preparación', ruta: '/preparacion', roles: this.operacion },
+        { etiqueta: 'Entregas', ruta: '/entregas', roles: this.operacion },
+        { etiqueta: 'Recepciones', ruta: '/recepciones', roles: this.operacion },
+      ],
+    },
+    {
+      titulo: 'Gerencia',
+      enlaces: [
+        { etiqueta: 'Ventas', ruta: '/ventas', roles: this.admin },
+        { etiqueta: 'Compras', ruta: '/compras', roles: this.admin },
+        { etiqueta: 'Proveedores', ruta: '/proveedores', roles: this.admin },
+        { etiqueta: 'Dashboard', ruta: '/dashboard', roles: this.operacion },
+        { etiqueta: 'Alertas', ruta: '/alertas', roles: this.operacion },
+        { etiqueta: 'Sistema', ruta: '/sistema', roles: this.admin },
+      ],
+    },
+  ];
+
+  protected readonly flujo = computed(() =>
+    this.perfil() === 'Cliente'
+      ? 'Explora el catálogo y realiza tu compra en la tienda.'
+      : 'Materiales → Receta → Precio → Producto → Variantes → Imágenes',
+  );
+
+  visible(grupo: GrupoPanel): EnlacePanel[] {
+    return grupo.enlaces.filter((enlace) => enlace.roles.includes(this.perfil()));
+  }
 }

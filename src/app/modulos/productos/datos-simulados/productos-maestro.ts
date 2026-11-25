@@ -1,9 +1,18 @@
+import {
+  CATEGORIAS_OFICIALES,
+  COLORES_OFICIALES,
+  IMAGENES_OFICIALES,
+  PRENDAS_OFICIALES,
+  TALLAS_OFICIALES,
+  type CodigoColorOficial,
+  type CodigoTallaOficial,
+} from '../../../nucleo/datos/catalogo-oficial';
 import type {
   CategoriaProducto,
-  CodigoColor,
-  CodigoTalla,
   ColorCatalogo,
   ImagenProducto,
+  LineaMaterialProducto,
+  ParametrosCosteo,
   ProductoMaestro,
   RecursoImagen,
   TallaCatalogo,
@@ -11,249 +20,190 @@ import type {
 } from '../modelos/producto-maestro';
 
 /**
- * DATOS DE DEMOSTRACIÓN de M10.
- * Categorías, colores, tallas y precios iniciales tomados de §11.1 y del catálogo
- * ya implementado. Los costos corresponden a la tabla de recetas semilla (§11.3)
- * y se muestran como provisionales hasta integrar M11. Las existencias son un
- * ejemplo proporcionado por M12, que es el dueño real de esa cifra.
+ * DATOS DE DEMOSTRACIÓN de M10, derivados del catálogo oficial (§6.5 y §11).
+ * Solo existen las cinco prendas permitidas, tres colores y 33 SKU. Los costos
+ * son una instantánea de lectura de M11 y se muestran como provisionales;
+ * Flask sustituirá estas cifras por las recetas VIGENTES.
  */
 
-export const CATEGORIAS_PRODUCTO: CategoriaProducto[] = [
-  { id: 1, nombre: 'Sudadera', prefijo: 'SD', usaTallas: true, activa: true },
-  { id: 2, nombre: 'Playera', prefijo: 'PL', usaTallas: true, activa: true },
-  { id: 3, nombre: 'Pantalón', prefijo: 'PN', usaTallas: true, activa: true },
-  { id: 4, nombre: 'Gorro', prefijo: 'GO', usaTallas: false, activa: true },
-  { id: 5, nombre: 'Bolsa de tela', prefijo: 'BO', usaTallas: false, activa: true },
-];
+export const CATEGORIAS_PRODUCTO: CategoriaProducto[] = CATEGORIAS_OFICIALES.map((categoria) => ({
+  ...categoria,
+}));
 
-export const COLORES_PRODUCTO: ColorCatalogo[] = [
-  { codigo: 'BL', nombre: 'Blanco' },
-  { codigo: 'NG', nombre: 'Negro' },
-  { codigo: 'GR', nombre: 'Gris' },
-];
+export const COLORES_PRODUCTO: ColorCatalogo[] = COLORES_OFICIALES.map(({ codigo, nombre }) => ({
+  codigo: codigo as CodigoColorOficial,
+  nombre,
+}));
 
-export const TALLAS_PRODUCTO: TallaCatalogo[] = [
-  { codigo: 'CH', nombre: 'Chica' },
-  { codigo: 'MD', nombre: 'Mediana' },
-  { codigo: 'GD', nombre: 'Grande' },
-  { codigo: 'UN', nombre: 'Única' },
-];
+export const TALLAS_PRODUCTO: TallaCatalogo[] = TALLAS_OFICIALES.map(({ codigo, nombre }) => ({
+  codigo: codigo as CodigoTallaOficial,
+  nombre,
+}));
 
-/** Únicos recursos de producto presentes en el proyecto. */
-export const IMAGENES_DISPONIBLES: RecursoImagen[] = [
-  { url: '/images/productos/hoodie-roja.png', etiqueta: 'Sudadera roja' },
-  { url: '/images/productos/playera-gris.png', etiqueta: 'Playera gris' },
-  { url: '/images/productos/pants-cafe.png', etiqueta: 'Pantalón café' },
-  { url: '/images/productos/gorro-blanco.png', etiqueta: 'Gorro blanco' },
-  { url: '/images/productos/tote-bag.png', etiqueta: 'Bolsa de tela' },
-];
+/** Biblioteca real del proyecto: únicamente recursos presentes en public/prendas. */
+export const IMAGENES_DISPONIBLES: RecursoImagen[] = IMAGENES_OFICIALES.map((recurso) => ({
+  url: recurso.url,
+  etiqueta: recurso.etiqueta,
+  categoria: recurso.categoria,
+}));
 
-interface SemillaProducto {
-  id: number;
-  slug: string;
-  nombre: string;
-  codigoSku: string;
-  categoriaId: number;
-  descripcion: string;
-  composicionTextil: string;
-  guiaMedidas: string;
-  precioVenta: number;
-  permiteBajoPedido: boolean;
-  activo: boolean;
-  imagen: string;
-  tallas: CodigoTalla[];
-  colores: CodigoColor[];
-  costoEstandar: number | null;
-  recetasVigentes: CodigoTalla[];
-  tieneHistorial: boolean;
-  existencias: number[];
+/** Valores capturados en M11; empaque POR_PRENDA según §11.6. */
+function linea(
+  id: number,
+  materialId: number,
+  codigo: string,
+  nombre: string,
+  categoria: LineaMaterialProducto['categoria'],
+  unidad: string,
+  cantidad: number,
+  costoBase: number,
+  mermaPct: number,
+  porcentaje = 0,
+  porPrenda = false,
+): LineaMaterialProducto {
+  return {
+    id,
+    materialId,
+    codigo,
+    nombre,
+    categoria,
+    unidad,
+    cantidad,
+    costoBase,
+    mermaPct,
+    porcentaje,
+    porPrenda,
+  };
 }
 
-const SEMILLAS: SemillaProducto[] = [
-  {
-    id: 1,
-    slug: 'hoodie-roja',
-    nombre: 'HOODIE ROJA',
-    codigoSku: 'SD',
-    categoriaId: 1,
-    descripcion: 'Barnesmith Sudadera con capucha, unisex.',
-    composicionTextil: '80% algodón, 20% poliéster',
-    guiaMedidas: 'CH 48 × 66 cm · MD 51 × 69 cm · GD 54 × 72 cm',
-    precioVenta: 850,
-    permiteBajoPedido: true,
-    activo: true,
-    imagen: '/images/productos/hoodie-roja.png',
-    tallas: ['CH', 'MD', 'GD'],
-    colores: ['BL', 'NG', 'GR'],
-    costoEstandar: 130.64,
-    recetasVigentes: ['CH', 'MD', 'GD'],
-    tieneHistorial: true,
-    existencias: [14, 9, 0, 6, 11, 3, 8, 0, 5],
-  },
-  {
-    id: 2,
-    slug: 'playera-gris',
-    nombre: 'PLAYERA GRIS',
-    codigoSku: 'PL',
-    categoriaId: 2,
-    descripcion: 'Camiseta unisex de manga tres cuartos.',
-    composicionTextil: '100% algodón',
-    guiaMedidas: 'CH 46 × 64 cm · MD 49 × 67 cm · GD 52 × 70 cm',
-    precioVenta: 280,
-    permiteBajoPedido: true,
-    activo: true,
-    imagen: '/images/productos/playera-gris.png',
-    tallas: ['CH', 'MD', 'GD'],
-    colores: ['BL', 'NG', 'GR'],
-    costoEstandar: 45.04,
-    recetasVigentes: ['CH', 'MD', 'GD'],
-    tieneHistorial: true,
-    existencias: [22, 15, 7, 18, 10, 4, 12, 6, 0],
-  },
-  {
-    id: 3,
-    slug: 'pants-cafe',
-    nombre: 'PANTS CAFE',
-    codigoSku: 'PN',
-    categoriaId: 3,
-    descripcion: 'Pantalón deportivo holgado unisex con cintura de cordón.',
-    composicionTextil: '80% algodón, 20% poliéster',
-    guiaMedidas: 'CH 68 cm · MD 72 cm · GD 76 cm de cintura',
-    precioVenta: 500,
-    permiteBajoPedido: true,
-    activo: true,
-    imagen: '/images/productos/pants-cafe.png',
-    tallas: ['CH', 'MD', 'GD'],
-    colores: ['BL', 'NG', 'GR'],
-    costoEstandar: 178.27,
-    recetasVigentes: ['CH', 'MD', 'GD'],
-    tieneHistorial: true,
-    existencias: [8, 5, 0, 6, 3, 2, 7, 4, 1],
-  },
-  {
-    id: 4,
-    slug: 'gorro-blanco',
-    nombre: 'GORRO BLANCO',
-    codigoSku: 'GO',
-    categoriaId: 4,
-    descripcion: 'Gorro de invierno unisex, talla única.',
-    composicionTextil: '100% acrílico',
-    guiaMedidas: 'Única, 22 cm de circunferencia sin estirar',
-    precioVenta: 280,
-    permiteBajoPedido: true,
-    activo: true,
-    imagen: '/images/productos/gorro-blanco.png',
-    tallas: ['UN'],
-    colores: ['BL', 'NG', 'GR'],
-    costoEstandar: 37.99,
-    recetasVigentes: ['UN'],
-    tieneHistorial: true,
-    existencias: [16, 12, 9],
-  },
-  {
-    id: 5,
-    slug: 'tote-bag',
-    nombre: 'TOTE BAG',
-    codigoSku: 'BO',
-    categoriaId: 5,
-    descripcion: 'Bolsa de manta cruda de 40 × 35 cm.',
-    composicionTextil: '100% manta de algodón',
-    guiaMedidas: 'Única, 40 × 35 cm',
-    precioVenta: 850,
-    permiteBajoPedido: true,
-    activo: true,
-    imagen: '/images/productos/tote-bag.png',
-    tallas: ['UN'],
-    colores: ['BL', 'NG', 'GR'],
-    costoEstandar: 35.46,
-    recetasVigentes: ['UN'],
-    tieneHistorial: true,
-    existencias: [20, 14, 11],
-  },
-  {
-    // Borrador: demuestra el consecutivo SD2 y la regla de activación.
-    id: 6,
-    slug: 'sudadera-universitaria',
-    nombre: 'SUDADERA UNIVERSITARIA',
-    codigoSku: 'SD2',
-    categoriaId: 1,
-    descripcion: 'Sudadera universitaria con aplicaciones de bordado por definir.',
-    composicionTextil: '80% algodón, 20% poliéster',
-    guiaMedidas: 'CH 48 × 66 cm · MD 51 × 69 cm',
-    precioVenta: 950,
-    permiteBajoPedido: true,
-    activo: false,
-    imagen: '/images/productos/hoodie-roja.png',
-    tallas: ['CH', 'MD'],
-    colores: ['NG', 'GR'],
-    costoEstandar: null,
-    recetasVigentes: [],
-    tieneHistorial: false,
-    existencias: [0, 0, 0, 0],
-  },
+const EMPAQUE: LineaMaterialProducto[] = [
+  linea(90, 23, 'EMP-KRA', 'Bolsa de kraft', 'Empaque', 'pieza', 1, 12, 0, 0, true),
+  linea(91, 24, 'EMP-PAP', 'Papel protector', 'Empaque', 'pieza', 1, 2.5, 0, 0, true),
+  linea(92, 25, 'EMP-TAR', 'Tarjeta personalizada con código QR', 'Empaque', 'pieza', 1, 5, 0, 0, true),
 ];
+
+const PARAMETROS_BASE = {
+  manoObra: 45,
+  bordado: 12,
+  indirectos: 20,
+  /** §11.5: margen objetivo 55 %. */
+  margenObjetivoPct: 55,
+};
+
+/** Costeo de ejemplo por prenda, tomado de la tabla de recetas semilla (§11.3). */
+function costeoDe(productoId: number): ParametrosCosteo {
+  const lineas: LineaMaterialProducto[] = [];
+
+  switch (productoId) {
+    case 1:
+      lineas.push(
+        linea(1, 1, 'TEL-FEL', 'Felpa', 'Tela', 'm²', 1.1029, 89.1975, 15, 80),
+        linea(2, 3, 'TEL-RIB', 'Tejido acanalado (rib)', 'Tela', 'm²', 0.1231, 50.2857, 20, 20),
+        linea(3, 6, 'HIL-COS', 'Hilo de costura 40/2', 'Hilo', 'm', 15.14, 0.012741, 10),
+        linea(4, 10, 'EST-HOJ', 'Estabilizador de corte', 'Estabilizador', 'pieza', 1, 5, 0),
+      );
+      break;
+    case 2:
+      lineas.push(
+        linea(5, 2, 'TEL-JER', 'Jersey peinado', 'Tela', 'm²', 1.0396, 25.731, 15, 80),
+        linea(6, 3, 'TEL-RIB', 'Tejido acanalado (rib)', 'Tela', 'm²', 0.1025, 50.2857, 20, 20),
+        linea(7, 6, 'HIL-COS', 'Hilo de costura 40/2', 'Hilo', 'm', 12.42, 0.012741, 10),
+        linea(8, 10, 'EST-HOJ', 'Estabilizador de corte', 'Estabilizador', 'pieza', 1, 5, 0),
+      );
+      break;
+    case 3:
+      lineas.push(
+        linea(9, 1, 'TEL-FEL', 'Felpa', 'Tela', 'm²', 1.2178, 89.1975, 15, 100),
+        linea(10, 6, 'HIL-COS', 'Hilo de costura 40/2', 'Hilo', 'm', 18.66, 0.012741, 10),
+        linea(11, 11, 'EST-ROL', 'Estabilizador en rollo', 'Estabilizador', 'm', 0.61, 21.9593, 0),
+        linea(12, 12, 'AVI-COR', 'Cordón redondo de poliéster', 'Avio', 'pieza', 1, 32.775, 0),
+        linea(13, 13, 'AVI-OJI', 'Ojillos metálicos de 8 mm', 'Avio', 'pieza', 2, 0.42, 0),
+      );
+      break;
+    case 4:
+      lineas.push(
+        linea(14, 5, 'HIL-EST', 'Estambre acrílico', 'Hilo', 'm', 130, 0.247619, 5),
+        linea(15, 6, 'HIL-COS', 'Hilo de costura 40/2', 'Hilo', 'm', 4, 0.012741, 10),
+        linea(16, 11, 'EST-ROL', 'Estabilizador en rollo', 'Estabilizador', 'm', 0.25, 21.9593, 0),
+      );
+      break;
+    default:
+      lineas.push(
+        linea(17, 4, 'TEL-LON', 'Loneta', 'Tela', 'm²', 0.341, 76.5333, 10, 100),
+        linea(18, 6, 'HIL-COS', 'Hilo de costura 40/2', 'Hilo', 'm', 11.65, 0.012741, 10),
+        linea(19, 10, 'EST-HOJ', 'Estabilizador de corte', 'Estabilizador', 'pieza', 1, 5, 0),
+      );
+      break;
+  }
+
+  return { ...PARAMETROS_BASE, lineas: [...lineas, ...EMPAQUE.map((item) => ({ ...item }))] };
+}
 
 let consecutivoVariante = 1;
 
-function crearVariantes(semilla: SemillaProducto): VarianteProducto[] {
-  const variantes: VarianteProducto[] = [];
+function crearVariantes(productoId: number, codigoBase: string): VarianteProducto[] {
+  const prenda = PRENDAS_OFICIALES.find((item) => item.id === productoId);
+  if (!prenda) {
+    return [];
+  }
 
-  for (const talla of semilla.tallas) {
-    for (const color of semilla.colores) {
-      const indice = variantes.length;
-      const existencia =
-        semilla.existencias.length > 0
-          ? (semilla.existencias[indice % semilla.existencias.length] ?? 0)
-          : 0;
-      variantes.push({
+  return prenda.tallas.flatMap((talla) =>
+    COLORES_OFICIALES.map(({ codigo: color }) => {
+      const existencia = prenda.existencias[talla]?.[color] ?? 0;
+      return {
         id: consecutivoVariante++,
-        sku: `${semilla.codigoSku}-${talla}-${color}`,
-        talla,
-        color,
+        sku: `${codigoBase}-${talla}-${color}`,
+        talla: talla as CodigoTallaOficial,
+        color: color as CodigoColorOficial,
         activa: true,
         existencia,
         reservado: Math.min(2, existencia),
         stockMinimo: 5,
         cantidadReposicion: 20,
-      });
-    }
-  }
-
-  return variantes;
+      };
+    }),
+  );
 }
 
-function crearProducto(semilla: SemillaProducto): ProductoMaestro {
+function crearProducto(id: number): ProductoMaestro {
+  const prenda = PRENDAS_OFICIALES.find((item) => item.id === id);
+  if (!prenda) {
+    throw new Error(`Prenda oficial ${id} no encontrada`);
+  }
+
   const imagenes: ImagenProducto[] = [
-    { color: null, url: semilla.imagen, orden: 1 },
-    ...semilla.colores.map((color, indice) => ({
-      color,
-      url: semilla.imagen,
-      orden: indice + 2,
-    })),
+    { color: null, url: prenda.imagen, orden: 1 },
+    ...COLORES_OFICIALES.flatMap((color, indice) => {
+      const url = prenda.imagenesPorColor[color.codigo];
+      return url === '' ? [] : [{ color: color.codigo, url, orden: indice + 2 }];
+    }),
   ];
 
   return {
-    id: semilla.id,
-    slug: semilla.slug,
-    nombre: semilla.nombre,
-    codigoSku: semilla.codigoSku,
-    categoriaId: semilla.categoriaId,
-    descripcion: semilla.descripcion,
-    composicionTextil: semilla.composicionTextil,
-    guiaMedidas: semilla.guiaMedidas,
-    precioVenta: semilla.precioVenta,
-    permiteBajoPedido: semilla.permiteBajoPedido,
-    activo: semilla.activo,
+    id: prenda.id,
+    slug: prenda.slug,
+    nombre: prenda.nombre,
+    codigoSku: prenda.codigoBase,
+    categoriaId: prenda.categoriaId,
+    descripcion: prenda.descripcion,
+    composicionTextil: prenda.composicion,
+    guiaMedidas: prenda.guiaMedidas,
+    precioVenta: prenda.precio,
+    permiteBajoPedido: true,
+    activo: true,
     eliminadoEn: null,
     imagenes,
-    tallas: [...semilla.tallas],
-    colores: [...semilla.colores],
-    variantes: crearVariantes(semilla),
-    costoEstandar: semilla.costoEstandar,
-    recetasVigentes: [...semilla.recetasVigentes],
-    tieneHistorial: semilla.tieneHistorial,
+    tallas: [...prenda.tallas],
+    colores: COLORES_OFICIALES.map((color) => color.codigo),
+    variantes: crearVariantes(prenda.id, prenda.codigoBase),
+    costeo: costeoDe(prenda.id),
+    costoEstandar: prenda.costoMateriaPrimaBase,
+    recetasVigentes: [...prenda.tallas],
+    tieneHistorial: true,
     bitacora: [],
   };
 }
 
-export const PRODUCTOS_MAESTRO_SIMULADOS: ProductoMaestro[] = SEMILLAS.map(crearProducto);
+export const PRODUCTOS_MAESTRO_SIMULADOS: ProductoMaestro[] = PRENDAS_OFICIALES.map((prenda) =>
+  crearProducto(prenda.id),
+);

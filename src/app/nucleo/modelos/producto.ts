@@ -4,7 +4,7 @@
  */
 export interface IProducto {
   id: number;
-  /** Identificador legible usado en la ruta de detalle, por ejemplo: hoodie-roja */
+  /** Identificador legible usado en la ruta de detalle, por ejemplo: sudadera */
   slug: string;
   nombre: string;
   descripcion: string;
@@ -15,7 +15,7 @@ export interface IProducto {
   descripcionDetalle?: string;
   precio: number;
   categoria: string;
-  /** Ruta pública del recurso, por ejemplo: images/productos/hoodie-roja.png */
+  /** Ruta pública real del recurso, por ejemplo: /prendas/sudadera/Sudaderanegra.png */
   imagen: string;
   /** Insignia opcional sobre la imagen, por ejemplo: "Más buscado" */
   etiqueta?: string;

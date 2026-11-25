@@ -9,101 +9,36 @@
       </div>
 
       <div class="panel__derecha">
-        <a
-          routerLink="/admin/productos"
-          routerLinkActive="panel__enlace--activo"
-          class="panel__enlace"
-        >
-          Productos
-        </a>
-        <a
-          routerLink="/admin/recetas"
-          routerLinkActive="panel__enlace--activo"
-          class="panel__enlace"
-        >
-          Recetas
-        </a>
-        <a
-          routerLink="/admin/pedidos"
-          routerLinkActive="panel__enlace--activo"
-          class="panel__enlace"
-        >
-          Pedidos
-        </a>
-        <a
-          routerLink="/preparacion"
-          routerLinkActive="panel__enlace--activo"
-          class="panel__enlace"
-        >
-          Preparación
-        </a>
-        <a
-          routerLink="/entregas"
-          routerLinkActive="panel__enlace--activo"
-          class="panel__enlace"
-        >
-          Entregas
-        </a>
-        <a
-          routerLink="/alertas"
-          routerLinkActive="panel__enlace--activo"
-          class="panel__enlace"
-        >
-          Alertas
-        </a>
-        <a
-          routerLink="/dashboard"
-          routerLinkActive="panel__enlace--activo"
-          class="panel__enlace"
-        >
-          Dashboard
-        </a>
-        <a routerLink="/ventas" routerLinkActive="panel__enlace--activo" class="panel__enlace">
-          Ventas
-        </a>
-        <a
-          routerLink="/operacion/inventario-pt"
-          routerLinkActive="panel__enlace--activo"
-          class="panel__enlace"
-        >
-          Inventario PT
-        </a>
-        <a routerLink="/proveedores" routerLinkActive="panel__enlace--activo" class="panel__enlace">
-          Proveedores
-        </a>
-        <a routerLink="/compras" routerLinkActive="panel__enlace--activo" class="panel__enlace">
-          Compras
-        </a>
-        <a routerLink="/recepciones" routerLinkActive="panel__enlace--activo" class="panel__enlace">
-          Recepciones
-        </a>
-        <a
-          routerLink="/inventario-mp"
-          routerLinkActive="panel__enlace--activo"
-          class="panel__enlace"
-        >
-          Inventario MP
-        </a>
-        <a routerLink="/produccion" routerLinkActive="panel__enlace--activo" class="panel__enlace">
-          Producción
-        </a>
-        <a routerLink="/mermas" routerLinkActive="panel__enlace--activo" class="panel__enlace">
-          Mermas
-        </a>
-        <a
-          routerLink="/sistema"
-          routerLinkActive="panel__enlace--activo"
-          class="panel__enlace"
-        >
-          Sistema
-        </a>
-        <a routerLink="/catalogo" class="panel__enlace">Volver a la tienda</a>
-        <span class="panel__perfil" [attr.title]="'Rol demostrativo: ' + etiquetaRol">
-          <span class="panel__avatar" aria-hidden="true">{{ etiquetaRol.charAt(0) }}</span>
-          {{ etiquetaRol }}
+        <a routerLink="/catalogo" class="panel__enlace">Ver tienda</a>
+        <app-selector-perfil-demo />
+        <span class="panel__perfil" [attr.title]="'Rol de la ruta: ' + etiquetaRol">
+          <span class="panel__avatar" aria-hidden="true">{{ perfil().charAt(0) }}</span>
+          {{ perfil() }}
         </span>
       </div>
     </div>
+
+    <nav class="panel__menu" aria-label="Navegación del panel">
+      @for (grupo of grupos; track grupo.titulo) {
+        @if (visible(grupo).length > 0) {
+          <details class="panel__grupo" [open]="true">
+            <summary class="panel__grupo-titulo">{{ grupo.titulo }}</summary>
+            <div class="panel__grupo-enlaces">
+              @for (enlace of visible(grupo); track enlace.ruta) {
+                <a
+                  [routerLink]="enlace.ruta"
+                  routerLinkActive="panel__enlace--activo"
+                  class="panel__enlace"
+                >
+                  {{ enlace.etiqueta }}
+                </a>
+              }
+            </div>
+          </details>
+        }
+      }
+    </nav>
+    <p class="panel__flujo">{{ flujo() }}</p>
   </header>
 
   <main class="panel__contenido">

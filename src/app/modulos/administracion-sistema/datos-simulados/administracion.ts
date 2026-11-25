@@ -143,7 +143,7 @@ export const PARAMETROS_INICIALES: ParametroSistema[] = [
 export const BITACORA_INICIAL: RegistroBitacora[] = [
   { id: 1, fecha: isoHace(2), usuario: 'Paola Zamora', accion: 'CAMBIO_ROL', entidad: 'usuario', entidadId: '2', detalle: 'Rol de Luis Fernando Ramírez cambiado a OPERATIVO.', ip: '192.168.1.24' },
   { id: 2, fecha: isoHace(6), usuario: 'Paola Zamora', accion: 'ACTUALIZA_PARAMETRO', entidad: 'configuracion', entidadId: 'merma_meta_pct', detalle: 'Meta de merma actualizada a 5 %.', ip: '192.168.1.24' },
-  { id: 3, fecha: isoHace(20), usuario: 'Paola Zamora', accion: 'ACTUALIZA_PRECIO', entidad: 'producto', entidadId: '1', detalle: 'Precio de HOODIE ROJA actualizado a $1,250.00 MXN.', ip: '192.168.1.24' },
+  { id: 3, fecha: isoHace(20), usuario: 'Paola Zamora', accion: 'ACTUALIZA_PRECIO', entidad: 'producto', entidadId: '1', detalle: 'Precio de SUDADERA actualizado por fórmula de costeo a $850.00 MXN.', ip: '192.168.1.24' },
   { id: 4, fecha: isoHace(28), usuario: 'Paola Zamora', accion: 'ACTUALIZA_RECETA', entidad: 'receta', entidadId: 'R-004', detalle: 'Receta vigente de SD-CH actualizada.', ip: '10.0.0.14' },
   { id: 5, fecha: isoHace(36), usuario: 'Luis Fernando Ramírez', accion: 'AJUSTE_INVENTARIO', entidad: 'movimiento_producto', entidadId: '45', detalle: 'Conteo físico de SD-MD-NG con diferencia +2 unidades.', ip: '192.168.1.31' },
   { id: 6, fecha: isoHace(52), usuario: 'Paola Zamora', accion: 'CANCELA_VENTA', entidad: 'venta', entidadId: 'VTA-1031', detalle: 'Venta cancelada por solicitud del cliente.', ip: '192.168.1.24' },

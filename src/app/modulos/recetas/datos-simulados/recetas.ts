@@ -175,8 +175,8 @@ export const MATERIALES: MaterialCatalogo[] = [
   },
   {
     id: 14,
-    codigo: 'ETQ-MAR',
-    nombre: 'Etiqueta de marca',
+    codigo: 'ETI-TEJ',
+    nombre: 'Etiqueta tejida UNIQUE',
     categoria: 'Etiqueta',
     unidadBase: 'pieza',
     costoBase: 0.65,
@@ -283,8 +283,8 @@ export const MATERIALES: MaterialCatalogo[] = [
   },
   {
     id: 23,
-    codigo: 'EMP-BOL',
-    nombre: 'Bolsa individual kraft mediana',
+    codigo: 'EMP-KRA',
+    nombre: 'Bolsa de kraft',
     categoria: 'Empaque',
     unidadBase: 'pieza',
     costoBase: 12,
@@ -346,7 +346,7 @@ export const INVENTARIO_MATERIAL_DEMO: Record<string, number> = {
   'EST-ROL': 68,
   'AVI-COR': 300,
   'AVI-OJI': 2400,
-  'ETQ-MAR': 1500,
+  'ETI-TEJ': 1500,
   'ETQ-TAL-CH': 600,
   'ETQ-TAL-MD': 600,
   'ETQ-TAL-GD': 600,
@@ -355,7 +355,7 @@ export const INVENTARIO_MATERIAL_DEMO: Record<string, number> = {
   'ETQ-COM-PN': 500,
   'ETQ-COM-GO': 500,
   'ETQ-COM-BO': 500,
-  'EMP-BOL': 900,
+  'EMP-KRA': 900,
   'EMP-PAP': 900,
   'EMP-TAR': 900,
   'EMP-ETE': 0,
@@ -482,7 +482,7 @@ function etiquetas(talla: CodigoTalla | null, productoId: number): SemillaLinea[
     4: 'ETQ-COM-GO',
     5: 'ETQ-COM-BO',
   };
-  const base: SemillaLinea[] = [{ codigo: 'ETQ-MAR', neta: 1 }];
+  const base: SemillaLinea[] = [{ codigo: 'ETI-TEJ', neta: 1 }];
   if (talla !== null) {
     base.push({ codigo: `ETQ-TAL-${talla}`, neta: 1 });
   }

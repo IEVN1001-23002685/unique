@@ -97,6 +97,118 @@
   font-weight: 700;
 }
 
+.selector-material {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  align-items: end;
+}
+
+.boton--agregar {
+  white-space: nowrap;
+}
+
+.tabla-costos {
+  min-width: 720px;
+  font-size: 0.8rem;
+}
+
+.campo__entrada--compacto {
+  width: 5.5rem;
+  min-height: 36px;
+  padding: 0.35rem 0.5rem;
+}
+
+.tabla-costos .celda-secundaria {
+  display: block;
+  font-size: 0.7rem;
+}
+
+.composicion {
+  margin: 0.9rem 0 0;
+  padding: 0.6rem 0.85rem;
+  border-radius: 999px;
+  background-color: var(--color-unique-exito-suave);
+  color: #217a47;
+  font-family: var(--font-interfaz);
+  font-size: 0.82rem;
+}
+
+.composicion--error {
+  border-radius: 12px;
+  background-color: var(--color-unique-error-suave);
+  color: #a52b3c;
+}
+
+.parametros {
+  margin-top: 1.25rem;
+}
+
+.desglose {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--color-unique-orquidea);
+  border-radius: 16px;
+  background-color: var(--color-unique-fila);
+}
+
+.desglose__lista {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.desglose__lista > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.desglose__lista dt {
+  color: var(--color-unique-texto-suave);
+  font-size: 0.82rem;
+}
+
+.desglose__lista dd {
+  margin: 0;
+  font-family: var(--font-titulo);
+  font-size: 0.9rem;
+}
+
+.desglose__total {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-unique-orquidea);
+}
+
+.desglose__total dt,
+.desglose__total dd {
+  color: var(--color-unique-morado);
+  font-weight: 700;
+}
+
+.desglose__precio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-morado);
+  color: #ffffff;
+  font-family: var(--font-interfaz);
+  font-size: 0.85rem;
+}
+
+.desglose__precio strong {
+  font-family: var(--font-titulo);
+  font-size: 1.5rem;
+}
+
+.desglose__precio small {
+  opacity: 0.85;
+}
+
 .ayuda {
   margin: 0.7rem 0 0;
   color: var(--color-unique-texto-suave);

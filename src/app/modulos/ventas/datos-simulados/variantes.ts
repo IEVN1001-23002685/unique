@@ -3,47 +3,48 @@ import type { VarianteVenta } from '../modelos/venta';
 /**
  * DATO DE DEMOSTRACIÓN (M08).
  * SKU con formato PRODUCTO-TALLA-COLOR, generado por el sistema; no editable.
- * Los costos estándar se muestran solo al Administrador.
+ * Los costos son una lectura de ejemplo de los parámetros oficiales (§11.3) y
+ * solo se muestran al Administrador; M11 es dueño de la cifra definitiva.
  */
 export const VARIANTES_SIMULADAS: VarianteVenta[] = [
   {
-    sku: 'HOODIE-M-ROJA',
-    nombreProducto: 'Hoodie roja',
-    talla: 'M',
-    color: 'Roja',
+    sku: 'SD-GD-NG',
+    nombreProducto: 'SUDADERA',
+    talla: 'GD',
+    color: 'Negro',
     precioUnitario: 850,
-    costoEstandarUnitario: 320,
+    costoEstandarUnitario: 130.64,
   },
   {
-    sku: 'PLAYERA-CH-GRIS',
-    nombreProducto: 'Playera gris',
-    talla: 'CH',
+    sku: 'PL-GD-GR',
+    nombreProducto: 'PLAYERA',
+    talla: 'GD',
     color: 'Gris',
     precioUnitario: 280,
-    costoEstandarUnitario: 95,
+    costoEstandarUnitario: 45.04,
   },
   {
-    sku: 'PANTS-28-CAFE',
-    nombreProducto: 'Pants café',
-    talla: '28',
-    color: 'Café',
+    sku: 'PN-GD-NG',
+    nombreProducto: 'PANTALÓN',
+    talla: 'GD',
+    color: 'Negro',
     precioUnitario: 500,
-    costoEstandarUnitario: 190,
+    costoEstandarUnitario: 178.27,
   },
   {
-    sku: 'GORRO-UNICA-BLANCO',
-    nombreProducto: 'Gorro blanco',
-    talla: 'Única',
+    sku: 'GO-UN-BL',
+    nombreProducto: 'GORRO',
+    talla: 'UN',
     color: 'Blanco',
     precioUnitario: 280,
-    costoEstandarUnitario: 90,
+    costoEstandarUnitario: 37.99,
   },
   {
-    sku: 'TOTE-UNICA-CRUD',
-    nombreProducto: 'Tote bag',
-    talla: 'Única',
-    color: 'Crudo',
+    sku: 'BO-UN-GR',
+    nombreProducto: 'BOLSA DE TELA',
+    talla: 'UN',
+    color: 'Gris',
     precioUnitario: 850,
-    costoEstandarUnitario: 260,
+    costoEstandarUnitario: 35.46,
   },
 ];

@@ -1,0 +1,142 @@
+<section class="vista">
+  <app-navegacion-productos [activo]="'imagenes'" />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M10 · Biblioteca visual</p>
+      <h1 class="titulo">Imágenes de producto y variables</h1>
+      <p class="subtitulo">
+        Usa únicamente recursos reales de <span class="mono">public/prendas</span>. Puedes subir una
+        imagen local para previsualizarla; la carga no se guarda en servidor y Flask definirá el
+        endpoint definitivo.
+      </p>
+    </div>
+  </div>
+
+  <p class="nota">
+    La biblioteca atiende productos, colores, materiales, bordados, categorías y la sección
+    «Nuevas». Solo la asignación a producto/color se aplica en memoria; los demás destinos quedan
+    señalados como pendientes de integración.
+  </p>
+
+  <div class="rejilla-imagenes">
+    <section class="tarjeta seccion">
+      <h2 class="seccion__titulo">Biblioteca disponible</h2>
+      <div class="filtros">
+        <label class="campo">
+          Categoría del recurso
+          <select class="campo__entrada" [value]="categoriaFiltro()" (change)="alFiltrar($event)">
+            @for (categoria of categorias(); track categoria) {
+              <option [value]="categoria">{{ categoria === 'TODAS' ? 'Todas' : categoria }}</option>
+            }
+          </select>
+        </label>
+        <p class="conteo">{{ visibles().length }} recurso(s)</p>
+      </div>
+
+      <div class="galeria">
+        @for (recurso of visibles(); track recurso.url) {
+          <button
+            type="button"
+            class="recurso"
+            [class.recurso--seleccionado]="seleccionada()?.url === recurso.url"
+            (click)="seleccionar(recurso)"
+            [attr.aria-pressed]="seleccionada()?.url === recurso.url"
+          >
+            <span class="recurso__visual">
+              @if (imagenVisible(recurso)) {
+                <img
+                  [src]="recurso.url"
+                  [alt]="recurso.etiqueta"
+                  loading="lazy"
+                  (error)="marcarFallido(recurso.url)"
+                />
+              } @else {
+                <span class="recurso__vacio">Imagen no disponible</span>
+              }
+            </span>
+            <span class="recurso__etiqueta">{{ recurso.etiqueta }}</span>
+            <span class="recurso__categoria">{{ recurso.categoria }}</span>
+          </button>
+        } @empty {
+          <p class="estado-linea">No hay recursos en esta categoría.</p>
+        }
+      </div>
+    </section>
+
+    <div class="columna-lateral">
+      <section class="tarjeta seccion">
+        <h2 class="seccion__titulo">Subir imagen local</h2>
+        <label class="campo">
+          Archivo PNG, JPG o WebP (máximo 2 MB)
+          <input class="campo__entrada" type="file" accept="image/png,image/jpeg,image/webp" (change)="alSeleccionarArchivo($event)" />
+        </label>
+        <label class="campo">
+          Etiqueta
+          <input class="campo__entrada" [value]="etiquetaCarga()" (input)="alCambiarEtiqueta($event)" maxlength="60" />
+        </label>
+        @if (errorArchivo()) {
+          <p class="campo__error" role="alert">{{ errorArchivo() }}</p>
+        }
+        @if (vistaPrevia()) {
+          <div class="previsualizacion">
+            <img [src]="vistaPrevia()" alt="Previsualización de la imagen cargada" />
+            <p class="ayuda">Previsualización local; no se envía a ningún servidor.</p>
+          </div>
+        }
+        <button type="button" class="boton boton--primario" (click)="agregarCarga()">
+          Agregar a la biblioteca
+        </button>
+      </section>
+
+      <section class="tarjeta seccion">
+        <h2 class="seccion__titulo">Asignar imagen</h2>
+        <label class="campo">
+          Destino
+          <select class="campo__entrada" [value]="destino()" (change)="alCambiarDestino($event)">
+            @for (destino of destinos; track destino) {
+              <option [value]="destino">{{ destino }}</option>
+            }
+          </select>
+        </label>
+
+        @if (seleccionada(); as recurso) {
+          <p class="seleccion">
+            Seleccionada: <strong>{{ recurso.etiqueta }}</strong>
+          </p>
+        } @else {
+          <p class="estado-linea">Elige una imagen de la biblioteca.</p>
+        }
+
+        @if (destino() === 'Producto') {
+          <label class="campo">
+            Producto
+            <select class="campo__entrada" [value]="productoId()" (change)="alCambiarProducto($event)">
+              <option value="">Selecciona un producto</option>
+              @for (producto of productos(); track producto.id) {
+                <option [value]="producto.id">{{ producto.nombre }}</option>
+              }
+            </select>
+          </label>
+          <label class="campo">
+            Color (opcional)
+            <select class="campo__entrada" [value]="color()" (change)="alCambiarColor($event)">
+              <option value="">Imagen general</option>
+              @for (color of colores; track color.codigo) {
+                <option [value]="color.codigo">{{ color.nombre }} · {{ color.codigo }}</option>
+              }
+            </select>
+          </label>
+          <button type="button" class="boton boton--primario" (click)="asignar()">
+            Asignar en memoria
+          </button>
+        } @else {
+          <p class="nota">
+            La asignación a <strong>{{ destino() }}</strong> requiere el catálogo definitivo de
+            Flask. Por ahora la imagen queda disponible en la biblioteca de demostración.
+          </p>
+        }
+      </section>
+    </div>
+  </div>
+</section>

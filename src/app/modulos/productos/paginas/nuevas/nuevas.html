@@ -1,0 +1,82 @@
+<section class="vista">
+  <app-navegacion-productos [activo]="'nuevas'" />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M10 · Nuevas</p>
+      <h1 class="titulo">Prendas y variables nuevas</h1>
+      <p class="subtitulo">
+        Explora las prendas oficiales y sus variantes. Al elegir una, el formulario de producto se
+        precarga con la categoría, los colores, las tallas y las imágenes reales disponibles.
+      </p>
+    </div>
+  </div>
+
+  <p class="nota">
+    Catálogo comercial: solo Blanco (BL), Negro (NG) y Gris (GR). Los SKU siempre tienen tres
+    segmentos: <span class="mono">PRODUCTO-TALLA-COLOR</span>.
+  </p>
+
+  <div class="tarjetas">
+    @for (prenda of prendas; track prenda.id) {
+      <article class="tarjeta prenda">
+        <div class="prenda__visual">
+          @if (imagenVisible(prenda.slug, prenda.imagen)) {
+            <img
+              [src]="prenda.imagen"
+              [alt]="'Vista previa de ' + prenda.nombre"
+              (error)="marcarFallido(prenda.slug)"
+            />
+          } @else {
+            <span class="prenda__sin-imagen">Imagen no disponible</span>
+          }
+        </div>
+        <div class="prenda__cuerpo">
+          <p class="prenda__categoria">{{ prenda.categoria }} · {{ prenda.codigoBase }}</p>
+          <h2 class="prenda__nombre">{{ prenda.nombre }}</h2>
+          <p class="prenda__descripcion">{{ prenda.descripcionDetalle }}</p>
+          <p class="prenda__etiquetas">
+            <span>Tallas: {{ prenda.tallas.length }}</span>
+            <span>Colores: {{ colores.length }}</span>
+            <span>SKU: {{ prenda.tallas.length * colores.length }}</span>
+          </p>
+          @if (perfilDemo.puedeVerCostos()) {
+            <p class="prenda__costo">
+              Costo de materia prima de referencia:
+              {{ prenda.costoMateriaPrimaBase | number: '1.2-2' : 'es-MX' }} MXN
+            </p>
+          }
+          <button type="button" class="boton boton--primario" (click)="elegir(prenda)">
+            Crear producto con esta prenda
+          </button>
+        </div>
+      </article>
+    }
+  </div>
+
+  <section class="tarjeta seccion">
+    <h2 class="seccion__titulo">Variables disponibles</h2>
+    <div class="variables">
+      <div>
+        <h3>Colores comerciales</h3>
+        <div class="chips">
+          @for (color of colores; track color.codigo) {
+            <span class="chip chip--activo">{{ color.nombre }} · {{ color.codigo }}</span>
+          }
+        </div>
+      </div>
+      <div>
+        <h3>Tallas</h3>
+        <div class="chips">
+          @for (talla of tallas; track talla.codigo) {
+            <span class="chip">{{ nombreTalla(talla.codigo) }} · {{ talla.codigo }}</span>
+          }
+        </div>
+      </div>
+    </div>
+    <p class="nota">
+      El precio no se captura aquí: se calcula en el formulario a partir de materiales, mermas, mano
+      de obra, bordado, indirectos y margen objetivo (§7.5).
+    </p>
+  </section>
+</section>
