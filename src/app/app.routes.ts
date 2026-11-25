@@ -42,20 +42,31 @@ export const routes: Routes = [
           ),
       },
       {
-        // M01 · Acceso (la fuente de verdad de roles será Flask).
+        // M01 · Acceso y registro. Las URL se conservan; las viven en una sola carpeta.
+        // La fuente de verdad de roles y sesión será Flask.
         path: 'login',
         loadComponent: () =>
-          import('./modulos/inicio-sesion/inicio-sesion').then((c) => c.InicioSesion),
+          import('./modulos/acceso-registro/paginas/inicio-sesion/inicio-sesion').then(
+            (c) => c.InicioSesion,
+          ),
       },
       {
         path: 'registro',
-        loadComponent: () => import('./modulos/registro/registro').then((c) => c.Registro),
+        loadComponent: () =>
+          import('./modulos/acceso-registro/paginas/registro/registro').then((c) => c.Registro),
       },
       {
         path: 'recuperar',
         loadComponent: () =>
-          import('./modulos/recuperar-password/recuperar-password').then(
+          import('./modulos/acceso-registro/paginas/recuperar-password/recuperar-password').then(
             (c) => c.RecuperarPassword,
+          ),
+      },
+      {
+        path: 'restablecer/:token',
+        loadComponent: () =>
+          import('./modulos/acceso-registro/paginas/restablecer-password/restablecer-password').then(
+            (c) => c.RestablecerPassword,
           ),
       },
       {
