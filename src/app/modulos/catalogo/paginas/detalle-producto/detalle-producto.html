@@ -1,16 +1,38 @@
 <main class="detalle">
+  @if (sinConexion()) {
+    <p class="detalle__aviso-sin-conexion" role="status">
+      Existencias y precios pueden no estar actualizados.
+    </p>
+  }
+
   @if (producto(); as productoActual) {
     <article class="detalle__tarjeta">
-      <div class="detalle__imagen">
-        @if (imagenNoDisponible()) {
-          <span class="detalle__imagen-respaldo">{{ productoActual.nombre }}</span>
-        } @else {
-          <img
-            [src]="productoActual.imagen"
-            [alt]="productoActual.nombre"
-            (error)="imagenNoDisponible.set(true)"
-          />
-        }
+      <div class="detalle__imagen-contenedor">
+        <div class="detalle__imagen">
+          @if (imagenNoDisponible() || imagen() === '') {
+            <span class="detalle__imagen-respaldo">Imagen no disponible</span>
+          } @else {
+            <img
+              [src]="imagen()"
+              [alt]="productoActual.nombre"
+              (error)="imagenNoDisponible.set(true)"
+            />
+          }
+        </div>
+
+        <div class="detalle__galeria" aria-label="Galería por color">
+          @for (color of colores(); track color) {
+            <button
+              type="button"
+              class="detalle__miniatura"
+              [class.detalle__miniatura--activa]="color === colorSeleccionado()"
+              [style.background-color]="coloresCatalogo[color].hex"
+              [attr.aria-label]="'Ver ' + productoActual.nombre + ' en ' + coloresCatalogo[color].nombre"
+              [attr.aria-pressed]="color === colorSeleccionado()"
+              (click)="seleccionarColor(color)"
+            ></button>
+          }
+        </div>
       </div>
 
       <div class="detalle__contenido">
@@ -18,12 +40,127 @@
         <p class="detalle__descripcion">
           {{ productoActual.descripcionDetalle ?? productoActual.descripcion }}
         </p>
-        <p class="detalle__precio">
-          {{ productoActual.precio | currency: 'MXN' : 'symbol' : '1.2-2' }}
+
+        <div class="detalle__selectores">
+          <fieldset class="detalle__grupo">
+            <legend class="detalle__etiqueta">Color</legend>
+            <div class="detalle__colores">
+              @for (color of colores(); track color) {
+                <button
+                  type="button"
+                  class="detalle__color"
+                  [class.detalle__color--activo]="color === colorSeleccionado()"
+                  [style.background-color]="coloresCatalogo[color].hex"
+                  [attr.aria-label]="coloresCatalogo[color].nombre"
+                  [attr.aria-pressed]="color === colorSeleccionado()"
+                  (click)="seleccionarColor(color)"
+                ></button>
+              }
+            </div>
+          </fieldset>
+
+          <fieldset class="detalle__grupo">
+            <legend class="detalle__etiqueta">Talla</legend>
+            <div class="detalle__tallas">
+              @for (talla of tallas(); track talla) {
+                <button
+                  type="button"
+                  class="detalle__talla"
+                  [class.detalle__talla--activa]="talla === varianteSeleccionada()?.talla"
+                  [disabled]="!variantePara(colorSeleccionado() ?? 'BL', talla)"
+                  [attr.aria-pressed]="talla === varianteSeleccionada()?.talla"
+                  (click)="seleccionarTalla(talla)"
+                >
+                  {{ talla }}
+                </button>
+              }
+            </div>
+          </fieldset>
+        </div>
+
+        <details class="detalle__guia">
+          <summary>Guía de medidas</summary>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Talla</th>
+                <th scope="col">Pecho</th>
+                <th scope="col">Largo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (medida of guiaMedidas(); track medida.talla) {
+                <tr>
+                  <td>{{ medida.talla }}</td>
+                  <td>{{ medida.pecho }}</td>
+                  <td>{{ medida.largo }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </details>
+
+        <p class="detalle__composicion">
+          <strong>Composición:</strong> {{ productoActual.composicion }}
         </p>
 
+        <p class="detalle__precio">
+          {{ productoActual.precio | currency: 'MXN' : 'symbol' : '1.2-2' }}
+          <span class="detalle__iva">IVA incluido</span>
+        </p>
+
+        @if (estado(); as estadoActual) {
+          <p class="detalle__disponibilidad" role="status">
+            <span class="detalle__estado-punto" [class]="claseEstado"></span>
+            {{ estadoActual }}
+            @if (fechaEstimadaTexto(); as fecha) {
+              <span> · Entrega estimada: {{ fecha }}</span>
+            }
+          </p>
+        }
+
+        @if (mensaje()) {
+          <p class="detalle__mensaje" role="alert">{{ mensaje() }}</p>
+        }
+
+        <div class="detalle__cantidad">
+          <button
+            type="button"
+            class="detalle__cantidad-boton"
+            aria-label="Disminuir cantidad"
+            [disabled]="cantidad() <= 1"
+            (click)="disminuirCantidad()"
+          >
+            −
+          </button>
+          <input
+            type="number"
+            class="detalle__cantidad-entrada"
+            min="1"
+            max="10"
+            aria-label="Cantidad"
+            [value]="cantidad()"
+            (change)="cambiarCantidad($event)"
+          />
+          <button
+            type="button"
+            class="detalle__cantidad-boton"
+            aria-label="Aumentar cantidad"
+            [disabled]="cantidad() >= 10"
+            (click)="aumentarCantidad()"
+          >
+            +
+          </button>
+          <span class="detalle__cantidad-nota">Máximo 10 por línea</span>
+        </div>
+
         <div class="detalle__accion">
-          <button type="button" class="boton-carrito" (click)="agregarAlCarrito()">
+          <button
+            type="button"
+            class="boton-carrito"
+            [disabled]="compraBloqueada()"
+            (click)="agregarAlCarrito()"
+          >
             Agregar al carrito
           </button>
         </div>

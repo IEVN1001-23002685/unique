@@ -6,6 +6,76 @@
     (seleccionar)="categoriaSeleccionada.set($event)"
   />
 
+  <div class="filtros" role="group" aria-label="Filtros del catálogo">
+    <label class="filtro">
+      <span class="sr-only">Filtrar por color</span>
+      <select
+        class="filtro__control"
+        [value]="colorSeleccionado() ?? ''"
+        (change)="actualizarColor($event)"
+      >
+        <option value="">Todos los colores</option>
+        @for (color of colores(); track color) {
+          <option [value]="color">{{ coloresCatalogo[color].nombre }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filtro">
+      <span class="sr-only">Filtrar por talla</span>
+      <select
+        class="filtro__control"
+        [value]="tallaSeleccionada() ?? ''"
+        (change)="actualizarTalla($event)"
+      >
+        <option value="">Todas las tallas</option>
+        @for (talla of tallas(); track talla) {
+          <option [value]="talla">{{ talla }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filtro">
+      <span class="sr-only">Filtrar por rango de precio</span>
+      <select class="filtro__control" [value]="rangoPrecio()" (change)="actualizarRango($event)">
+        @for (rango of rangosPrecio(); track rango.valor) {
+          <option [value]="rango.valor">{{ rango.etiqueta }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filtro filtro--casilla">
+      <input
+        type="checkbox"
+        class="filtro__casilla"
+        [checked]="soloDisponibles()"
+        (change)="actualizarSoloDisponibles($event)"
+      />
+      Solo disponibles
+    </label>
+
+    <label class="filtro">
+      <span class="sr-only">Ordenar productos</span>
+      <select class="filtro__control" [value]="orden()" (change)="actualizarOrden($event)">
+        @for (opcion of opcionesOrden(); track opcion.valor) {
+          <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+    </label>
+
+    @if (hayFiltros()) {
+      <button type="button" class="filtro__limpiar" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
+    }
+  </div>
+
+  @if (sinConexion()) {
+    <p class="aviso-sin-conexion" role="status">
+      Existencias y precios pueden no estar actualizados.
+    </p>
+  }
+
   <div class="rejilla-productos">
     @for (producto of productosFiltrados(); track producto.id) {
       <app-tarjeta-producto [producto]="producto" />

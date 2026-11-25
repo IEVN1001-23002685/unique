@@ -1,0 +1,92 @@
+import type { IProducto } from '../../../nucleo/modelos/producto';
+
+/**
+ * Proyección de M03 · Catálogo (§6 y §7 de UNIQUE v3.0).
+ * Los existencias exactas y los precios definitivos los servirá Flask; aquí solo
+ * se calculan etiquetas de disponibilidad para la interfaz.
+ */
+
+export type CodigoColorCatalogo = 'BL' | 'NG' | 'GR';
+export type CodigoTallaCatalogo = 'CH' | 'MD' | 'GD' | 'UN';
+export type EstadoDisponibilidadCatalogo =
+  | 'Disponible'
+  | 'Pocas unidades'
+  | 'Bajo pedido'
+  | 'Agotado';
+export type OrdenCatalogo = 'relevancia' | 'precio-asc' | 'precio-desc' | 'novedad';
+
+export interface VarianteCatalogo {
+  sku: string;
+  colorCodigo: CodigoColorCatalogo;
+  colorNombre: string;
+  talla: CodigoTallaCatalogo;
+  /** Uso interno: nunca se muestra en pantalla (§7 de M03). */
+  disponible: number;
+  minimo: number;
+  permiteBajoPedido: boolean;
+  diasProduccion: number;
+  diasEnvio: number;
+  imagen: string;
+  activa: boolean;
+}
+
+export interface ProductoCatalogo extends IProducto {
+  activo: boolean;
+  composicion: string;
+  variantes: VarianteCatalogo[];
+  /** Solo para calcular «Más buscado»; no se muestra como cifra. */
+  vendidosUltimos30Dias: number;
+  creadoEn: string;
+}
+
+export const COLORES_CATALOGO: Record<CodigoColorCatalogo, { nombre: string; hex: string }> = {
+  BL: { nombre: 'Blanco', hex: '#ffffff' },
+  NG: { nombre: 'Negro', hex: '#2b212d' },
+  GR: { nombre: 'Gris', hex: '#9a9a9a' },
+};
+
+export const TALLAS_CATALOGO: CodigoTallaCatalogo[] = ['CH', 'MD', 'GD', 'UN'];
+
+export const GUIA_MEDIDAS: ReadonlyArray<{ talla: CodigoTallaCatalogo; pecho: string; largo: string }> = [
+  { talla: 'CH', pecho: '86 cm', largo: '64 cm' },
+  { talla: 'MD', pecho: '96 cm', largo: '67 cm' },
+  { talla: 'GD', pecho: '106 cm', largo: '70 cm' },
+  { talla: 'UN', pecho: 'Única', largo: 'Única' },
+];
+
+export function estadoDisponibilidad(variante: VarianteCatalogo): EstadoDisponibilidadCatalogo {
+  if (!variante.activa) {
+    return 'Agotado';
+  }
+  if (variante.disponible === 0) {
+    return variante.permiteBajoPedido ? 'Bajo pedido' : 'Agotado';
+  }
+  if (variante.disponible <= variante.minimo) {
+    return 'Pocas unidades';
+  }
+  return 'Disponible';
+}
+
+export function fechaEstimada(variante: VarianteCatalogo): string | undefined {
+  if (estadoDisponibilidad(variante) !== 'Bajo pedido') {
+    return undefined;
+  }
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() + variante.diasProduccion + variante.diasEnvio);
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(fecha);
+}
+
+export function productoDisponible(producto: ProductoCatalogo): boolean {
+  return producto.variantes.some((variante) => {
+    const estado = estadoDisponibilidad(variante);
+    return estado === 'Disponible' || estado === 'Pocas unidades';
+  });
+}
+
+export function productoVisible(producto: ProductoCatalogo): boolean {
+  return producto.activo && producto.variantes.some((variante) => variante.activa);
+}
