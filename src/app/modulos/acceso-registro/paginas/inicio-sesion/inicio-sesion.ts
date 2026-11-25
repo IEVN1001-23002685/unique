@@ -2,7 +2,8 @@ import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ModalAutenticacionServicio } from '../../../../nucleo/servicios/modal-autenticacion-servicio';
-import { CredencialesLogin } from '../../modelos/acceso-registro';
+import { mensajeError } from '../../../../core/api/errores';
+import { CredencialesLogin, rutaDestinoPorRol } from '../../modelos/acceso-registro';
 import { AccesoRegistroServicio } from '../../servicios/acceso-registro-servicio';
 
 @Component({
@@ -31,6 +32,7 @@ export class InicioSesion {
   });
 
   protected mensaje = '';
+  protected cargando = false;
 
   protected errorEn(campo: 'correo' | 'contrasena'): boolean {
     const control = this.formulario.controls[campo];
@@ -45,7 +47,20 @@ export class InicioSesion {
     }
 
     this.mensaje = this.mensajePendiente;
-    this.enviarLogin.emit({ ...this.formulario.getRawValue() });
+    this.cargando = true;
+    const credenciales: CredencialesLogin = this.formulario.getRawValue();
+    this.servicio.iniciarSesion(credenciales).subscribe({
+      next: (respuesta) => {
+        this.cargando = false;
+        this.enviarLogin.emit(credenciales);
+        this.modal.cerrar();
+        void this.router.navigateByUrl(rutaDestinoPorRol(respuesta.usuario.rol));
+      },
+      error: (error: unknown) => {
+        this.cargando = false;
+        this.mensaje = mensajeError(error, 'No fue posible iniciar sesión.');
+      },
+    });
   }
 
   onOlvidarContrasena(): void {

@@ -1,35 +1,31 @@
-# UNIQUE — paquete Angular independiente M18–M22
+# UNIQUE — paquete Angular M18–M22
 
-Este paquete vive en `src/app/modulos/admin-unique/`. No reemplaza ni modifica `app.ts`, servicios existentes ni componentes de otros integrantes.
+Este paquete vive en `src/app/modulos/admin-unique/`. Conserva las pantallas y estilos propios y usa la infraestructura canónica de la aplicación (`ApiService`, `AuthSessionService`, contratos `{ codigo, mensaje, detalle }` y paginación `items/total/pagina/por_pagina`).
 
 ## Contenido
 
-- M18 Preparación
-- M19 Entregas (incluye repartidores y código postal)
-- M20 Dashboard gerencial
-- M21 Centro de alertas
-- M22 Administración del sistema
-- Servicios HTTP y sesión propios del paquete
-- Rutas `ADMIN_UNIQUE_ROUTES`
+- M18 Preparación: `GET /preparacion/cola`, `POST /preparacion/{pedido_id}/tomar`, `PATCH /preparacion/{id}/lineas`, incidencia, empaque y etiqueta PDF.
+- M19 Entregas: `GET /entregas/por-asignar`, `POST /entregas`, salida, resultado, hoja de reparto PDF, productos repartidos y CRUD de `/repartidores`.
+- M20 Dashboard: `resumen`, `ventas`, `produccion`, `abastecimiento`, `logistica` y `exportar` CSV; filtros `desde`/`hasta`.
+- M21 Alertas: bandeja paginada, resueltas, acciones explícitas y reglas numéricas.
+- M22 Administración: `/usuarios`, `/clientes`, seis catálogos, `/configuracion` y `/bitacora`.
+- Servicios por módulo en `services/`; toda petición HTTP pasa por `ApiAdminService`.
+- Rutas propias `ADMIN_UNIQUE_ROUTES` con guards locales que redirigen a `/login-admin` y `/sin-acceso-admin`.
 
-## Integración mínima (cuando el equipo autorice tocar el archivo compartido de rutas)
+## Integración mínima
 
-En el `app.routes.ts` existente, agrega el import:
+En `app.routes.ts` se agrega el import y se inserta `...ADMIN_UNIQUE_ROUTES` sin reemplazar las rutas existentes:
 
 ```ts
 import { ADMIN_UNIQUE_ROUTES } from './modulos/admin-unique/admin.routes';
 ```
 
-Y agrega `...ADMIN_UNIQUE_ROUTES` dentro del arreglo `routes`, sin borrar ni reemplazar las rutas actuales. Las URL del paquete serán `/login-admin` y `/panel-admin/...`.
+Las URL del paquete son `/login-admin` y `/panel-admin/...`. La sesión se mantiene en memoria con cookie `httpOnly`; no se usa `localStorage` ni `sessionStorage`.
 
-Si el equipo no autoriza editar `app.routes.ts`, el paquete queda aislado y no será navegable desde la aplicación hasta que se agregue esa única conexión.
+## Notas del contrato
 
-## Backend pendiente
-
-La API Flask debe implementar los endpoints usados por `ApiAdminService` y protegerlos también por token y rol. Los guards de Angular son controles de navegación, no sustituyen la autorización del servidor.
-
-Base URL actual: `http://127.0.0.1:5000/api`.
-
-## Estado actual
-
-`app.ts` ya fue corregido por el equipo y no presenta esos errores. El paquete se compila con el resto de la aplicación, pero sus rutas siguen sin registrarse en `app.routes.ts` para no introducir autenticación JWT ni llamadas a un backend que todavía no existe. Solo debe enlazarse cuando Flask esté disponible y se autorice simultáneamente `provideHttpClient()` y `withInterceptors([authInterceptor])` en `app.config.ts`.
+- Base URL configurada en `src/environments/environment.ts` (`/api/v1`).
+- Los componentes solo presentan datos y validan interacción; reglas y escrituras las ejecuta el backend.
+- ADMIN hereda permisos de OPERATIVO. El catálogo de repartidores es ADMIN-only: los Operativos indican el ID del repartidor en los formularios.
+- El backend no expone un listado general de entregas; la pestaña “Seguimiento” muestra las entregas asignadas durante la sesión.
+- Los guards de Angular son controles de navegación y no sustituyen la autorización del servidor.

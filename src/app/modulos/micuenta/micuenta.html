@@ -627,6 +627,7 @@
               name="cpDir"
               maxlength="5"
               [(ngModel)]="formDireccion.cp"
+              (ngModelChange)="validarCobertura()"
               required
               style="
                 width: 100%;
@@ -643,7 +644,7 @@
               *ngIf="formDireccion.cp.length === 5"
               style="font-size: 11px; color: #2e7d32; font-weight: 600"
             >
-              {{ tieneCobertura(formDireccion.cp) ? '✓ Cobertura disponible' : 'Sin cobertura' }}
+              {{ coberturaCp === null ? 'Validando…' : coberturaCp ? '✓ Cobertura disponible' : 'Sin cobertura' }}
             </span>
           </div>
         </div>

@@ -1,12 +1,13 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
+import { InventarioServicio } from '../../../inventario/servicios/inventario-servicio';
 import { ChipEstatus } from '../../componentes/chip-estatus/chip-estatus';
 import { NavegacionProveedores } from '../../componentes/navegacion-proveedores/navegacion-proveedores';
 import { ProveedoresServicio } from '../../servicios/proveedores-servicio';
-import { MATERIALES_REFERENCIA } from '../../datos-simulados/proveedores';
 import type {
   CategoriaMaterial,
   MaterialProveedor,
@@ -49,6 +50,7 @@ export class CatalogoProveedor {
   private readonly fb = inject(FormBuilder);
   private readonly ruta = inject(ActivatedRoute);
   private readonly servicio = inject(ProveedoresServicio);
+  private readonly inventario = inject(InventarioServicio);
   private readonly avisos = inject(AvisosServicio);
 
   private readonly parametroId = this.ruta.snapshot.paramMap.get('id');
@@ -56,7 +58,18 @@ export class CatalogoProveedor {
     this.parametroId !== null && /^\d+$/.test(this.parametroId) ? Number(this.parametroId) : 0;
 
   protected readonly proveedor = computed(() => this.servicio.obtenerPorId(this.id));
-  protected readonly materialesReferencia = MATERIALES_REFERENCIA;
+  protected readonly materialesReferencia = computed<MaterialReferencia[]>(() =>
+    this.inventario
+      .materiales()
+      .filter((material) => material.activo)
+      .map((material) => ({
+        id: material.id,
+        nombre: material.nombre,
+        categoria: material.categoria,
+        critico: material.codigo.startsWith('TEL') || material.codigo.startsWith('HIL'),
+        unidadCompra: material.unidadCompra,
+      })),
+  );
   protected readonly lineaAEliminar = signal<number | null>(null);
   protected readonly intentoEnvio = signal(false);
 
@@ -68,26 +81,30 @@ export class CatalogoProveedor {
     return this.formulario.controls.lineas;
   }
 
-  constructor() {
-    const proveedor = this.proveedor();
-    if (!proveedor) {
-      return;
-    }
+  private lineasInicializadas = false;
 
-    for (const material of proveedor.materiales) {
-      this.lineas.push(
-        crearGrupoLinea(this.fb, {
-          materialId: material.materialId,
-          precioCompra: material.precioCompra,
-          unidadCompra: material.unidadCompra,
-          minimoCompra: material.minimoCompra,
-          plazoDias: material.plazoDias,
-          esPrincipal: material.esPrincipal,
-          vigenciaHasta: material.vigenciaHasta ?? '',
-          activo: material.activo,
-        }),
-      );
-    }
+  constructor() {
+    effect(() => {
+      const proveedor = this.proveedor();
+      if (!proveedor || this.lineasInicializadas) {
+        return;
+      }
+      this.lineasInicializadas = true;
+      for (const material of proveedor.materiales) {
+        this.lineas.push(
+          crearGrupoLinea(this.fb, {
+            materialId: material.materialId,
+            precioCompra: material.precioCompra,
+            unidadCompra: material.unidadCompra,
+            minimoCompra: material.minimoCompra,
+            plazoDias: material.plazoDias,
+            esPrincipal: material.esPrincipal,
+            vigenciaHasta: material.vigenciaHasta ?? '',
+            activo: material.activo,
+          }),
+        );
+      }
+    });
   }
 
   /** Alertas de cobertura calculadas con el padrón guardado (demostración). */
@@ -110,7 +127,7 @@ export class CatalogoProveedor {
   });
 
   protected referencia(id: number): MaterialReferencia | undefined {
-    return this.materialesReferencia.find((material) => material.id === id);
+    return this.materialesReferencia().find((material) => material.id === id);
   }
 
   protected categoria(id: number): CategoriaMaterial | undefined {
@@ -218,10 +235,9 @@ export class CatalogoProveedor {
       };
     });
 
-    this.servicio.reemplazarMateriales(this.id, materiales);
-    this.avisos.mostrar(
-      'exito',
-      'Catálogo actualizado solo en memoria (demostración). Persistencia pendiente de Flask.',
-    );
+    this.servicio.reemplazarMateriales(this.id, materiales).subscribe({
+      next: () => this.avisos.mostrar('exito', 'Catálogo del proveedor actualizado en Flask.'),
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 }

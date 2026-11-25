@@ -9,6 +9,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionInventarioPt } from '../../componentes/navegacion-inventario-pt/navegacion-inventario-pt';
 import type { FilaExistencia, FilaInventario } from '../../modelos/inventario-producto-terminado';
@@ -124,22 +125,27 @@ export class AjusteInventario {
       return;
     }
 
-    const resultado = this.servicio.registrarAjuste({
-      varianteId: fila.varianteId,
-      cantidadContada: this.conteo(),
-      motivo: this.forma.controls.motivo.value,
-    });
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-
-    if (resultado.ok) {
-      this.forma.controls.motivo.setValue('');
-      const actualizada = this.filas().find((item) => item.varianteId === fila.varianteId);
-      const cantidad = actualizada?.existencia ?? fila.existencia;
-      this.forma.controls.cantidadContada.setValue(cantidad);
-      this.conteo.set(cantidad);
-      this.forma.controls.cantidadContada.markAsUntouched();
-      this.forma.controls.motivo.markAsUntouched();
-      this.intento.set(false);
-    }
+    this.servicio
+      .registrarAjuste({
+        varianteId: fila.varianteId,
+        cantidadContada: this.conteo(),
+        motivo: this.forma.controls.motivo.value,
+      })
+      .subscribe({
+        next: (resultado) => {
+          this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+          if (resultado.ok) {
+            this.forma.controls.motivo.setValue('');
+            const actualizada = this.filas().find((item) => item.varianteId === fila.varianteId);
+            const cantidad = actualizada?.existencia ?? fila.existencia;
+            this.forma.controls.cantidadContada.setValue(cantidad);
+            this.conteo.set(cantidad);
+            this.forma.controls.cantidadContada.markAsUntouched();
+            this.forma.controls.motivo.markAsUntouched();
+            this.intento.set(false);
+          }
+        },
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 }

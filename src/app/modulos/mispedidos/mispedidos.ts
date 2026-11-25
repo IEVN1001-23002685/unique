@@ -1,39 +1,25 @@
-import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { mensajeError } from '../../core/api/errores';
+import {
+  ComprobantePedido,
+  FILTROS_ESTADO,
+  MisPedidosServicio,
+  PedidoCliente,
+  etiquetaEstado,
+} from './servicios/mis-pedidos-servicio';
 
-export type EstadoPedido = 'Confirmado' | 'En preparación' | 'Enviado' | 'Entregado' | 'Cancelado';
+export type {
+  ArticuloPedido,
+  ComprobantePedido,
+  PasoSeguimientoPedido,
+  PedidoCliente,
+} from './servicios/mis-pedidos-servicio';
+export { etiquetaEstado } from './servicios/mis-pedidos-servicio';
 
-export interface PasoSeguimientoPedido {
-  estado: EstadoPedido;
-  fecha: string;
-  descripcion: string;
-  completado: boolean;
-}
-
-export interface ArticuloPedido {
-  nombre: string;
-  sku: string;
-  colorNombre: string;
-  talla: string;
-  cantidad: number;
-  precioUnitarioConIva: number;
-}
-
-export interface PedidoCliente {
-  id: number;
-  folio: string;
-  fecha: string;
-  estado: EstadoPedido;
-  metodoEnvio: 'Estándar' | 'Exprés';
-  totalConIva: number;
-  direccionResumen: string;
-  medioPagoResumen: string;
-  facturaResumen?: string;
-  articulos: ArticuloPedido[];
-  seguimiento: PasoSeguimientoPedido[];
-}
+const CANCELABLES = ['RECIBIDO', 'CONFIRMADO', 'EN_PRODUCCION'];
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -42,129 +28,58 @@ export interface PedidoCliente {
   templateUrl: './mispedidos.html',
   styles: [],
 })
-export class MisPedidos {
+export class MisPedidos implements OnInit {
   private readonly router = inject(Router);
+  private readonly servicio = inject(MisPedidosServicio);
+  private _pedidos: PedidoCliente[] = [];
 
-  @Input() pedidos: PedidoCliente[] = [
-    {
-      id: 1,
-      folio: 'UNQ-849201',
-      fecha: '18/11/2026',
-      estado: 'Enviado',
-      metodoEnvio: 'Estándar',
-      totalConIva: 850,
-      direccionResumen: 'Blvd. Universidad Tecnológica #225, San Carlos, León, Gto. (CP 37670)',
-      medioPagoResumen: 'Tarjeta principal · Visa •••• 4242',
-      articulos: [
-        {
-          nombre: 'SUDADERA',
-          sku: 'SD-CH-NG',
-          colorNombre: 'Negro',
-          talla: 'CH',
-          cantidad: 1,
-          precioUnitarioConIva: 850,
-        },
-      ],
-      seguimiento: [
-        {
-          estado: 'Confirmado',
-          fecha: '18/11/2026 10:15',
-          descripcion: 'Pago simulado validado y pedido registrado.',
-          completado: true,
-        },
-        {
-          estado: 'En preparación',
-          fecha: '18/11/2026 15:40',
-          descripcion: 'Prenda empacada con cuidado.',
-          completado: true,
-        },
-        {
-          estado: 'Enviado',
-          fecha: '19/11/2026 09:20',
-          descripcion: 'En camino con paquetería.',
-          completado: true,
-        },
-        {
-          estado: 'Entregado',
-          fecha: 'Estimado 23/11/2026',
-          descripcion: 'Entrega en domicilio registrada.',
-          completado: false,
-        },
-      ],
-    },
-    {
-      id: 2,
-      folio: 'UNQ-847110',
-      fecha: '05/11/2026',
-      estado: 'Entregado',
-      metodoEnvio: 'Exprés',
-      totalConIva: 280,
-      direccionResumen: 'Blvd. Universidad Tecnológica #225, San Carlos, León, Gto. (CP 37670)',
-      medioPagoResumen: 'Monedero UNIQUE · Cuenta simulada',
-      facturaResumen: 'XAXX010101000 · Cliente Demo',
-      articulos: [
-        {
-          nombre: 'PLAYERA',
-          sku: 'PL-MD-BL',
-          colorNombre: 'Blanco',
-          talla: 'MD',
-          cantidad: 1,
-          precioUnitarioConIva: 280,
-        },
-      ],
-      seguimiento: [
-        {
-          estado: 'Confirmado',
-          fecha: '05/11/2026 11:00',
-          descripcion: 'Pedido confirmado.',
-          completado: true,
-        },
-        {
-          estado: 'En preparación',
-          fecha: '05/11/2026 14:00',
-          descripcion: 'Preparación completada.',
-          completado: true,
-        },
-        {
-          estado: 'Enviado',
-          fecha: '06/11/2026 08:30',
-          descripcion: 'Despachado en envío exprés.',
-          completado: true,
-        },
-        {
-          estado: 'Entregado',
-          fecha: '07/11/2026 16:10',
-          descripcion: 'Entregado satisfactoriamente.',
-          completado: true,
-        },
-      ],
-    },
-  ];
+  @Input() set pedidos(_pedidos: PedidoCliente[]) {
+    // La fuente de verdad es Flask; el padre ya no reemplaza el historial.
+  }
+  get pedidos(): PedidoCliente[] {
+    return this._pedidos;
+  }
 
   @Output() cerrar = new EventEmitter<void>();
   @Output() irACatalogo = new EventEmitter<void>();
   @Output() solicitarCambioODevolucion = new EventEmitter<PedidoCliente>();
 
-  busquedaFolio = '';
-  filtroEstado: 'todos' | EstadoPedido = 'todos';
-  pedidoSeleccionado: PedidoCliente | null = null;
-  mensajeAviso = '';
+  readonly filtros = FILTROS_ESTADO;
+  readonly etiquetaEstado = etiquetaEstado;
 
-  estadosDisponibles: EstadoPedido[] = [
-    'Confirmado',
-    'En preparación',
-    'Enviado',
-    'Entregado',
-    'Cancelado',
-  ];
+  busquedaFolio = '';
+  filtroEstado = 'TODOS';
+  pedidoSeleccionado: PedidoCliente | null = null;
+  comprobante: ComprobantePedido | null = null;
+  mensajeAviso = '';
+  cargando = true;
+
+  ngOnInit(): void {
+    this.cargar();
+  }
 
   get pedidosFiltrados(): PedidoCliente[] {
     const query = this.busquedaFolio.trim().toLowerCase();
-    return this.pedidos.filter((p) => {
-      const coincideFolio = !query || p.folio.toLowerCase().includes(query);
-      const coincideEstado = this.filtroEstado === 'todos' || p.estado === this.filtroEstado;
-      return coincideFolio && coincideEstado;
+    return this._pedidos.filter((pedido) => !query || pedido.folio.toLowerCase().includes(query));
+  }
+
+  cargar(): void {
+    this.cargando = true;
+    this.servicio.listar(this.filtroEstado).subscribe({
+      next: (pedidos) => {
+        this._pedidos = pedidos;
+        this.cargando = false;
+      },
+      error: (error: unknown) => {
+        this.cargando = false;
+        this.mensajeAviso = mensajeError(error, 'No fue posible cargar tus pedidos.');
+      },
     });
+  }
+
+  cambiarFiltro(estado: string): void {
+    this.filtroEstado = estado;
+    this.cargar();
   }
 
   cerrarPedidos(): void {
@@ -178,34 +93,48 @@ export class MisPedidos {
   }
 
   abrirSeguimiento(pedido: PedidoCliente): void {
-    this.pedidoSeleccionado = pedido;
     this.mensajeAviso = '';
+    this.comprobante = null;
+    this.servicio.detalle(pedido.id).subscribe({
+      next: (detalle) => (this.pedidoSeleccionado = detalle),
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+    });
   }
 
   volverALista(): void {
     this.pedidoSeleccionado = null;
+    this.comprobante = null;
     this.mensajeAviso = '';
   }
 
   puedeCancelar(pedido: PedidoCliente): boolean {
-    return pedido.estado === 'Confirmado' || pedido.estado === 'En preparación';
+    return CANCELABLES.includes(pedido.estado);
   }
 
   cancelarPedido(pedido: PedidoCliente): void {
-    if (!this.puedeCancelar(pedido)) return;
-    pedido.estado = 'Cancelado';
-    pedido.seguimiento.push({
-      estado: 'Cancelado',
-      fecha: 'Hoy',
-      descripcion: 'Pedido cancelado desde Mi cuenta.',
-      completado: true,
+    const motivo = window.prompt('Indica el motivo de la cancelación:');
+    if (!motivo || motivo.trim().length < 3) return;
+    this.servicio.cancelar(pedido.id, motivo.trim()).subscribe({
+      next: (cancelado) => {
+        this.pedidoSeleccionado = cancelado;
+        this._pedidos = this._pedidos.map((item) => (item.id === cancelado.id ? cancelado : item));
+        this.mensajeAviso = `El pedido ${cancelado.folio} fue cancelado.`;
+      },
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
     });
-    this.mensajeAviso = `El pedido ${pedido.folio} ha sido marcado como Cancelado.`;
+  }
+
+  verComprobante(pedido: PedidoCliente): void {
+    this.servicio.comprobante(pedido.id).subscribe({
+      next: (comprobante) => (this.comprobante = comprobante),
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+    });
   }
 
   onSolicitarCambio(pedido: PedidoCliente): void {
     this.solicitarCambioODevolucion.emit(pedido);
-    this.mensajeAviso = `Solicitud de cambio/devolución iniciada para el folio ${pedido.folio}.`;
-    void this.router.navigate(['/devoluciones']);
+    void this.router.navigate(['/devoluciones'], {
+      queryParams: { pedido_id: pedido.id, folio: pedido.folio },
+    });
   }
 }

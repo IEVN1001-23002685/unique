@@ -13,9 +13,9 @@ import { ModalAutenticacionServicio } from '../../../nucleo/servicios/modal-aute
 export class ModalAutenticacion {
   protected readonly modal = inject(ModalAutenticacionServicio);
 
-  /** Demostracion visual: no se crea sesion ni se envia nada a un backend. */
-  protected alEnviarLogin(credenciales: CredencialesLogin): void {
-    console.info('Demostracion visual: credenciales listas para la futura API.', credenciales);
+  /** La autenticación real la ejecuta InicioSesion mediante AccesoRegistroServicio. */
+  protected alEnviarLogin(_credenciales: CredencialesLogin): void {
+    this.modal.cerrar();
   }
 
   protected cerrarSiEsBackdrop(evento: MouseEvent): void {

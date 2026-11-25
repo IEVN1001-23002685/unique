@@ -2,7 +2,7 @@
   <div>
     <span class="eyebrow">MÓDULO 22 · CONTROL Y ADMINISTRACIÓN</span>
     <h2>Administración del sistema</h2>
-    <p>Gestiona usuarios, roles, catálogos, parámetros y trazabilidad de acciones.</p>
+    <p>Usuarios, clientes, catálogos, parámetros y bitácora con endpoints reales de la API.</p>
   </div>
   <button class="btn-outline" (click)="cargar()">↻ Actualizar</button>
 </div>
@@ -10,265 +10,185 @@
 <div class="notice success" *ngIf="aviso">{{ aviso }}</div>
 <div class="toolbar">
   <div class="tabs">
-    <button class="tab" [class.active]="pestana === 'usuarios'" (click)="cambiar('usuarios')">
-      Usuarios y roles</button
-    ><button class="tab" [class.active]="pestana === 'clientes'" (click)="cambiar('clientes')">
-      Clientes</button
-    ><button class="tab" [class.active]="pestana === 'catalogos'" (click)="cambiar('catalogos')">
-      Catálogos</button
-    ><button
-      class="tab"
-      [class.active]="pestana === 'configuracion'"
-      (click)="cambiar('configuracion')"
-    >
-      Configuración</button
-    ><button class="tab" [class.active]="pestana === 'bitacora'" (click)="cambiar('bitacora')">
-      Bitácora
-    </button>
+    <button class="tab" [class.active]="pestana === 'usuarios'" (click)="cambiar('usuarios')">Usuarios y roles</button>
+    <button class="tab" [class.active]="pestana === 'clientes'" (click)="cambiar('clientes')">Clientes</button>
+    <button class="tab" [class.active]="pestana === 'catalogos'" (click)="cambiar('catalogos')">Catálogos</button>
+    <button class="tab" [class.active]="pestana === 'configuracion'" (click)="cambiar('configuracion')">Configuración</button>
+    <button class="tab" [class.active]="pestana === 'bitacora'" (click)="cambiar('bitacora')">Bitácora</button>
   </div>
-  <input
-    *ngIf="pestana === 'usuarios' || pestana === 'clientes' || pestana === 'catalogos'"
-    class="search"
-    [(ngModel)]="filtro"
-    placeholder="Buscar..."
-  />
+  <input class="search" *ngIf="pestana === 'usuarios' || pestana === 'clientes' || pestana === 'catalogos'" [(ngModel)]="filtro" (change)="pagina = 1; cargar()" placeholder="Buscar..." />
 </div>
-<div class="panel-card" *ngIf="pestana === 'usuarios'">
+<div class="empty" *ngIf="cargando">Cargando información...</div>
+
+<div class="panel-card" *ngIf="!cargando && pestana === 'usuarios'">
   <div class="panel-title">
     <h3>Usuarios del sistema</h3>
     <span class="muted">El registro público crea únicamente clientes</span>
   </div>
   <form class="form-grid" [formGroup]="usuarioForm" (ngSubmit)="guardarUsuario()">
-    <label
-      >Nombre completo<input formControlName="nombre" placeholder="Nombre y apellidos" /><small
-        class="field-error"
-        *ngIf="usuarioForm.controls.nombre.touched && usuarioForm.controls.nombre.invalid"
-        >Nombre obligatorio.</small
-      ></label
-    ><label
-      >Correo electrónico<input
-        formControlName="correo"
-        type="email"
-        placeholder="usuario@correo.com"
-      /><small
-        class="field-error"
-        *ngIf="usuarioForm.controls.correo.touched && usuarioForm.controls.correo.invalid"
-        >Correo válido obligatorio.</small
-      ></label
-    ><label>Teléfono<input formControlName="telefono" placeholder="10 dígitos" /></label
-    ><label
-      >Rol<select formControlName="rol">
-        <option value="OPERATIVO">Operativo</option>
-        <option value="ADMIN">Administrador</option>
-      </select></label
-    ><label
-      >Contraseña temporal<input
-        formControlName="contrasena"
-        type="password"
-        placeholder="Mínimo 8 caracteres"
-      /><small>El backend debe aplicar Argon2 o bcrypt.</small></label
-    ><button class="btn-primary" type="submit">
-      {{ editId ? 'Guardar cambios' : 'Crear usuario' }}</button
-    ><button
-      class="btn-outline"
-      type="button"
-      (click)="usuarioForm.reset({ rol: 'OPERATIVO' }); editId = null"
-    >
-      Limpiar
-    </button>
+    <label>Nombre<input formControlName="nombre" placeholder="Nombre" /><small class="field-error" *ngIf="usuarioForm.controls.nombre.touched && usuarioForm.controls.nombre.invalid">Campo obligatorio.</small></label>
+    <label>Apellidos<input formControlName="apellidos" placeholder="Apellidos" /><small class="field-error" *ngIf="usuarioForm.controls.apellidos.touched && usuarioForm.controls.apellidos.invalid">Campo obligatorio.</small></label>
+    <label>Correo electrónico<input formControlName="correo" type="email" placeholder="usuario@correo.com" /><small class="field-error" *ngIf="usuarioForm.controls.correo.touched && usuarioForm.controls.correo.invalid">Correo válido obligatorio.</small></label>
+    <label>Teléfono<input formControlName="telefono" placeholder="10 dígitos" /><small class="field-error" *ngIf="usuarioForm.controls.telefono.touched && usuarioForm.controls.telefono.invalid">Ingresa 10 dígitos.</small></label>
+    <label>Rol<select formControlName="rol">
+      <option value="CLIENTE">Cliente</option>
+      <option value="OPERATIVO">Operativo</option>
+      <option value="ADMIN">Administrador</option>
+    </select></label>
+    <label>Contraseña<input formControlName="password" type="password" placeholder="Mínimo 8 caracteres" /><small *ngIf="editandoUsuario">Se conserva la contraseña actual si se deja vacío.</small><small class="field-error" *ngIf="usuarioForm.controls.password.touched && usuarioForm.controls.password.invalid">Mínimo 8 caracteres.</small></label>
+    <label class="check-label"><input type="checkbox" formControlName="acepta_promociones" /> Acepta promociones</label>
+    <button class="btn-primary" type="submit">{{ editandoUsuario ? 'Guardar cambios' : 'Crear usuario' }}</button>
+    <button class="btn-outline" type="button" (click)="limpiarUsuario()">Limpiar</button>
   </form>
   <div class="table-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>USUARIO</th>
-          <th>CORREO</th>
-          <th>ROL</th>
-          <th>ESTADO</th>
-          <th>ACCIONES</th>
-        </tr>
-      </thead>
+      <thead><tr><th>USUARIO</th><th>CORREO</th><th>ROL</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
       <tbody>
-        <tr *ngFor="let u of lista">
-          <td>{{ u.nombre }}</td>
+        <tr *ngFor="let u of listaUsuarios">
+          <td>{{ u.nombre }} {{ u.apellidos }}</td>
           <td>{{ u.correo }}</td>
-          <td>
-            <span class="chip purple">{{ u.rol }}</span>
-          </td>
-          <td>{{ u.activo ? 'Activo' : 'Inactivo' }}</td>
-          <td>
-            <button class="icon-btn" (click)="editarUsuario(u)">✎</button
-            ><button class="icon-btn" (click)="restablecer(u)">↻</button
-            ><button
-              class="icon-btn danger-text"
-              (click)="desactivarUsuario(u)"
-              [disabled]="!u.activo"
-            >
-              ⌫
-            </button>
+          <td><span class="chip purple">{{ u.rol }}</span></td>
+          <td><span class="chip" [class.green]="u.estado_cuenta === 'ACTIVA'" [class.red]="u.estado_cuenta !== 'ACTIVA'">{{ u.estado_cuenta }}</span></td>
+          <td class="actions">
+            <button class="icon-btn" (click)="editarUsuario(u)">✎</button>
+            <button class="icon-btn danger-text" (click)="alternarEstado(u)">{{ u.estado_cuenta === 'ACTIVA' ? '⌫' : '↻' }}</button>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
-</div>
-<div class="panel-card" *ngIf="pestana === 'clientes'">
-  <div class="panel-title">
-    <h3>Directorio de clientes</h3>
-    <span class="muted">Consulta de solo lectura de compras y devoluciones</span>
+  <div class="toolbar">
+    <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
+    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
+    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
   </div>
+</div>
+
+<div class="panel-card" *ngIf="!cargando && pestana === 'clientes'">
+  <div class="panel-title"><h3>Directorio de clientes</h3><span class="muted">Detalle de ventas y pedidos</span></div>
   <div class="table-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>CLIENTE</th>
-          <th>CORREO</th>
-          <th>TELÉFONO</th>
-          <th>COMPRAS</th>
-          <th>DEVOLUCIONES</th>
-          <th>ESTADO DE CUENTA</th>
-        </tr>
-      </thead>
+      <thead><tr><th>CLIENTE</th><th>CORREO</th><th>TELÉFONO</th><th>ESTADO</th><th>ACCIÓN</th></tr></thead>
       <tbody>
-        <tr *ngFor="let c of lista">
-          <td>{{ c.nombre }}</td>
+        <tr *ngFor="let c of listaClientes">
+          <td>{{ c.nombre }} {{ c.apellidos }}</td>
           <td>{{ c.correo }}</td>
           <td>{{ c.telefono }}</td>
-          <td>{{ c.total_compras }}</td>
-          <td>{{ c.total_devoluciones }}</td>
           <td>{{ c.estado_cuenta }}</td>
+          <td><button class="btn-outline small" (click)="verCliente(c.id)">Ver historial</button></td>
         </tr>
       </tbody>
     </table>
   </div>
-</div>
-<div class="panel-card" *ngIf="pestana === 'catalogos'">
-  <div class="panel-title">
-    <h3>Catálogos configurables</h3>
-    <select
-      [(ngModel)]="tipoCatalogo"
-      (change)="editId = null; catalogoForm.reset({ activo: true }); cargar()"
-    >
-      <option value="colores">Colores</option>
-      <option value="tallas">Tallas</option>
-      <option value="categorias-producto">Categorías de producto</option>
-      <option value="categorias-material">Categorías de material</option>
-      <option value="causas-merma">Causas de merma</option>
-      <option value="tarifas-envio">Tarifas de envío por CP</option>
-    </select>
+  <div class="toolbar">
+    <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
+    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
+    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
   </div>
-  <form class="form-grid" [formGroup]="catalogoForm" (ngSubmit)="guardarCatalogo()">
-    <label>Código<input formControlName="codigo" /></label
-    ><label>Nombre<input formControlName="nombre" /></label
-    ><label>Descripción<input formControlName="descripcion" /></label
-    ><label *ngIf="tipoCatalogo === 'tarifas-envio'"
-      >Código postal inicial<input
-        formControlName="codigo_postal_inicio"
-        maxlength="5"
-        placeholder="00000" /></label
-    ><label *ngIf="tipoCatalogo === 'tarifas-envio'"
-      >Código postal final<input
-        formControlName="codigo_postal_fin"
-        maxlength="5"
-        placeholder="99999" /></label
-    ><label *ngIf="tipoCatalogo === 'tarifas-envio'"
-      >Tarifa de envío (MXN)<input type="number" min="0" formControlName="tarifa" /></label
-    ><label class="check-label"><input type="checkbox" formControlName="activo" /> Activo</label
-    ><button class="btn-primary" type="submit">
-      {{ editId ? 'Guardar cambios' : 'Agregar elemento' }}</button
-    ><button
-      class="btn-outline"
-      type="button"
-      (click)="catalogoForm.reset({ activo: true }); editId = null"
-    >
-      Limpiar
-    </button>
-  </form>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>CÓDIGO</th>
-          <th>NOMBRE</th>
-          <th>DESCRIPCIÓN / RANGO CP</th>
-          <th>ESTADO</th>
-          <th>ACCIONES</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let x of lista">
-          <td>{{ x.codigo }}</td>
-          <td>{{ x.nombre }}</td>
-          <td>
-            {{ x.descripcion }}
-            <span *ngIf="tipoCatalogo === 'tarifas-envio'"
-              >{{ x.codigo_postal_inicio }}–{{ x.codigo_postal_fin }} ·
-              {{ x.tarifa | currency: 'MXN' }}</span
-            >
-          </td>
-          <td>{{ x.activo ? 'Activo' : 'Inactivo' }}</td>
-          <td>
-            <button class="icon-btn" (click)="editarCatalogo(x)">✎</button
-            ><button class="icon-btn danger-text" (click)="desactivarCatalogo(x)">⌫</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <p class="footnote">
-    Los códigos de color o talla que ya generaron SKU no se modifican: únicamente pueden
-    desactivarse.
-  </p>
-</div>
-<div class="panel-card" *ngIf="pestana === 'configuracion'">
-  <div class="panel-title">
-    <h3>Parámetros del sistema</h3>
-    <span class="muted">Los valores se guardan en configuración y quedan auditados</span>
-  </div>
-  <div class="settings-list">
-    <div class="setting-row" *ngFor="let p of configuracion">
-      <div>
-        <b>{{ p.etiqueta || p.clave }}</b><small>{{ p.descripcion }}</small>
-      </div>
-      <input [(ngModel)]="p.valor" /><button
-        class="btn-outline small"
-        (click)="guardarParametro(p)"
-      >
-        Guardar
-      </button>
+  <div class="panel-card" *ngIf="clienteDetalle">
+    <div class="panel-title"><h4>Historial de {{ clienteDetalle.cliente.nombre }}</h4><button class="btn-outline small" (click)="clienteDetalle = null">Cerrar</button></div>
+    <div class="stats-grid">
+      <article class="stat-card"><small>VENTAS</small><b>{{ clienteDetalle.resumen.ventas }}</b></article>
+      <article class="stat-card"><small>PEDIDOS</small><b>{{ clienteDetalle.resumen.pedidos }}</b></article>
+      <article class="stat-card accent-green"><small>IMPORTE TOTAL</small><b>{{ clienteDetalle.resumen.importe_total }}</b></article>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>FOLIO VENTA</th><th>FECHA</th><th>ESTADO</th><th>TOTAL</th></tr></thead>
+        <tbody><tr *ngFor="let v of clienteDetalle.ventas"><td>{{ v.folio }}</td><td>{{ v.fecha | date: 'dd MMM yyyy' }}</td><td>{{ v.estado }}</td><td>{{ v.total }}</td></tr></tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>PEDIDO</th><th>VENTA</th><th>ESTADO</th><th>PRIORIDAD</th><th>FECHA PROMESA</th></tr></thead>
+        <tbody><tr *ngFor="let p of clienteDetalle.pedidos"><td>#{{ p.id }}</td><td>{{ p.venta_folio }}</td><td>{{ p.estado }}</td><td>{{ p.prioridad }}</td><td>{{ p.fecha_promesa | date: 'dd MMM yyyy' }}</td></tr></tbody>
+      </table>
     </div>
   </div>
 </div>
-<div class="panel-card" *ngIf="pestana === 'bitacora'">
+
+<div class="panel-card" *ngIf="!cargando && pestana === 'catalogos'">
   <div class="panel-title">
-    <h3>Bitácora de auditoría</h3>
-    <span class="muted">Quién hizo qué, cuándo y desde dónde</span>
+    <h3>Catálogos configurables</h3>
+    <select [(ngModel)]="recurso" (change)="cambiarRecurso(recurso)">
+      <option *ngFor="let r of recursos" [ngValue]="r.valor">{{ r.etiqueta }}</option>
+    </select>
   </div>
-  <div class="filters">
-    <label>Usuario<input [(ngModel)]="filtro" placeholder="Filtrar usuario" /></label>
+  <div class="form-grid">
+    <label *ngFor="let campo of campos">
+      {{ campo.etiqueta }}
+      <select *ngIf="campo.tipo === 'select'" [(ngModel)]="catalogoDatos[campo.nombre]" [name]="campo.nombre">
+        <option *ngFor="let opcion of campo.opciones" [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+      </select>
+      <input *ngIf="campo.tipo === 'texto'" [(ngModel)]="catalogoDatos[campo.nombre]" [name]="campo.nombre" [disabled]="!!(editandoCatalogo && campo.soloCreacion)" />
+      <input *ngIf="campo.tipo === 'numero'" type="number" [(ngModel)]="catalogoDatos[campo.nombre]" [name]="campo.nombre" />
+      <input *ngIf="campo.tipo === 'booleano'" type="checkbox" [(ngModel)]="catalogoDatos[campo.nombre]" [name]="campo.nombre" />
+      <small *ngIf="editandoCatalogo && campo.soloCreacion">Código inmutable cuando ya forma parte de un SKU.</small>
+    </label>
+    <button class="btn-primary" (click)="guardarCatalogo()">{{ editandoCatalogo ? 'Guardar cambios' : 'Agregar elemento' }}</button>
+    <button class="btn-outline" (click)="nuevoCatalogo()">Limpiar</button>
   </div>
   <div class="table-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>FECHA Y HORA</th>
-          <th>USUARIO</th>
-          <th>ACCIÓN</th>
-          <th>ENTIDAD</th>
-          <th>DETALLE</th>
-          <th>ORIGEN</th>
-        </tr>
-      </thead>
+      <thead><tr><th *ngFor="let campo of campos">{{ campo.etiqueta | uppercase }}</th><th>ACCIONES</th></tr></thead>
       <tbody>
-        <tr *ngFor="let b of bitacora">
-          <td>{{ b.fecha | date: 'dd MMM yyyy HH:mm:ss' }}</td>
-          <td>{{ b.usuario }}</td>
-          <td>{{ b.accion }}</td>
-          <td>{{ b.entidad }}</td>
-          <td>{{ b.detalle }}</td>
-          <td>{{ b.ip }}</td>
+        <tr *ngFor="let x of catalogos">
+          <td *ngFor="let campo of campos">{{ valorElemento(x, campo.nombre) }}</td>
+          <td class="actions">
+            <button class="icon-btn" (click)="editarCatalogo(x)">✎</button>
+            <button class="icon-btn danger-text" (click)="eliminarCatalogo(x)">⌫</button>
+          </td>
         </tr>
       </tbody>
     </table>
+  </div>
+  <div class="toolbar">
+    <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
+    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
+    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
+  </div>
+  <p class="footnote">El backend conserva el historial y rechaza la baja de catálogos con registros relacionados.</p>
+</div>
+
+<div class="panel-card" *ngIf="!cargando && pestana === 'configuracion'">
+  <div class="panel-title"><h3>Parámetros del sistema</h3><span class="muted">GET/PATCH global; cada cambio queda en bitácora</span></div>
+  <div class="settings-list">
+    <div class="setting-row" *ngFor="let p of configuracion">
+      <div><b>{{ p.clave }}</b><small>{{ p.descripcion || 'Sin descripción' }}</small></div>
+      <input [(ngModel)]="p.valor" />
+    </div>
+  </div>
+  <button class="btn-primary" (click)="guardarConfiguracion()">Guardar cambios</button>
+</div>
+
+<div class="panel-card" *ngIf="!cargando && pestana === 'bitacora'">
+  <div class="panel-title"><h3>Bitácora de auditoría</h3><span class="muted">Quién hizo qué, cuándo y desde dónde</span></div>
+  <div class="filters">
+    <label>Acción<input [(ngModel)]="filtrosBitacora.accion" placeholder="Ej. CATALOGO_CREADO" /></label>
+    <label>Entidad<input [(ngModel)]="filtrosBitacora.entidad" placeholder="Ej. tarifa-envio" /></label>
+    <label>Usuario ID<input type="number" [(ngModel)]="filtrosBitacora.usuario_id" /></label>
+    <label>Desde<input type="date" [(ngModel)]="filtrosBitacora.desde" /></label>
+    <label>Hasta<input type="date" [(ngModel)]="filtrosBitacora.hasta" /></label>
+    <button class="btn-primary" (click)="pagina = 1; cargarBitacora()">Filtrar</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>FECHA Y HORA</th><th>USUARIO</th><th>ACCIÓN</th><th>ENTIDAD</th><th>DETALLE</th><th>ORIGEN</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let b of bitacora">
+          <td>{{ b.fecha | date: 'dd MMM yyyy HH:mm:ss' }}</td>
+          <td>{{ b.usuario_id ?? 'Sistema' }}</td>
+          <td>{{ b.accion }}</td>
+          <td>{{ b.entidad }} #{{ b.entidad_id || '—' }}</td>
+          <td>{{ b.detalle | json }}</td>
+          <td>{{ b.ip || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="toolbar">
+    <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
+    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
+    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
   </div>
 </div>

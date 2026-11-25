@@ -69,7 +69,7 @@
                   type="button"
                   class="detalle__talla"
                   [class.detalle__talla--activa]="talla === varianteSeleccionada()?.talla"
-                  [disabled]="!variantePara(colorSeleccionado() ?? 'BL', talla)"
+                  [disabled]="!variantePara(colorSeleccionado(), talla)"
                   [attr.aria-pressed]="talla === varianteSeleccionada()?.talla"
                   (click)="seleccionarTalla(talla)"
                 >
@@ -80,6 +80,12 @@
           </fieldset>
         </div>
 
+        @if (guiaMedidasTexto()) {
+          <details class="detalle__guia">
+            <summary>Guía de medidas</summary>
+            <p>{{ guiaMedidasTexto() }}</p>
+          </details>
+        } @else {
         <details class="detalle__guia">
           <summary>Guía de medidas</summary>
           <table>
@@ -101,6 +107,7 @@
             </tbody>
           </table>
         </details>
+        }
 
         <p class="detalle__composicion">
           <strong>Composición:</strong> {{ productoActual.composicion }}

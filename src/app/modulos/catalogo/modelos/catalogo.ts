@@ -1,28 +1,26 @@
 import type { IProducto } from '../../../nucleo/modelos/producto';
 
-/**
- * Proyección de M03 · Catálogo (§6 y §7 de UNIQUE v3.0).
- * Los existencias exactas y los precios definitivos los servirá Flask; aquí solo
- * se calculan etiquetas de disponibilidad para la interfaz.
- */
+/** Proyección pública de M03: el backend nunca expone existencias exactas. */
 
-export type CodigoColorCatalogo = 'BL' | 'NG' | 'GR';
+export type CodigoColorCatalogo = 'BL' | 'NG' | 'GR' | 'NA';
 export type CodigoTallaCatalogo = 'CH' | 'MD' | 'GD' | 'UN';
 export type EstadoDisponibilidadCatalogo =
-  'Disponible' | 'Pocas unidades' | 'Bajo pedido' | 'Agotado';
+  | 'Disponible'
+  | 'Pocas unidades'
+  | 'Bajo pedido'
+  | 'Agotado';
 export type OrdenCatalogo = 'relevancia' | 'precio-asc' | 'precio-desc' | 'novedad';
 
 export interface VarianteCatalogo {
+  id: number;
   sku: string;
   colorCodigo: CodigoColorCatalogo;
   colorNombre: string;
   talla: CodigoTallaCatalogo;
-  /** Uso interno: nunca se muestra en pantalla (§7 de M03). */
-  disponible: number;
-  minimo: number;
-  permiteBajoPedido: boolean;
-  diasProduccion: number;
-  diasEnvio: number;
+  disponibilidad: EstadoDisponibilidadCatalogo;
+  bajoPedido: boolean;
+  comprable: boolean;
+  fechaEstimada?: string;
   imagen: string;
   activa: boolean;
 }
@@ -30,9 +28,9 @@ export interface VarianteCatalogo {
 export interface ProductoCatalogo extends IProducto {
   activo: boolean;
   composicion: string;
+  guiaMedidasTexto?: string;
+  masBuscado: boolean;
   variantes: VarianteCatalogo[];
-  /** Solo para calcular «Más buscado»; no se muestra como cifra. */
-  vendidosUltimos30Dias: number;
   creadoEn: string;
 }
 
@@ -40,6 +38,7 @@ export const COLORES_CATALOGO: Record<CodigoColorCatalogo, { nombre: string; hex
   BL: { nombre: 'Blanco', hex: '#ffffff' },
   NG: { nombre: 'Negro', hex: '#2b212d' },
   GR: { nombre: 'Gris', hex: '#9a9a9a' },
+  NA: { nombre: 'No aplica', hex: '#d1d5db' },
 };
 
 export const TALLAS_CATALOGO: CodigoTallaCatalogo[] = ['CH', 'MD', 'GD', 'UN'];
@@ -56,24 +55,17 @@ export const GUIA_MEDIDAS: ReadonlyArray<{
 ];
 
 export function estadoDisponibilidad(variante: VarianteCatalogo): EstadoDisponibilidadCatalogo {
-  if (!variante.activa) {
-    return 'Agotado';
-  }
-  if (variante.disponible === 0) {
-    return variante.permiteBajoPedido ? 'Bajo pedido' : 'Agotado';
-  }
-  if (variante.disponible <= variante.minimo) {
-    return 'Pocas unidades';
-  }
-  return 'Disponible';
+  return variante.activa ? variante.disponibilidad : 'Agotado';
 }
 
 export function fechaEstimada(variante: VarianteCatalogo): string | undefined {
-  if (estadoDisponibilidad(variante) !== 'Bajo pedido') {
+  if (estadoDisponibilidad(variante) !== 'Bajo pedido' || !variante.fechaEstimada) {
     return undefined;
   }
-  const fecha = new Date();
-  fecha.setDate(fecha.getDate() + variante.diasProduccion + variante.diasEnvio);
+  const fecha = new Date(variante.fechaEstimada);
+  if (Number.isNaN(fecha.getTime())) {
+    return variante.fechaEstimada;
+  }
   return new Intl.DateTimeFormat('es-MX', {
     day: '2-digit',
     month: 'short',
@@ -82,10 +74,9 @@ export function fechaEstimada(variante: VarianteCatalogo): string | undefined {
 }
 
 export function productoDisponible(producto: ProductoCatalogo): boolean {
-  return producto.variantes.some((variante) => {
-    const estado = estadoDisponibilidad(variante);
-    return estado === 'Disponible' || estado === 'Pocas unidades';
-  });
+  return producto.variantes.some(
+    (variante) => variante.comprable && estadoDisponibilidad(variante) !== 'Agotado',
+  );
 }
 
 export function productoVisible(producto: ProductoCatalogo): boolean {

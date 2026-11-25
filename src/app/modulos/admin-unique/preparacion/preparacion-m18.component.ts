@@ -1,9 +1,22 @@
-import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiAdminService } from '../services/api-admin.service';
-import { PedidoPreparacion } from '../services/ui-admin.models';
+import { mensajeError } from '../../../core/api/errores';
 import { AuthSessionService } from '../services/auth-session.service';
+import { abrirPdf } from '../services/descargas';
+import { PreparacionService } from '../services/preparacion.service';
+import {
+  IncidenciaPreparacion,
+  Preparacion,
+  PreparacionLinea,
+  TipoIncidencia,
+} from '../services/ui-admin.models';
+
+interface VistaPreparacion extends Preparacion {
+  cliente: string;
+  fecha_prometida: string | null;
+}
+
 @Component({
   selector: 'app-preparacion-m18',
   standalone: true,
@@ -12,119 +25,222 @@ import { AuthSessionService } from '../services/auth-session.service';
   styleUrl: './modulos-admin.css',
 })
 export class PreparacionM18Component implements OnInit {
-  private api = inject(ApiAdminService);
-  private auth = inject(AuthSessionService);
-  get soloLectura() {
-    return this.auth.usuario?.rol === 'ADMIN';
-  }
-  pedidos: PedidoPreparacion[] = [];
-  seleccionado: PedidoPreparacion | null = null;
+  private readonly servicio = inject(PreparacionService);
+  private readonly auth = inject(AuthSessionService);
+
+  pedidos: VistaPreparacion[] = [];
+  seleccionado: VistaPreparacion | null = null;
   cargando = true;
   error = '';
   aviso = '';
   filtro = '';
-  ngOnInit() {
+  estado = '';
+  pagina = 1;
+  porPagina = 20;
+  total = 0;
+  incidencia: {
+    preparacion_linea_id: number | null;
+    tipo: TipoIncidencia;
+    descripcion: string;
+    cantidad: number | null;
+  } = {
+    preparacion_linea_id: null,
+    tipo: 'SKU',
+    descripcion: '',
+    cantidad: null,
+  };
+
+  get puedeOperar(): boolean {
+    const rol = this.auth.usuario?.rol;
+    return rol === 'OPERATIVO' || rol === 'ADMIN';
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.total / this.porPagina));
+  }
+
+  ngOnInit(): void {
     this.cargar();
   }
-  cargar() {
+
+  cargar(): void {
     this.cargando = true;
-    this.api.get<{ pedidos: PedidoPreparacion[] }>('/preparacion/cola').subscribe({
-      next: (r) => {
-        this.pedidos = r.pedidos ?? [];
+    this.error = '';
+    this.servicio.cola(this.estado || undefined, { pagina: this.pagina, por_pagina: this.porPagina }).subscribe({
+      next: (respuesta) => {
+        this.pedidos = respuesta.items.map((item) => this.comoVista(item));
+        this.total = respuesta.total;
+        this.pagina = respuesta.pagina;
+        this.porPagina = respuesta.por_pagina;
         this.cargando = false;
       },
-      error: () => {
-        this.error =
-          'No fue posible cargar la cola de preparación. Verifica que Flask esté disponible.';
+      error: (error: unknown) => {
+        this.error = mensajeError(error, 'No fue posible cargar la cola de preparación.');
         this.cargando = false;
       },
     });
   }
-  get filtrados() {
+
+  cambiarPagina(delta: number): void {
+    const destino = this.pagina + delta;
+    if (destino < 1 || destino > this.totalPaginas) return;
+    this.pagina = destino;
+    this.cargar();
+  }
+
+  get filtrados(): VistaPreparacion[] {
+    const texto = this.filtro.trim().toLowerCase();
+    if (!texto) return this.pedidos;
     return this.pedidos.filter((p) =>
-      (p.folio + ' ' + p.cliente).toLowerCase().includes(this.filtro.toLowerCase()),
+      `${p.folio ?? ''} ${p.cliente} ${p.estado}`.toLowerCase().includes(texto),
     );
   }
-  tomar(p: PedidoPreparacion) {
-    this.api.post<{ preparacion: PedidoPreparacion }>(`/preparacion/${p.id}/tomar`, {}).subscribe({
-      next: (r) => {
-        this.seleccionado = r.preparacion;
-        this.aviso = 'Pedido tomado. La preparación está en proceso.';
+
+  tomar(p: VistaPreparacion): void {
+    if (!this.puedeOperar) return;
+    this.error = '';
+    this.servicio.tomar(p.pedido_id).subscribe({
+      next: (respuesta) => {
+        this.seleccionado = this.comoVista(respuesta);
+        this.aviso = 'Pedido tomado. La preparación está en picking.';
         this.cargar();
       },
-      error: (e) => (this.error = e.error?.mensaje ?? 'No se pudo tomar el pedido.'),
+      error: (error: unknown) => (this.error = mensajeError(error, 'No se pudo tomar el pedido.')),
     });
   }
-  abrir(p: PedidoPreparacion) {
+
+  abrir(p: VistaPreparacion): void {
     this.seleccionado = p;
     this.aviso = '';
+    this.error = '';
+    this.incidencia.preparacion_linea_id = p.lineas[0]?.id ?? null;
   }
-  verificar(linea: any, campo: string, valor: boolean) {
-    this.api
-      .patch(`/preparacion/${this.seleccionado?.id}/lineas/${linea.id}/verificacion`, {
-        campo,
-        verificado: valor,
-      })
-      .subscribe({
-        error: () => {
-          linea[campo] = !valor;
-          this.error = 'No se pudo guardar la verificación.';
-        },
-      });
+
+  cerrar(): void {
+    this.seleccionado = null;
   }
-  marcarSurtida(l: any) {
-    const cantidad = Number(l.cantidad_surtida);
-    if (!Number.isInteger(cantidad) || cantidad < 0 || cantidad > l.cantidad_requerida) {
+
+  cambiarSurtido(linea: PreparacionLinea, valor: string): void {
+    if (!this.seleccionado || !this.puedeOperar) return;
+    const cantidad = Number(valor);
+    if (!Number.isInteger(cantidad) || cantidad < 0 || cantidad > linea.cantidad_requerida) {
       this.error = 'La cantidad surtida debe ser un entero entre 0 y la cantidad requerida.';
       return;
     }
-    this.api
-      .patch(`/preparacion/${this.seleccionado?.id}/lineas/${l.id}/surtido`, {
-        cantidad_surtida: cantidad,
-      })
-      .subscribe({ error: () => (this.error = 'No se pudo actualizar la cantidad surtida.') });
+    const anterior = linea.cantidad_surtida;
+    linea.cantidad_surtida = cantidad;
+    this.actualizarLinea(linea, { cantidad_surtida: cantidad }, () => {
+      linea.cantidad_surtida = anterior;
+    });
   }
-  get listoEmpaque() {
+
+  cambiarVerificacion(
+    linea: PreparacionLinea,
+    campo: 'sku_verificado' | 'diseno_verificado' | 'etiquetas_verificadas',
+    valor: boolean,
+  ): void {
+    if (!this.seleccionado || !this.puedeOperar) return;
+    const anterior = linea[campo];
+    linea[campo] = valor;
+    this.actualizarLinea(linea, { [campo]: valor }, () => {
+      linea[campo] = anterior;
+    });
+  }
+
+  private actualizarLinea(
+    linea: PreparacionLinea,
+    cambio: Record<string, number | boolean>,
+    revertir: () => void,
+  ): void {
+    const id = this.seleccionado?.id;
+    if (!id) return;
+    this.error = '';
+    this.servicio
+      .actualizarLineas(id, [{ preparacion_linea_id: linea.id, ...cambio }])
+      .subscribe({
+        next: (respuesta) => {
+          this.seleccionado = this.comoVista(respuesta);
+        },
+        error: (error: unknown) => {
+          revertir();
+          this.error = mensajeError(error, 'No se pudo guardar la línea de preparación.');
+        },
+      });
+  }
+
+  get listoEmpaque(): boolean {
+    const lineas = this.seleccionado?.lineas ?? [];
     return (
-      !!this.seleccionado?.lineas?.length &&
-      this.seleccionado.lineas.every(
+      lineas.length > 0 &&
+      lineas.every(
         (l) =>
           l.sku_verificado &&
           l.diseno_verificado &&
-          l.bordado_verificado &&
           l.etiquetas_verificadas &&
-          l.cantidad_surtida === l.cantidad_requerida,
+          l.cantidad_surtida >= l.cantidad_requerida,
       )
     );
   }
-  marcarListo() {
-    if (!this.seleccionado || !this.listoEmpaque) return;
-    this.api.post(`/preparacion/${this.seleccionado.id}/marcar-listo`, {}).subscribe({
+
+  empacar(): void {
+    if (!this.seleccionado || !this.listoEmpaque || !this.puedeOperar) return;
+    this.error = '';
+    this.servicio.empacar(this.seleccionado.id).subscribe({
       next: () => {
-        this.aviso = 'Pedido marcado como LISTO_ENVIO y enviado al módulo de Entregas.';
+        this.aviso = 'Preparación empacada. El pedido pasó a LISTO_ENVIO.';
         this.seleccionado = null;
         this.cargar();
       },
-      error: (e) => (this.error = e.error?.mensaje ?? 'No se pudo finalizar la preparación.'),
+      error: (error: unknown) => (this.error = mensajeError(error, 'No se pudo empacar.')),
     });
   }
-  imprimirEtiqueta() {
+
+  imprimirEtiqueta(): void {
     if (!this.seleccionado) return;
-    this.api.getBlob(`/preparacion/${this.seleccionado.id}/etiqueta`).subscribe({
-      next: (b) => {
-        const u = URL.createObjectURL(b);
-        window.open(u, '_blank');
+    this.error = '';
+    this.servicio.etiqueta(this.seleccionado.id).subscribe({
+      next: (pdf) => abrirPdf(pdf),
+      error: (error: unknown) => {
+        this.error = mensajeError(error, 'No se pudo generar la etiqueta.');
       },
-      error: () => (this.error = 'No se pudo generar la etiqueta.'),
     });
   }
-  registrarIncidencia() {
-    if (!this.seleccionado) return;
-    const descripcion = prompt('Describe la diferencia de SKU, cantidad o calidad:');
-    if (!descripcion?.trim()) return;
-    this.api.post(`/preparacion/${this.seleccionado.id}/incidencias`, { descripcion }).subscribe({
-      next: () => (this.aviso = 'Incidencia registrada.'),
-      error: () => (this.error = 'No se pudo registrar la incidencia.'),
+
+  registrarIncidencia(): void {
+    if (!this.seleccionado || !this.puedeOperar) return;
+    const lineaId = this.incidencia.preparacion_linea_id;
+    if (!lineaId || this.incidencia.descripcion.trim().length < 3) {
+      this.error = 'Selecciona una línea y describe la incidencia (mínimo 3 caracteres).';
+      return;
+    }
+    const datos: IncidenciaPreparacion = {
+      preparacion_linea_id: lineaId,
+      tipo: this.incidencia.tipo,
+      descripcion: this.incidencia.descripcion.trim(),
+    };
+    if (this.incidencia.tipo === 'CALIDAD') {
+      datos.cantidad = Math.max(1, Number(this.incidencia.cantidad) || 1);
+    }
+    this.error = '';
+    this.servicio.registrarIncidencia(this.seleccionado.id, datos).subscribe({
+      next: (respuesta) => {
+        this.seleccionado = this.comoVista(respuesta);
+        this.incidencia.descripcion = '';
+        this.incidencia.cantidad = null;
+        this.aviso = 'Incidencia registrada.';
+        this.cargar();
+      },
+      error: (error: unknown) => {
+        this.error = mensajeError(error, 'No se pudo registrar la incidencia.');
+      },
     });
+  }
+
+  private comoVista(preparacion: Preparacion): VistaPreparacion {
+    return {
+      ...preparacion,
+      cliente: preparacion.destinatario ?? `Pedido #${preparacion.pedido_id}`,
+      fecha_prometida: preparacion.fecha_promesa,
+    };
   }
 }

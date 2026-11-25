@@ -74,7 +74,7 @@
                         formControlName="materialId"
                         aria-label="Material"
                       >
-                        @for (material of materialesReferencia; track material.id) {
+                        @for (material of materialesReferencia(); track material.id) {
                           <option [ngValue]="material.id">{{ material.nombre }}</option>
                         }
                       </select>

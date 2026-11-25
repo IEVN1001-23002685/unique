@@ -1,10 +1,21 @@
-import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ApiAdminService } from '../services/api-admin.service';
+import { mensajeError } from '../../../core/api/errores';
+import { DashboardService } from '../services/dashboard.service';
+import { descargarTexto } from '../services/descargas';
 import { AuthSessionService } from '../services/auth-session.service';
-import { IndicadoresDashboard } from '../services/ui-admin.models';
+import {
+  DashboardAbastecimiento,
+  DashboardLogistica,
+  DashboardProduccion,
+  DashboardResumen,
+  DashboardVentas,
+} from '../services/ui-admin.models';
+
+type Pestana = 'resumen' | 'ventas' | 'produccion' | 'abasto' | 'logistica';
+
 @Component({
   selector: 'app-dashboard-m20',
   standalone: true,
@@ -13,74 +24,129 @@ import { IndicadoresDashboard } from '../services/ui-admin.models';
   styleUrl: '../preparacion/modulos-admin.css',
 })
 export class DashboardM20Component implements OnInit {
-  private api = inject(ApiAdminService);
-  auth = inject(AuthSessionService);
-  data: IndicadoresDashboard | null = null;
+  private readonly servicio = inject(DashboardService);
+  readonly auth = inject(AuthSessionService);
+
+  resumen: DashboardResumen | null = null;
+  ventas: DashboardVentas | null = null;
+  produccion: DashboardProduccion | null = null;
+  abastecimiento: DashboardAbastecimiento | null = null;
+  logistica: DashboardLogistica | null = null;
   cargando = true;
   error = '';
-  periodo = 'mes';
-  categoria = '';
-  producto = '';
-  color = '';
-  talla = '';
-  canal = '';
-  pestana = 'resumen';
-  filtros() {
-    this.cargar();
-  }
-  ngOnInit() {
-    this.pestana = this.admin ? 'resumen' : 'produccion';
-    this.cargar();
-  }
-  cargar() {
-    this.cargando = true;
-    this.api
-      .get<IndicadoresDashboard>('/dashboard/kpis', {
-        periodo: this.periodo,
-        categoria: this.categoria,
-        producto: this.producto,
-        color: this.color,
-        talla: this.talla,
-        canal: this.canal,
-      })
-      .subscribe({
-        next: (r) => {
-          this.data = r;
-          this.cargando = false;
-        },
-        error: () => {
-          this.error =
-            'No se pudieron consultar los indicadores. Los datos se cargarán desde las vistas de MySQL a través de Flask.';
-          this.cargando = false;
-        },
-      });
-  }
-  exportar() {
-    this.api
-      .get<Blob>('/dashboard/exportar', {
-        periodo: this.periodo,
-        categoria: this.categoria,
-        producto: this.producto,
-        color: this.color,
-        talla: this.talla,
-        canal: this.canal,
-      })
-      .subscribe({
-        next: (b) => {
-          const u = URL.createObjectURL(b);
-          const a = document.createElement('a');
-          a.href = u;
-          a.download = 'unique-dashboard.csv';
-          a.click();
-          URL.revokeObjectURL(u);
-        },
-        error: () => (this.error = 'No fue posible exportar el reporte CSV.'),
-      });
-  }
-  get maxVenta() {
-    return Math.max(1, ...(this.data?.ventas_mensuales ?? []).map((x) => x.total));
-  }
-  get admin() {
+  desde = '';
+  hasta = '';
+  pestana: Pestana = 'resumen';
+
+  get esAdmin(): boolean {
     return this.auth.usuario?.rol === 'ADMIN';
+  }
+
+  get maxVenta(): number {
+    return Math.max(1, ...(this.ventas?.por_canal ?? []).map((x) => Number(x.ingresos) || 0));
+  }
+
+  num(valor: string | number | null | undefined): number {
+    return Number(valor) || 0;
+  }
+
+  entradas(conteos: Record<string, number>): { clave: string; total: number }[] {
+    return Object.entries(conteos ?? {}).map(([clave, total]) => ({ clave, total: Number(total) || 0 }));
+  }
+
+  ngOnInit(): void {
+    this.pestana = this.esAdmin ? 'resumen' : 'produccion';
+    this.cargar();
+  }
+
+  filtros(): void {
+    this.cargar();
+  }
+
+  cambiar(pestana: Pestana): void {
+    this.pestana = pestana;
+    this.cargar();
+  }
+
+  private get filtro(): { desde?: string; hasta?: string } {
+    return { desde: this.desde || undefined, hasta: this.hasta || undefined };
+  }
+
+  cargar(): void {
+    this.cargando = true;
+    this.error = '';
+    const filtro = this.filtro;
+    if (this.pestana === 'resumen') {
+      this.servicio.resumen(filtro).subscribe({
+        next: (respuesta) => {
+          this.resumen = respuesta;
+          this.cargando = false;
+        },
+        error: (error: unknown) => {
+          this.error = mensajeError(error, 'No se pudo consultar el resumen.');
+          this.cargando = false;
+        },
+      });
+      return;
+    }
+    if (this.pestana === 'ventas') {
+      this.servicio.ventas(filtro).subscribe({
+        next: (respuesta) => {
+          this.ventas = respuesta;
+          this.cargando = false;
+        },
+        error: (error: unknown) => {
+          this.error = mensajeError(error, 'No se pudieron consultar las ventas.');
+          this.cargando = false;
+        },
+      });
+      return;
+    }
+    if (this.pestana === 'produccion') {
+      this.servicio.produccion(filtro).subscribe({
+        next: (respuesta) => {
+          this.produccion = respuesta;
+          this.cargando = false;
+        },
+        error: (error: unknown) => {
+          this.error = mensajeError(error, 'No se pudo consultar la producción.');
+          this.cargando = false;
+        },
+      });
+      return;
+    }
+    if (this.pestana === 'abasto') {
+      this.servicio.abastecimiento(filtro).subscribe({
+        next: (respuesta) => {
+          this.abastecimiento = respuesta;
+          this.cargando = false;
+        },
+        error: (error: unknown) => {
+          this.error = mensajeError(error, 'No se pudo consultar el abastecimiento.');
+          this.cargando = false;
+        },
+      });
+      return;
+    }
+    this.servicio.logistica(filtro).subscribe({
+      next: (respuesta) => {
+        this.logistica = respuesta;
+        this.cargando = false;
+      },
+      error: (error: unknown) => {
+        this.error = mensajeError(error, 'No se pudo consultar la logística.');
+        this.cargando = false;
+      },
+    });
+  }
+
+  exportar(): void {
+    this.error = '';
+    this.servicio.exportar(this.filtro).subscribe({
+      next: (csv) => descargarTexto(csv, 'dashboard-unique.csv'),
+      error: (error: unknown) => {
+        this.error = mensajeError(error, 'No fue posible exportar el reporte CSV.');
+      },
+    });
   }
 }

@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { mensajeError } from '../../../../core/api/errores';
 import { AccesoRegistroServicio } from '../../servicios/acceso-registro-servicio';
 import { coincide, passwordFuerte } from '../../validadores/acceso-registro.validadores';
 
@@ -30,6 +31,7 @@ export class RestablecerPassword {
   );
 
   protected mensaje = '';
+  protected cargando = false;
 
   protected errorEn(campo: 'contrasena' | 'repetirContrasena'): boolean {
     const control = this.formulario.controls[campo];
@@ -51,8 +53,20 @@ export class RestablecerPassword {
       return;
     }
 
-    // Flask validará el token, su vigencia de 30 minutos y guardará el hash.
     this.mensaje = this.mensajePendiente;
+    this.cargando = true;
+    this.servicio
+      .restablecer(this.token, this.formulario.controls.contrasena.value ?? '')
+      .subscribe({
+        next: (respuesta) => {
+          this.cargando = false;
+          this.mensaje = respuesta.mensaje;
+        },
+        error: (error: unknown) => {
+          this.cargando = false;
+          this.mensaje = mensajeError(error, 'No fue posible actualizar la contraseña.');
+        },
+      });
   }
 
   onVolverALogin(): void {

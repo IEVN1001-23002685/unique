@@ -7,7 +7,7 @@ import { AlertasM21Component } from './administracion/alertas-m21.component';
 import { AdministracionM22Component } from './administracion/administracion-m22.component';
 import { LoginPageComponent } from './administracion/login-page.component';
 import { SinAccesoComponent } from './administracion/sin-acceso.component';
-import { authGuard, roleGuard } from './services/auth-session.service';
+import { authAdminGuard, rolAdminGuard } from './services/guards-admin';
 
 /** Rutas autocontenidas. Se agregan desde el archivo de rutas principal sin reemplazar rutas existentes. */
 export const ADMIN_UNIQUE_ROUTES: Routes = [
@@ -16,37 +16,37 @@ export const ADMIN_UNIQUE_ROUTES: Routes = [
   {
     path: 'panel-admin',
     component: PanelAdminComponent,
-    canActivate: [authGuard],
+    canActivate: [authAdminGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       {
         path: 'dashboard',
         component: DashboardM20Component,
-        canActivate: [roleGuard],
+        canActivate: [rolAdminGuard],
         data: { roles: ['ADMIN', 'OPERATIVO'] },
       },
       {
         path: 'preparacion',
         component: PreparacionM18Component,
-        canActivate: [roleGuard],
+        canActivate: [rolAdminGuard],
         data: { roles: ['ADMIN', 'OPERATIVO'] },
       },
       {
         path: 'entregas',
         component: EntregasM19Component,
-        canActivate: [roleGuard],
+        canActivate: [rolAdminGuard],
         data: { roles: ['ADMIN', 'OPERATIVO'] },
       },
       {
         path: 'alertas',
         component: AlertasM21Component,
-        canActivate: [roleGuard],
+        canActivate: [rolAdminGuard],
         data: { roles: ['ADMIN', 'OPERATIVO'] },
       },
       {
         path: 'sistema',
         component: AdministracionM22Component,
-        canActivate: [roleGuard],
+        canActivate: [rolAdminGuard],
         data: { roles: ['ADMIN'] },
       },
     ],

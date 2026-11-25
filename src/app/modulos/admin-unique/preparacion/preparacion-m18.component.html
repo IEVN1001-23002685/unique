@@ -2,10 +2,7 @@
   <div>
     <span class="eyebrow">MÓDULO 18 · LOGÍSTICA</span>
     <h2>Preparación de pedidos</h2>
-    <p>
-      Surtir, verificar y empacar pedidos confirmados. Las entregas se gestionan en una ventana
-      independiente.
-    </p>
+    <p>Surtir, verificar y empacar pedidos confirmados. Las entregas se gestionan en una ventana independiente.</p>
   </div>
   <button class="btn-outline" (click)="cargar()">↻ Actualizar</button>
 </div>
@@ -15,16 +12,22 @@
   <div class="tabs">
     <span class="tab active">Cola de preparación</span><span class="tab">Incidencias</span>
   </div>
-  <input class="search" [(ngModel)]="filtro" placeholder="Buscar folio o cliente..." />
+  <select class="search" [(ngModel)]="estado" (change)="pagina = 1; cargar()">
+    <option value="">Todos los estados</option>
+    <option value="POR_SURTIR">POR_SURTIR</option>
+    <option value="EN_PICKING">EN_PICKING</option>
+    <option value="EN_VERIFICACION">EN_VERIFICACION</option>
+    <option value="EN_EMPAQUE">EN_EMPAQUE</option>
+    <option value="LISTA">LISTA</option>
+  </select>
+  <input class="search" [(ngModel)]="filtro" placeholder="Buscar folio o destinatario..." />
 </div>
 <div class="stats-grid">
   <article class="stat-card">
-    <small>PEDIDOS EN COLA</small><b>{{ pedidos.length }}</b
-    ><span>Confirmados para preparar</span>
+    <small>PEDIDOS EN COLA</small><b>{{ total }}</b><span>Preparaciones paginadas</span>
   </article>
   <article class="stat-card">
-    <small>EN PREPARACIÓN</small><b>{{ seleccionado ? 1 : 0 }}</b
-    ><span>Hoja activa</span>
+    <small>EN PREPARACIÓN</small><b>{{ seleccionado ? 1 : 0 }}</b><span>Hoja activa</span>
   </article>
   <article class="stat-card">
     <small>ETAPAS</small><b>4</b><span>Picking · Verificación · Empaque · Lista</span>
@@ -36,15 +39,13 @@
     <span class="muted">Ordenada por prioridad y fecha prometida</span>
   </div>
   <div *ngIf="cargando" class="empty">Cargando pedidos...</div>
-  <div *ngIf="!cargando && !filtrados.length" class="empty">
-    No hay pedidos confirmados pendientes de preparación.
-  </div>
+  <div *ngIf="!cargando && !filtrados.length" class="empty">No hay pedidos para este filtro.</div>
   <div class="table-wrap" *ngIf="filtrados.length">
     <table>
       <thead>
         <tr>
           <th>FOLIO</th>
-          <th>CLIENTE</th>
+          <th>DESTINATARIO</th>
           <th>FECHA PROMETIDA</th>
           <th>ARTÍCULOS</th>
           <th>ESTADO</th>
@@ -53,30 +54,37 @@
       </thead>
       <tbody>
         <tr *ngFor="let p of filtrados">
-          <td>
-            <b>{{ p.folio }}</b>
-          </td>
+          <td><b>{{ p.folio || 'Sin folio' }}</b></td>
           <td>{{ p.cliente }}</td>
           <td>{{ p.fecha_prometida | date: 'dd MMM yyyy' }}</td>
           <td>{{ p.lineas.length }} líneas</td>
-          <td><span class="chip blue">CONFIRMADO</span></td>
-          <td>
-            <button class="btn-primary small" *ngIf="!soloLectura" (click)="tomar(p)">
-              Tomar pedido</button
-            ><span *ngIf="soloLectura" class="muted">Solo lectura</span>
+          <td><span class="chip blue">{{ p.estado }}</span></td>
+          <td class="actions">
+            <button class="btn-primary small" *ngIf="puedeOperar && p.estado === 'POR_SURTIR'" (click)="tomar(p)">
+              Tomar pedido
+            </button>
+            <button class="btn-outline small" *ngIf="p.estado !== 'POR_SURTIR'" (click)="abrir(p)">
+              Abrir hoja
+            </button>
+            <span *ngIf="!puedeOperar" class="muted">Solo lectura</span>
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+  <div class="toolbar">
+    <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
+    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
+    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
   </div>
 </div>
 <div class="panel-card" *ngIf="seleccionado">
   <div class="panel-title">
     <div>
       <span class="eyebrow">HOJA DE PREPARACIÓN</span>
-      <h3>{{ seleccionado.folio }} · {{ seleccionado.cliente }}</h3>
+      <h3>{{ seleccionado.folio || 'Pedido #' + seleccionado.pedido_id }} · {{ seleccionado.cliente }}</h3>
     </div>
-    <button class="btn-outline" (click)="seleccionado = null">← Volver a cola</button>
+    <button class="btn-outline" (click)="cerrar()">← Volver a cola</button>
   </div>
   <div class="steps">
     <div class="step done"><i>✓</i><b>Picking</b></div>
@@ -94,57 +102,30 @@
           <th>SURTIDA</th>
           <th>SKU</th>
           <th>DISEÑO</th>
-          <th>BORDADO</th>
           <th>ETIQUETAS</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let l of seleccionado.lineas">
-          <td>{{ l.sku }}</td>
-          <td>{{ l.producto }} · {{ l.talla }} · {{ l.color }}</td>
+          <td>{{ l.sku || '—' }}</td>
+          <td>{{ l.nombre_producto || 'Producto' }} · {{ l.talla || 'UN' }} · {{ l.color || 'NA' }}</td>
           <td>{{ l.cantidad_requerida }} pzas.</td>
           <td>
-            <input
-              class="qty"
-              type="number"
-              min="0"
-              [max]="l.cantidad_requerida"
-              [(ngModel)]="l.cantidad_surtida"
-              [disabled]="soloLectura"
-              (change)="marcarSurtida(l)"
-            />
+            <input class="qty" type="number" min="0" [max]="l.cantidad_requerida"
+              [ngModel]="l.cantidad_surtida" [disabled]="!puedeOperar"
+              (change)="cambiarSurtido(l, $any($event.target).value)" />
           </td>
           <td>
-            <input
-              type="checkbox"
-              [checked]="l.sku_verificado"
-              [disabled]="soloLectura"
-              (change)="verificar(l, 'sku_verificado', $any($event.target).checked)"
-            />
+            <input type="checkbox" [checked]="l.sku_verificado" [disabled]="!puedeOperar"
+              (change)="cambiarVerificacion(l, 'sku_verificado', $any($event.target).checked)" />
           </td>
           <td>
-            <input
-              type="checkbox"
-              [checked]="l.diseno_verificado"
-              [disabled]="soloLectura"
-              (change)="verificar(l, 'diseno_verificado', $any($event.target).checked)"
-            />
+            <input type="checkbox" [checked]="l.diseno_verificado" [disabled]="!puedeOperar"
+              (change)="cambiarVerificacion(l, 'diseno_verificado', $any($event.target).checked)" />
           </td>
           <td>
-            <input
-              type="checkbox"
-              [checked]="l.bordado_verificado"
-              [disabled]="soloLectura"
-              (change)="verificar(l, 'bordado_verificado', $any($event.target).checked)"
-            />
-          </td>
-          <td>
-            <input
-              type="checkbox"
-              [checked]="l.etiquetas_verificadas"
-              [disabled]="soloLectura"
-              (change)="verificar(l, 'etiquetas_verificadas', $any($event.target).checked)"
-            />
+            <input type="checkbox" [checked]="l.etiquetas_verificadas" [disabled]="!puedeOperar"
+              (change)="cambiarVerificacion(l, 'etiquetas_verificadas', $any($event.target).checked)" />
           </td>
         </tr>
       </tbody>
@@ -157,17 +138,41 @@
       <p>✓ Papel protector por prenda</p>
       <p>✓ Tarjeta con código QR</p>
       <p>✓ Etiqueta de envío por pedido</p>
-      <small>Los materiales se consumen al confirmar el empaque.</small>
+      <small>Los materiales se consumen por PEPS al confirmar el empaque.</small>
     </section>
-    <section class="subcard" *ngIf="!soloLectura">
+    <section class="subcard" *ngIf="puedeOperar">
       <h4>Acciones de preparación</h4>
-      <button class="btn-outline" (click)="imprimirEtiqueta()">Imprimir etiqueta de envío</button
-      ><button class="btn-outline" (click)="registrarIncidencia()">Registrar incidencia</button
-      ><button class="btn-primary" [disabled]="!listoEmpaque" (click)="marcarListo()">
-        Marcar listo para envío</button
-      ><small *ngIf="!listoEmpaque"
-        >Completa cantidades y verificaciones de todas las líneas para continuar.</small
-      >
+      <button class="btn-outline" (click)="imprimirEtiqueta()">Imprimir etiqueta PDF</button>
+      <button class="btn-primary" [disabled]="!listoEmpaque" (click)="empacar()">
+        Empacar y marcar listo
+      </button>
+      <small *ngIf="!listoEmpaque">Completa cantidades y las tres verificaciones de todas las líneas.</small>
     </section>
+  </div>
+  <div class="panel-card" *ngIf="puedeOperar">
+    <div class="panel-title"><h4>Incidencia de preparación</h4></div>
+    <div class="form-grid">
+      <label>Línea
+        <select [(ngModel)]="incidencia.preparacion_linea_id">
+          <option *ngFor="let l of seleccionado.lineas" [ngValue]="l.id">
+            {{ l.sku || l.nombre_producto || l.id }}
+          </option>
+        </select>
+      </label>
+      <label>Tipo
+        <select [(ngModel)]="incidencia.tipo">
+          <option value="SKU">SKU</option>
+          <option value="CANTIDAD">Cantidad</option>
+          <option value="CALIDAD">Calidad</option>
+        </select>
+      </label>
+      <label *ngIf="incidencia.tipo === 'CALIDAD'">Cantidad
+        <input type="number" min="1" [(ngModel)]="incidencia.cantidad" />
+      </label>
+      <label style="grid-column: 1 / -1">Descripción
+        <input [(ngModel)]="incidencia.descripcion" placeholder="Describe la diferencia detectada" />
+      </label>
+      <button class="btn-outline" (click)="registrarIncidencia()">Registrar incidencia</button>
+    </div>
   </div>
 </div>

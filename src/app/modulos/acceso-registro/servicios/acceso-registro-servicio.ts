@@ -1,31 +1,57 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import {
+  AuthSessionService,
+  DatosRegistroApi,
+  MensajeApi,
+  RespuestaSesion,
+} from '../../../core/auth/auth-session.service';
 import {
   CredencialesLogin,
   DatosRegistroCliente,
   MENSAJES_M01,
-  SesionAcceso,
 } from '../modelos/acceso-registro';
 
-/**
- * Contrato que deberá implementar Flask cuando exista HttpClient (§9 de UNIQUE v3.0):
- * POST /auth/registro · POST /auth/login · POST /auth/refrescar · POST /auth/logout ·
- * POST /auth/recuperar · POST /auth/restablecer.
- * No se crea ninguna petición ni se simula persistencia en esta etapa.
- */
-export interface PuertoAutenticacion {
-  registrarCliente(datos: DatosRegistroCliente): Observable<{ mensaje: string }>;
-  iniciarSesion(credenciales: CredencialesLogin): Observable<SesionAcceso>;
-  recuperar(correo: string): Observable<{ mensaje: string; tokenSimulado: string }>;
-  restablecer(token: string, contrasena: string): Observable<{ mensaje: string }>;
-}
-
-/** Textos visibles que explican la limitación del frontend sin backend. */
+/** Servicio de M01. Los componentes solo invocan estos métodos. */
 @Injectable({ providedIn: 'root' })
 export class AccesoRegistroServicio {
+  private readonly sesion = inject(AuthSessionService);
+
   readonly registroPendiente = MENSAJES_M01.registroPendiente;
   readonly ingresoPendiente = MENSAJES_M01.ingresoPendiente;
   readonly recuperacionPendiente = MENSAJES_M01.recuperacionPendiente;
   readonly restablecimientoPendiente = MENSAJES_M01.restablecimientoPendiente;
   readonly formularioInvalido = MENSAJES_M01.formularioInvalido;
+
+  registrar(datos: DatosRegistroCliente): Observable<RespuestaSesion> {
+    const cuerpo: DatosRegistroApi = {
+      nombre: datos.nombre,
+      apellidos: datos.apellidos,
+      correo: datos.correo,
+      telefono: datos.telefono,
+      password: datos.contrasena,
+      acepta_promociones: datos.recibirPromociones,
+    };
+    return this.sesion.registrar(cuerpo);
+  }
+
+  iniciarSesion(credenciales: CredencialesLogin): Observable<RespuestaSesion> {
+    return this.sesion.iniciarSesion(credenciales.correo, credenciales.contrasena);
+  }
+
+  refrescar(): Observable<RespuestaSesion> {
+    return this.sesion.refrescar();
+  }
+
+  cerrarSesion(): Observable<MensajeApi> {
+    return this.sesion.cerrarSesion();
+  }
+
+  recuperar(correo: string): Observable<MensajeApi> {
+    return this.sesion.recuperar(correo);
+  }
+
+  restablecer(token: string, contrasena: string): Observable<MensajeApi> {
+    return this.sesion.restablecer(token, contrasena);
+  }
 }

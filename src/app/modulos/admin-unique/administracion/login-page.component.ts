@@ -2,8 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ApiAdminService } from '../services/api-admin.service';
-import { AuthSessionService, SesionUsuario } from '../services/auth-session.service';
+import { AuthSessionService } from '../services/auth-session.service';
 @Component({
   selector: 'app-login-page',
   standalone: true,
@@ -105,7 +104,6 @@ import { AuthSessionService, SesionUsuario } from '../services/auth-session.serv
 })
 export class LoginPageComponent {
   private fb = inject(FormBuilder);
-  private api = inject(ApiAdminService);
   private auth = inject(AuthSessionService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -113,20 +111,17 @@ export class LoginPageComponent {
   error = '';
   form = this.fb.group({
     correo: ['', [Validators.required, Validators.email]],
-    contrasena: ['', Validators.required],
+    password: ['', Validators.required],
   });
   entrar() {
     if (this.form.invalid) return;
     this.cargando = true;
     this.error = '';
-    this.api
-      .post<{ access_token: string; usuario: SesionUsuario }>(
-        '/auth/login',
-        this.form.getRawValue(),
-      )
+    const credenciales = this.form.getRawValue();
+    this.auth
+      .iniciarSesion(credenciales.correo ?? '', credenciales.password ?? '')
       .subscribe({
-        next: (r) => {
-          this.auth.guardarSesion(r.access_token, r.usuario);
+        next: () => {
           const dest = this.route.snapshot.queryParamMap.get('returnUrl') || '/panel-admin';
           this.router.navigateByUrl(dest);
         },

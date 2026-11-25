@@ -6,8 +6,8 @@ export const CATALOGO_RUTAS: Routes = [
     loadComponent: () => import('./paginas/catalogo/catalogo').then((c) => c.Catalogo),
   },
   {
-    // Ruta por nombre de producto, por ejemplo: /catalogo/producto/sudadera
-    path: 'producto/:slug',
+    // El detalle público se resuelve por identificador de producto.
+    path: 'producto/:productoId',
     loadComponent: () =>
       import('./paginas/detalle-producto/detalle-producto').then((c) => c.DetalleProducto),
   },

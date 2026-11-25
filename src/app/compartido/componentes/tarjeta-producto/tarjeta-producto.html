@@ -23,7 +23,7 @@
       {{ producto().precio | currency: 'MXN' : 'symbol' : '1.2-2' }}
     </p>
     <div class="tarjeta__acciones">
-      <a [routerLink]="['/catalogo/producto', producto().slug]" class="boton-informacion">
+      <a [routerLink]="['/catalogo/producto', producto().id]" class="boton-informacion">
         Ver más información
       </a>
     </div>

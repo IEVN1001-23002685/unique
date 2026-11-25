@@ -1,25 +1,20 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, concatMap, forkJoin, from, map, of, tap } from 'rxjs';
+import { ApiService, ValorParametro } from '../../../core/api/api.service';
+import { InventarioServicio } from '../../inventario/servicios/inventario-servicio';
 import type { MaterialProveedor } from '../../proveedores/modelos/proveedor';
 import { ProveedoresServicio } from '../../proveedores/servicios/proveedores-servicio';
-import {
-  COTIZACIONES_SIMULADAS,
-  MATERIALES_COMPRA,
-  ORDENES_SIMULADAS,
-  RECEPCIONES_SIMULADAS,
-  REQUISICIONES_SIMULADAS,
-} from '../datos-simulados/compras';
 import type {
   Cotizacion,
   DatosRecepcion,
   LineaCotizacion,
   LineaOrdenCompra,
-  LineaRecepcion,
-  LoteDemostracion,
-  MermaDemostracion,
+  LineaRequisicion,
+  MaterialCompra,
   OrdenCompra,
   Recepcion,
-  ResultadoRecepcion,
   Requisicion,
+  ResultadoRecepcion,
 } from '../modelos/compra';
 
 export function redondear4(valor: number): number {
@@ -30,43 +25,193 @@ export function hoyISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function sumarDias(fecha: string, dias: number): string {
-  const resultado = new Date(`${fecha}T12:00:00`);
-  resultado.setDate(resultado.getDate() + dias);
-  return resultado.toISOString().slice(0, 10);
+interface Pagina<T> {
+  items: T[];
+  total: number;
 }
 
-/**
- * Estado en memoria de M14. La interfaz pública está pensada para sustituirse
- * por HttpClient contra /requisiciones, /cotizaciones, /ordenes-compra y
- * /recepciones (§9). Nada de lo que ocurre aquí persiste en servidor: los
- * lotes y mermas que se muestran son solo una vista previa para la interfaz.
- */
+interface RequisicionLineaApi {
+  id: number;
+  inventario_material_id: number;
+  material: string;
+  nombre_material: string;
+  color: string;
+  unidad_base: string;
+  cantidad_base_faltante: string;
+  cantidad_compra_sugerida: string;
+  cantidad_compra_atendida: string;
+}
+
+interface RequisicionApi {
+  id: number;
+  folio: string;
+  origen: string;
+  orden_produccion_id: number | null;
+  estado: string;
+  prioridad: string;
+  solicitada_por: string | number;
+  fecha: string;
+  notas: string | null;
+  lineas: RequisicionLineaApi[];
+}
+
+interface CotizacionLineaApi {
+  id: number;
+  requisicion_linea_id: number;
+  cantidad_compra: string;
+  precio_unitario_compra: string;
+  subtotal: string;
+}
+
+interface CotizacionApi {
+  id: number;
+  requisicion_id: number;
+  proveedor_id: number;
+  proveedor: string;
+  fecha: string;
+  vigencia_hasta: string | null;
+  plazo_dias: number;
+  estado: string;
+  total: string;
+  notas: string | null;
+  lineas: CotizacionLineaApi[];
+}
+
+interface OrdenLineaApi {
+  id: number;
+  inventario_material_id: number;
+  material: string;
+  nombre_material: string;
+  color: string;
+  unidad_compra: string;
+  cantidad_compra: string;
+  precio_unitario_compra: string;
+  subtotal: string;
+  cantidad_base_aceptada: string;
+}
+
+interface OrdenApi {
+  id: number;
+  folio: string;
+  proveedor_id: number;
+  proveedor: string;
+  requisicion_id: number | null;
+  cotizacion_id: number | null;
+  estado: string;
+  fecha_emision: string | null;
+  fecha_prometida: string | null;
+  total: string;
+  condiciones_pago: string | null;
+  notas: string | null;
+  creada_por: string | number;
+  lineas: OrdenLineaApi[];
+}
+
+interface RecepcionApi {
+  id: number;
+  folio: string;
+  orden_compra_id: number;
+  fecha: string;
+  recibida_por: string | number;
+  documento_proveedor: string | null;
+  notas: string | null;
+  lineas: {
+    id: number;
+    orden_compra_linea_id: number;
+    cantidad_base_medida: string;
+    cantidad_base_aceptada: string;
+    cantidad_base_rechazada: string;
+    motivo_rechazo: string | null;
+  }[];
+}
+
+interface ResultadoRecepcionApi {
+  recepcion: RecepcionApi;
+  orden_compra: { id: number; folio: string; estado: string };
+}
+
+function listarTodo<T>(
+  api: ApiService,
+  ruta: string,
+  params: Record<string, ValorParametro> = {},
+): Observable<T[]> {
+  const porPagina = 100;
+  const pedir = (pagina: number, previos: T[]): Observable<T[]> =>
+    api
+      .get<Pagina<T>>(ruta, { params: { ...params, pagina, por_pagina: porPagina } })
+      .pipe(
+        concatMap((respuesta) => {
+          const items = [...previos, ...(respuesta.items ?? [])];
+          if (respuesta.items.length === 0 || items.length >= (respuesta.total ?? 0)) {
+            return of(items);
+          }
+          return pedir(pagina + 1, items);
+        }),
+      );
+  return pedir(1, []);
+}
+
+function codigoColor(color: string | null): string {
+  const normalizado = (color ?? '').trim().toLocaleLowerCase('es-MX');
+  if (normalizado.startsWith('bl')) {
+    return 'BL';
+  }
+  if (normalizado.startsWith('ne')) {
+    return 'NG';
+  }
+  if (normalizado.startsWith('gr')) {
+    return 'GR';
+  }
+  return 'NA';
+}
+
+/** M14 contra la API: Flask genera folios, lotes, mermas y movimientos. */
 @Injectable({ providedIn: 'root' })
 export class ComprasServicio {
+  private readonly api = inject(ApiService);
   private readonly proveedores = inject(ProveedoresServicio);
+  private readonly inventario = inject(InventarioServicio);
 
-  private readonly listaRequisiciones = signal<Requisicion[]>(
-    structuredClone(REQUISICIONES_SIMULADAS),
-  );
-  private readonly listaCotizaciones = signal<Cotizacion[]>(
-    structuredClone(COTIZACIONES_SIMULADAS),
-  );
-  private readonly listaOrdenes = signal<OrdenCompra[]>(structuredClone(ORDENES_SIMULADAS));
-  private readonly listaRecepciones = signal<Recepcion[]>(structuredClone(RECEPCIONES_SIMULADAS));
-  private correlativoLotes = 0;
+  private readonly listaRequisiciones = signal<Requisicion[]>([]);
+  private readonly listaCotizaciones = signal<Cotizacion[]>([]);
+  private readonly listaOrdenes = signal<OrdenCompra[]>([]);
+  private readonly listaRecepciones = signal<Recepcion[]>([]);
+  private readonly listaMateriales = signal<MaterialCompra[]>([]);
 
   readonly requisiciones = this.listaRequisiciones.asReadonly();
   readonly cotizaciones = this.listaCotizaciones.asReadonly();
   readonly ordenes = this.listaOrdenes.asReadonly();
   readonly recepciones = this.listaRecepciones.asReadonly();
-  readonly materiales = MATERIALES_COMPRA;
+  readonly materiales = computed(() => this.listaMateriales().filter((material) => material.id > 0));
   readonly proveedoresDisponibles = computed(() =>
     this.proveedores.proveedores().filter((proveedor) => proveedor.estatus !== 'INACTIVO'),
   );
+  readonly cargado = signal(false);
 
-  obtenerMaterial(id: number) {
-    return this.materiales.find((material) => material.id === id);
+  constructor() {
+    this.recargar().subscribe();
+  }
+
+  recargar(): Observable<void> {
+    return forkJoin({
+      requisiciones: listarTodo<RequisicionApi>(this.api, '/requisiciones'),
+      cotizaciones: listarTodo<CotizacionApi>(this.api, '/cotizaciones'),
+      ordenes: listarTodo<OrdenApi>(this.api, '/ordenes-compra'),
+    }).pipe(
+      tap(({ requisiciones, cotizaciones, ordenes }) => {
+        const materiales = this.materialesDeM15();
+        this.listaMateriales.set(materiales);
+        this.listaRequisiciones.set(requisiciones.map((fila) => this.adaptarRequisicion(fila)));
+        this.listaCotizaciones.set(cotizaciones.map((fila) => this.adaptarCotizacion(fila)));
+        this.listaOrdenes.set(ordenes.map((fila) => this.adaptarOrden(fila)));
+      }),
+      tap(() => this.cargado.set(true)),
+      map(() => undefined),
+    );
+  }
+
+  obtenerMaterial(id: number): MaterialCompra | undefined {
+    return this.listaMateriales().find((material) => material.id === id);
   }
 
   proveedorNombre(id: number): string {
@@ -77,11 +222,6 @@ export class ComprasServicio {
     return this.proveedores.obtenerPorId(id)?.condicionesPago ?? 'Contado';
   }
 
-  /**
-   * Cobertura leída de M13; M14 no copia ni modifica sus reglas.
-   * El identificador del proveedor se deriva del padrón porque la línea de
-   * proveedor_material no lo expone en el modelo de M13.
-   */
   coberturaMaterial(materialId: number): (MaterialProveedor & { proveedorId: number })[] {
     const opciones: (MaterialProveedor & { proveedorId: number })[] = [];
     for (const proveedor of this.proveedores.proveedores()) {
@@ -97,14 +237,12 @@ export class ComprasServicio {
     return opciones;
   }
 
-  /** Cantidad en presentación comercial: redondeo hacia arriba y mínimo. */
   cantidadPresentaciones(materialId: number, faltanteBase: number): number {
     const material = this.obtenerMaterial(materialId);
     if (!material || !(faltanteBase > 0)) {
       return 0;
     }
-    const necesario = Math.ceil(faltanteBase / material.factorPresentacion);
-    return Math.max(material.minimoCompra, necesario);
+    return Math.max(material.minimoCompra, Math.ceil(faltanteBase / material.factorPresentacion));
   }
 
   basePresentaciones(materialId: number, presentaciones: number): number {
@@ -116,52 +254,49 @@ export class ComprasServicio {
     return this.requisiciones().find((requisicion) => requisicion.id === id);
   }
 
-  guardarRequisicion(datos: Requisicion): Requisicion {
-    const requisicion = structuredClone(datos);
-    requisicion.lineas = requisicion.lineas.map((linea, indice) => ({
-      ...linea,
-      id: linea.id || requisicion.id * 100 + indice + 1,
-      cantidadCompraSugerida: Math.max(1, Math.floor(linea.cantidadCompraSugerida)),
-    }));
-
-    if (requisicion.id === 0) {
-      requisicion.id = this.siguienteId(this.requisiciones());
-      requisicion.folio = this.siguienteFolio('REQ', this.requisiciones());
-      requisicion.fecha = hoyISO();
-      requisicion.estado = 'PENDIENTE';
-      this.listaRequisiciones.update((actuales) => [...actuales, requisicion]);
-      return requisicion;
-    }
-
-    this.listaRequisiciones.update((actuales) =>
-      actuales.map((actual) => (actual.id === requisicion.id ? requisicion : actual)),
-    );
-    return requisicion;
-  }
-
-  cancelarRequisicion(id: number): void {
-    this.listaRequisiciones.update((actuales) =>
-      actuales.map((actual) =>
-        actual.id === id ? { ...actual, estado: 'CANCELADA' as const } : actual,
-      ),
+  guardarRequisicion(datos: Requisicion): Observable<Requisicion> {
+    const cuerpo = {
+      origen: datos.origen,
+      orden_produccion_id: this.idOrdenDeProduccion(datos.ordenProduccion),
+      prioridad: datos.prioridad,
+      notas: datos.notas,
+      lineas: datos.lineas.map((linea) => ({
+        inventario_material_id: this.inventarioMaterialId(linea.materialId, linea.color),
+        cantidad_base_faltante: redondear4(linea.cantidadBaseFaltante),
+      })),
+    };
+    const peticion =
+      datos.id === 0
+        ? this.api.post<RequisicionApi>('/requisiciones', cuerpo)
+        : this.api.patch<RequisicionApi>(`/requisiciones/${datos.id}`, {
+            prioridad: datos.prioridad,
+            notas: datos.notas,
+          });
+    return peticion.pipe(
+      concatMap((respuesta) => this.recargar().pipe(map(() => respuesta))),
+      map((respuesta) => this.obtenerRequisicion(respuesta.id) as Requisicion),
     );
   }
 
-  /** Comparador: al menos dos proveedores cuando el material tiene alterno. */
-  generarCotizaciones(requisicionId: number): { cantidad: number; conAlterno: boolean } | null {
+  cancelarRequisicion(id: number): Observable<void> {
+    return this.api.delete(`/requisiciones/${id}`).pipe(
+      concatMap(() => this.recargar()),
+      map(() => undefined),
+    );
+  }
+
+  /** El contrato crea una cotización por proveedor; la UI mantiene el comparador. */
+  generarCotizaciones(requisicionId: number): Observable<{ cantidad: number; conAlterno: boolean } | null> {
     const requisicion = this.obtenerRequisicion(requisicionId);
     if (!requisicion || requisicion.lineas.length === 0 || requisicion.estado === 'CANCELADA') {
-      return null;
+      return of(null);
     }
 
-    const porProveedor = new Map<number, LineaCotizacion[]>();
+    const porProveedor = new Map<number, { lineas: CotizacionLineaApi[]; plazo: number }>();
     let conAlterno = false;
-    let idLinea = 1;
-
     for (const lineaReq of requisicion.lineas) {
       const opciones = this.coberturaMaterial(lineaReq.materialId);
       conAlterno ||= opciones.length > 1;
-
       const seleccionadas = [
         ...opciones.filter((opcion) => opcion.esPrincipal).slice(0, 1),
         ...opciones.filter((opcion) => !opcion.esPrincipal).slice(0, 1),
@@ -169,129 +304,76 @@ export class ComprasServicio {
       if (seleccionadas.length === 0) {
         seleccionadas.push(...opciones.slice(0, 1));
       }
-
       for (const opcion of seleccionadas) {
         const cantidad = Math.max(lineaReq.cantidadCompraSugerida, opcion.minimoCompra);
-        const lineas = porProveedor.get(opcion.proveedorId) ?? [];
-        lineas.push({
-          id: idLinea++,
-          requisicionLineaId: lineaReq.id,
-          cantidadCompra: cantidad,
-          precioUnitarioCompra: opcion.precioCompra,
-          subtotal: redondear4(cantidad * opcion.precioCompra),
+        const actual = porProveedor.get(opcion.proveedorId) ?? { lineas: [], plazo: opcion.plazoDias };
+        actual.lineas.push({
+          id: 0,
+          requisicion_linea_id: lineaReq.id,
+          cantidad_compra: String(redondear4(cantidad)),
+          precio_unitario_compra: String(opcion.precioCompra),
+          subtotal: String(redondear4(cantidad * opcion.precioCompra)),
         });
-        porProveedor.set(opcion.proveedorId, lineas);
+        actual.plazo = Math.min(actual.plazo, opcion.plazoDias);
+        porProveedor.set(opcion.proveedorId, actual);
       }
     }
-
     if (porProveedor.size === 0) {
-      return null;
+      return of(null);
     }
 
-    const fecha = hoyISO();
-    let correlativo = this.siguienteId(this.cotizaciones());
-    const nuevas: Cotizacion[] = [];
-
-    for (const [proveedorId, lineas] of porProveedor) {
-      const plazos = this.coberturaMaterial(requisicion.lineas[0].materialId)
-        .filter((opcion) => opcion.proveedorId === proveedorId)
-        .map((opcion) => opcion.plazoDias);
-      nuevas.push({
-        id: correlativo,
-        folio: `COT-${new Date().getFullYear()}-${String(correlativo).padStart(4, '0')}`,
-        requisicionId,
-        proveedorId,
-        fecha,
-        vigenciaHasta: '2027-12-31',
-        plazoDias: plazos.length > 0 ? Math.min(...plazos) : 7,
-        estado: 'PENDIENTE',
-        total: redondear4(lineas.reduce((suma, linea) => suma + linea.subtotal, 0)),
-        notas: 'Cotización generada para la demostración; pendiente de Flask.',
-        lineas,
-      });
-      correlativo += 1;
-    }
-
-    this.listaCotizaciones.update((actuales) => [
-      ...actuales.filter((cotizacion) => cotizacion.requisicionId !== requisicionId),
-      ...nuevas,
-    ]);
-    this.listaRequisiciones.update((actuales) =>
-      actuales.map((actual) =>
-        actual.id === requisicionId ? { ...actual, estado: 'EN_COTIZACION' as const } : actual,
+    return from([...porProveedor.entries()]).pipe(
+      concatMap(([proveedorId, valor]) =>
+        this.api
+          .post('/requisiciones/' + requisicionId + '/cotizaciones', {
+            proveedor_id: proveedorId,
+            plazo_dias: valor.plazo,
+            vigencia_hasta: null,
+            notas: 'Cotización comparativa generada desde el carrito de compras.',
+            lineas: valor.lineas.map((linea) => ({
+              requisicion_linea_id: linea.requisicion_linea_id,
+              cantidad_compra: linea.cantidad_compra,
+              precio_unitario_compra: linea.precio_unitario_compra,
+            })),
+          })
+          .pipe(
+            // Un proveedor que no surte todos los materiales se omite del comparador.
+            map(() => 1),
+          ),
       ),
+      concatMap(() => this.recargar()),
+      map(() => ({
+        cantidad: this.cotizaciones().filter((item) => item.requisicionId === requisicionId).length,
+        conAlterno,
+      })),
     );
-
-    return { cantidad: nuevas.length, conAlterno };
   }
 
-  elegirCotizacion(cotizacionId: number): OrdenCompra | null {
-    const cotizacion = this.cotizaciones().find((item) => item.id === cotizacionId);
-    if (!cotizacion) {
-      return null;
-    }
-    const requisicion = this.obtenerRequisicion(cotizacion.requisicionId);
-    if (!requisicion) {
-      return null;
-    }
-
-    const lineas: LineaOrdenCompra[] = cotizacion.lineas.map((linea, indice) => {
-      const lineaReq = requisicion.lineas.find((item) => item.id === linea.requisicionLineaId);
-      const materialId = lineaReq?.materialId ?? 0;
-      return {
-        id: cotizacion.id * 100 + indice + 1,
-        materialId,
-        cantidadCompra: linea.cantidadCompra,
-        cantidadBasePedida: this.basePresentaciones(materialId, linea.cantidadCompra),
-        precioUnitarioCompra: linea.precioUnitarioCompra,
-        subtotal: linea.subtotal,
-        cantidadBaseAceptada: 0,
-      };
-    });
-
-    const orden = this.crearOrden({
-      proveedorId: cotizacion.proveedorId,
-      requisicionId: requisicion.id,
-      cotizacionId: cotizacion.id,
-      lineas,
-      fechaPrometida: sumarDias(hoyISO(), cotizacion.plazoDias),
-      notas: `Generada desde ${cotizacion.folio}. Precio pactado conservado.`,
-    });
-
-    this.listaCotizaciones.update((actuales) =>
-      actuales.map((actual) =>
-        actual.requisicionId !== cotizacion.requisicionId
-          ? actual
-          : {
-              ...actual,
-              estado: actual.id === cotizacion.id ? ('ELEGIDA' as const) : ('DESCARTADA' as const),
-            },
-      ),
+  elegirCotizacion(cotizacionId: number): Observable<OrdenCompra | null> {
+    return this.api.post<OrdenApi>(`/cotizaciones/${cotizacionId}/elegir`, {}).pipe(
+      concatMap((respuesta) => this.recargar().pipe(map(() => respuesta))),
+      map((respuesta) => this.obtenerOrden(respuesta.id) ?? null),
     );
-    this.marcarCompraEmitida(requisicion.id);
-    return orden;
   }
 
-  /** Compra urgente: orden directa al proveedor principal. */
-  emitirOrdenDirecta(requisicionId: number): OrdenCompra | null {
+  /** Compra urgente: orden directa al proveedor principal y emisión inmediata. */
+  emitirOrdenDirecta(requisicionId: number): Observable<OrdenCompra | null> {
     const requisicion = this.obtenerRequisicion(requisicionId);
     if (!requisicion || requisicion.estado === 'CANCELADA') {
-      return null;
+      return of(null);
     }
-
     const lineas: LineaOrdenCompra[] = [];
     let proveedorId = 0;
-
-    for (const [indice, lineaReq] of requisicion.lineas.entries()) {
+    for (const lineaReq of requisicion.lineas) {
       const opciones = this.coberturaMaterial(lineaReq.materialId);
-      const opcion = opciones.find((item) => item.esPrincipal) ?? opciones[0] ?? undefined;
+      const opcion = opciones.find((item) => item.esPrincipal) ?? opciones[0];
       if (!opcion) {
         continue;
       }
       proveedorId ||= opcion.proveedorId;
       const cantidad = Math.max(lineaReq.cantidadCompraSugerida, opcion.minimoCompra);
       lineas.push({
-        id: requisicion.id * 100 + indice + 1,
+        id: 0,
         materialId: lineaReq.materialId,
         cantidadCompra: cantidad,
         cantidadBasePedida: this.basePresentaciones(lineaReq.materialId, cantidad),
@@ -300,67 +382,90 @@ export class ComprasServicio {
         cantidadBaseAceptada: 0,
       });
     }
-
     if (lineas.length === 0 || proveedorId === 0) {
-      return null;
+      return of(null);
     }
-
-    const opciones = this.coberturaMaterial(lineas[0].materialId);
-    const plazo = opciones.find((item) => item.proveedorId === proveedorId)?.plazoDias ?? 7;
-    const orden = this.crearOrden({
-      proveedorId,
-      requisicionId: requisicion.id,
-      cotizacionId: null,
-      lineas,
-      fechaPrometida: sumarDias(hoyISO(), plazo),
-      notas: 'Orden directa al proveedor principal (compra urgente o sin alterno).',
-    });
-    this.marcarCompraEmitida(requisicion.id);
-    return orden;
+    return this.api
+      .post<OrdenApi>('/ordenes-compra', {
+        proveedor_id: proveedorId,
+        requisicion_id: requisicion.id,
+        condiciones_pago: this.condicionesProveedor(proveedorId),
+        notas: 'Orden directa al proveedor principal.',
+        lineas: lineas.map((linea) => ({
+          inventario_material_id: this.inventarioMaterialId(linea.materialId, null),
+          cantidad_compra: linea.cantidadCompra,
+          precio_unitario_compra: linea.precioUnitarioCompra,
+        })),
+      })
+      .pipe(
+        concatMap((orden) =>
+          this.api
+            .post<OrdenApi>(`/ordenes-compra/${orden.id}/emitir`, {})
+            .pipe(map(() => orden)),
+        ),
+        concatMap((respuesta) => this.recargar().pipe(map(() => respuesta))),
+        map((respuesta) => this.obtenerOrden(respuesta.id) ?? null),
+      );
   }
 
   obtenerOrden(id: number): OrdenCompra | undefined {
     return this.ordenes().find((orden) => orden.id === id);
   }
 
-  guardarOrden(orden: OrdenCompra): void {
-    const copia = structuredClone(orden);
-    copia.lineas = copia.lineas.map((linea) => ({
-      ...linea,
-      subtotal: redondear4(linea.cantidadCompra * linea.precioUnitarioCompra),
-      cantidadBasePedida: this.basePresentaciones(linea.materialId, linea.cantidadCompra),
-    }));
-    copia.total = redondear4(copia.lineas.reduce((suma, linea) => suma + linea.subtotal, 0));
-    this.listaOrdenes.update((actuales) =>
-      actuales.map((actual) => (actual.id === copia.id ? copia : actual)),
+  guardarOrden(orden: OrdenCompra): Observable<OrdenCompra | null> {
+    const cuerpo = {
+      proveedor_id: orden.proveedorId,
+      requisicion_id: orden.requisicionId,
+      condiciones_pago: orden.condicionesPago,
+      notas: orden.notas,
+      lineas: orden.lineas.map((linea) => ({
+        inventario_material_id: this.inventarioMaterialId(linea.materialId, null),
+        cantidad_compra: linea.cantidadCompra,
+        precio_unitario_compra: linea.precioUnitarioCompra,
+      })),
+    };
+    const peticion =
+      orden.id === 0
+        ? this.api.post<OrdenApi>('/ordenes-compra', cuerpo)
+        : this.api.patch<OrdenApi>(`/ordenes-compra/${orden.id}`, {
+            proveedor_id: orden.proveedorId,
+            condiciones_pago: orden.condicionesPago,
+            notas: orden.notas,
+            lineas: cuerpo.lineas,
+          });
+    return peticion.pipe(
+      concatMap((respuesta) => this.recargar().pipe(map(() => respuesta))),
+      map((respuesta) => this.obtenerOrden(respuesta.id) ?? null),
     );
   }
 
-  emitirOrden(id: number): void {
-    this.listaOrdenes.update((actuales) =>
-      actuales.map((actual) =>
-        actual.id === id
-          ? { ...actual, estado: 'EMITIDA' as const, fechaEmision: hoyISO() }
-          : actual,
-      ),
+  emitirOrden(id: number): Observable<void> {
+    return this.api.post(`/ordenes-compra/${id}/emitir`, {}).pipe(
+      concatMap(() => this.recargar()),
+      map(() => undefined),
     );
   }
 
-  cancelarOrden(id: number): void {
-    this.listaOrdenes.update((actuales) =>
-      actuales.map((actual) =>
-        actual.id === id ? { ...actual, estado: 'CANCELADA' as const } : actual,
-      ),
+  cancelarOrden(id: number): Observable<void> {
+    return this.api.post(`/ordenes-compra/${id}/cancelar`, { motivo: 'Cancelada desde compras' }).pipe(
+      concatMap(() => this.recargar()),
+      map(() => undefined),
     );
   }
 
-  eliminarOrden(id: number): 'eliminado' | 'no-permitido' {
+  eliminarOrden(id: number): Observable<'eliminado' | 'no-permitido'> {
     const orden = this.obtenerOrden(id);
     if (!orden || orden.estado !== 'BORRADOR') {
-      return 'no-permitido';
+      return of('no-permitido' as const);
     }
-    this.listaOrdenes.update((actuales) => actuales.filter((actual) => actual.id !== id));
-    return 'eliminado';
+    return this.api.delete(`/ordenes-compra/${id}`).pipe(
+      concatMap(() => this.recargar()),
+      map(() => 'eliminado' as const),
+    );
+  }
+
+  descargarOrdenPdf(id: number): Observable<Blob> {
+    return this.api.getBlob(`/ordenes-compra/${id}/pdf`);
   }
 
   retrasada(orden: OrdenCompra): boolean {
@@ -370,157 +475,206 @@ export class ComprasServicio {
     return new Date(`${orden.fechaPrometida}T23:59:59`) < new Date();
   }
 
-  registrarRecepcion(datos: DatosRecepcion): ResultadoRecepcion | null {
+  /** POST /recepciones con Idempotency-Key generada aquí; Flask crea lotes y mermas. */
+  registrarRecepcion(datos: DatosRecepcion): Observable<ResultadoRecepcion | null> {
     const orden = this.obtenerOrden(datos.ordenCompraId);
     if (!orden || ['BORRADOR', 'CANCELADA', 'RECIBIDA'].includes(orden.estado)) {
+      return of(null);
+    }
+    return this.api
+      .post<ResultadoRecepcionApi>(
+        '/recepciones',
+        {
+          orden_compra_id: datos.ordenCompraId,
+          documento_proveedor: datos.documentoProveedor.trim() || null,
+          notas: datos.notas.trim() || null,
+          lineas: datos.lineas.map((linea) => ({
+            orden_compra_linea_id: linea.ordenCompraLineaId,
+            cantidad_base_medida: redondear4(linea.cantidadBaseMedida),
+            cantidad_base_aceptada: redondear4(linea.cantidadBaseAceptada),
+            cantidad_base_rechazada: redondear4(linea.cantidadBaseRechazada),
+            peso_kg: linea.pesoKg,
+            ancho_cm: linea.anchoCm,
+            largo_m: linea.largoM,
+            motivo_rechazo: linea.motivoRechazo,
+          })),
+        },
+        { idempotencyKey: this.nuevaClaveIdempotencia() },
+      )
+      .pipe(
+        concatMap((respuesta) => this.recargar().pipe(map(() => respuesta))),
+        map((respuesta) => {
+          this.listaRecepciones.update((actuales) => [
+            this.adaptarRecepcion(respuesta.recepcion),
+            ...actuales.filter((item) => item.id !== respuesta.recepcion.id),
+          ]);
+          return {
+            recepcion: this.adaptarRecepcion(respuesta.recepcion),
+            estadoOrden: respuesta.orden_compra.estado as ResultadoRecepcion['estadoOrden'],
+            lotes: [],
+            mermas: [],
+          };
+        }),
+      );
+  }
+
+  private nuevaClaveIdempotencia(): string {
+    return globalThis.crypto?.randomUUID?.() ?? `rec-${Date.now()}-${Math.random()}`;
+  }
+
+  private materialesDeM15(): MaterialCompra[] {
+    return this.inventario
+      .materiales()
+      .filter((material) => material.activo)
+      .map((material) => {
+        const cobertura = this.coberturaMaterial(material.id);
+        return {
+          id: material.id,
+          codigo: material.codigo,
+          nombre: material.nombre,
+          categoria: material.categoria,
+          color: null,
+          unidadBase: material.unidadBase,
+          presentacion: material.unidadCompra,
+          unidadPresentacion: material.unidadCompra,
+          factorPresentacion: material.factorCompraBase,
+          minimoCompra: cobertura.reduce((minimo, linea) => Math.min(minimo, linea.minimoCompra), 1),
+        };
+      });
+  }
+
+  private idOrdenDeProduccion(texto: string | null): number | null {
+    if (!texto) {
       return null;
     }
+    const coincidencia = texto.match(/(\d+)\s*$/);
+    return coincidencia ? Number(coincidencia[1]) : null;
+  }
 
-    const anio = new Date().getFullYear();
-    const consecutivo = this.siguienteId(this.recepciones());
-    const recepcion: Recepcion = {
-      id: consecutivo,
-      folio: `REC-${anio}-${String(consecutivo).padStart(4, '0')}`,
-      ordenCompraId: orden.id,
-      fecha: hoyISO(),
-      recibidaPor: datos.recibidaPor,
-      documentoProveedor: datos.documentoProveedor.trim() || null,
-      notas: datos.notas.trim() || null,
-      lineas: datos.lineas.map((linea, indice) => ({ ...linea, id: consecutivo * 100 + indice })),
-    };
-    this.listaRecepciones.update((actuales) => [...actuales, recepcion]);
-
-    const lotes: LoteDemostracion[] = [];
-    const mermas: MermaDemostracion[] = [];
-
-    const lineasActualizadas = orden.lineas.map((lineaOrden) => {
-      const lineasRecibidas = recepcion.lineas.filter(
-        (linea) => linea.ordenCompraLineaId === lineaOrden.id,
-      );
-      const aceptada = redondear4(
-        lineasRecibidas.reduce((suma, linea) => suma + linea.cantidadBaseAceptada, 0),
-      );
-      const rechazada = redondear4(
-        lineasRecibidas.reduce((suma, linea) => suma + linea.cantidadBaseRechazada, 0),
-      );
-      const material = this.obtenerMaterial(lineaOrden.materialId);
-      const unidadBase = material?.unidadBase ?? 'pieza';
-
-      if (aceptada > 0 && lineaOrden.cantidadCompra > 0) {
-        this.correlativoLotes += 1;
-        lotes.push({
-          folio: `LOTE-${anio}-${String(this.correlativoLotes).padStart(4, '0')}`,
-          materialId: lineaOrden.materialId,
-          cantidadBase: aceptada,
-          unidadBase,
-          medidas: this.describirMedidas(lineasRecibidas),
-          costoReal:
-            lineaOrden.cantidadBasePedida > 0
-              ? redondear4(
-                  lineaOrden.precioUnitarioCompra * (aceptada / lineaOrden.cantidadBasePedida),
-                )
-              : 0,
-          proveedorId: orden.proveedorId,
-        });
-      }
-      if (rechazada > 0) {
-        mermas.push({
-          materialId: lineaOrden.materialId,
-          cantidadBase: rechazada,
-          unidadBase,
-          causa: 'RECHAZO_RECEPCION',
-          etapa: 'RECEPCION',
-        });
-      }
-
-      return {
-        ...lineaOrden,
-        cantidadBaseAceptada: redondear4(lineaOrden.cantidadBaseAceptada + aceptada),
-      };
-    });
-
-    const completa = lineasActualizadas.every(
-      (linea) => linea.cantidadBaseAceptada >= linea.cantidadBasePedida - 0.0001,
+  private inventarioMaterialId(materialId: number, color: string | null): number {
+    const codigo = codigoColor(color);
+    const vistas = this.inventario.vistas();
+    return (
+      vistas.find(
+        (vista) => vista.material.id === materialId && vista.color === codigo,
+      )?.id ??
+      vistas.find((vista) => vista.material.id === materialId)?.id ??
+      0
     );
-    const estadoOrden = completa || datos.cerrarConFaltante ? 'RECIBIDA' : 'PARCIAL';
+  }
 
-    this.listaOrdenes.update((actuales) =>
-      actuales.map((actual) =>
-        actual.id === orden.id
-          ? { ...actual, lineas: lineasActualizadas, estado: estadoOrden }
-          : actual,
+  private materialIdDe(inventarioMaterialId: number): number {
+    return (
+      this.inventario.vistas().find((vista) => vista.id === inventarioMaterialId)?.material.id ?? 0
+    );
+  }
+
+  private factorDe(inventarioMaterialId: number): number {
+    return (
+      this.inventario.vistas().find((vista) => vista.id === inventarioMaterialId)?.material
+        .factorCompraBase ?? 1
+    );
+  }
+
+  private adaptarRequisicion(fila: RequisicionApi): Requisicion {
+    return {
+      id: fila.id,
+      folio: fila.folio,
+      origen: fila.origen as Requisicion['origen'],
+      ordenProduccion:
+        fila.orden_produccion_id === null ? null : `OP-${fila.orden_produccion_id}`,
+      fecha: fila.fecha,
+      estado: fila.estado as Requisicion['estado'],
+      prioridad: fila.prioridad as Requisicion['prioridad'],
+      solicitadaPor: String(fila.solicitada_por ?? ''),
+      notas: fila.notas,
+      lineas: (fila.lineas ?? []).map(
+        (linea): LineaRequisicion => ({
+          id: linea.id,
+          materialId: this.materialIdDe(linea.inventario_material_id),
+          color: linea.color,
+          cantidadBaseFaltante: Number(linea.cantidad_base_faltante),
+          cantidadCompraSugerida: Number(linea.cantidad_compra_sugerida),
+          cantidadCompraAtendida: Number(linea.cantidad_compra_atendida),
+        }),
       ),
-    );
-
-    if (orden.requisicionId && completa) {
-      this.listaRequisiciones.update((actuales) =>
-        actuales.map((actual) =>
-          actual.id === orden.requisicionId ? { ...actual, estado: 'ATENDIDA' as const } : actual,
-        ),
-      );
-    }
-
-    return { recepcion, estadoOrden, lotes, mermas };
-  }
-
-  private crearOrden(datos: {
-    proveedorId: number;
-    requisicionId: number | null;
-    cotizacionId: number | null;
-    lineas: LineaOrdenCompra[];
-    fechaPrometida: string | null;
-    notas: string;
-  }): OrdenCompra {
-    const id = this.siguienteId(this.ordenes());
-    const orden: OrdenCompra = {
-      id,
-      folio: this.siguienteFolio('OC', this.ordenes()),
-      proveedorId: datos.proveedorId,
-      requisicionId: datos.requisicionId,
-      cotizacionId: datos.cotizacionId,
-      estado: 'BORRADOR',
-      fechaEmision: null,
-      fechaPrometida: datos.fechaPrometida,
-      total: redondear4(datos.lineas.reduce((suma, linea) => suma + linea.subtotal, 0)),
-      condicionesPago: this.condicionesProveedor(datos.proveedorId),
-      notas: datos.notas,
-      creadaPor: 'Administrador · demostración',
-      lineas: datos.lineas.map((linea, indice) => ({ ...linea, id: id * 100 + indice + 1 })),
     };
-    this.listaOrdenes.update((actuales) => [...actuales, orden]);
-    return orden;
   }
 
-  private marcarCompraEmitida(requisicionId: number): void {
-    this.listaRequisiciones.update((actuales) =>
-      actuales.map((actual) =>
-        actual.id === requisicionId ? { ...actual, estado: 'COMPRA_EMITIDA' as const } : actual,
+  private adaptarCotizacion(fila: CotizacionApi): Cotizacion {
+    return {
+      id: fila.id,
+      folio: `COT-${new Date(fila.fecha).getFullYear()}-${String(fila.id).padStart(4, '0')}`,
+      requisicionId: fila.requisicion_id,
+      proveedorId: fila.proveedor_id,
+      fecha: fila.fecha,
+      vigenciaHasta: fila.vigencia_hasta,
+      plazoDias: Number(fila.plazo_dias),
+      estado: fila.estado as Cotizacion['estado'],
+      total: Number(fila.total),
+      notas: fila.notas,
+      lineas: (fila.lineas ?? []).map(
+        (linea): LineaCotizacion => ({
+          id: linea.id,
+          requisicionLineaId: linea.requisicion_linea_id,
+          cantidadCompra: Number(linea.cantidad_compra),
+          precioUnitarioCompra: Number(linea.precio_unitario_compra),
+          subtotal: Number(linea.subtotal),
+        }),
       ),
-    );
+    };
   }
 
-  private describirMedidas(lineas: LineaRecepcion[]): string {
-    return lineas
-      .map((linea) => {
-        if (linea.anchoCm !== null && linea.largoM !== null) {
-          return `${linea.anchoCm} cm × ${linea.largoM} m`;
-        }
-        return linea.pesoKg !== null ? `${linea.pesoKg} kg` : 'Sin medidas adicionales';
-      })
-      .join('; ');
+  private adaptarOrden(fila: OrdenApi): OrdenCompra {
+    return {
+      id: fila.id,
+      folio: fila.folio,
+      proveedorId: fila.proveedor_id,
+      requisicionId: fila.requisicion_id,
+      cotizacionId: fila.cotizacion_id,
+      estado: fila.estado as OrdenCompra['estado'],
+      fechaEmision: fila.fecha_emision,
+      fechaPrometida: fila.fecha_prometida,
+      total: Number(fila.total),
+      condicionesPago: fila.condiciones_pago ?? this.condicionesProveedor(fila.proveedor_id),
+      notas: fila.notas,
+      creadaPor: String(fila.creada_por ?? ''),
+      lineas: (fila.lineas ?? []).map(
+        (linea): LineaOrdenCompra => ({
+          id: linea.id,
+          materialId: this.materialIdDe(linea.inventario_material_id),
+          cantidadCompra: Number(linea.cantidad_compra),
+          cantidadBasePedida: redondear4(
+            Number(linea.cantidad_compra) * this.factorDe(linea.inventario_material_id),
+          ),
+          precioUnitarioCompra: Number(linea.precio_unitario_compra),
+          subtotal: Number(linea.subtotal),
+          cantidadBaseAceptada: Number(linea.cantidad_base_aceptada),
+        }),
+      ),
+    };
   }
 
-  private siguienteId<T extends { id: number }>(lista: T[]): number {
-    return lista.reduce((maximo, item) => Math.max(maximo, item.id), 0) + 1;
-  }
-
-  private siguienteFolio<T extends { folio: string }>(prefijo: string, lista: T[]): string {
-    const anio = new Date().getFullYear();
-    const correlativo =
-      lista.reduce((maximo, item) => {
-        const coincidencia = item.folio.match(/-(\d{4})$/);
-        return coincidencia ? Math.max(maximo, Number(coincidencia[1])) : maximo;
-      }, 0) + 1;
-    return `${prefijo}-${anio}-${String(correlativo).padStart(4, '0')}`;
+  private adaptarRecepcion(fila: RecepcionApi): Recepcion {
+    return {
+      id: fila.id,
+      folio: fila.folio,
+      ordenCompraId: fila.orden_compra_id,
+      fecha: fila.fecha,
+      recibidaPor: String(fila.recibida_por ?? ''),
+      documentoProveedor: fila.documento_proveedor,
+      notas: fila.notas,
+      lineas: (fila.lineas ?? []).map((linea) => ({
+        id: linea.id,
+        ordenCompraLineaId: linea.orden_compra_linea_id,
+        pesoKg: null,
+        anchoCm: null,
+        largoM: null,
+        cantidadBaseMedida: Number(linea.cantidad_base_medida),
+        cantidadBaseAceptada: Number(linea.cantidad_base_aceptada),
+        cantidadBaseRechazada: Number(linea.cantidad_base_rechazada),
+        motivoRechazo: linea.motivo_rechazo,
+      })),
+    };
   }
 }

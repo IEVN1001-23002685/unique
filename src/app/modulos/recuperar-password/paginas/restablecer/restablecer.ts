@@ -9,6 +9,8 @@ import {
   type ValidatorFn,
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { mensajeError } from '../../../../core/api/errores';
+import { AccesoRegistroServicio } from '../../../acceso-registro/servicios/acceso-registro-servicio';
 
 interface FormaRestablecer {
   contrasena: FormControl<string>;
@@ -39,10 +41,13 @@ const coincide: ValidatorFn = (control: AbstractControl): ValidationErrors | nul
 })
 export class Restablecer {
   private readonly ruta = inject(ActivatedRoute);
+  private readonly servicio = inject(AccesoRegistroServicio);
 
   protected readonly token = this.ruta.snapshot.paramMap.get('token') ?? '';
   protected readonly enviado = signal(false);
   protected readonly intentoEnvio = signal(false);
+  protected readonly procesando = signal(false);
+  protected readonly mensaje = signal('');
 
   protected readonly forma = new FormGroup<FormaRestablecer>(
     {
@@ -69,7 +74,17 @@ export class Restablecer {
       this.forma.markAllAsTouched();
       return;
     }
-    // No se guarda ni se envía nada: la operación real corresponde a Flask.
-    this.enviado.set(true);
+    this.procesando.set(true);
+    this.servicio.restablecer(this.token, this.forma.controls.contrasena.value).subscribe({
+      next: (respuesta) => {
+        this.procesando.set(false);
+        this.mensaje.set(respuesta.mensaje);
+        this.enviado.set(true);
+      },
+      error: (error: unknown) => {
+        this.procesando.set(false);
+        this.mensaje.set(mensajeError(error, 'No fue posible actualizar la contraseña.'));
+      },
+    });
   }
 }

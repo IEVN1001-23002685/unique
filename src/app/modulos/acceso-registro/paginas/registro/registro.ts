@@ -2,7 +2,10 @@ import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ModalAutenticacionServicio } from '../../../../nucleo/servicios/modal-autenticacion-servicio';
-import { AccesoRegistroServicio } from '../../servicios/acceso-registro-servicio';
+import { mensajeError } from '../../../../core/api/errores';
+import {
+  AccesoRegistroServicio,
+} from '../../servicios/acceso-registro-servicio';
 import {
   coincide,
   passwordFuerte,
@@ -53,6 +56,7 @@ export class Registro {
   );
 
   protected mensaje = '';
+  protected cargando = false;
 
   protected errorEn(campo: CampoRegistro): boolean {
     const control = this.formulario.controls[campo];
@@ -74,8 +78,31 @@ export class Registro {
       return;
     }
 
-    // No se envía nada ni se guarda la contraseña; Flask será la fuente de verdad.
     this.mensaje = this.mensajePendiente;
+    this.cargando = true;
+    const valores = this.formulario.getRawValue();
+    this.servicio
+      .registrar({
+        nombre: valores.nombre ?? '',
+        apellidos: valores.apellidos ?? '',
+        telefono: valores.telefono ?? '',
+        correo: valores.correo ?? '',
+        contrasena: valores.contrasena ?? '',
+        repetirContrasena: valores.repetirContrasena ?? '',
+        aceptaPrivacidad: !!valores.aceptaPrivacidad,
+        recibirPromociones: !!valores.recibirPromociones,
+      })
+      .subscribe({
+      next: () => {
+        this.cargando = false;
+        this.modal.cerrar();
+        void this.router.navigate(['/catalogo']);
+      },
+      error: (error: unknown) => {
+        this.cargando = false;
+        this.mensaje = mensajeError(error, 'No fue posible crear la cuenta.');
+      },
+    });
   }
 
   onCerrar(): void {

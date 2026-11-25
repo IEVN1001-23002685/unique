@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthSessionService } from '../services/auth-session.service';
 @Component({
   selector: 'app-panel-admin',
@@ -10,12 +10,17 @@ import { AuthSessionService } from '../services/auth-session.service';
   styleUrl: './panel-admin.component.css',
 })
 export class PanelAdminComponent {
-  auth = inject(AuthSessionService);
+  readonly auth = inject(AuthSessionService);
+  private readonly router = inject(Router);
+
   get rol() {
     return this.auth.usuario?.rol ?? 'OPERATIVO';
   }
+
   salir() {
-    this.auth.cerrarSesion();
-    location.href = '/login-admin';
+    this.auth.cerrarSesion().subscribe({
+      next: () => this.router.navigateByUrl('/login-admin'),
+      error: () => this.router.navigateByUrl('/login-admin'),
+    });
   }
 }

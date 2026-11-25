@@ -1,12 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { mensajeError } from '../../../../core/api/errores';
 import { AccesoRegistroServicio } from '../../servicios/acceso-registro-servicio';
 
 @Component({
   selector: 'app-recuperar-password',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule],
   templateUrl: './recuperar-password.html',
   styleUrl: './recuperar-password.css',
 })
@@ -20,8 +21,9 @@ export class RecuperarPassword {
   });
 
   enviado = false;
-  enlaceSimulado = '';
+  cargando = false;
   mensajeInvalido = this.servicio.formularioInvalido;
+  mensaje = '';
 
   /** Respuesta invariable: nunca revela si el correo existe (§7 de M01). */
   readonly mensajeFijo = this.servicio.recuperacionPendiente;
@@ -37,12 +39,19 @@ export class RecuperarPassword {
       return;
     }
 
-    // No se envía correo real: solo se muestra un enlace local de demostración.
-    const tokenSimulado = Math.random().toString(36).substring(2, 10);
-    this.enlaceSimulado = this.router.serializeUrl(
-      this.router.createUrlTree(['/restablecer', tokenSimulado]),
-    );
-    this.enviado = true;
+    this.cargando = true;
+    this.mensaje = '';
+    this.servicio.recuperar(this.formulario.controls.correo.value).subscribe({
+      next: (respuesta) => {
+        this.cargando = false;
+        this.mensaje = respuesta.mensaje;
+        this.enviado = true;
+      },
+      error: (error: unknown) => {
+        this.cargando = false;
+        this.mensaje = mensajeError(error, 'No fue posible procesar la solicitud.');
+      },
+    });
   }
 
   onVolverALogin(): void {

@@ -1,8 +1,10 @@
 import { Component, computed, HostListener, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { combineLatest, debounceTime, switchMap } from 'rxjs';
 import { TarjetaProducto } from '../../../../compartido/componentes/tarjeta-producto/tarjeta-producto';
 import { BusquedaCatalogoServicio } from '../../../../nucleo/servicios/busqueda-catalogo-servicio';
 import { DesplegableCategorias } from '../../componentes/desplegable-categorias/desplegable-categorias';
-import { PRODUCTOS_SIMULADOS } from '../../datos-simulados/productos';
+import { CatalogoServicio } from '../../servicios/catalogo-servicio';
 import {
   COLORES_CATALOGO,
   CodigoColorCatalogo,
@@ -10,7 +12,6 @@ import {
   OrdenCatalogo,
   ProductoCatalogo,
   TALLAS_CATALOGO,
-  productoDisponible,
   productoVisible,
 } from '../../modelos/catalogo';
 
@@ -24,11 +25,12 @@ type RangoPrecio = 'todos' | 'hasta-300' | '301-500' | 'desde-501';
 })
 export class Catalogo {
   private readonly busqueda = inject(BusquedaCatalogoServicio);
+  private readonly catalogo = inject(CatalogoServicio);
 
-  /** M10 entrega solo productos activos con al menos una variante activa. */
-  protected readonly productos = signal<ProductoCatalogo[]>(
-    PRODUCTOS_SIMULADOS.filter(productoVisible),
-  );
+  protected readonly productos = signal<ProductoCatalogo[]>([]);
+  private readonly opciones = signal<ProductoCatalogo[]>([]);
+  protected readonly cargando = signal(true);
+  protected readonly error = signal('');
 
   protected readonly categoriaSeleccionada = signal<string | null>(null);
   protected readonly colorSeleccionado = signal<CodigoColorCatalogo | null>(null);
@@ -56,14 +58,13 @@ export class Catalogo {
     { valor: 'novedad', etiqueta: 'Orden: novedad' },
   ];
 
-  /** Las categorías se derivan de los datos simulados, sin inventar catálogo. */
   protected readonly categorias = computed(() => [
-    ...new Set(this.productos().map((producto) => producto.categoria)),
+    ...new Set(this.opciones().map((producto) => producto.categoria)),
   ]);
 
   protected readonly colores = computed(() =>
     (Object.keys(COLORES_CATALOGO) as CodigoColorCatalogo[]).filter((color) =>
-      this.productos().some((producto) =>
+      this.opciones().some((producto) =>
         producto.variantes.some((variante) => variante.activa && variante.colorCodigo === color),
       ),
     ),
@@ -71,22 +72,11 @@ export class Catalogo {
 
   protected readonly tallas = computed(() =>
     TALLAS_CATALOGO.filter((talla) =>
-      this.productos().some((producto) =>
+      this.opciones().some((producto) =>
         producto.variantes.some((variante) => variante.activa && variante.talla === talla),
       ),
     ),
   );
-
-  /** Etiqueta automática: más unidades vendidas en los últimos 30 días. */
-  protected readonly masBuscadoId = computed(() => {
-    const productos = this.productos();
-    if (productos.length === 0) {
-      return null;
-    }
-    return productos.reduce((ganador, producto) =>
-      producto.vendidosUltimos30Dias > ganador.vendidosUltimos30Dias ? producto : ganador,
-    ).id;
-  });
 
   protected readonly hayFiltros = computed(
     () =>
@@ -98,45 +88,54 @@ export class Catalogo {
   );
 
   protected readonly productosFiltrados = computed(() => {
-    const termino = this.busqueda.termino().trim().toLowerCase();
-    const categoria = this.categoriaSeleccionada();
-    const color = this.colorSeleccionado();
-    const talla = this.tallaSeleccionada();
-    const rango = this.rangoPrecio();
-    const soloDisponibles = this.soloDisponibles();
-
     const filtrados = this.productos()
-      .filter((producto) => {
-        const coincideCategoria = categoria === null || producto.categoria === categoria;
-        const coincideBusqueda =
-          termino === '' ||
-          producto.nombre.toLowerCase().includes(termino) ||
-          producto.descripcion.toLowerCase().includes(termino);
-        const coincideColor =
-          color === null ||
-          producto.variantes.some((variante) => variante.activa && variante.colorCodigo === color);
-        const coincideTalla =
-          talla === null ||
-          producto.variantes.some((variante) => variante.activa && variante.talla === talla);
-        const coincidePrecio = this.enRango(producto.precio, rango);
-        const coincideDisponibilidad = !soloDisponibles || productoDisponible(producto);
-
-        return (
-          coincideCategoria &&
-          coincideBusqueda &&
-          coincideColor &&
-          coincideTalla &&
-          coincidePrecio &&
-          coincideDisponibilidad
-        );
-      })
-      .map((producto) => ({
-        ...producto,
-        etiqueta: producto.id === this.masBuscadoId() ? 'Más buscado' : undefined,
-      }));
-
+      .filter(productoVisible)
+      .filter((producto) => this.enRango(producto.precio, this.rangoPrecio()));
     return this.ordenar(filtrados, this.orden());
   });
+
+  constructor() {
+    this.catalogo
+      .listar({ categoria: null, color: null, talla: null, soloDisponibles: false, busqueda: '' })
+      .subscribe({
+        next: (items) => this.opciones.set(items.filter(productoVisible)),
+        error: () => this.error.set('No fue posible cargar los filtros del catálogo.'),
+      });
+
+    combineLatest([
+      toObservable(this.categoriaSeleccionada),
+      toObservable(this.colorSeleccionado),
+      toObservable(this.tallaSeleccionada),
+      toObservable(this.soloDisponibles),
+      toObservable(this.busqueda.termino),
+    ])
+      .pipe(
+        debounceTime(120),
+        takeUntilDestroyed(),
+        switchMap(([categoria, color, talla, soloDisponibles, termino]) => {
+          this.cargando.set(true);
+          this.error.set('');
+          return this.catalogo.listar({
+            categoria,
+            color,
+            talla,
+            soloDisponibles,
+            busqueda: termino,
+          });
+        }),
+      )
+      .subscribe({
+        next: (items) => {
+          this.productos.set(items.filter(productoVisible));
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.productos.set([]);
+          this.cargando.set(false);
+          this.error.set('No fue posible cargar el catálogo.');
+        },
+      });
+  }
 
   private enRango(precio: number, rango: RangoPrecio): boolean {
     switch (rango) {

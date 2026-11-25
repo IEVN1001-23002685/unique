@@ -33,6 +33,8 @@ export interface FilaInventario {
   enProduccion: number;
   /** Promedio de salidas de los últimos 30 días; 0 cuando no hay historial. */
   ventasDiarias30: number;
+  /** Días de cobertura calculados por Flask; se respeta cuando viene en la respuesta. */
+  diasCoberturaApi?: number | null;
 }
 
 export interface FilaExistencia extends FilaInventario {

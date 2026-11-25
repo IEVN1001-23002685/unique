@@ -91,8 +91,7 @@
         Folio de seguimiento: <strong>{{ folioGenerado }}</strong>
       </p>
       <p style="margin: 0 0 16px; font-size: 13px; color: #534057">
-        Total pagado: <strong>${{ totalPagar }}</strong> · Envío:
-        {{ metodoEnvio === 'expres' ? 'Exprés' : 'Estándar' }}
+        Total pagado: <strong>${{ totalPagado }}</strong> · Envío: {{ nombreTarifa }}
       </p>
       <button
         type="button"
@@ -178,6 +177,7 @@
                 name="dirEnvio"
                 [value]="dir.id"
                 [(ngModel)]="direccionSeleccionadaId"
+                (ngModelChange)="alCambiarDireccion()"
               />
               <div>
                 <strong>{{ dir.alias }}</strong>
@@ -219,6 +219,7 @@
                 name="dirEnvio"
                 value="nueva"
                 [(ngModel)]="direccionSeleccionadaId"
+                (ngModelChange)="alCambiarDireccion()"
               />
               <span>Usar una dirección nueva</span>
             </label>
@@ -252,6 +253,20 @@
               name="nDest"
               [(ngModel)]="nuevaDireccion.destinatario"
               placeholder="Destinatario *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="nTel"
+              [(ngModel)]="nuevaDireccion.telefono"
+              placeholder="Teléfono 10 dígitos *"
               style="
                 height: 36px;
                 border: none;
@@ -336,6 +351,7 @@
               name="nCp"
               maxlength="5"
               [(ngModel)]="nuevaDireccion.cp"
+              (ngModelChange)="actualizarCotizacion()"
               placeholder="C.P. 5 dígitos *"
               style="
                 height: 36px;
@@ -355,13 +371,18 @@
           >
             {{
               coberturaValida
-                ? '✓ Cobertura disponible para C.P. ' + cpActivo
+                ? '✓ C.P. ' + cpActivo
                 : 'Ingresa un C.P. de 5 dígitos para validar cobertura'
             }}
           </div>
+          <div *ngIf="resumen" style="font-size: 12px; color: #534057">
+            Tarifa {{ nombreTarifa }} · ${{ costoEnvio }} ·
+            {{ diasEntrega === null ? 'sin plazo definido' : diasEntrega + ' día(s)' }} · Entrega
+            estimada {{ resumen.fecha_promesa }}
+          </div>
         </div>
 
-        <!-- 2. Método de envío -->
+        <!-- 2. Envío calculado por C.P. y descuentos -->
         <div
           style="
             background-color: #f3ecf4;
@@ -374,46 +395,53 @@
           "
         >
           <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #332736">
-            2. Método de envío
+            2. Envío y descuentos
           </h3>
 
-          <label
-            style="
-              background-color: #ffffff;
-              border-radius: 14px;
-              padding: 10px 14px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              font-size: 13px;
-              cursor: pointer;
-            "
-          >
-            <span style="display: flex; align-items: center; gap: 8px">
-              <input type="radio" name="mEnvio" value="estandar" [(ngModel)]="metodoEnvio" />
-              <span>Envío estándar (3 a 5 días hábiles)</span>
-            </span>
-            <strong>{{ subtotalConIva >= 900 ? 'Gratis' : '$99' }}</strong>
-          </label>
+          <p style="margin: 0; font-size: 13px; color: #534057">
+            El costo y el plazo de entrega se calculan en servidor con la tarifa vigente de tu
+            código postal.
+          </p>
 
-          <label
-            style="
-              background-color: #ffffff;
-              border-radius: 14px;
-              padding: 10px 14px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              font-size: 13px;
-              cursor: pointer;
-            "
-          >
-            <span style="display: flex; align-items: center; gap: 8px">
-              <input type="radio" name="mEnvio" value="expres" [(ngModel)]="metodoEnvio" />
-              <span>Envío exprés (1 a 2 días hábiles)</span>
-            </span>
-            <strong>$149</strong>
-          </label>
+          <div style="display: flex; gap: 6px; margin-top: 4px">
+            <input
+              type="text"
+              name="codigoDescuento"
+              maxlength="20"
+              [(ngModel)]="codigoDescuento"
+              placeholder="Código de descuento (opcional)"
+              style="
+                flex: 1;
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <button
+              type="button"
+              (click)="aplicarDescuento()"
+              style="
+                padding: 0 14px;
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #e6cce8;
+                color: #4f2857;
+                font-size: 12px;
+                font-weight: 700;
+                cursor: pointer;
+              "
+            >
+              Aplicar
+            </button>
+          </div>
+          <div *ngIf="descuentoAplicado" style="font-size: 12px; color: #2e7d32">
+            ✓ {{ descuentoAplicado.nombre }}: ahorro de ${{ descuentoAplicado.ahorro }}
+          </div>
         </div>
 
         <!-- 3. Facturación -->
@@ -563,6 +591,76 @@
               Saldo: ${{ pago.saldoDisponible }}
             </span>
           </label>
+
+          <div
+            *ngIf="medioPagoSeleccionadoId === -1"
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+              gap: 10px;
+              padding-top: 6px;
+            "
+          >
+            <input
+              name="numeroTarjeta"
+              maxlength="16"
+              [(ngModel)]="nuevaTarjeta.numero"
+              placeholder="Número de tarjeta *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="titularTarjeta"
+              [(ngModel)]="nuevaTarjeta.titular"
+              placeholder="Titular *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="vencimientoTarjeta"
+              maxlength="5"
+              [(ngModel)]="nuevaTarjeta.vencimiento"
+              placeholder="Vence MM/AA *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+            <input
+              name="cvvTarjeta"
+              maxlength="4"
+              [(ngModel)]="nuevaTarjeta.cvv"
+              placeholder="CVV *"
+              style="
+                height: 36px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 12px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
         </div>
       </div>
 
@@ -604,6 +702,11 @@
         </div>
 
         <div style="display: flex; justify-content: space-between; font-size: 13px">
+          <span>Descuento</span>
+          <strong>${{ descuentoAplicadoMonto }}</strong>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 13px">
           <span>Envío</span>
           <strong>{{ costoEnvio === 0 ? 'Gratis' : '$' + costoEnvio }}</strong>
         </div>
@@ -624,6 +727,7 @@
 
         <button
           type="button"
+          [disabled]="procesando || cargando || !resumen"
           (click)="confirmarCompra()"
           style="
             margin-top: 8px;
@@ -638,7 +742,7 @@
             cursor: pointer;
           "
         >
-          Confirmar pedido
+          {{ procesando ? 'Procesando pago…' : 'Confirmar pedido' }}
         </button>
       </div>
     </div>

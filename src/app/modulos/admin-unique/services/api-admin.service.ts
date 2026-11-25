@@ -1,32 +1,37 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { ApiService, ValorParametro } from '../../../core/api/api.service';
 
-// Flask implementa estos endpoints. Angular no contiene datos de negocio simulados.
+/** Cliente usado por el paquete M18–M22; delega en el cliente HTTP canónico. */
 @Injectable({ providedIn: 'root' })
 export class ApiAdminService {
-  private http = inject(HttpClient);
-  private base = 'http://127.0.0.1:5000/api';
-  get<T>(path: string, params?: Record<string, string | number>): Observable<T> {
-    let httpParams = new HttpParams();
-    Object.entries(params ?? {}).forEach(([k, v]) => (httpParams = httpParams.set(k, String(v))));
-    return this.http.get<T>(`${this.base}${path}`, { params: httpParams });
+  private readonly api = inject(ApiService);
+
+  get<T>(path: string, params?: Record<string, ValorParametro>): Observable<T> {
+    return this.api.get<T>(path, { params });
   }
-  getBlob(path: string, params?: Record<string, string | number>): Observable<Blob> {
-    let httpParams = new HttpParams();
-    Object.entries(params ?? {}).forEach(([k, v]) => (httpParams = httpParams.set(k, String(v))));
-    return this.http.get(`${this.base}${path}`, { params: httpParams, responseType: 'blob' });
+
+  getBlob(path: string, params?: Record<string, ValorParametro>): Observable<Blob> {
+    return this.api.getBlob(path, { params });
   }
+
+  getText(path: string, params?: Record<string, ValorParametro>): Observable<string> {
+    return this.api.getText(path, { params });
+  }
+
   post<T>(path: string, body: unknown): Observable<T> {
-    return this.http.post<T>(`${this.base}${path}`, body);
+    return this.api.post<T>(path, body);
   }
+
   put<T>(path: string, body: unknown): Observable<T> {
-    return this.http.put<T>(`${this.base}${path}`, body);
+    return this.api.put<T>(path, body);
   }
+
   patch<T>(path: string, body: unknown = {}): Observable<T> {
-    return this.http.patch<T>(`${this.base}${path}`, body);
+    return this.api.patch<T>(path, body);
   }
+
   delete<T>(path: string): Observable<T> {
-    return this.http.delete<T>(`${this.base}${path}`);
+    return this.api.delete<T>(path);
   }
 }

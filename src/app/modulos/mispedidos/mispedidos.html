@@ -113,6 +113,7 @@
           Estado:
           <select
             [(ngModel)]="filtroEstado"
+            (ngModelChange)="cambiarFiltro($event)"
             style="
               height: 38px;
               border: none;
@@ -122,8 +123,9 @@
               font-size: 13px;
             "
           >
-            <option value="todos">Todos</option>
-            <option *ngFor="let est of estadosDisponibles" [value]="est">{{ est }}</option>
+            <option *ngFor="let filtro of filtros" [value]="filtro.valor">
+              {{ filtro.etiqueta }}
+            </option>
           </select>
         </label>
       </div>
@@ -186,7 +188,7 @@
           >
             <strong style="font-size: 16px; color: #332736">Folio {{ pedido.folio }}</strong>
             <span
-              [style.backgroundColor]="pedido.estado === 'Cancelado' ? '#8b1e3f' : '#4f2857'"
+              [style.backgroundColor]="pedido.estado === 'CANCELADO' ? '#8b1e3f' : '#4f2857'"
               style="
                 color: #ffffff;
                 padding: 2px 10px;
@@ -195,12 +197,15 @@
                 font-weight: 700;
               "
             >
-              {{ pedido.estado }}
+              {{ etiquetaEstado(pedido.estado) }}
             </span>
-            <span style="color: #534057; font-size: 12px">· Fecha: {{ pedido.fecha }}</span>
+            <span style="color: #534057; font-size: 12px"
+              >· Fecha: {{ pedido.fecha | date: 'dd/MM/yyyy HH:mm' }}</span
+            >
           </div>
           <div style="color: #534057">
-            Envío: <strong>{{ pedido.metodoEnvio }}</strong> · Pago: {{ pedido.medioPagoResumen }}
+            Artículos: <strong>{{ pedido.articulosCount }}</strong> ·
+            Guía: {{ pedido.guia || 'sin asignar' }}
           </div>
           <div style="margin-top: 4px; font-size: 14px; font-weight: 700; color: #4f2857">
             Total (IVA incluido): ${{ pedido.totalConIva }}
@@ -269,6 +274,22 @@
 
         <div style="display: flex; gap: 8px; flex-wrap: wrap">
           <button
+            type="button"
+            (click)="verComprobante(pedidoSeleccionado)"
+            style="
+              padding: 7px 14px;
+              border: 1px solid #4f2857;
+              border-radius: 999px;
+              background-color: #ffffff;
+              color: #4f2857;
+              font-size: 12px;
+              font-weight: 700;
+              cursor: pointer;
+            "
+          >
+            Ver comprobante
+          </button>
+          <button
             *ngIf="puedeCancelar(pedidoSeleccionado)"
             type="button"
             (click)="cancelarPedido(pedidoSeleccionado)"
@@ -286,7 +307,7 @@
             Cancelar pedido
           </button>
           <button
-            *ngIf="pedidoSeleccionado.estado === 'Entregado'"
+            *ngIf="pedidoSeleccionado.estado === 'ENTREGADO'"
             type="button"
             (click)="onSolicitarCambio(pedidoSeleccionado)"
             style="
@@ -322,8 +343,8 @@
             Pedido {{ pedidoSeleccionado.folio }}
           </h3>
           <span style="font-size: 12px; color: #534057"
-            >Realizado el {{ pedidoSeleccionado.fecha }} · Envío
-            {{ pedidoSeleccionado.metodoEnvio }}</span
+            >Realizado el {{ pedidoSeleccionado.fecha | date: 'dd/MM/yyyy HH:mm' }} · Guía
+            {{ pedidoSeleccionado.guia || 'sin asignar' }}</span
           >
         </div>
         <span
@@ -336,7 +357,7 @@
             font-weight: 700;
           "
         >
-          {{ pedidoSeleccionado.estado }}
+          {{ etiquetaEstado(pedidoSeleccionado.estado) }}
         </span>
       </div>
 
@@ -389,7 +410,7 @@
           <span style="color: #534057">{{ pedidoSeleccionado.direccionResumen }}</span>
         </div>
         <div style="background-color: #ffffff; border-radius: 14px; padding: 12px 14px">
-          <strong style="display: block; margin-bottom: 4px; color: #332736">Medio de pago</strong>
+          <strong style="display: block; margin-bottom: 4px; color: #332736">Estado de pago</strong>
           <span style="color: #534057">{{ pedidoSeleccionado.medioPagoResumen }}</span>
           <div
             *ngIf="pedidoSeleccionado.facturaResumen"
@@ -398,6 +419,25 @@
             Factura: {{ pedidoSeleccionado.facturaResumen }}
           </div>
         </div>
+      </div>
+
+      <!-- Comprobante histórico -->
+      <div
+        *ngIf="comprobante"
+        style="
+          background-color: #ffffff;
+          border-radius: 14px;
+          padding: 14px;
+          font-size: 12px;
+          color: #534057;
+        "
+      >
+        <strong style="display: block; margin-bottom: 6px; color: #332736"
+          >Comprobante {{ comprobante.folio }}</strong
+        >
+        <div>Estado de pago: {{ comprobante.estado_pago }}</div>
+        <div>Subtotal: ${{ comprobante.subtotal }} · Envío: ${{ comprobante.costo_envio }}</div>
+        <div>Descuento: ${{ comprobante.descuento_monto }} · Total: ${{ comprobante.total }}</div>
       </div>
 
       <!-- Artículos del pedido -->

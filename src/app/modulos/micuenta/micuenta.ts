@@ -1,7 +1,9 @@
-import { Component, EventEmitter, inject, Output } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { mensajeError } from '../../core/api/errores';
+import { CuentaServicio } from './servicios/cuenta-servicio';
 
 export interface DireccionCliente {
   id: number;
@@ -40,8 +42,9 @@ export interface MedioPagoSimulado {
   templateUrl: './micuenta.html',
   styles: [],
 })
-export class Micuenta {
+export class Micuenta implements OnInit {
   private readonly router = inject(Router);
+  private readonly cuenta = inject(CuentaServicio);
 
   @Output() cerrar = new EventEmitter<void>();
   @Output() cuentaDesactivada = new EventEmitter<void>();
@@ -49,8 +52,9 @@ export class Micuenta {
 
   pestanaActiva: 'datos' | 'direcciones' | 'pagos' | 'seguridad' = 'datos';
   mensajeAviso = '';
+  cargando = false;
+  coberturaCp: boolean | null = null;
 
-  // 1. Mis datos
   datosPersonales = {
     nombre: '',
     apellidos: '',
@@ -60,50 +64,12 @@ export class Micuenta {
     contrasenaConfirmacion: '',
   };
 
-  // 2. Direcciones
-  direcciones: DireccionCliente[] = [
-    {
-      id: 1,
-      tipo: 'envio',
-      alias: '',
-      destinatario: '',
-      telefono: '',
-      calle: '',
-      numExt: '',
-      numInt: '',
-      colonia: '',
-      municipio: '',
-      estado: '',
-      cp: '',
-      referencia: '',
-      predeterminada: true,
-    },
-  ];
-
+  direcciones: DireccionCliente[] = [];
   mostrandoFormDireccion = false;
   editandoDireccionId: number | null = null;
   formDireccion: DireccionCliente = this.nuevaDireccionVacia();
 
-  // 3. Medios de pago simulados
-  mediosPago: MedioPagoSimulado[] = [
-    {
-      id: 1,
-      tipo: 'tarjeta',
-      alias: 'Tarjeta de prueba',
-      titular: 'Cliente Demo',
-      marca: 'Visa',
-      ultimos4: '1234',
-      vencimiento: '12/28',
-    },
-    {
-      id: 2,
-      tipo: 'cuenta',
-      alias: 'Cuenta de prueba',
-      titular: 'Cliente Demo',
-      saldo: 500,
-    },
-  ];
-
+  mediosPago: MedioPagoSimulado[] = [];
   mostrandoFormPago = false;
   tipoNuevoPago: 'tarjeta' | 'cuenta' = 'tarjeta';
   formTarjeta = {
@@ -119,12 +85,32 @@ export class Micuenta {
     saldoInicial: 1000,
   };
 
-  // 4. Seguridad
   seguridad = {
     contrasenaActual: '',
     nuevaContrasena: '',
     confirmarContrasena: '',
   };
+
+  ngOnInit(): void {
+    this.cuenta.perfil().subscribe({
+      next: (perfil) => {
+        this.datosPersonales.nombre = perfil.nombre ?? '';
+        this.datosPersonales.apellidos = perfil.apellidos ?? '';
+        this.datosPersonales.telefono = perfil.telefono ?? '';
+        this.datosPersonales.correo = perfil.correo ?? '';
+        this.datosPersonales.correoOriginal = perfil.correo ?? '';
+      },
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+    });
+    this.cuenta.listarDirecciones().subscribe({
+      next: (items) => (this.direcciones = items),
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+    });
+    this.cuenta.listarMediosPago().subscribe({
+      next: (items) => (this.mediosPago = items),
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+    });
+  }
 
   cerrarCuenta(): void {
     this.cerrar.emit();
@@ -136,21 +122,27 @@ export class Micuenta {
     this.mensajeAviso = '';
   }
 
-  // --- Lógica visual Mis datos ---
   guardarDatos(): void {
-    if (
-      this.datosPersonales.correo !== this.datosPersonales.correoOriginal &&
-      !this.datosPersonales.contrasenaConfirmacion
-    ) {
-      this.mensajeAviso = 'Para cambiar tu correo debes escribir tu contraseña actual.';
-      return;
-    }
-    this.datosPersonales.correoOriginal = this.datosPersonales.correo;
-    this.datosPersonales.contrasenaConfirmacion = '';
-    this.mensajeAviso = 'Datos personales actualizados correctamente.';
+    this.cargando = true;
+    this.cuenta
+      .actualizarPerfil({
+        nombre: this.datosPersonales.nombre,
+        apellidos: this.datosPersonales.apellidos,
+        telefono: this.datosPersonales.telefono,
+      })
+      .subscribe({
+        next: () => {
+          this.cargando = false;
+          this.datosPersonales.contrasenaConfirmacion = '';
+          this.mensajeAviso = 'Datos personales actualizados correctamente.';
+        },
+        error: (error: unknown) => {
+          this.cargando = false;
+          this.mensajeAviso = mensajeError(error);
+        },
+      });
   }
 
-  // --- Lógica visual Direcciones ---
   nuevaDireccionVacia(): DireccionCliente {
     return {
       id: 0,
@@ -175,92 +167,108 @@ export class Micuenta {
   abrirNuevaDireccion(): void {
     this.editandoDireccionId = null;
     this.formDireccion = this.nuevaDireccionVacia();
+    this.coberturaCp = null;
     this.mostrandoFormDireccion = true;
   }
 
   editarDireccion(dir: DireccionCliente): void {
     this.editandoDireccionId = dir.id;
     this.formDireccion = { ...dir };
+    this.validarCobertura();
     this.mostrandoFormDireccion = true;
   }
 
-  guardarDireccion(): void {
-    if (this.formDireccion.predeterminada) {
-      this.direcciones.forEach((d) => {
-        if (d.tipo === this.formDireccion.tipo) {
-          d.predeterminada = false;
-        }
-      });
+  validarCobertura(): void {
+    if (!/^\d{5}$/.test(this.formDireccion.cp)) {
+      this.coberturaCp = null;
+      return;
     }
+    this.cuenta.cobertura(this.formDireccion.cp).subscribe({
+      next: (respuesta) => (this.coberturaCp = respuesta.cobertura),
+      error: () => (this.coberturaCp = false),
+    });
+  }
 
-    if (this.editandoDireccionId !== null) {
-      const idx = this.direcciones.findIndex((d) => d.id === this.editandoDireccionId);
-      if (idx !== -1) {
-        this.direcciones[idx] = { ...this.formDireccion };
-      }
-      this.mensajeAviso = 'Dirección actualizada.';
-    } else {
-      this.direcciones.push({
-        ...this.formDireccion,
-        id: Date.now(),
-      });
-      this.mensajeAviso = 'Dirección agregada.';
-    }
-    this.mostrandoFormDireccion = false;
+  guardarDireccion(): void {
+    const operacion =
+      this.editandoDireccionId === null
+        ? this.cuenta.crearDireccion(this.formDireccion)
+        : this.cuenta.actualizarDireccion(this.editandoDireccionId, this.formDireccion);
+    operacion.subscribe({
+      next: (direccion) => {
+        if (this.editandoDireccionId === null) {
+          this.direcciones.push(direccion);
+        } else {
+          const indice = this.direcciones.findIndex((d) => d.id === direccion.id);
+          if (indice !== -1) this.direcciones[indice] = direccion;
+        }
+        this.mostrandoFormDireccion = false;
+        this.mensajeAviso = 'Dirección guardada.';
+      },
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+    });
   }
 
   eliminarDireccion(id: number): void {
-    this.direcciones = this.direcciones.filter((d) => d.id !== id);
-    this.mensajeAviso = 'Dirección desactivada de tu lista.';
+    this.cuenta.eliminarDireccion(id).subscribe({
+      next: () => {
+        this.direcciones = this.direcciones.filter((d) => d.id !== id);
+        this.mensajeAviso = 'Dirección desactivada de tu lista.';
+      },
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+    });
   }
 
-  tieneCobertura(cp: string): boolean {
-    return /^\d{5}$/.test(cp);
-  }
-
-  // --- Lógica visual Medios de pago ---
   agregarMedioPago(): void {
-    if (this.tipoNuevoPago === 'tarjeta') {
-      const limpio = this.formTarjeta.numero.replace(/\s+/g, '');
-      const ultimos4 = limpio.slice(-4) || '0000';
-      this.mediosPago.push({
-        id: Date.now(),
-        tipo: 'tarjeta',
-        alias: this.formTarjeta.alias || 'Tarjeta',
-        titular: this.formTarjeta.titular,
-        marca: limpio.startsWith('5') ? 'Mastercard' : 'Visa',
-        ultimos4,
-        vencimiento: this.formTarjeta.vencimiento,
-      });
-      // Se descartan número completo y CVV
-      this.formTarjeta = { alias: '', numero: '', titular: '', vencimiento: '', cvv: '' };
-    } else {
-      this.mediosPago.push({
-        id: Date.now(),
-        tipo: 'cuenta',
-        alias: this.formCuenta.alias || 'Cuenta simulada',
-        titular: this.formCuenta.titular,
-        saldo: this.formCuenta.saldoInicial,
-      });
-      this.formCuenta = { alias: '', titular: '', saldoInicial: 1000 };
-    }
-    this.mostrandoFormPago = false;
-    this.mensajeAviso = 'Medio de pago guardado.';
+    const cuerpo: Record<string, unknown> =
+      this.tipoNuevoPago === 'tarjeta'
+        ? {
+            tipo: 'TARJETA',
+            alias: this.formTarjeta.alias || 'Tarjeta',
+            titular: this.formTarjeta.titular,
+            numero_tarjeta: this.formTarjeta.numero.replace(/\s+/g, ''),
+            vence_mes: this.mesVencimiento(this.formTarjeta.vencimiento),
+            vence_anio: this.anioVencimiento(this.formTarjeta.vencimiento),
+            cvv: this.formTarjeta.cvv,
+          }
+        : {
+            tipo: 'CUENTA',
+            alias: this.formCuenta.alias || 'Cuenta simulada',
+            titular: this.formCuenta.titular,
+            saldo_inicial: this.formCuenta.saldoInicial,
+          };
+
+    this.cuenta.crearMedioPago(cuerpo).subscribe({
+      next: (medio) => {
+        this.mediosPago.push(medio);
+        this.formTarjeta = { alias: '', numero: '', titular: '', vencimiento: '', cvv: '' };
+        this.formCuenta = { alias: '', titular: '', saldoInicial: 1000 };
+        this.mostrandoFormPago = false;
+        this.mensajeAviso = 'Medio de pago guardado.';
+      },
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+    });
   }
 
   editarAliasPago(pago: MedioPagoSimulado): void {
     const nuevoAlias = prompt('Nuevo alias para este medio de pago:', pago.alias);
-    if (nuevoAlias && nuevoAlias.trim()) {
-      pago.alias = nuevoAlias.trim();
-    }
+    if (!nuevoAlias?.trim()) return;
+    this.cuenta.actualizarMedioPago(pago.id, nuevoAlias.trim()).subscribe({
+      next: (actualizado) => (pago.alias = actualizado.alias),
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+    });
   }
 
   eliminarMedioPago(id: number): void {
-    this.mediosPago = this.mediosPago.filter((p) => p.id !== id);
-    this.mensajeAviso = 'Medio de pago eliminado.';
+    this.cuenta.eliminarMedioPago(id).subscribe({
+      next: () => {
+        this.mediosPago = this.mediosPago.filter((p) => p.id !== id);
+        this.mensajeAviso = 'Medio de pago eliminado.';
+      },
+      error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+    });
   }
 
-  // --- Lógica visual Seguridad ---
   actualizarContrasena(): void {
     if (!this.seguridad.contrasenaActual) {
       this.mensajeAviso = 'Ingresa tu contraseña actual.';
@@ -270,17 +278,38 @@ export class Micuenta {
       this.mensajeAviso = 'La nueva contraseña y su confirmación no coinciden.';
       return;
     }
-    this.seguridad = { contrasenaActual: '', nuevaContrasena: '', confirmarContrasena: '' };
-    this.mensajeAviso = 'Contraseña actualizada correctamente.';
+    this.cuenta
+      .cambiarContrasena(this.seguridad.contrasenaActual, this.seguridad.nuevaContrasena)
+      .subscribe({
+        next: () => {
+          this.seguridad = { contrasenaActual: '', nuevaContrasena: '', confirmarContrasena: '' };
+          this.mensajeAviso = 'Contraseña actualizada correctamente.';
+        },
+        error: (error: unknown) => (this.mensajeAviso = mensajeError(error)),
+      });
   }
 
   onCerrarSesiones(): void {
     this.cerrarTodasSesiones.emit();
-    this.mensajeAviso = 'Se cerraron las sesiones en todos los dispositivos.';
+    this.mensajeAviso =
+      'Cambiar tu contraseña revoca las sesiones de refresco abiertas en otros dispositivos.';
   }
 
   onDesactivarCuenta(): void {
     this.cuentaDesactivada.emit();
-    this.mensajeAviso = 'Tu cuenta ha pasado a estado INACTIVA (se conserva tu historial).';
+    this.mensajeAviso = 'La desactivación de cuentas la realiza un Administrador.';
+  }
+
+  private mesVencimiento(valor: string): number | null {
+    const [mes] = valor.split('/');
+    const numero = Number(mes);
+    return Number.isInteger(numero) && numero >= 1 && numero <= 12 ? numero : null;
+  }
+
+  private anioVencimiento(valor: string): number | null {
+    const [, anio] = valor.split('/');
+    const numero = Number(anio);
+    if (!Number.isFinite(numero)) return null;
+    return numero < 100 ? 2000 + numero : numero;
   }
 }
