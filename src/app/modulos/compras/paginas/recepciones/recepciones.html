@@ -13,6 +13,8 @@
     <a routerLink="/compras/ordenes" class="boton boton--secundario">Volver a órdenes</a>
   </div>
 
+  <app-selector-perfil-demo />
+
   <div class="tarjeta bloque selector-orden">
     <label class="campo selector">
       Orden de compra a recibir
@@ -34,10 +36,12 @@
           <dt>Proveedor</dt>
           <dd>{{ servicio.proveedorNombre(ordenSeleccionada.proveedorId) }}</dd>
         </div>
-        <div>
-          <dt>Total de la orden</dt>
-          <dd>{{ ordenSeleccionada.total | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd>
-        </div>
+        @if (esAdministrador()) {
+          <div>
+            <dt>Total de la orden</dt>
+            <dd>{{ ordenSeleccionada.total | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd>
+          </div>
+        }
         <div>
           <dt>Fecha prometida</dt>
           <dd>{{ ordenSeleccionada.fechaPrometida ?? 'Por definir' }}</dd>
@@ -219,8 +223,11 @@
             <li>
               <strong>{{ lote.folio }}</strong> ·
               {{ servicio.obtenerMaterial(lote.materialId)?.nombre }} · {{ lote.cantidadBase }}
-              {{ lote.unidadBase }} · {{ lote.medidas }} · costo real
-              {{ lote.costoReal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+              {{ lote.unidadBase }} · {{ lote.medidas }}
+              @if (esAdministrador()) {
+                · costo real
+                {{ lote.costoReal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+              }
             </li>
           }
         </ul>

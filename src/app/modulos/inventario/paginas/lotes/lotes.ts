@@ -1,18 +1,22 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { SelectorPerfilDemo } from '../../../../compartido/componentes/selector-perfil-demo/selector-perfil-demo';
+import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
 import { NavegacionInventario } from '../../componentes/navegacion-inventario/navegacion-inventario';
 import { InventarioServicio } from '../../servicios/inventario-servicio';
 
 @Component({
   selector: 'app-lotes',
-  imports: [CurrencyPipe, DecimalPipe, RouterLink, NavegacionInventario],
+  imports: [CurrencyPipe, DecimalPipe, RouterLink, NavegacionInventario, SelectorPerfilDemo],
   templateUrl: './lotes.html',
   styleUrls: ['./lotes.css', '../../inventario-compartido.css'],
 })
 export class Lotes {
   protected readonly servicio = inject(InventarioServicio);
   private readonly ruta = inject(ActivatedRoute);
+  protected readonly perfilDemo = inject(PerfilDemoServicio);
+  protected readonly esAdministrador = this.perfilDemo.esAdministrador;
 
   protected readonly materiales = computed(() =>
     this.servicio.materiales().filter((material) => material.activo),

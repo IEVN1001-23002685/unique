@@ -28,6 +28,8 @@
     }
   </div>
 
+  <app-selector-perfil-demo />
+
   @if (esFormulario) {
     @if (noEncontrado()) {
       <div class="tarjeta bloque estado" role="status">
@@ -132,19 +134,21 @@
               <span class="campo__error">Describe la presentación de compra.</span>
             }
           </label>
-          <label class="campo">
-            Costo estándar por unidad base (MXN)
-            <input
-              class="campo__entrada"
-              type="number"
-              min="0.0001"
-              step="0.0001"
-              formControlName="costoEstandarBase"
-            />
-            @if (esInvalido('costoEstandarBase')) {
-              <span class="campo__error">Mayor o igual a 0 con hasta 4 decimales.</span>
-            }
-          </label>
+          @if (esAdministrador()) {
+            <label class="campo">
+              Costo estándar por unidad base (MXN)
+              <input
+                class="campo__entrada"
+                type="number"
+                min="0.0001"
+                step="0.0001"
+                formControlName="costoEstandarBase"
+              />
+              @if (esInvalido('costoEstandarBase')) {
+                <span class="campo__error">Mayor o igual a 0 con hasta 4 decimales.</span>
+              }
+            </label>
+          }
           <label class="campo">
             Merma estándar (%)
             <input
@@ -214,7 +218,9 @@
                 <th scope="col">Categoría</th>
                 <th scope="col">Unidad base</th>
                 <th scope="col">Compra</th>
-                <th scope="col" class="celda-derecha">Costo estándar</th>
+                @if (esAdministrador()) {
+                  <th scope="col" class="celda-derecha">Costo estándar</th>
+                }
                 <th scope="col" class="celda-derecha">Merma %</th>
                 <th scope="col">Color</th>
                 <th scope="col">Estado</th>
@@ -236,11 +242,13 @@
                     {{ material.factorCompraBase | number: '1.0-4' : 'es-MX' }}
                     {{ material.unidadBase }}
                   </td>
-                  <td data-etiqueta="Costo estándar" class="celda-numero celda-derecha">
-                    {{
-                      material.costoEstandarBase | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX'
-                    }}
-                  </td>
+                  @if (esAdministrador()) {
+                    <td data-etiqueta="Costo estándar" class="celda-numero celda-derecha">
+                      {{
+                        material.costoEstandarBase | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX'
+                      }}
+                    </td>
+                  }
                   <td data-etiqueta="Merma %" class="celda-numero celda-derecha">
                     {{ material.mermaEstandarPct }}
                   </td>

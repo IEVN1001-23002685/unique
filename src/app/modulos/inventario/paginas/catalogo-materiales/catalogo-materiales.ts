@@ -3,6 +3,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, type ValidatorFn } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
+import { SelectorPerfilDemo } from '../../../../compartido/componentes/selector-perfil-demo/selector-perfil-demo';
+import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
 import {
   decimalNoNegativo,
   decimalPositivo,
@@ -27,6 +29,7 @@ import { InventarioServicio } from '../../servicios/inventario-servicio';
     RouterLink,
     NavegacionInventario,
     ModalConfirmacion,
+    SelectorPerfilDemo,
   ],
   templateUrl: './catalogo-materiales.html',
   styleUrls: ['./catalogo-materiales.css', '../../inventario-compartido.css'],
@@ -37,6 +40,8 @@ export class CatalogoMateriales {
   private readonly router = inject(Router);
   private readonly avisos = inject(AvisosServicio);
   protected readonly servicio = inject(InventarioServicio);
+  protected readonly perfilDemo = inject(PerfilDemoServicio);
+  protected readonly esAdministrador = this.perfilDemo.esAdministrador;
 
   protected readonly categorias = CATEGORIAS;
   protected readonly unidades: UnidadBase[] = ['m²', 'm', 'pieza'];

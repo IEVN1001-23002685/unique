@@ -23,7 +23,7 @@ export const MERMAS_RUTAS: Routes = [
   {
     path: 'indicadores',
     title: 'Indicadores de merma · UNIQUE',
-    data: { rol: 'Administrador', soloAdministrador: true },
+    data: { rol: 'Administrador', soloAdministrador: true, roles: ['Administrador'] },
     loadComponent: () => import('./paginas/indicadores/indicadores').then((c) => c.Indicadores),
   },
   { path: '**', redirectTo: '' },

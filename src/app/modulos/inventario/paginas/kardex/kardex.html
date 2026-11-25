@@ -13,6 +13,8 @@
     <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
   </div>
 
+  <app-selector-perfil-demo />
+
   <div class="indicadores" aria-label="Resumen del kardex filtrado">
     <div class="indicador" data-tono="info">
       <span class="indicador__numero">{{ totales().movimientos }}</span>
@@ -112,7 +114,9 @@
               <th scope="col">Lote</th>
               <th scope="col">Tipo</th>
               <th scope="col" class="celda-derecha">Cantidad</th>
-              <th scope="col" class="celda-derecha">Costo unitario</th>
+              @if (esAdministrador()) {
+                <th scope="col" class="celda-derecha">Costo unitario</th>
+              }
               <th scope="col">Documento</th>
               <th scope="col">Motivo</th>
               <th scope="col">Usuario</th>
@@ -142,9 +146,11 @@
                     {{ movimiento.cantidadBase | number: '1.0-4' : 'es-MX' }}
                   </strong>
                 </td>
-                <td data-etiqueta="Costo unitario" class="celda-numero celda-derecha">
-                  {{ movimiento.costoUnitario | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX' }}
-                </td>
+                @if (esAdministrador()) {
+                  <td data-etiqueta="Costo unitario" class="celda-numero celda-derecha">
+                    {{ movimiento.costoUnitario | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX' }}
+                  </td>
+                }
                 <td data-etiqueta="Documento">{{ movimiento.documento }}</td>
                 <td data-etiqueta="Motivo">{{ movimiento.motivo }}</td>
                 <td data-etiqueta="Usuario" class="celda-secundaria">{{ movimiento.usuario }}</td>

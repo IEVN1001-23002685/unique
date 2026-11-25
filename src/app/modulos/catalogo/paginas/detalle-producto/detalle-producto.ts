@@ -22,9 +22,14 @@ export class DetalleProducto {
 
   constructor() {
     this.ruta.paramMap.pipe(takeUntilDestroyed()).subscribe((parametros) => {
-      const slug = parametros.get('slug') ?? '';
+      // La ruta pública del §10 usa :id; la ruta del repositorio usa :slug.
+      const identificador = parametros.get('slug') ?? parametros.get('id') ?? '';
       this.imagenNoDisponible.set(false);
-      this.producto.set(PRODUCTOS_SIMULADOS.find((producto) => producto.slug === slug));
+      this.producto.set(
+        PRODUCTOS_SIMULADOS.find(
+          (producto) => producto.slug === identificador || String(producto.id) === identificador,
+        ),
+      );
     });
   }
 

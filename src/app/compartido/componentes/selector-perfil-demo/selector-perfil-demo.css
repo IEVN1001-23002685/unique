@@ -1,0 +1,50 @@
+.selector-perfil {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-unique-orquidea, #bf7ebb);
+  border-radius: 20px;
+  background-color: var(--color-unique-rosa-lavanda, #f2c9f0);
+}
+
+.selector-perfil__etiqueta {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-unique-texto, #1f1226);
+}
+
+.selector-perfil__opciones {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.selector-perfil__boton {
+  min-height: 36px;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--color-unique-ciruela, #8b548c);
+  border-radius: 999px;
+  background-color: #ffffff;
+  color: var(--color-unique-texto, #1f1226);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.selector-perfil__boton--activo {
+  background-color: var(--color-unique-morado, #542d59);
+  border-color: var(--color-unique-morado, #542d59);
+  color: #ffffff;
+}
+
+.selector-perfil__boton:focus-visible {
+  outline: 3px solid var(--color-unique-morado, #542d59);
+  outline-offset: 2px;
+}
+
+.selector-perfil__nota {
+  flex-basis: 100%;
+  font-size: 0.875rem;
+  color: var(--color-unique-texto-suave, #6b5870);
+}

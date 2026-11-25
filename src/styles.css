@@ -151,7 +151,7 @@ body {
   flex-direction: column;
   gap: 0.4rem;
   font-family: var(--font-interfaz);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-unique-morado);
 }
@@ -181,6 +181,6 @@ body {
   margin: 0;
   color: #a52b3c;
   font-family: var(--font-texto);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 400;
 }

@@ -161,9 +161,13 @@
                 <dd>piezas enteras</dd>
               </div>
               <div>
-                <dt>Costo unitario</dt>
+                <dt>Costo estimado de la merma</dt>
                 <dd>
-                  {{ esAdministrador() ? 'Solo Administrador' : 'No disponible para Operativo' }}
+                  @if (esAdministrador()) {
+                    {{ costo() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                  } @else {
+                    No disponible para Operativo
+                  }
                 </dd>
               </div>
             </div>

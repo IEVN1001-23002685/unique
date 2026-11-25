@@ -26,7 +26,7 @@ export class RecuperarPassword {
 
   onSubmit(): void {
     const tokenSimulado = Math.random().toString(36).substring(2, 10);
-    this.enlaceSimulado = `http://localhost:4200/restablecer?token=${tokenSimulado} (vigencia: 30 min)`;
+    this.enlaceSimulado = `${window.location.origin}/restablecer/${tokenSimulado} (vigencia: 30 min)`;
     this.enviado = true;
   }
 

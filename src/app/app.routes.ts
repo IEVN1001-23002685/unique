@@ -58,7 +58,30 @@ export const routes: Routes = [
             (c) => c.RecuperarPassword,
           ),
       },
+      {
+        // M01 · Restablecimiento con token de demostración (sin backend).
+        path: 'restablecer/:token',
+        loadComponent: () =>
+          import('./modulos/recuperar-password/paginas/restablecer/restablecer').then(
+            (c) => c.Restablecer,
+          ),
+      },
     ],
+  },
+  {
+    // Alias del §10: /producto/:id resuelve al detalle por identificador o slug.
+    path: 'producto/:id',
+    redirectTo: 'catalogo/producto/:id',
+  },
+  {
+    path: 'sin-acceso',
+    loadComponent: () =>
+      import('./compartido/paginas/sin-acceso/sin-acceso').then((c) => c.SinAcceso),
+  },
+  {
+    path: 'no-encontrado',
+    loadComponent: () =>
+      import('./compartido/paginas/no-encontrado/no-encontrado').then((c) => c.NoEncontrado),
   },
   {
     path: 'panel',
@@ -235,5 +258,5 @@ export const routes: Routes = [
     data: { titulo: 'Mermas', rol: 'Operativo', roles: ['Administrador', 'Operativo'] },
     loadChildren: () => import('./modulos/mermas/mermas.routes').then((m) => m.MERMAS_RUTAS),
   },
-  { path: '**', redirectTo: 'catalogo' },
+  { path: '**', redirectTo: 'no-encontrado' },
 ];

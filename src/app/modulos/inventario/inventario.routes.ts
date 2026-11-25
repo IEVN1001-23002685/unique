@@ -27,27 +27,28 @@ export const INVENTARIO_RUTAS: Routes = [
     path: 'catalogo',
     pathMatch: 'full',
     title: 'Catálogo de materiales · UNIQUE',
-    data: { modo: 'listado' },
+    data: { modo: 'listado', roles: ['Administrador'] },
     loadComponent: () =>
       import('./paginas/catalogo-materiales/catalogo-materiales').then((c) => c.CatalogoMateriales),
   },
   {
     path: 'catalogo/nuevo',
     title: 'Alta de material · UNIQUE',
-    data: { modo: 'nuevo' },
+    data: { modo: 'nuevo', roles: ['Administrador'] },
     loadComponent: () =>
       import('./paginas/catalogo-materiales/catalogo-materiales').then((c) => c.CatalogoMateriales),
   },
   {
     path: 'catalogo/:id/editar',
     title: 'Editar material · UNIQUE',
-    data: { modo: 'editar' },
+    data: { modo: 'editar', roles: ['Administrador'] },
     loadComponent: () =>
       import('./paginas/catalogo-materiales/catalogo-materiales').then((c) => c.CatalogoMateriales),
   },
   {
     path: 'politicas',
     title: 'Políticas de reposición · UNIQUE',
+    data: { roles: ['Administrador'] },
     loadComponent: () => import('./paginas/politicas/politicas').then((c) => c.Politicas),
   },
   { path: '**', redirectTo: '' },

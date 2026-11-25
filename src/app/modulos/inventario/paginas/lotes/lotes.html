@@ -13,6 +13,8 @@
     <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
   </div>
 
+  <app-selector-perfil-demo />
+
   <div class="tarjeta bloque">
     <div class="barra barra--lotes">
       <label class="buscador">
@@ -74,7 +76,9 @@
               <th scope="col">Entrada</th>
               <th scope="col" class="celda-derecha">Recibida</th>
               <th scope="col" class="celda-derecha">Disponible</th>
-              <th scope="col" class="celda-derecha">Costo unitario</th>
+              @if (esAdministrador()) {
+                <th scope="col" class="celda-derecha">Costo unitario</th>
+              }
               <th scope="col">Medidas</th>
               <th scope="col">Estado</th>
               <th scope="col">Acciones</th>
@@ -106,9 +110,11 @@
                 <td data-etiqueta="Disponible" class="celda-numero celda-derecha">
                   <strong>{{ lote.cantidadDisponible | number: '1.0-4' : 'es-MX' }}</strong>
                 </td>
-                <td data-etiqueta="Costo unitario" class="celda-numero celda-derecha">
-                  {{ lote.costoUnitario | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX' }}
-                </td>
+                @if (esAdministrador()) {
+                  <td data-etiqueta="Costo unitario" class="celda-numero celda-derecha">
+                    {{ lote.costoUnitario | currency: 'MXN' : 'symbol' : '1.2-4' : 'es-MX' }}
+                  </td>
+                }
                 <td data-etiqueta="Medidas">{{ lote.medidas }}</td>
                 <td data-etiqueta="Estado">
                   <span class="etiqueta" [class.etiqueta--neutro]="lote.estado === 'AGOTADO'">

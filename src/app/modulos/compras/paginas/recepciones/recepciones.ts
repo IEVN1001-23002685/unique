@@ -12,8 +12,10 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
+import { SelectorPerfilDemo } from '../../../../compartido/componentes/selector-perfil-demo/selector-perfil-demo';
 import { decimalPositivo } from '../../../../compartido/validadores/validadores-negocio';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
+import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
 import { ChipEstadoCompra } from '../../componentes/chip-estado-compra/chip-estado-compra';
 import { NavegacionCompras } from '../../componentes/navegacion-compras/navegacion-compras';
 import type { DatosRecepcion, LineaOrdenCompra, ResultadoRecepcion } from '../../modelos/compra';
@@ -66,6 +68,7 @@ const validarLineaRecepcion: ValidatorFn = (control): ValidationErrors | null =>
     ChipEstadoCompra,
     NavegacionCompras,
     ModalConfirmacion,
+    SelectorPerfilDemo,
   ],
   templateUrl: './recepciones.html',
   styleUrls: ['./recepciones.css', '../../compras-compartido.css'],
@@ -75,6 +78,8 @@ export class Recepciones {
   private readonly ruta = inject(ActivatedRoute);
   private readonly avisos = inject(AvisosServicio);
   protected readonly servicio = inject(ComprasServicio);
+  protected readonly perfilDemo = inject(PerfilDemoServicio);
+  protected readonly esAdministrador = this.perfilDemo.esAdministrador;
 
   protected readonly ordenesDisponibles = computed(() =>
     this.servicio.ordenes().filter((orden) => ['EMITIDA', 'PARCIAL'].includes(orden.estado)),
