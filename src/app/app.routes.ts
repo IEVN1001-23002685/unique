@@ -63,14 +63,8 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'restablecer/:token',
-        loadComponent: () =>
-          import('./modulos/acceso-registro/paginas/restablecer-password/restablecer-password').then(
-            (c) => c.RestablecerPassword,
-          ),
-      },
-      {
         // M01 · Restablecimiento con token de demostración (sin backend).
+        // Se conserva la ruta y la interfaz ya existentes.
         path: 'restablecer/:token',
         loadComponent: () =>
           import('./modulos/recuperar-password/paginas/restablecer/restablecer').then(

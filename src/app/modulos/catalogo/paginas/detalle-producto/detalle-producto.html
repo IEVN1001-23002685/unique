@@ -89,7 +89,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (medida of guiaMedidas(); track medida.talla) {
+              @for (medida of guiaMedidas; track medida.talla) {
                 <tr>
                   <td>{{ medida.talla }}</td>
                   <td>{{ medida.pecho }}</td>
@@ -111,7 +111,7 @@
 
         @if (estado(); as estadoActual) {
           <p class="detalle__disponibilidad" role="status">
-            <span class="detalle__estado-punto" [class]="claseEstado"></span>
+            <span [class]="'detalle__estado-punto ' + claseEstado"></span>
             {{ estadoActual }}
             @if (fechaEstimadaTexto(); as fecha) {
               <span> · Entrega estimada: {{ fecha }}</span>
