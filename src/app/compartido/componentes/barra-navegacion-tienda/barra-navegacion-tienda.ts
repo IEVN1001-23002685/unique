@@ -1,23 +1,32 @@
-import { Component, HostListener, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
-import { BusquedaCatalogoServicio } from '../../../nucleo/servicios/busqueda-catalogo-servicio';
+import { Component, computed, HostListener, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { AuthStateService } from '../../../core/auth/auth-state.service';
+import { CarritoServicio } from '../../../modulos/carrito/servicios/carrito-servicio';
 import { ModalAutenticacionServicio } from '../../../nucleo/servicios/modal-autenticacion-servicio';
 
 @Component({
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink],
   selector: 'app-barra-navegacion-tienda',
   styleUrl: './barra-navegacion-tienda.css',
   templateUrl: './barra-navegacion-tienda.html',
 })
 export class BarraNavegacionTienda {
+  private readonly autenticacion = inject(ModalAutenticacionServicio);
+  private readonly sesion = inject(AuthStateService);
+  private readonly carrito = inject(CarritoServicio);
+
   protected readonly menuAbierto = signal(false);
   protected readonly logoNoDisponible = signal(false);
-  protected readonly busqueda = inject(BusquedaCatalogoServicio);
-  private readonly autenticacion = inject(ModalAutenticacionServicio);
 
-  actualizarTermino(evento: Event): void {
-    const entrada = evento.target as HTMLInputElement;
-    this.busqueda.termino.set(entrada.value);
+  /** Estado de sesión canónico: la navbar no crea un estado paralelo. */
+  protected readonly autenticado = this.sesion.autenticado;
+
+  /** El badge lee el mismo resumen que la página del carrito, sin valores simulados. */
+  protected readonly totalArticulos = computed(() => this.carrito.resumen().totalArticulos);
+
+  constructor() {
+    // Hidrata el contador desde la misma fuente del carrito; sin red se conserva el estado real.
+    this.carrito.cargar().subscribe({ error: () => undefined });
   }
 
   alternarMenu(): void {
