@@ -145,47 +145,11 @@ export const routes: Routes = [
       ),
   },
   { path: 'inventario-pt', redirectTo: 'operacion/inventario-pt' },
-  {
-    path: 'preparacion',
-    component: Administracion,
-    canActivate: OPERATIVO,
-    data: { titulo: 'Preparación', roles: ['ADMIN', 'OPERATIVO'] },
-    loadChildren: () =>
-      import('./modulos/preparacion/preparacion.routes').then((m) => m.PREPARACION_RUTAS),
-  },
-  {
-    path: 'entregas',
-    component: Administracion,
-    canActivate: OPERATIVO,
-    data: { titulo: 'Entregas', roles: ['ADMIN', 'OPERATIVO'] },
-    loadChildren: () => import('./modulos/entregas/entregas.routes').then((m) => m.ENTREGAS_RUTAS),
-  },
-  {
-    path: 'dashboard',
-    component: Administracion,
-    canActivate: OPERATIVO,
-    data: { titulo: 'Dashboard gerencial', roles: ['ADMIN', 'OPERATIVO'] },
-    loadChildren: () =>
-      import('./modulos/dashboard-gerencial/dashboard.routes').then((m) => m.DASHBOARD_RUTAS),
-  },
-  {
-    path: 'alertas',
-    component: Administracion,
-    canActivate: OPERATIVO,
-    data: { titulo: 'Centro de alertas', roles: ['ADMIN', 'OPERATIVO'] },
-    loadChildren: () =>
-      import('./modulos/centro-alertas/centro-alertas.routes').then((m) => m.ALERTAS_RUTAS),
-  },
-  {
-    path: 'sistema',
-    component: Administracion,
-    canActivate: ADMINISTRADOR,
-    data: { titulo: 'Administración del sistema', roles: ['ADMIN'] },
-    loadChildren: () =>
-      import('./modulos/administracion-sistema/administracion-sistema.routes').then(
-        (m) => m.SISTEMA_RUTAS,
-      ),
-  },
+  { path: 'preparacion', redirectTo: 'panel-admin/preparacion' },
+  { path: 'entregas', redirectTo: 'panel-admin/entregas' },
+  { path: 'dashboard', redirectTo: 'panel-admin/dashboard' },
+  { path: 'alertas', redirectTo: 'panel-admin/alertas' },
+  { path: 'sistema', redirectTo: 'panel-admin/sistema' },
   {
     path: 'proveedores',
     component: Administracion,

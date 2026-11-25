@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { ChipEstadoCompra } from '../../componentes/chip-estado-compra/chip-estado-compra';
 import { NavegacionCompras } from '../../componentes/navegacion-compras/navegacion-compras';
@@ -78,41 +79,47 @@ export class Requisiciones {
   }
 
   protected cotizar(requisicion: Requisicion): void {
-    const resultado = this.servicio.generarCotizaciones(requisicion.id);
-    if (!resultado) {
-      this.avisos.mostrar(
-        'error',
-        `${requisicion.folio} no tiene líneas cotizables con el catálogo de M13.`,
-      );
-      return;
-    }
-
-    this.avisos.mostrar(
-      'exito',
-      resultado.conAlterno
-        ? `Se generaron ${resultado.cantidad} cotizaciones para comparar (M13). Pendiente de Flask.`
-        : `Se generó ${resultado.cantidad} cotización: el material no tiene alterno. Pendiente de Flask.`,
-    );
-    void this.router.navigate(['/compras/cotizaciones'], {
-      queryParams: { req: requisicion.folio },
+    this.servicio.generarCotizaciones(requisicion.id).subscribe({
+      next: (resultado) => {
+        if (!resultado) {
+          this.avisos.mostrar(
+            'error',
+            `${requisicion.folio} no tiene líneas cotizables con proveedores activos.`,
+          );
+          return;
+        }
+        this.avisos.mostrar(
+          'exito',
+          resultado.conAlterno
+            ? `Se generaron ${resultado.cantidad} cotizaciones en Flask para comparar.`
+            : `Se generó ${resultado.cantidad} cotización en Flask: el material no tiene alterno.`,
+        );
+        void this.router.navigate(['/compras/cotizaciones'], {
+          queryParams: { req: requisicion.folio },
+        });
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
     });
   }
 
   protected ordenDirecta(requisicion: Requisicion): void {
-    const orden = this.servicio.emitirOrdenDirecta(requisicion.id);
-    if (!orden) {
-      this.avisos.mostrar(
-        'advertencia',
-        'No hay proveedor principal disponible para emitir la orden directa.',
-      );
-      return;
-    }
-
-    this.avisos.mostrar(
-      'exito',
-      `${orden.folio} quedó en BORRADOR con el precio del proveedor principal. Pendiente de Flask.`,
-    );
-    void this.router.navigate(['/compras/ordenes', orden.id, 'editar']);
+    this.servicio.emitirOrdenDirecta(requisicion.id).subscribe({
+      next: (orden) => {
+        if (!orden) {
+          this.avisos.mostrar(
+            'advertencia',
+            'No hay proveedor principal disponible para emitir la orden directa.',
+          );
+          return;
+        }
+        this.avisos.mostrar(
+          'exito',
+          `${orden.folio} se creó y emitió en Flask con el precio del proveedor principal.`,
+        );
+        void this.router.navigate(['/compras/ordenes', orden.id, 'editar']);
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   protected confirmarCancelacion(): void {
@@ -120,11 +127,12 @@ export class Requisiciones {
     if (!requisicion) {
       return;
     }
-    this.servicio.cancelarRequisicion(requisicion.id);
-    this.porCancelar.set(null);
-    this.avisos.mostrar(
-      'advertencia',
-      `${requisicion.folio} se canceló solo en la demostración; Flask no fue notificado.`,
-    );
+    this.servicio.cancelarRequisicion(requisicion.id).subscribe({
+      next: () => {
+        this.porCancelar.set(null);
+        this.avisos.mostrar('advertencia', `${requisicion.folio} se canceló en Flask.`);
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 }

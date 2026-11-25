@@ -48,6 +48,8 @@ export interface OrdenProduccion {
   folio: string;
   origen: OrigenOrden;
   estado: EstadoOrden;
+  /** Semáforo calculado por Flask a partir de faltantes, compras y fechas. */
+  semaforo: TonoSemaforo;
   fechaRequerida: string | null;
   iniciadaEn: string | null;
   cerradaEn: string | null;
@@ -161,6 +163,7 @@ export interface FilaPlanSugerido {
   cantidadReposicion: number;
   cantidadSugerida: number;
   ordenAbiertaFolio: string | null;
+  varianteId?: number;
 }
 
 export interface ResultadoAccion {
@@ -175,7 +178,6 @@ export interface ResultadoReserva extends ResultadoAccion {
 
 export interface ResultadoCrearOrden extends ResultadoAccion {
   folio?: string;
-  sumadaA?: string;
 }
 
 export type FiltroTablero =
@@ -186,7 +188,7 @@ export interface OpcionFiltro {
   etiqueta: string;
 }
 
-/** Receta vigente copiada de M11 al crear la orden (demostración). */
+/** Referencia local de la receta vigente copiada por Flask al crear la orden. */
 export interface RecetaMaterialCopia {
   materialId: number;
   /** null = se toma el color del SKU; en avíos y etiquetas se usa NA. */

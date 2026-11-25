@@ -69,12 +69,19 @@ export class BibliotecaRecetas {
     void this.router.navigate(['/admin/recetas/editar', receta.id]);
   }
 
+  constructor() {
+    this.servicio.recargar().subscribe({
+      error: () => this.avisos.mostrar('error', 'No fue posible cargar las recetas desde Flask.'),
+    });
+  }
+
   protected copiar(receta: Receta): void {
-    const resultado = this.servicio.copiarReceta(receta.id);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    if (resultado.ok && resultado.recetaId !== undefined) {
-      void this.router.navigate(['/admin/recetas/editar', resultado.recetaId]);
-    }
+    this.servicio.copiarReceta(receta.id).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+      if (resultado.ok && resultado.recetaId !== undefined) {
+        void this.router.navigate(['/admin/recetas/editar', resultado.recetaId]);
+      }
+    });
   }
 
   protected historial(receta: Receta): void {
@@ -84,8 +91,9 @@ export class BibliotecaRecetas {
   }
 
   protected activar(receta: Receta): void {
-    const resultado = this.servicio.activarReceta(receta.id);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
+    this.servicio.activarReceta(receta.id).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
+    });
   }
 
   protected razonesActivacion(receta: Receta): string {
@@ -101,8 +109,9 @@ export class BibliotecaRecetas {
     if (!receta) {
       return;
     }
-    const resultado = this.servicio.archivarReceta(receta.id);
-    this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
+    this.servicio.archivarReceta(receta.id).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
+    });
     this.archivando.set(null);
   }
 }

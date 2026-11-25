@@ -1,20 +1,23 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { IMAGENES_DISPONIBLES } from '../datos-simulados/productos-maestro';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, map, tap } from 'rxjs';
+import { ApiService } from '../../../core/api/api.service';
+import { IMAGENES_DISPONIBLES } from './imagenes-recursos';
 import type { RecursoImagen } from '../modelos/producto-maestro';
 
-/** Tipos de archivo y tamaño máximo aceptados en la carga local de demostración. */
 const TIPOS_PERMITIDOS = ['image/png', 'image/jpeg', 'image/webp'];
 const TAMANO_MAXIMO_BYTES = 2 * 1024 * 1024;
 
-/**
- * Biblioteca de imágenes de M10. Las imágenes cargadas por el usuario viven
- * solo en memoria (data URL) y nunca se envían a un servidor; Flask deberá
- * exponer el endpoint de subida real cuando se integre.
- */
-@Injectable({
-  providedIn: 'root',
-})
+interface ImagenApi {
+  id: number;
+  color: string | null;
+  url: string;
+  orden: number;
+}
+
+/** Biblioteca de recursos reales del proyecto y subida persistente vía M10. */
+@Injectable({ providedIn: 'root' })
 export class ImagenesServicio {
+  private readonly api = inject(ApiService);
   private readonly cargas = signal<RecursoImagen[]>([]);
 
   readonly biblioteca = computed<RecursoImagen[]>(() => [
@@ -31,19 +34,35 @@ export class ImagenesServicio {
       return 'El archivo está vacío.';
     }
     if (archivo.size > TAMANO_MAXIMO_BYTES) {
-      return 'La imagen supera el límite de 2 MB de la demostración.';
+      return 'La imagen supera el límite de 2 MB.';
     }
     return null;
   }
 
-  registrar(dataUrl: string, etiqueta: string, categoria: string): void {
-    if (dataUrl === '' || this.biblioteca().some((recurso) => recurso.url === dataUrl)) {
-      return;
+  /** Envía el archivo real con FormData; nunca fija Content-Type ni captura datos sensibles. */
+  subir(
+    archivo: File,
+    productoId: number,
+    color: string | null,
+    orden = 0,
+  ): Observable<ImagenApi> {
+    const cuerpo = new FormData();
+    cuerpo.append('archivo', archivo, archivo.name);
+    if (color) {
+      cuerpo.append('color', color);
     }
-    this.cargas.update((recursos) => [...recursos, { url: dataUrl, etiqueta, categoria }]);
-  }
-
-  eliminarCarga(url: string): void {
-    this.cargas.update((recursos) => recursos.filter((recurso) => recurso.url !== url));
+    cuerpo.append('orden', String(orden));
+    return this.api.postForm<ImagenApi>(`/productos/${productoId}/imagenes`, cuerpo).pipe(
+      map((imagen) => ({
+        ...imagen,
+        url: imagen.url.startsWith('/') ? imagen.url : `/${imagen.url}`,
+      })),
+      tap((imagen) =>
+        this.cargas.update((recursos) => [
+          ...recursos,
+          { url: imagen.url, etiqueta: archivo.name, categoria: 'Carga API' },
+        ]),
+      ),
+    );
   }
 }

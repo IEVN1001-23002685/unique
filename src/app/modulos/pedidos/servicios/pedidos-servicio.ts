@@ -126,12 +126,35 @@ function nombreCliente(cliente: PedidoResumenApi['cliente'] | undefined): string
   return [cliente?.nombre, cliente?.apellidos].filter(Boolean).join(' ').trim() || 'Cliente';
 }
 
+const PRENDA_POR_PREFIJO: Record<string, string> = {
+  SD: 'Sudadera',
+  PL: 'Playera',
+  PN: 'Pantalón',
+  GO: 'Gorro',
+  BO: 'Bolsa de tela',
+};
+
+/** El contrato de pendientes sólo entrega SKU; se derivan etiquetas para la tabla. */
+function dePendienteApi(item: PendienteApi): PendienteProduccion {
+  const segmentos = item.sku.split('-');
+  return {
+    sku: item.sku,
+    nombreProducto: PRENDA_POR_PREFIJO[segmentos[0] ?? ''] ?? item.sku,
+    talla: segmentos[1] ?? '—',
+    color: segmentos[2] ?? '—',
+    demanda: item.demanda,
+    pedidos: [],
+    ordenFolio: item.orden_folio || null,
+    fechaEstimada: item.fecha_estimada,
+  };
+}
+
 function deResumenApi(item: PedidoResumenApi): Pedido {
   const cancelado = item.estado === 'CANCELADO';
   return {
     id: item.id,
     folio: item.folio,
-    ventaFolio: item.folio,
+    ventaFolio: '',
     cliente: nombreCliente(item.cliente),
     estado: item.estado as EstadoPedido,
     estadoDesde: item.estado_desde,
@@ -139,7 +162,7 @@ function deResumenApi(item: PedidoResumenApi): Pedido {
     fechaPromesa: null,
     entregadoEn: item.estado === 'ENTREGADO' ? item.estado_desde : null,
     prioridad: (item.prioridad === 'ALTA' ? 'ALTA' : 'NORMAL') as PrioridadPedido,
-    estadoPago: 'PENDIENTE',
+    estadoPago: null,
     canceladoEn: cancelado ? item.estado_desde : null,
     motivoCancelacion: null,
     canceladoPor: null,
@@ -173,7 +196,7 @@ function eventosDeApi(eventos: PedidoDetalleApi['eventos']): EventoPedido[] {
     descripcion: evento.descripcion,
     estado: evento.estado as EstadoPedido,
     visibleCliente: evento.visible_cliente,
-    usuario: evento.visible_cliente ? 'Sistema' : 'Administrador',
+    usuario: '',
   }));
 }
 
@@ -196,7 +219,7 @@ function deDetalleApi(item: PedidoDetalleApi): Pedido {
     fechaCreacion: item.fecha,
     fechaPromesa: item.fecha_promesa ?? null,
     estadoPago: item.estado_pago as Pedido['estadoPago'],
-    preparacionFolio: item.preparacion ? String(item.preparacion.id) : null,
+    preparacionFolio: null,
     entregaGuia: item.entrega?.folio ?? item.guia ?? null,
     lineas: lineasDeApi(item.articulos),
     eventos,
@@ -219,8 +242,14 @@ export class PedidosServicio {
   private readonly detalles = signal<Record<number, Pedido>>({});
   private readonly pendientes = signal<PendienteProduccion[]>([]);
 
-  readonly pedidos = this.lista.asReadonly();
-  readonly pendientesProduccion = this.pendientes.asReadonly();
+  /** API pública síncrona conservada para módulos externos. */
+  pedidos(): Pedido[] {
+    return this.lista();
+  }
+
+  pendientesProduccion(): PendienteProduccion[] {
+    return this.pendientes();
+  }
 
   readonly cancelados = computed(() =>
     this.lista()
@@ -266,20 +295,10 @@ export class PedidosServicio {
     }).pipe(
       tap(({ pedidos, pendientes }) => {
         this.lista.set(pedidos.map(deResumenApi));
-        this.pendientes.set(
-          pendientes.map((item) => ({
-            sku: item.sku,
-            nombreProducto: item.sku,
-            talla: '—',
-            color: '—',
-            demanda: item.demanda,
-            pedidos: [],
-            ordenFolio: item.orden_folio,
-            fechaEstimada: item.fecha_estimada,
-          })),
-        );
+        this.pendientes.set(pendientes.map(dePendienteApi));
       }),
       map(() => undefined),
+      catchError(() => of(undefined)),
     );
   }
 
@@ -293,16 +312,37 @@ export class PedidosServicio {
     return Number.isInteger(porId) && porId > 0 ? porId : undefined;
   }
 
-  cargarDetalle(folio: string): Observable<Pedido | undefined> {
-    const id = this.idPorFolio(folio);
-    if (id === undefined) {
-      return this.recargar().pipe(switchMap(() => this.cargarDetalle(folio)));
-    }
+  private obtenerDetalle(id: number): Observable<Pedido> {
     return this.api.get<PedidoDetalleApi>(`/pedidos/${id}`).pipe(
-      map((item) => {
+      switchMap((item) => {
         const pedido = deDetalleApi(item);
-        this.detalles.update((actuales) => ({ ...actuales, [pedido.id]: pedido }));
-        return pedido;
+        if (item.venta_id === undefined) {
+          return of(pedido);
+        }
+        return this.api.get<{ folio: string }>(`/ventas/${item.venta_id}`).pipe(
+          map((venta) => ({ ...pedido, ventaFolio: venta.folio })),
+          catchError(() => of(pedido)),
+        );
+      }),
+      tap((pedido) => this.detalles.update((actuales) => ({ ...actuales, [pedido.id]: pedido }))),
+    );
+  }
+
+  cargarDetalle(folio: string): Observable<Pedido | undefined> {
+    const porId = Number(folio);
+    if (Number.isInteger(porId) && porId > 0) {
+      return this.obtenerDetalle(porId).pipe(catchError(() => of(undefined)));
+    }
+    const conocido = this.idPorFolio(folio);
+    if (conocido !== undefined) {
+      return this.obtenerDetalle(conocido).pipe(catchError(() => of(undefined)));
+    }
+    return this.recargar().pipe(
+      switchMap(() => {
+        const resuelto = this.idPorFolio(folio);
+        return resuelto === undefined
+          ? of(undefined)
+          : this.obtenerDetalle(resuelto).pipe(catchError(() => of(undefined)));
       }),
     );
   }
@@ -312,8 +352,14 @@ export class PedidosServicio {
     return id === undefined ? undefined : (this.detalles()[id] ?? this.lista().find((p) => p.id === id));
   }
 
-  tieneVentaRegistrada(folioVenta: string): boolean {
-    return this.lista().some((pedido) => pedido.folio === folioVenta || pedido.ventaFolio === folioVenta);
+  tieneVentaRegistrada(folioVenta: string | null | undefined): boolean {
+    if (!folioVenta) {
+      return false;
+    }
+    return (
+      this.lista().some((pedido) => pedido.ventaFolio === folioVenta) ||
+      Object.values(this.detalles()).some((pedido) => pedido.ventaFolio === folioVenta)
+    );
   }
 
   /** Horas transcurridas en el estado actual; para terminados se usa su fecha final. */

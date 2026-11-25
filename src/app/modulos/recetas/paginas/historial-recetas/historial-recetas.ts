@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionRecetas } from '../../componentes/navegacion-recetas/navegacion-recetas';
 import type { CodigoTalla } from '../../../productos/modelos/producto-maestro';
 import { RecetasServicio } from '../../servicios/recetas-servicio';
@@ -14,6 +15,7 @@ import { RecetasServicio } from '../../servicios/recetas-servicio';
 export class HistorialRecetas {
   protected readonly servicio = inject(RecetasServicio);
   private readonly ruta = inject(ActivatedRoute);
+  private readonly avisos = inject(AvisosServicio);
 
   protected readonly producto = signal(
     Number(this.ruta.snapshot.queryParamMap.get('producto') ?? 1),
@@ -35,12 +37,13 @@ export class HistorialRecetas {
     return a !== null && b !== null ? this.servicio.comparar(a, b) : [];
   });
 
-  protected readonly productos = this.servicio.productos;
+  protected readonly productos = computed(() => this.servicio.productos());
 
   constructor() {
-    const lista = this.versiones();
-    this.idA.set(lista[0]?.id ?? null);
-    this.idB.set(lista[1]?.id ?? null);
+    this.servicio.recargar().subscribe({
+      next: () => this.seleccionarUltimas(),
+      error: () => this.avisos.mostrar('error', 'No fue posible cargar el historial desde Flask.'),
+    });
   }
 
   protected alCambiarProducto(evento: Event): void {

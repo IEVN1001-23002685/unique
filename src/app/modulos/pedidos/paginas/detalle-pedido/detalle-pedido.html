@@ -9,14 +9,14 @@
         <p class="eyebrow">Detalle del pedido</p>
         <h1 class="titulo mono">{{ pedido.folio }}</h1>
         <p class="subtitulo">
-          {{ pedido.cliente }} · Creado el
+          {{ pedido.cliente }} · Estado actual desde
           {{ pedido.fechaCreacion | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }} · Venta
           @if (servicio.tieneVentaRegistrada(pedido.ventaFolio)) {
             <a class="enlace" [routerLink]="['/ventas', pedido.ventaFolio]">{{
               pedido.ventaFolio
             }}</a>
           } @else {
-            <span>{{ pedido.ventaFolio }} (solo demo)</span>
+            <span>sin venta vinculada</span>
           }
         </p>
       </div>
@@ -124,7 +124,7 @@
         <ul class="notas">
           @for (nota of pedido.notas; track nota.id) {
             <li>
-              <strong>{{ nota.usuario }}</strong>
+              <strong>{{ nota.usuario || '—' }}</strong>
               <span>{{ nota.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}</span>
               <p>{{ nota.texto }}</p>
             </li>
@@ -209,7 +209,7 @@
         } @else {
           <button type="button" class="acceso" (click)="avisoModulo('M08', 'Venta')">
             <strong>M08 · Venta</strong>
-            <span>Este pedido de ejemplo no tiene venta registrada</span>
+            <span>No hay una venta vinculada en M08</span>
           </button>
         }
         <button type="button" class="acceso" (click)="avisoModulo('M16', 'Orden de producción')">
@@ -254,7 +254,7 @@
             <div>
               <strong>{{ evento.descripcion }}</strong>
               <span>
-                {{ evento.usuario }} ·
+                {{ evento.usuario || '—' }} ·
                 {{ evento.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
                 @if (!evento.visibleCliente) {
                   <em> · Interno</em>

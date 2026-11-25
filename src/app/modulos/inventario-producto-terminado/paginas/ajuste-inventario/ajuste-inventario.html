@@ -139,13 +139,12 @@
   <p class="nota">
     Solo existen cuatro formas de cambiar existencias: alta por producción aprobada (M16), salida
     por envío (M19), reingreso aprobado (M07) y ajuste o merma. Este formulario implementa la última
-    sin editar la tabla a mano. El movimiento y el cambio quedan en memoria de demostración; Flask
-    será la fuente autoritativa.
+    sin editar la tabla a mano. Flask valida el ajuste, persiste el cambio y asienta el movimiento
+    AJUSTE; el historial nunca se modifica.
   </p>
   <p class="nota nota--adv">
-    Permisos del documento: el Operativo captura ajustes y el Administrador solo consulta. Sin
-    autenticación real la interfaz no bloquea la acción; el guard y la validación autoritativa se
-    conectarán con Flask.
+    Permisos del documento: el Operativo captura ajustes y el Administrador solo consulta. La
+    autorización se comprueba en el servidor para cada petición.
   </p>
 
   @if (confirmando()) {
@@ -156,7 +155,7 @@
         (filaSeleccionada()?.sku ?? '') +
         ' bajará ' +
         textoDiferencia() +
-        '. Se registrará un movimiento AJUSTE y una alerta informativa; no se puede deshacer en la demostración.'
+        '. Se registrará un movimiento AJUSTE inmutable; para corregirlo se requiere un movimiento inverso.'
       "
       etiquetaConfirmar="Confirmar ajuste"
       (confirmar)="confirmar()"

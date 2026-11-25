@@ -13,19 +13,15 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PRENDAS_OFICIALES } from '../../../../nucleo/datos/catalogo-oficial';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
-import { MATERIALES } from '../../../recetas/datos-simulados/recetas';
 import { NavegacionProductos } from '../../componentes/navegacion-productos/navegacion-productos';
-import {
-  COLORES_PRODUCTO,
-  IMAGENES_DISPONIBLES,
-  PRODUCTOS_MAESTRO_SIMULADOS,
-  TALLAS_PRODUCTO,
-} from '../../datos-simulados/productos-maestro';
+import { IMAGENES_DISPONIBLES } from '../../servicios/imagenes-recursos';
 import type {
   CategoriaMaterialInterfaz,
   CodigoColor,
   DatosProducto,
   LineaMaterialProducto,
+  ParametrosCosteo,
+  ProductoMaestro,
 } from '../../modelos/producto-maestro';
 import { calcularCosteo, porcentajeTelas } from '../../servicios/calculos-producto';
 import { ProductosServicio } from '../../servicios/productos-servicio';
@@ -33,14 +29,12 @@ import { ProductosServicio } from '../../servicios/productos-servicio';
 type CampoRaiz = 'nombre' | 'stockMinimo' | 'cantidadReposicion';
 type CampoCosteo = 'manoObra' | 'bordado' | 'indirectos' | 'margenObjetivoPct';
 
-/** Validación de presentación: hace falta al menos un color y una talla habilitada. */
 const seleccionesRequeridas: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const colores = control.get('colores');
   const tallas = control.get('tallas');
   if (!(colores instanceof FormArray) || !(tallas instanceof FormArray)) {
     return null;
   }
-
   const errores: ValidationErrors = {};
   if (!colores.controls.some((item) => item.value === true)) {
     errores['sinColor'] = true;
@@ -51,7 +45,6 @@ const seleccionesRequeridas: ValidatorFn = (control: AbstractControl): Validatio
   return Object.keys(errores).length > 0 ? errores : null;
 };
 
-/** Forma de una línea de material; la vista la edita cantidad, merma y porcentaje. */
 function crearLinea(fb: FormBuilder, linea: LineaMaterialProducto) {
   return fb.nonNullable.group({
     id: linea.id,
@@ -68,6 +61,10 @@ function crearLinea(fb: FormBuilder, linea: LineaMaterialProducto) {
   });
 }
 
+function costeoVacio(): ParametrosCosteo {
+  return { lineas: [], manoObra: 0, bordado: 0, indirectos: 0, margenObjetivoPct: 55 };
+}
+
 @Component({
   selector: 'app-formulario-producto',
   imports: [CurrencyPipe, DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink, NavegacionProductos],
@@ -82,23 +79,19 @@ export class FormularioProducto {
   protected readonly servicio = inject(ProductosServicio);
 
   private readonly idEditar = this.ruta.snapshot.paramMap.get('id');
-  protected readonly producto =
-    this.idEditar === null ? undefined : this.servicio.obtenerProducto(Number(this.idEditar));
-  protected readonly esEdicion = this.producto !== undefined;
+  protected readonly esEdicion = this.idEditar !== null;
+  protected readonly producto = signal<ProductoMaestro | undefined>(undefined);
+  protected readonly bitacora = computed(() => this.producto()?.bitacora ?? []);
 
-  /** Precarga opcional desde la sección «Nuevas» (§7 de M10). */
   private readonly slugElegido = this.ruta.snapshot.queryParamMap.get('prenda');
   private readonly prendaElegida = PRENDAS_OFICIALES.find((prenda) => prenda.slug === this.slugElegido);
-  private readonly nombreInicial = this.prendaElegida?.nombre ?? this.producto?.nombre ?? '';
+  private readonly nombreInicial = this.prendaElegida?.nombre ?? '';
   private readonly categoriaInicial =
-    this.prendaElegida?.categoriaId ?? this.producto?.categoriaId ?? 1;
-  private readonly costeoInicial =
-    this.producto?.costeo ??
-    PRODUCTOS_MAESTRO_SIMULADOS.find((item) => item.slug === this.prendaElegida?.slug)?.costeo ??
-    PRODUCTOS_MAESTRO_SIMULADOS[0].costeo;
+    this.prendaElegida?.categoriaId ?? 1;
 
-  protected readonly colores = COLORES_PRODUCTO;
-  protected readonly tallas = TALLAS_PRODUCTO;
+  protected readonly colores = this.servicio.colores;
+  protected readonly tallas = this.servicio.tallas;
+  protected readonly materiales = this.servicio.materiales;
   protected readonly imagenes = IMAGENES_DISPONIBLES;
   protected readonly tiposMaterial: readonly CategoriaMaterialInterfaz[] = [
     'Tela',
@@ -114,65 +107,28 @@ export class FormularioProducto {
 
   protected readonly forma = this.fb.nonNullable.group(
     {
-      nombre: [
-        this.nombreInicial,
-        [Validators.required, Validators.minLength(3), Validators.maxLength(60)],
-      ],
+      nombre: [this.nombreInicial, [Validators.required, Validators.minLength(3), Validators.maxLength(60)]],
       categoriaId: [this.categoriaInicial, Validators.required],
-      descripcion: [this.prendaElegida?.descripcion ?? this.producto?.descripcion ?? ''],
-      composicionTextil: [
-        this.prendaElegida?.composicion ?? this.producto?.composicionTextil ?? '',
-      ],
-      guiaMedidas: [this.prendaElegida?.guiaMedidas ?? this.producto?.guiaMedidas ?? ''],
-      permiteBajoPedido: [this.producto?.permiteBajoPedido ?? true],
-      colores: this.fb.nonNullable.array(
-        COLORES_PRODUCTO.map((color) =>
-          this.fb.nonNullable.control(
-            this.prendaElegida
-              ? true
-              : (this.producto?.colores.includes(color.codigo) ?? false),
-          ),
-        ),
-      ),
-      tallas: this.fb.nonNullable.array(
-        TALLAS_PRODUCTO.map((talla) =>
-          this.fb.nonNullable.control(
-            this.prendaElegida
-              ? this.prendaElegida.tallas.includes(talla.codigo)
-              : (this.producto?.tallas.includes(talla.codigo) ?? false),
-          ),
-        ),
-      ),
-      imagenGeneral: [
-        this.prendaElegida?.imagen ??
-          this.producto?.imagenes.find((imagen) => imagen.color === null)?.url ??
-          '',
-      ],
+      descripcion: [this.prendaElegida?.descripcion ?? ''],
+      composicionTextil: [this.prendaElegida?.composicion ?? ''],
+      guiaMedidas: [this.prendaElegida?.guiaMedidas ?? ''],
+      permiteBajoPedido: [true],
+      colores: this.fb.nonNullable.array<boolean>([]),
+      tallas: this.fb.nonNullable.array<boolean>([]),
+      imagenGeneral: [this.prendaElegida?.imagen ?? ''],
       imagenesPorColor: this.fb.nonNullable.group({
-        BL: [this.urlImagenDe('BL')],
-        NG: [this.urlImagenDe('NG')],
-        GR: [this.urlImagenDe('GR')],
+        BL: [''],
+        NG: [''],
+        GR: [''],
       }),
       costeo: this.fb.nonNullable.group({
         lineas: this.fb.nonNullable.array(
-          this.costeoInicial.lineas.map((linea) => crearLinea(this.fb, linea)),
+          costeoVacio().lineas.map((linea) => crearLinea(this.fb, linea)),
         ),
-        manoObra: [
-          this.costeoInicial.manoObra,
-          [Validators.required, Validators.min(0), Validators.max(100000)],
-        ],
-        bordado: [
-          this.costeoInicial.bordado,
-          [Validators.required, Validators.min(0), Validators.max(100000)],
-        ],
-        indirectos: [
-          this.costeoInicial.indirectos,
-          [Validators.required, Validators.min(0), Validators.max(100000)],
-        ],
-        margenObjetivoPct: [
-          this.costeoInicial.margenObjetivoPct,
-          [Validators.required, Validators.min(1), Validators.max(90)],
-        ],
+        manoObra: [0, [Validators.required, Validators.min(0), Validators.max(100000)]],
+        bordado: [0, [Validators.required, Validators.min(0), Validators.max(100000)]],
+        indirectos: [0, [Validators.required, Validators.min(0), Validators.max(100000)]],
+        margenObjetivoPct: [55, [Validators.required, Validators.min(1), Validators.max(90)]],
       }),
       stockMinimo: [5, [Validators.required, Validators.min(0)]],
       cantidadReposicion: [20, [Validators.required, Validators.min(1)]],
@@ -185,19 +141,19 @@ export class FormularioProducto {
   protected readonly categoriaId = computed(() => Number(this.valores().categoriaId));
   protected readonly categoria = computed(() => this.servicio.categoriaDe(this.categoriaId()));
   protected readonly codigoBase = computed(() =>
-    this.servicio.siguienteCodigoSku(this.categoriaId(), this.producto?.id),
+    this.servicio.siguienteCodigoSku(this.categoriaId(), this.producto()?.id),
   );
   protected readonly coloresSeleccionados = computed(() =>
-    COLORES_PRODUCTO.filter((_color, indice) => this.valores().colores[indice] === true).map(
-      (color) => color.codigo,
-    ),
+    this.colores().filter((_color, indice) => this.valores().colores[indice] === true).map((color) => color.codigo),
   );
   protected readonly tallasSeleccionadas = computed(() =>
-    TALLAS_PRODUCTO.filter(
-      (_talla, indice) =>
-        this.valores().tallas[indice] === true &&
-        this.forma.controls.tallas.controls[indice]?.enabled === true,
-    ).map((talla) => talla.codigo),
+    this.tallas()
+      .filter(
+        (_talla, indice) =>
+          this.valores().tallas[indice] === true &&
+          this.forma.controls.tallas.controls[indice]?.enabled === true,
+      )
+      .map((talla) => talla.codigo),
   );
   protected readonly skusVistaPrevia = computed(() =>
     this.servicio.previsualizarSkus(
@@ -206,13 +162,12 @@ export class FormularioProducto {
       this.coloresSeleccionados(),
     ),
   );
-  /** Precio reactivo: se recalcula con cada cambio, nunca se captura a mano. */
   protected readonly desglose = computed(() => calcularCosteo(this.valores().costeo));
   protected readonly totalPorcentajeTelas = computed(() =>
     porcentajeTelas(this.valores().costeo.lineas),
   );
   protected readonly materialesFiltrados = computed(() =>
-    MATERIALES.filter(
+    this.materiales().filter(
       (material) =>
         material.categoria === this.tipoMaterial() &&
         !this.valores().costeo.lineas.some((linea) => linea.materialId === material.id),
@@ -226,7 +181,59 @@ export class FormularioProducto {
     this.forma.controls.categoriaId.valueChanges.pipe(takeUntilDestroyed()).subscribe((id) => {
       this.configurarTallas(Number(id), true);
     });
-    this.configurarTallas(this.categoriaInicial, false);
+    this.servicio.recargar().subscribe(() => this.aplicarDatos());
+  }
+
+  private controlBooleano(valor: boolean) {
+    return this.fb.nonNullable.control(valor);
+  }
+
+  private aplicarDatos(): void {
+    const producto = this.idEditar === null ? undefined : this.servicio.obtenerProducto(Number(this.idEditar));
+    this.producto.set(producto);
+    const categoriaId = producto?.categoriaId ?? this.categoriaInicial;
+
+    const controlesColores = this.forma.controls.colores;
+    controlesColores.clear();
+    for (const color of this.colores()) {
+      controlesColores.push(
+        this.controlBooleano(
+          this.prendaElegida ? true : (producto?.colores.includes(color.codigo) ?? false),
+        ),
+      );
+    }
+    const controlesTallas = this.forma.controls.tallas;
+    controlesTallas.clear();
+    for (const talla of this.tallas()) {
+      controlesTallas.push(
+        this.controlBooleano(
+          this.prendaElegida
+            ? this.prendaElegida.tallas.includes(talla.codigo)
+            : (producto?.tallas.includes(talla.codigo) ?? false),
+        ),
+      );
+    }
+
+    this.forma.patchValue({
+      nombre: this.prendaElegida?.nombre ?? producto?.nombre ?? '',
+      categoriaId,
+      descripcion: this.prendaElegida?.descripcion ?? producto?.descripcion ?? '',
+      composicionTextil: this.prendaElegida?.composicion ?? producto?.composicionTextil ?? '',
+      guiaMedidas: this.prendaElegida?.guiaMedidas ?? producto?.guiaMedidas ?? '',
+      permiteBajoPedido: producto?.permiteBajoPedido ?? true,
+      imagenGeneral:
+        this.prendaElegida?.imagen ??
+        producto?.imagenes.find((imagen) => imagen.color === null)?.url ??
+        '',
+      imagenesPorColor: {
+        BL: this.urlImagenDe('BL'),
+        NG: this.urlImagenDe('NG'),
+        GR: this.urlImagenDe('GR'),
+      },
+      stockMinimo: producto?.variantes[0]?.stockMinimo ?? 5,
+      cantidadReposicion: producto?.variantes[0]?.cantidadReposicion ?? 20,
+    });
+    this.configurarTallas(categoriaId, false);
   }
 
   protected get lineas() {
@@ -236,7 +243,7 @@ export class FormularioProducto {
   protected urlImagenDe(color: CodigoColor): string {
     return (
       this.prendaElegida?.imagenesPorColor[color] ??
-      this.producto?.imagenes.find((imagen) => imagen.color === color)?.url ??
+      this.producto()?.imagenes.find((imagen) => imagen.color === color)?.url ??
       ''
     );
   }
@@ -267,7 +274,7 @@ export class FormularioProducto {
   }
 
   protected agregarMaterial(): void {
-    const material = MATERIALES.find((item) => item.id === Number(this.idMaterial()));
+    const material = this.materiales().find((item) => item.id === Number(this.idMaterial()));
     if (!material) {
       this.avisos.mostrar('advertencia', 'Elige un material de la lista.');
       return;
@@ -276,16 +283,12 @@ export class FormularioProducto {
       this.avisos.mostrar('error', `El material «${material.nombre}» ya está en la composición.`);
       return;
     }
-
     const linea: LineaMaterialProducto = {
-      id: this.lineas.controls.reduce(
-        (maximo, control) => Math.max(maximo, control.controls.id.value),
-        0,
-      ) + 1,
+      id: this.lineas.controls.reduce((maximo, control) => Math.max(maximo, control.controls.id.value), 0) + 1,
       materialId: material.id,
       codigo: material.codigo,
       nombre: material.nombre,
-      categoria: material.categoria,
+      categoria: material.categoria as CategoriaMaterialInterfaz,
       unidad: material.unidadBase,
       cantidad: 1,
       costoBase: material.costoBase,
@@ -295,19 +298,17 @@ export class FormularioProducto {
     };
     this.lineas.push(crearLinea(this.fb, linea));
     this.idMaterial.set('');
-    this.avisos.mostrar(
-      'exito',
-      `${material.nombre} agregado. Ajusta cantidad, merma y porcentaje; el precio se recalcula solo.`,
-    );
+    this.avisos.mostrar('exito', `${material.nombre} agregado. El precio final lo calcula Flask con las recetas vigentes.`);
   }
 
   protected quitarMaterial(indice: number): void {
     this.lineas.removeAt(indice);
-    this.avisos.mostrar('advertencia', 'Línea eliminada. Revisa que las telas sumen 100 %.');
+    this.avisos.mostrar('advertencia', 'Línea eliminada. Las recetas de M11 son la fuente del costo.');
   }
 
   protected razonesActivacion(): string[] {
-    return this.producto ? this.servicio.validarActivacion(this.producto) : [];
+    const producto = this.producto();
+    return producto ? this.servicio.validarActivacion(producto) : [];
   }
 
   protected guardar(): void {
@@ -317,7 +318,6 @@ export class FormularioProducto {
       this.avisos.mostrar('error', 'Revisa los campos marcados antes de guardar.');
       return;
     }
-
     const raw = this.forma.getRawValue();
     const datos: DatosProducto = {
       nombre: raw.nombre,
@@ -326,6 +326,7 @@ export class FormularioProducto {
       composicionTextil: raw.composicionTextil,
       guiaMedidas: raw.guiaMedidas,
       costeo: raw.costeo,
+      precioVenta: this.producto()?.precioVenta,
       permiteBajoPedido: raw.permiteBajoPedido,
       colores: this.coloresSeleccionados(),
       tallas: this.tallasSeleccionadas(),
@@ -334,18 +335,21 @@ export class FormularioProducto {
       stockMinimo: Number(raw.stockMinimo),
       cantidadReposicion: Number(raw.cantidadReposicion),
     };
-
-    const resultado = this.servicio.guardarProducto(datos, this.producto?.id);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    if (resultado.ok) {
-      void this.router.navigate(['/admin/productos']);
-    }
+    this.servicio.guardarProducto(datos, this.producto()?.id).subscribe({
+      next: (resultado) => {
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+        if (resultado.ok) {
+          void this.router.navigate(['/admin/productos']);
+        }
+      },
+      error: () => this.avisos.mostrar('error', 'No fue posible guardar el producto en Flask.'),
+    });
   }
 
   private configurarTallas(id: number, resetear: boolean): void {
     const permitidas = new Set(this.servicio.tallasPorCategoria(id));
     this.forma.controls.tallas.controls.forEach((control, indice) => {
-      const codigo = TALLAS_PRODUCTO[indice]?.codigo;
+      const codigo = this.tallas()[indice]?.codigo;
       const permitida = codigo !== undefined && permitidas.has(codigo);
       if (permitida) {
         control.enable({ emitEvent: false });

@@ -36,9 +36,13 @@
     <div class="resumen">
       <div class="tarjeta metrica">
         <span class="metrica__etiqueta">Subtotal</span>
-        <strong class="metrica__valor">{{
-          venta.subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-        }}</strong>
+        <strong class="metrica__valor">
+          {{
+            venta.subtotal === null
+              ? '—'
+              : (venta.subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX')
+          }}
+        </strong>
         <span class="metrica__detalle">Desglose de líneas sin envío</span>
       </div>
       <div class="tarjeta metrica">
@@ -53,7 +57,7 @@
         <strong class="metrica__valor">{{
           venta.costoEnvio | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
         }}</strong>
-        <span class="metrica__detalle">Tarifa Local León (demo)</span>
+        <span class="metrica__detalle">Tarifa vigente consultada en M02</span>
       </div>
       <div class="tarjeta metrica metrica--total">
         <span class="metrica__etiqueta">Total de la venta</span>
@@ -168,11 +172,17 @@
         <dl class="detalles">
           <div>
             <dt>Folio del pedido</dt>
-            <dd class="mono">{{ venta.pedidoFolio }}</dd>
+            <dd class="mono">{{ venta.pedidoFolio || 'No disponible' }}</dd>
           </div>
           <div>
             <dt>Estado del pedido</dt>
-            <dd><app-chip-estado-venta dominio="pedido" [estado]="venta.estadoPedido" /></dd>
+            <dd>
+              @if (venta.estadoPedido) {
+                <app-chip-estado-venta dominio="pedido" [estado]="venta.estadoPedido" />
+              } @else {
+                Sin pedido vinculado
+              }
+            </dd>
           </div>
           <div>
             <dt>Fecha promesa</dt>
@@ -190,13 +200,19 @@
           </div>
         </dl>
         <div class="acciones">
-          <a
-            class="boton boton--secundario"
-            [routerLink]="['/admin/pedidos', venta.pedidoFolio]"
-            [attr.aria-label]="'Ver pedido ' + venta.pedidoFolio + ' en M09'"
-          >
-            Ver pedido (M09)
-          </a>
+          @if (venta.pedidoFolio) {
+            <a
+              class="boton boton--secundario"
+              [routerLink]="['/admin/pedidos', venta.pedidoFolio]"
+              [attr.aria-label]="'Ver pedido ' + venta.pedidoFolio + ' en M09'"
+            >
+              Ver pedido (M09)
+            </a>
+          } @else {
+            <button type="button" class="boton boton--secundario" disabled>
+              Ver pedido (M09) no disponible
+            </button>
+          }
           <button type="button" class="boton boton--secundario" (click)="descargarComprobante()">
             Descargar comprobante
           </button>
@@ -207,7 +223,7 @@
     <div class="tarjeta bloque">
       <div class="bloque__titulo">
         <h2>Pagos y reembolsos</h2>
-        <span>Referencias simuladas SIM-000123 · sin datos bancarios reales</span>
+        <span>Referencias simuladas generadas por Flask · sin datos bancarios reales</span>
       </div>
       <div class="tabla-contenedor">
         <table class="tabla">
@@ -342,9 +358,8 @@
     </div>
 
     <p class="nota">
-      Una venta no se edita: solo cambian el pago y la cancelación. Los cambios de esta pantalla son
-      de demostración, no persisten en Flask y no representan movimientos bancarios ni liberaciones
-      de inventario reales.
+      Una venta no se edita: solo cambian el pago y la cancelación. Las operaciones se registran en
+      Flask; el cobro es simulado, sin movimientos bancarios. El inventario se ajusta en M09/M12.
     </p>
   } @else {
     <div class="tarjeta bloque estado" role="status">
@@ -356,7 +371,7 @@
   @if (validarPagoAbierto()) {
     <app-modal-confirmacion
       titulo="Validar pago"
-      mensaje="¿Confirmas que el pago pendiente fue recibido? La validación queda solo en memoria hasta conectar Flask."
+      mensaje="¿Confirmas que el pago pendiente fue recibido? La validación se registra en Flask."
       etiquetaConfirmar="Validar pago"
       (confirmar)="confirmarValidarPago()"
       (cancelar)="validarPagoAbierto.set(false)"

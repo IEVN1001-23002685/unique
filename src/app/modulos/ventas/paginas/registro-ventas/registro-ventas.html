@@ -141,7 +141,11 @@
                   <app-chip-estado-venta dominio="pago" [estado]="venta.estadoPago" />
                 </td>
                 <td data-etiqueta="Pedido">
-                  <app-chip-estado-venta dominio="pedido" [estado]="venta.estadoPedido" />
+                  @if (venta.estadoPedido) {
+                    <app-chip-estado-venta dominio="pedido" [estado]="venta.estadoPedido" />
+                  } @else {
+                    <span class="celda-secundaria">Sin pedido vinculado</span>
+                  }
                 </td>
                 <td data-etiqueta="Acciones">
                   <div class="acciones">
@@ -192,9 +196,8 @@
     }
 
     <p class="nota">
-      Los importes son de demostración y no representan cobros reales. El IVA mostrado en el detalle
-      es informativo (total ÷ 1.16 × 0.16); no hay timbrado. Cuando una venta se cancela, el cambio
-      de pedido y la liberación de reservas requieren M09 y M12 en la integración con Flask.
+      Los importes provienen de Flask y no representan cobros reales. El pago es simulado y no hay
+      timbrado. Al cancelar, Flask actualiza el pedido y libera las reservas en M09/M12.
     </p>
   </div>
 </section>

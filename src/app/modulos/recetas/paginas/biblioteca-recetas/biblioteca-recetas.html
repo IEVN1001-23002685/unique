@@ -58,7 +58,7 @@
           (change)="alCambiarProducto($event)"
         >
           <option value="TODOS">Todos</option>
-          @for (producto of servicio.productos; track producto.id) {
+          @for (producto of servicio.productos(); track producto.id) {
             <option [value]="producto.id">{{ producto.nombre }}</option>
           }
         </select>
@@ -96,8 +96,10 @@
               <th scope="col">Talla</th>
               <th scope="col">Versión</th>
               <th scope="col">Estado</th>
-              <th scope="col">Materia prima</th>
-              <th scope="col">Costo estándar</th>
+              @if (servicio.puedeVerCostos()) {
+                <th scope="col">Materia prima</th>
+                <th scope="col">Costo estándar</th>
+              }
               <th scope="col">Última modificación</th>
               <th scope="col">Acciones</th>
             </tr>
@@ -125,18 +127,20 @@
                     {{ receta.estado }}
                   </span>
                 </td>
-                <td data-etiqueta="Materia prima">
-                  {{
-                    servicio.costeo(receta).materiaPrima
-                      | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-                  }}
-                </td>
-                <td data-etiqueta="Costo estándar">
-                  <strong>{{
-                    servicio.costeo(receta).costoEstandar
-                      | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-                  }}</strong>
-                </td>
+                @if (servicio.puedeVerCostos()) {
+                  <td data-etiqueta="Materia prima">
+                    {{
+                      servicio.costeo(receta).materiaPrima
+                        | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+                    }}
+                  </td>
+                  <td data-etiqueta="Costo estándar">
+                    <strong>{{
+                      servicio.costeo(receta).costoEstandar
+                        | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+                    }}</strong>
+                  </td>
+                }
                 <td data-etiqueta="Modificación">
                   {{
                     receta.activadaEn ?? receta.creadaEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX'
@@ -183,8 +187,8 @@
     <p class="nota">
       Activación requiere tela o hilo de tejido, hilo de costura, etiquetas completas y merma menor
       a 100 %. Al activar, la versión anterior pasa a ARCHIVADA y las órdenes ya creadas conservan
-      su receta. El Operativo consultará esta biblioteca sin columnas de costo cuando se integre
-      M02.
+      su receta. Flask omite los importes al Operativo, por eso no se muestran columnas de costo
+      para ese rol.
     </p>
   </div>
 

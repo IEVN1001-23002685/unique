@@ -65,7 +65,7 @@
               <label class="campo">
                 Material
                 <select class="campo__entrada" formControlName="materialId">
-                  @for (material of materiales; track material.id) {
+                  @for (material of materiales(); track material.id) {
                     <option [value]="material.id">
                       {{ material.codigo }} · {{ material.nombre }}
                     </option>

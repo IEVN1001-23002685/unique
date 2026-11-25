@@ -164,7 +164,7 @@
     <div class="tarjeta bloque">
       <h2 class="panel-titulo">Alertas recientes</h2>
       @if (alertasRecientes().length === 0) {
-        <p class="panel-vacio">Sin alertas abiertas en la demostración.</p>
+        <p class="panel-vacio">Sin alertas abiertas para las variantes consultadas.</p>
       } @else {
         <ul class="lista">
           @for (alerta of alertasRecientes(); track alerta.id) {

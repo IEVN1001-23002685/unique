@@ -55,10 +55,7 @@ export interface VarianteProducto {
   talla: CodigoTalla;
   color: CodigoColor;
   activa: boolean;
-  /**
-   * M12 es dueño de la existencia y el reservado. Estos valores son de
-   * demostración y se muestran aquí solo como lectura.
-   */
+  /** M12 es dueño de la existencia y el reservado; aquí se muestran solo para lectura. */
   existencia: number;
   reservado: number;
   stockMinimo: number;
@@ -134,7 +131,7 @@ export interface ProductoMaestro {
   tallas: CodigoTalla[];
   colores: CodigoColor[];
   variantes: VarianteProducto[];
-  /** Parámetros de demostración que explican el precio; M11 es dueño de los costos reales. */
+  /** Parámetros capturados para el precio; M11 calcula los costos reales en Flask. */
   costeo: ParametrosCosteo;
   /** M11 es dueño del costo y de las recetas; se proyecta desde su servicio. */
   costoEstandar: number | null;
@@ -152,6 +149,8 @@ export interface DatosProducto {
   guiaMedidas: string;
   /** No se captura a mano: se deriva de `costeo` con la fórmula del documento. */
   costeo: ParametrosCosteo;
+  /** Precio vigente leído de la API al editar; evita recalcularlo con costeo local vacío. */
+  precioVenta?: number;
   permiteBajoPedido: boolean;
   colores: CodigoColor[];
   tallas: CodigoTalla[];

@@ -218,9 +218,9 @@
         </table>
       </div>
       <p class="nota">
-        Disponible se lee de M15; reservar no modifica esa existencia en esta demostración. Flask
-        debe apartar por material y color, consumir por PEPS con el costo real de cada lote y
-        deshacer la operación completa si algo cambia entre la reserva y el inicio.
+        Disponible se lee del inventario de materia prima. Reservar aparta la cantidad posible por
+        material y color; el inicio consume por PEPS con el costo real de cada lote dentro de una
+        sola transacción.
       </p>
     </div>
 
@@ -284,17 +284,16 @@
           </a>
         </div>
         <p class="nota nota--advertencia">
-          Esta pantalla no crea la requisición ni propaga cantidades: Flask debe generarla con su
-          folio REQ, verificar que no exista otra abierta y reevaluar el semáforo al recibir
-          material.
+          Al confirmar se crea la requisición con folio REQ y se reutiliza la vigente si ya existe,
+          sin duplicar faltantes. El semáforo se recalcula al recibir material.
         </p>
       </section>
     }
 
     <p class="nota nota--advertencia">
-      Aprobar sube las unidades a M12 y las asigna al pedido más antiguo en espera (FIFO), que pasa
-      a CONFIRMADO al quedar completo. La merma o el defecto se reportan a M17 con causa y etapa.
-      Nada de eso se ejecuta en esta demostración.
+      Aprobar sube las unidades al inventario de producto terminado y las asigna al pedido más
+      antiguo en espera (FIFO), que pasa a CONFIRMADO al quedar completo. La merma se reporta a M17
+      con la etapa indicada.
     </p>
 
     @if (cancelando()) {
@@ -303,7 +302,7 @@
         [mensaje]="
           '¿Cancelar la orden ' +
           orden.folio +
-          '? Solo se permite desde PLANEADA o LISTA. No se liberarán reservas reales en M15.'
+          '? Solo se permite desde PLANEADA o LISTA. Se liberarán las reservas vigentes.'
         "
         etiquetaConfirmar="Cancelar orden"
         (confirmar)="cancelar()"

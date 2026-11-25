@@ -1,6 +1,7 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { BarraMeta } from '../../componentes/barra-meta/barra-meta';
 import { NavegacionMermas } from '../../componentes/navegacion-mermas/navegacion-mermas';
 import { MermasServicio } from '../../servicios/mermas-servicio';
@@ -15,7 +16,9 @@ import type { FilaEvolucion } from '../../modelos/merma';
 })
 export class Indicadores {
   private readonly servicio = inject(MermasServicio);
+  private readonly auth = inject(AuthStateService);
 
+  protected readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
   protected readonly datos = computed(() => this.servicio.indicadores());
   protected readonly meta = computed(() => this.datos().metaPct);
 

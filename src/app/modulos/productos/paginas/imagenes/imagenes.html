@@ -6,17 +6,17 @@
       <p class="eyebrow">M10 · Biblioteca visual</p>
       <h1 class="titulo">Imágenes de producto y variables</h1>
       <p class="subtitulo">
-        Usa únicamente recursos reales de <span class="mono">public/prendas</span>. Puedes subir una
-        imagen local para previsualizarla; la carga no se guarda en servidor y Flask definirá el
-        endpoint definitivo.
+        Usa únicamente recursos reales de <span class="mono">public/prendas</span>. Las imágenes
+        locales se envían a Flask con <span class="mono">POST /productos/&lt;id&gt;/imagenes</span>; se
+        verifican JPG, PNG o WebP de hasta 2 MB.
       </p>
     </div>
   </div>
 
   <p class="nota">
     La biblioteca atiende productos, colores, materiales, bordados, categorías y la sección
-    «Nuevas». Solo la asignación a producto/color se aplica en memoria; los demás destinos quedan
-    señalados como pendientes de integración.
+    «Nuevas». La persistencia por API está disponible para producto/color; los demás destinos
+    quedan señalados como pendientes de contrato.
   </p>
 
   <div class="rejilla-imagenes">
@@ -81,11 +81,11 @@
         @if (vistaPrevia()) {
           <div class="previsualizacion">
             <img [src]="vistaPrevia()" alt="Previsualización de la imagen cargada" />
-            <p class="ayuda">Previsualización local; no se envía a ningún servidor.</p>
+            <p class="ayuda">Previsualización local antes de enviar el archivo a Flask.</p>
           </div>
         }
         <button type="button" class="boton boton--primario" (click)="agregarCarga()">
-          Agregar a la biblioteca
+          Guardar en producto
         </button>
       </section>
 
@@ -122,18 +122,18 @@
             Color (opcional)
             <select class="campo__entrada" [value]="color()" (change)="alCambiarColor($event)">
               <option value="">Imagen general</option>
-              @for (color of colores; track color.codigo) {
+              @for (color of colores(); track color.codigo) {
                 <option [value]="color.codigo">{{ color.nombre }} · {{ color.codigo }}</option>
               }
             </select>
           </label>
           <button type="button" class="boton boton--primario" (click)="asignar()">
-            Asignar en memoria
+            Asignar desde biblioteca
           </button>
         } @else {
           <p class="nota">
-            La asignación a <strong>{{ destino() }}</strong> requiere el catálogo definitivo de
-            Flask. Por ahora la imagen queda disponible en la biblioteca de demostración.
+            M10 no define una operación para asignar una imagen ya existente. Usa «Guardar en
+            producto» para subir el archivo real a Flask.
           </p>
         }
       </section>

@@ -3,14 +3,13 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, type ValidatorFn } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
-import { SelectorPerfilDemo } from '../../../../compartido/componentes/selector-perfil-demo/selector-perfil-demo';
-import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
 import {
   decimalNoNegativo,
   decimalPositivo,
   mermaPct,
 } from '../../../../compartido/validadores/validadores-negocio';
 import { mensajeError } from '../../../../core/api/errores';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionInventario } from '../../componentes/navegacion-inventario/navegacion-inventario';
 import {
@@ -30,7 +29,6 @@ import { InventarioServicio } from '../../servicios/inventario-servicio';
     RouterLink,
     NavegacionInventario,
     ModalConfirmacion,
-    SelectorPerfilDemo,
   ],
   templateUrl: './catalogo-materiales.html',
   styleUrls: ['./catalogo-materiales.css', '../../inventario-compartido.css'],
@@ -39,10 +37,10 @@ export class CatalogoMateriales {
   private readonly fb = inject(FormBuilder);
   private readonly ruta = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthStateService);
   private readonly avisos = inject(AvisosServicio);
   protected readonly servicio = inject(InventarioServicio);
-  protected readonly perfilDemo = inject(PerfilDemoServicio);
-  protected readonly esAdministrador = this.perfilDemo.esAdministrador;
+  protected readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
 
   protected readonly categorias = CATEGORIAS;
   protected readonly unidades: UnidadBase[] = ['m²', 'm', 'pieza'];

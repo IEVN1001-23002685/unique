@@ -25,9 +25,24 @@ export function fechaHoyIso(): string {
 export interface DatosPagoRegistrado {
   monto: number;
   metodo: MetodoPago;
-  ultimos4?: string | null;
   titular?: string | null;
   estado: 'APROBADO' | 'PENDIENTE';
+}
+
+export interface ClienteManual {
+  id: number;
+  nombre: string;
+  apellidos: string;
+  correo: string;
+  telefono: string;
+}
+
+export interface VarianteManual {
+  sku: string;
+  nombreProducto: string;
+  talla: string;
+  color: string;
+  precioUnitario: number;
 }
 
 export type ResultadoEliminacionDescuento = 'eliminado' | 'desactivado' | 'no-encontrado';
@@ -78,9 +93,9 @@ interface VentaDetalleApi {
   fecha_promesa?: string | null;
   cancelada_en?: string | null;
   motivo_cancelacion?: string | null;
-  creada_por?: string | null;
+  creada_por?: number | string | null;
   notas?: string | null;
-  pedido?: { folio?: string } | null;
+  pedido?: { id?: number; folio?: string; estado?: string } | null;
   lineas?: Array<{
     sku: string;
     nombre_producto: string;
@@ -148,6 +163,27 @@ interface TarifaApi {
   activa: boolean;
 }
 
+interface CoberturaApi {
+  cobertura: boolean;
+  costo: string | null;
+  dias_estimados: number | null;
+}
+
+interface ClienteApi {
+  id: number;
+  nombre: string;
+  apellidos: string;
+  correo: string;
+  telefono: string;
+}
+
+interface ProductoCatalogoApi {
+  id: number;
+  nombre: string;
+  precio_venta: string;
+  variantes: Array<{ sku: string; talla: string; color: string }>;
+}
+
 function nombreCliente(cliente: VentaResumenApi['cliente'] | undefined): string {
   if (!cliente) {
     return 'Cliente';
@@ -165,9 +201,9 @@ function deResumenApi(item: VentaResumenApi): Venta {
     canal: item.canal as Venta['canal'],
     estado: item.estado as Venta['estado'],
     estadoPago: item.estado_pago as Venta['estadoPago'],
-    estadoPedido: (item.pedido_estado ?? 'RECIBIDO') as Venta['estadoPedido'],
+    estadoPedido: item.pedido_estado ? (item.pedido_estado as Venta['estadoPedido']) : null,
     pedidoFolio: '',
-    subtotal: aNumero(item.total),
+    subtotal: null,
     descuentoId: null,
     descuentoNombre: null,
     descuentoMonto: 0,
@@ -196,7 +232,7 @@ function deDetalleApi(item: VentaDetalleApi): Venta {
     canal: item.canal as Venta['canal'],
     estado: item.estado as Venta['estado'],
     estadoPago: item.estado_pago as Venta['estadoPago'],
-    estadoPedido: (item.pedido?.folio ? 'CONFIRMADO' : 'RECIBIDO') as Venta['estadoPedido'],
+    estadoPedido: item.pedido?.estado ? (item.pedido.estado as Venta['estadoPedido']) : null,
     pedidoFolio: item.pedido?.folio ?? '',
     subtotal: aNumero(item.subtotal),
     descuentoId: item.descuento_id ?? null,
@@ -209,7 +245,7 @@ function deDetalleApi(item: VentaDetalleApi): Venta {
     fechaPromesa: item.fecha_promesa ?? null,
     canceladaEn: item.cancelada_en ?? null,
     motivoCancelacion: item.motivo_cancelacion ?? null,
-    creadaPor: item.creada_por ?? '',
+    creadaPor: item.creada_por === null || item.creada_por === undefined ? '' : String(item.creada_por),
     notas: item.notas ?? null,
     lineas: (item.lineas ?? []).map((linea): LineaVenta => ({
       sku: linea.sku,
@@ -280,9 +316,25 @@ export class VentasServicio {
   private readonly listaDescuentos = signal<Descuento[]>([]);
   private readonly detalles = signal<Record<number, Venta>>({});
   private readonly listaTarifas = signal<TarifaApi[]>([]);
+  private readonly listaClientes = signal<ClienteManual[]>([]);
+  private readonly listaVariantes = signal<VarianteManual[]>([]);
 
-  readonly ventas = this.listaVentas.asReadonly();
-  readonly descuentos = this.listaDescuentos.asReadonly();
+  /** API pública síncrona conservada para módulos externos. */
+  ventas(): Venta[] {
+    return this.listaVentas();
+  }
+
+  descuentos(): Descuento[] {
+    return this.listaDescuentos();
+  }
+
+  clientes(): ClienteManual[] {
+    return this.listaClientes();
+  }
+
+  variantes(): VarianteManual[] {
+    return this.listaVariantes();
+  }
 
   readonly indicadores = computed(() => {
     const hoy = fechaHoyIso();
@@ -334,6 +386,39 @@ export class VentasServicio {
         this.listaTarifas.set(tarifas);
       }),
       map(() => undefined),
+      catchError(() => of(undefined)),
+    );
+  }
+
+  /** Catálogos reales para la pantalla de venta manual; ningún dato se inventa en el cliente. */
+  cargarDatosManuales(): Observable<void> {
+    return forkJoin({
+      clientes: this.listarTodo<ClienteApi>('/clientes'),
+      catalogo: this.api.get<ProductoCatalogoApi[]>('/catalogo'),
+    }).pipe(
+      tap(({ clientes, catalogo }) => {
+        this.listaClientes.set(
+          clientes.map((cliente) => ({
+            id: cliente.id,
+            nombre: cliente.nombre,
+            apellidos: cliente.apellidos,
+            correo: cliente.correo,
+            telefono: cliente.telefono,
+          })),
+        );
+        this.listaVariantes.set(
+          catalogo.flatMap((producto) =>
+            producto.variantes.map((variante) => ({
+              sku: variante.sku,
+              nombreProducto: producto.nombre,
+              talla: variante.talla,
+              color: variante.color,
+              precioUnitario: aNumero(producto.precio_venta),
+            })),
+          ),
+        );
+      }),
+      map(() => undefined),
     );
   }
 
@@ -347,21 +432,54 @@ export class VentasServicio {
     return Number.isInteger(porId) && porId > 0 ? porId : undefined;
   }
 
-  cargarDetalle(folio: string): Observable<Venta | undefined> {
-    const id = this.idPorFolio(folio);
-    if (id === undefined) {
-      return this.recargar().pipe(switchMap(() => this.cargarDetalle(folio)));
-    }
+  private obtenerDetalle(id: number): Observable<Venta> {
     return this.api.get<VentaDetalleApi>(`/ventas/${id}`).pipe(
-      map((item) => {
+      switchMap((item) => {
         const venta = deDetalleApi(item);
+        const pedidoId = item.pedido?.id;
+        if (pedidoId === undefined) {
+          return of(venta);
+        }
+        return this.api
+          .get<{ folio: string; estado: string }>(`/pedidos/${pedidoId}`)
+          .pipe(
+            map((pedido) => ({
+              ...venta,
+              pedidoFolio: pedido.folio,
+              estadoPedido: pedido.estado as Venta['estadoPedido'],
+            })),
+            catchError(() => of(venta)),
+          );
+      }),
+      map((venta) => {
         this.detalles.update((actuales) => ({ ...actuales, [venta.id]: venta }));
         this.listaVentas.update((actuales) =>
           actuales.map((existente) =>
-            existente.id === venta.id ? { ...deResumenApiFromDetalle(venta), ...existente } : existente,
+            existente.id === venta.id
+              ? { ...existente, ...deResumenApiFromDetalle(venta) }
+              : existente,
           ),
         );
         return venta;
+      }),
+    );
+  }
+
+  cargarDetalle(folio: string): Observable<Venta | undefined> {
+    const porId = Number(folio);
+    if (Number.isInteger(porId) && porId > 0) {
+      return this.obtenerDetalle(porId).pipe(catchError(() => of(undefined)));
+    }
+    const conocido = this.idPorFolio(folio);
+    if (conocido !== undefined) {
+      return this.obtenerDetalle(conocido).pipe(catchError(() => of(undefined)));
+    }
+    return this.recargar().pipe(
+      switchMap(() => {
+        const resuelto = this.idPorFolio(folio);
+        return resuelto === undefined
+          ? of(undefined)
+          : this.obtenerDetalle(resuelto).pipe(catchError(() => of(undefined)));
       }),
     );
   }
@@ -373,6 +491,23 @@ export class VentasServicio {
 
   obtenerDescuento(id: number): Descuento | undefined {
     return this.listaDescuentos().find((descuento) => descuento.id === id);
+  }
+
+  /** Cobertura autoritativa de M02; el catálogo local sólo se usa como apoyo visual. */
+  consultarCobertura(codigoPostal: string): Observable<{ costo: number; dias: number } | null> {
+    if (!/^\d{5}$/.test(codigoPostal)) {
+      return of(null);
+    }
+    return this.api
+      .get<CoberturaApi>('/envio/cobertura', { params: { cp: codigoPostal } })
+      .pipe(
+        map((item) =>
+          item.cobertura && item.costo !== null && item.dias_estimados !== null
+            ? { costo: aNumero(item.costo), dias: item.dias_estimados }
+            : null,
+        ),
+        catchError(() => of(null)),
+      );
   }
 
   /** Tarifa vigente del catálogo M22 filtrada por rango de código postal. */
@@ -452,7 +587,7 @@ export class VentasServicio {
         ? {
             cliente: {
               nombre: solicitud.cliente.nombre,
-              apellidos: ' ',
+              apellidos: solicitud.cliente.apellidos,
               correo: solicitud.cliente.correo,
               telefono: solicitud.cliente.telefono,
             },
@@ -503,10 +638,18 @@ export class VentasServicio {
     if (id === undefined) {
       return of({ ok: false, mensaje: 'No encontramos la venta.' });
     }
+    if (datos.estado === 'APROBADO' && (datos.metodo === 'TARJETA' || datos.metodo === 'CUENTA')) {
+      return of({
+        ok: false,
+        mensaje: 'Para tarjeta o cuenta se requiere un medio de pago guardado; este panel no captura PAN ni CVV.',
+      });
+    }
+    const aprueba = datos.estado === 'APROBADO';
     const cuerpo = {
-      accion: datos.estado === 'APROBADO' ? 'APROBAR' : 'RECHAZAR',
+      accion: aprueba ? 'APROBAR' : 'RECHAZAR',
       metodo_pago: datos.metodo,
       titular: datos.titular ?? null,
+      motivo: aprueba ? null : 'Pago rechazado desde el panel de ventas',
     };
     return this.api.post<VentaDetalleApi>(`/ventas/${id}/pago`, cuerpo).pipe(
       map((item) => {
@@ -622,7 +765,7 @@ function deResumenApiFromDetalle(venta: Venta): Venta {
     estadoPago: venta.estadoPago,
     estadoPedido: venta.estadoPedido,
     pedidoFolio: venta.pedidoFolio,
-    subtotal: venta.total,
+    subtotal: venta.subtotal,
     descuentoId: venta.descuentoId,
     descuentoNombre: venta.descuentoNombre,
     descuentoMonto: venta.descuentoMonto,

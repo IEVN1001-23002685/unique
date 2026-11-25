@@ -52,7 +52,7 @@ export class DisenosBordado {
     return id === null ? undefined : this.servicio.disenoDe(id);
   });
 
-  protected readonly hilosDiseno = this.servicio.etiquetasHilo();
+  protected readonly hilosDiseno = computed(() => this.servicio.etiquetasHilo());
 
   protected readonly formas = this.fb.group<FormaDiseno>({
     nombre: this.fb.nonNullable.control('', [Validators.required, Validators.minLength(3)]),
@@ -95,7 +95,10 @@ export class DisenosBordado {
     this.formas.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
       this.valores.set(this.formas.getRawValue());
     });
-    this.seleccionar(this.servicio.disenos()[0]?.id ?? null);
+    this.servicio.recargar().subscribe({
+      next: () => this.seleccionar(this.servicio.disenos()[0]?.id ?? null),
+      error: () => this.avisos.mostrar('error', 'No fue posible cargar los diseños desde Flask.'),
+    });
   }
 
   protected seleccionar(id: number | null): void {
@@ -125,7 +128,7 @@ export class DisenosBordado {
   private hiloForm(hilo?: HiloDiseno): FormGroup<FormaHilo> {
     return this.fb.group<FormaHilo>({
       materialCodigo: this.fb.nonNullable.control(
-        hilo?.materialCodigo ?? this.hilosDiseno[0]?.codigo ?? '',
+        hilo?.materialCodigo ?? this.hilosDiseno()[0]?.codigo ?? '',
         Validators.required,
       ),
       metrosPorAplicacion: this.fb.nonNullable.control(hilo?.metrosPorAplicacion ?? 0, [
@@ -171,11 +174,12 @@ export class DisenosBordado {
       })),
     };
     const id = this.seleccionado();
-    const resultado = this.servicio.guardarDiseno(datos, id ?? undefined);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    if (resultado.ok && resultado.disenoId !== undefined) {
-      this.seleccionar(resultado.disenoId);
-    }
+    this.servicio.guardarDiseno(datos, id ?? undefined).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+      if (resultado.ok && resultado.disenoId !== undefined) {
+        this.seleccionar(resultado.disenoId);
+      }
+    });
   }
 
   protected digitalizar(): void {
@@ -183,11 +187,12 @@ export class DisenosBordado {
     if (id === null) {
       return;
     }
-    const resultado = this.servicio.digitalizarDiseno(id);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
-    if (resultado.ok) {
-      this.seleccionar(id);
-    }
+    this.servicio.digitalizarDiseno(id).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
+      if (resultado.ok) {
+        this.seleccionar(id);
+      }
+    });
   }
 
   protected pedirEliminacion(diseno: DisenoBordado): void {
@@ -199,11 +204,12 @@ export class DisenosBordado {
     if (!diseno) {
       return;
     }
-    const resultado = this.servicio.eliminarDiseno(diseno.id);
-    this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
+    this.servicio.eliminarDiseno(diseno.id).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
+      if (resultado.ok) {
+        this.seleccionar(this.servicio.disenos()[0]?.id ?? null);
+      }
+    });
     this.eliminando.set(null);
-    if (resultado.ok) {
-      this.seleccionar(this.servicio.disenos()[0]?.id ?? null);
-    }
   }
 }

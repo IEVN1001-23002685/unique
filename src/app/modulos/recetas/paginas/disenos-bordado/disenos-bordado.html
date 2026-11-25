@@ -53,7 +53,7 @@
     <div class="tarjeta bloque detalle">
       @if (creando()) {
         <h2 class="seccion__titulo">Nuevo diseño</h2>
-        <p class="ayuda">El código se asigna automáticamente al guardar.</p>
+        <p class="ayuda">El código propuesto se valida contra el catálogo de Flask al guardar.</p>
       } @else if (diseno(); as actual) {
         <div class="detalle__cabecera">
           <div>
@@ -162,7 +162,7 @@
                       formControlName="materialCodigo"
                       aria-label="Hilo de bordado"
                     >
-                      @for (material of hilosDiseno; track material.codigo) {
+                      @for (material of hilosDiseno(); track material.codigo) {
                         <option [value]="material.codigo">
                           {{ material.codigo }} · {{ material.nombre }}
                         </option>

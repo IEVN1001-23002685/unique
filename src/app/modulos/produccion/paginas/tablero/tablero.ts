@@ -59,8 +59,11 @@ export class Tablero {
     if (!orden) {
       return;
     }
-    const resultado = this.servicio.cancelar(orden.id);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    this.cancelando.set(null);
+    this.servicio
+      .cancelar(orden.id, `Cancelación solicitada desde el tablero: ${orden.folio}`)
+      .subscribe((resultado) => {
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+        this.cancelando.set(null);
+      });
   }
 }

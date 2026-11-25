@@ -376,6 +376,7 @@ export const ORDENES_SIMULADAS: OrdenProduccion[] = SEMILLAS.map((semilla, indic
   folio: semilla.folio,
   origen: semilla.origen,
   estado: semilla.estado,
+  semaforo: semilla.estado === 'CANCELADA' ? 'ROJO' : 'VERDE',
   fechaRequerida: semilla.diasRequerida === null ? null : enDias(semilla.diasRequerida),
   iniciadaEn: semilla.diasIniciada === undefined ? null : enDias(-semilla.diasIniciada),
   cerradaEn: semilla.diasCerrada === undefined ? null : enDias(-semilla.diasCerrada),

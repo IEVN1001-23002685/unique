@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { decimalPositivo } from '../../../../compartido/validadores/validadores-negocio';
 import { mensajeError } from '../../../../core/api/errores';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionCompras } from '../../componentes/navegacion-compras/navegacion-compras';
 import type {
@@ -25,6 +26,7 @@ export class FormularioRequisicion {
   private readonly ruta = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly avisos = inject(AvisosServicio);
+  private readonly auth = inject(AuthStateService);
   protected readonly servicio = inject(ComprasServicio);
 
   protected readonly materiales = this.servicio.materiales;
@@ -47,7 +49,7 @@ export class FormularioRequisicion {
     origen: ['MANUAL' as OrigenRequisicion, [Validators.required]],
     ordenProduccion: [''],
     prioridad: ['NORMAL' as Prioridad, [Validators.required]],
-    solicitadaPor: ['Operativo · demostración', [Validators.required]],
+    solicitadaPor: [this.auth.usuario()?.nombre ?? '', [Validators.required]],
     notas: [''],
     lineas: this.fb.nonNullable.array([this.nuevaLinea()]),
   });

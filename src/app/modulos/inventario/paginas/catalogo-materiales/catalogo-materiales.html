@@ -28,13 +28,11 @@
     }
   </div>
 
-  <app-selector-perfil-demo />
-
   @if (esFormulario) {
     @if (noEncontrado()) {
       <div class="tarjeta bloque estado" role="status">
         <strong>Material no encontrado.</strong>
-        <p>El registro pudo haberse eliminado en esta demostración.</p>
+        <p>El registro no existe o fue desactivado.</p>
       </div>
     } @else {
       <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>

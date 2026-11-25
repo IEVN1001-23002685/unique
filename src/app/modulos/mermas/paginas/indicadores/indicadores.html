@@ -13,11 +13,12 @@
 
   <app-navegacion-mermas />
 
-  <p class="nota nota--advertencia">
-    Perfil Administrador. Los denominadores y costos son de demostración: Flask debe calcular las
-    unidades producidas por M16, el consumo de M15 y los costos reales antes de publicar estas
-    cifras. No hay guard real en esta etapa.
-  </p>
+  @if (esAdministrador()) {
+    <p class="nota">
+      Cifras calculadas por Flask desde los movimientos de inventario y la vista de mermas. Los
+      denominadores son acumulados: unidades producidas por M16 y material consumido por M15, no un
+      periodo mensual cerrado.
+    </p>
 
   <div class="indicadores">
     <article class="tarjeta indicador" [attr.data-tono]="tonoMeta(datos().mermaProductoPct)">
@@ -42,9 +43,9 @@
       <span class="indicador__numero">{{
         datos().costoPerdidoMes | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
       }}</span>
-      <span class="indicador__etiqueta">Costo perdido del mes</span>
+      <span class="indicador__etiqueta">Costo perdido del periodo</span>
       <span class="indicador__detalle"
-        >Acumulado {{ datos().costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</span
+        >Total {{ datos().costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</span
       >
     </article>
     <article class="tarjeta indicador">
@@ -118,7 +119,7 @@
     </section>
 
     <section class="tarjeta bloque" aria-labelledby="titulo-causas">
-      <h2 class="titulo-section" id="titulo-causas">Top 5 de causas por costo</h2>
+      <h2 class="titulo-section" id="titulo-causas">Top 5 de causas por merma</h2>
       @if (datos().causasTop5.length > 0) {
         <div class="tabla-contenedor">
           <table class="tabla">
@@ -272,4 +273,10 @@
       registros originales no se alteran.
     </p>
   </section>
+  } @else {
+    <p class="nota nota--advertencia">
+      Los indicadores y los costos de merma están disponibles solo para Administradores. Tu sesión
+      no tiene permiso para consultarlos.
+    </p>
+  }
 </div>

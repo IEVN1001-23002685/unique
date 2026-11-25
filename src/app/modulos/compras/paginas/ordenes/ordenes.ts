@@ -80,18 +80,24 @@ export class Ordenes {
   }
 
   protected emitir(orden: OrdenCompra): void {
-    this.servicio.emitirOrden(orden.id);
-    this.avisos.mostrar(
-      'exito',
-      `${orden.folio} se emitió en la demostración. El envío en PDF a Flask está pendiente.`,
-    );
+    this.servicio.emitirOrden(orden.id).subscribe({
+      next: () => this.avisos.mostrar('exito', `${orden.folio} se emitió en Flask.`),
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   protected descargarPdf(orden: OrdenCompra): void {
-    this.avisos.mostrar(
-      'informacion',
-      `La descarga de ${orden.folio} se habilitará con GET /ordenes-compra/{id}/pdf de Flask.`,
-    );
+    this.servicio.descargarOrdenPdf(orden.id).subscribe({
+      next: (pdf) => {
+        const url = URL.createObjectURL(pdf);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.download = `${orden.folio}.pdf`;
+        enlace.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   protected confirmarCancelacion(): void {
@@ -99,9 +105,13 @@ export class Ordenes {
     if (!orden) {
       return;
     }
-    this.servicio.cancelarOrden(orden.id);
-    this.porCancelar.set(null);
-    this.avisos.mostrar('advertencia', `${orden.folio} se canceló solo en memoria.`);
+    this.servicio.cancelarOrden(orden.id).subscribe({
+      next: () => {
+        this.porCancelar.set(null);
+        this.avisos.mostrar('advertencia', `${orden.folio} se canceló en Flask.`);
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   protected confirmarEliminacion(): void {
@@ -109,14 +119,18 @@ export class Ordenes {
     if (!orden) {
       return;
     }
-    const resultado = this.servicio.eliminarOrden(orden.id);
-    this.porEliminar.set(null);
-    this.avisos.mostrar(
-      resultado === 'eliminado' ? 'exito' : 'advertencia',
-      resultado === 'eliminado'
-        ? `${orden.folio} se eliminó del borrador de demostración.`
-        : `${orden.folio} tiene historial: ya no se puede eliminar, usa cancelar.`,
-    );
+    this.servicio.eliminarOrden(orden.id).subscribe({
+      next: (resultado) => {
+        this.porEliminar.set(null);
+        this.avisos.mostrar(
+          resultado === 'eliminado' ? 'exito' : 'advertencia',
+          resultado === 'eliminado'
+            ? `${orden.folio} se eliminó en Flask.`
+            : `${orden.folio} tiene historial: Flask no permite eliminarla, usa cancelar.`,
+        );
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   protected async abrirRecepcion(orden: OrdenCompra): Promise<void> {

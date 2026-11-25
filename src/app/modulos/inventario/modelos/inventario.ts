@@ -26,7 +26,7 @@ export interface Material {
   costoEstandarBase: number;
   mermaEstandarPct: number;
   porColor: boolean;
-  /** Plazo del proveedor principal, leído de M13 como referencia de demostración. */
+  /** Plazo del proveedor principal, leído de M13 como referencia. */
   plazoDias: number;
   activo: boolean;
   /** Id del catálogo M22, necesario para dar de alta un material desde M15. */
@@ -114,7 +114,7 @@ export interface DatosAjuste {
   enviarAMerma: boolean;
 }
 
-export interface MermaDemostracion {
+export interface MermaAjuste {
   materialId: number;
   color: string;
   cantidadBase: number;
@@ -127,7 +127,7 @@ export interface ResultadoAjuste {
   movimiento: MovimientoMaterial;
   diferencia: number;
   loteAfectado: string | null;
-  merma: MermaDemostracion | null;
+  merma: MermaAjuste | null;
 }
 
 export interface CambioPolitica {

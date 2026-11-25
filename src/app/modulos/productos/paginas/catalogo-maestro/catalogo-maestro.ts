@@ -31,6 +31,10 @@ export class CatalogoMaestro {
   protected readonly productos = this.servicio.productos;
   protected readonly indicadores = this.servicio.indicadores;
 
+  constructor() {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly filtrados = computed(() => {
     const termino = this.busqueda().trim().toLowerCase();
     const categoria = this.categoria();
@@ -94,8 +98,11 @@ export class CatalogoMaestro {
   }
 
   protected activar(producto: ProductoMaestro, activar: boolean): void {
-    const resultado = this.servicio.cambiarActivo(producto.id, activar);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
+    this.servicio.cambiarActivo(producto.id, activar).subscribe({
+      next: (resultado) =>
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje),
+      error: () => this.avisos.mostrar('error', 'No fue posible cambiar el estado en Flask.'),
+    });
   }
 
   protected pedirEliminacion(producto: ProductoMaestro): void {
@@ -105,7 +112,7 @@ export class CatalogoMaestro {
   protected mensajeEliminacion(producto: ProductoMaestro): string {
     return producto.tieneHistorial
       ? 'El producto tiene ventas o movimientos. Se desactivará con borrado lógico (eliminado_en) y se conservará su historial.'
-      : 'El producto no tiene ventas ni movimientos. Se eliminará por completo de la demostración.';
+      : 'El producto no tiene ventas ni movimientos. Flask podrá eliminarlo físicamente.';
   }
 
   protected confirmarEliminacion(): void {
@@ -113,8 +120,15 @@ export class CatalogoMaestro {
     if (!producto) {
       return;
     }
-    const resultado = this.servicio.eliminarProducto(producto.id);
-    this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
-    this.confirmando.set(null);
+    this.servicio.eliminarProducto(producto.id).subscribe({
+      next: (resultado) => {
+        this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
+        this.confirmando.set(null);
+      },
+      error: () => {
+        this.avisos.mostrar('error', 'No fue posible dar de baja el producto en Flask.');
+        this.confirmando.set(null);
+      },
+    });
   }
 }

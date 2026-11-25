@@ -37,31 +37,6 @@
   </div>
 
   <section class="tarjeta bloque" aria-labelledby="titulo-historial">
-    <div class="perfil-demo">
-      <span>Perfil de demostración</span>
-      <div class="filtros" role="group" aria-label="Perfil de demostración">
-        <button
-          type="button"
-          class="filtro"
-          [class.filtro--activo]="perfil() === 'Operativo'"
-          (click)="cambiarPerfil('Operativo')"
-        >
-          Operativo
-        </button>
-        <button
-          type="button"
-          class="filtro"
-          [class.filtro--activo]="perfil() === 'Administrador'"
-          (click)="cambiarPerfil('Administrador')"
-        >
-          Administrador
-        </button>
-      </div>
-    </div>
-    <p class="nota nota--advertencia">
-      Cambiar de perfil solo altera la visibilidad de esta demo. No hay inicio de sesión ni guard
-      real: Flask deberá autorizar las reversas y ocultar costos a Operativo.
-    </p>
 
     <h2 class="titulo-section" id="titulo-historial">Historial de mermas</h2>
 

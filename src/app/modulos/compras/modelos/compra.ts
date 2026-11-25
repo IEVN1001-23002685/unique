@@ -125,25 +125,6 @@ export interface Recepcion {
   lineas: LineaRecepcion[];
 }
 
-/** Vista previa de lo que M15/M17 crearían cuando exista Flask. */
-export interface LoteDemostracion {
-  folio: string;
-  materialId: number;
-  cantidadBase: number;
-  unidadBase: UnidadBase;
-  medidas: string;
-  costoReal: number;
-  proveedorId: number;
-}
-
-export interface MermaDemostracion {
-  materialId: number;
-  cantidadBase: number;
-  unidadBase: UnidadBase;
-  causa: string;
-  etapa: 'RECEPCION';
-}
-
 export interface DatosRecepcion {
   ordenCompraId: number;
   documentoProveedor: string;
@@ -156,6 +137,4 @@ export interface DatosRecepcion {
 export interface ResultadoRecepcion {
   recepcion: Recepcion;
   estadoOrden: EstadoOrdenCompra;
-  lotes: LoteDemostracion[];
-  mermas: MermaDemostracion[];
 }

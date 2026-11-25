@@ -1,18 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { FilaVariante } from '../../productos/modelos/producto-maestro';
-import { ProductosServicio } from '../../productos/servicios/productos-servicio';
+import { Observable, catchError, forkJoin, map, of, switchMap, tap, throwError } from 'rxjs';
+import { ApiService } from '../../../core/api/api.service';
+import { mensajeError } from '../../../core/api/errores';
 import type { PendienteProduccion } from '../../pedidos/modelos/pedido';
-import { PedidosServicio } from '../../pedidos/servicios/pedidos-servicio';
-import { ComprasServicio } from '../../compras/servicios/compras-servicio';
-import { InventarioServicio } from '../../inventario/servicios/inventario-servicio';
-import {
-  ORDENES_SIMULADAS,
-  colorDeSku,
-  explosionarMateriales,
-  hoyISO,
-  nombreProductoDeSku,
-  redondear4,
-} from '../datos-simulados/produccion';
 import type {
   CoberturaCompra,
   DatosNuevaOrden,
@@ -20,8 +10,6 @@ import type {
   FilaPlanSugerido,
   FiltroTablero,
   LineaDictamen,
-  LineaNuevaOrden,
-  LineaOrden,
   MaterialOrden,
   MaterialOrdenVista,
   OpcionVariante,
@@ -30,75 +18,419 @@ import type {
   ResultadoAccion,
   ResultadoCrearOrden,
   ResultadoReserva,
-  RevisionCalidad,
   TonoSemaforo,
 } from '../modelos/produccion';
 import { ETIQUETAS_ESTADO, ETIQUETAS_ORIGEN, ETIQUETAS_TONO } from '../modelos/produccion';
 
-export { hoyISO, redondear4 };
+export function redondear4(valor: number): number {
+  return Math.round((valor + Number.EPSILON) * 10000) / 10000;
+}
 
-const ESTADOS_CERRADOS: OrdenProduccion['estado'][] = ['CERRADA', 'CANCELADA'];
+export function hoyISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 const TOLERANCIA = 0.0001;
+const ESTADOS_CERRADOS: OrdenProduccion['estado'][] = ['CERRADA', 'CANCELADA'];
 
-/**
- * Estado en memoria de M16. La interfaz pública está pensada para sustituirse
- * por HttpClient contra GET /produccion/ordenes y /{id}, POST /ordenes,
- * /reservar, /solicitar-compra, /iniciar, /revision, /dictamen, /cancelar y
- * GET /plan-sugerido (§9 y §10). Nada persiste en servidor: reservar no escribe
- * M15, solicitar no crea la requisición en M14 y dictaminar no alta unidades en
- * M12 ni una merma en M17. Esas fronteras se muestran como limitación en la UI.
- */
+const TALLAS: Record<string, string> = {
+  CH: 'Chica',
+  MD: 'Mediana',
+  GD: 'Grande',
+  UN: 'Única',
+};
+
+const COLORES: Record<string, string> = {
+  BL: 'Blanco',
+  NG: 'Negro',
+  GR: 'Gris',
+  NA: 'No aplica',
+};
+
+function numero(valor: unknown): number {
+  const resultado = Number(valor ?? 0);
+  return Number.isFinite(resultado) ? resultado : 0;
+}
+
+function nombreTalla(codigo: string): string {
+  return TALLAS[codigo] ?? codigo;
+}
+
+function nombreColor(codigo: string): string {
+  return COLORES[codigo] ?? codigo;
+}
+
+function colorDeSku(sku: string): string {
+  return nombreColor(sku.split('-')[2] ?? 'NA');
+}
+
+function nombreProductoDeSku(sku: string): string {
+  return sku.split('-')[0] || 'Prenda UNIQUE';
+}
+
+interface PaginaApi<T> {
+  items: T[];
+  total: number;
+  pagina: number;
+  por_pagina: number;
+}
+
+interface ResumenOrdenApi {
+  id: number;
+  folio: string;
+  origen: OrdenProduccion['origen'];
+  estado: OrdenProduccion['estado'];
+  semaforo: TonoSemaforo;
+  fecha_requerida: string | null;
+  iniciada_en: string | null;
+  cerrada_en: string | null;
+  total_planeado: number;
+  total_aprobado: number;
+  total_merma: number;
+  total_reproceso: number;
+  materiales: number;
+  creada_por: number | string | null;
+  notas: string | null;
+}
+
+interface LineaOrdenApi {
+  id: number;
+  variante_id: number;
+  sku: string;
+  producto: string;
+  receta_id: number;
+  cantidad_planeada: number;
+  cantidad_aprobada: number;
+  cantidad_merma: number;
+  cantidad_reproceso: number;
+}
+
+interface MaterialOrdenApi {
+  id: number;
+  inventario_material_id: number;
+  material_codigo: string;
+  material_nombre: string;
+  color_codigo: string | null;
+  unidad_base: string;
+  cantidad_requerida: string;
+  cantidad_reservada: string;
+  cantidad_consumida: string;
+  cantidad_faltante: string;
+  estado: EstadoMaterial;
+}
+
+interface PedidoVinculoApi {
+  pedido_id: number;
+  pedido_estado: string;
+  sku: string;
+  cantidad: number;
+}
+
+interface RevisionOrdenApi {
+  id: number;
+  orden_linea_id: number;
+  fecha: string | null;
+  cantidad_revisada: number;
+  cantidad_aprobada: number;
+  cantidad_reproceso: number;
+  cantidad_merma: number;
+  observaciones: string | null;
+}
+
+type DetalleOrdenApi = Omit<ResumenOrdenApi, 'materiales'> & {
+  lineas: LineaOrdenApi[];
+  materiales: MaterialOrdenApi[];
+  pedidos: PedidoVinculoApi[];
+  revisiones: RevisionOrdenApi[];
+};
+
+type OrdenInterna = OrdenProduccion & {
+  pedidosApi?: PedidoVinculoApi[];
+  revisionesApi?: RevisionOrdenApi[];
+};
+
+interface CatalogoApi {
+  id: number;
+  nombre: string;
+  variantes: { id: number; sku: string; talla: string; color: string }[];
+}
+
+interface InventarioMaterialApi {
+  id: number;
+  material_id: number;
+  color_codigo: string | null;
+  disponible: string;
+}
+
+interface PlanSugeridoApi {
+  variante_id: number;
+  sku: string;
+  disponible: string;
+  stock_minimo: number;
+  pendiente_pedidos: number;
+  produccion_en_curso: number;
+  cantidad_sugerida: number;
+}
+
+interface ReservaApi {
+  inventario_material_id: number;
+  reservada: string;
+  estado: EstadoMaterial;
+}
+
+interface RequisicionApi {
+  id: number;
+  folio: string;
+  estado: string;
+}
+
+interface SolicitudCompraApi {
+  requisicion: RequisicionApi;
+  duplicada: boolean;
+}
+
+/** Estado de M16 alimentado por los endpoints reales de Flask bajo /api/v1. */
 @Injectable({ providedIn: 'root' })
 export class ProduccionServicio {
-  private readonly inventario = inject(InventarioServicio);
-  private readonly compras = inject(ComprasServicio);
-  private readonly pedidos = inject(PedidosServicio);
-  private readonly productos = inject(ProductosServicio);
+  private readonly api = inject(ApiService);
 
-  private readonly lista = signal<OrdenProduccion[]>(structuredClone(ORDENES_SIMULADAS));
-  private readonly listaRevisiones = signal<RevisionCalidad[]>([]);
-  private correlativoOrdenes = 142;
-  private correlativoRevisiones = 0;
+  private readonly lista = signal<OrdenInterna[]>([]);
+  private readonly planes = signal<FilaPlanSugerido[]>([]);
+  private readonly opcionesVariantes = signal<OpcionVariante[]>([]);
+  private readonly disponiblesMateriales = signal<Map<number, number>>(new Map());
 
+  readonly cargado = signal(false);
   readonly ordenes = this.lista.asReadonly();
-  readonly revisiones = this.listaRevisiones.asReadonly();
 
-  /** Proyecciones derivadas: semáforo, faltantes y métricas se recalculan solos. */
-  readonly vistas = computed<OrdenVista[]>(() =>
-    this.lista().map((orden) => this.proyectar(orden)),
+  readonly vistas = computed<OrdenVista[]>(() => this.lista().map((orden) => this.proyectar(orden)));
+
+  readonly revisiones = computed(() =>
+    this.lista().flatMap((orden) =>
+      (orden.revisionesApi ?? []).map((revision) => {
+        const sku =
+          orden.lineas.find((linea) => linea.id === revision.orden_linea_id)?.sku ?? '';
+        const linea: LineaDictamen = {
+          lineaId: revision.orden_linea_id,
+          sku,
+          medidasOk: true,
+          costurasOk: true,
+          bordadoOk: true,
+          etiquetasOk: true,
+          cantidadRevisada: revision.cantidad_revisada,
+          cantidadAprobada: revision.cantidad_aprobada,
+          cantidadReproceso: revision.cantidad_reproceso,
+          cantidadMerma: revision.cantidad_merma,
+          causaMerma: revision.observaciones ?? '',
+          etapaMerma: 'ACABADOS',
+        };
+        return {
+          id: revision.id,
+          folio: `REV-${revision.id}`,
+          ordenId: orden.id,
+          ordenFolio: orden.folio,
+          fecha: revision.fecha ?? '',
+          revisadaPor: 'Registro de calidad',
+          lineas: [linea],
+        };
+      }),
+    ),
   );
 
-  private proyectar(orden: OrdenProduccion): OrdenVista {
-    const hoy = hoyISO();
-    const materiales = orden.materiales.map((material) => this.proyectarMaterial(material));
+  constructor() {
+    this.recargar().subscribe({ error: () => this.cargado.set(true) });
+  }
+
+  recargar(): Observable<void> {
+    const paginaVacia = <T>(): PaginaApi<T> => ({
+      items: [],
+      total: 0,
+      pagina: 1,
+      por_pagina: 100,
+    });
+
+    return forkJoin({
+      ordenes: this.api.get<PaginaApi<ResumenOrdenApi>>('/produccion/ordenes', {
+        params: { por_pagina: 100 },
+      }),
+      planes: this.api
+        .get<PaginaApi<PlanSugeridoApi>>('/produccion/plan-sugerido', {
+          params: { por_pagina: 100 },
+        })
+        .pipe(catchError(() => of(paginaVacia<PlanSugeridoApi>()))),
+      catalogo: this.api.get<CatalogoApi[]>('/catalogo').pipe(catchError(() => of([]))),
+      inventario: this.api
+        .get<PaginaApi<InventarioMaterialApi>>('/inventario/material', {
+          params: { por_pagina: 100 },
+        })
+        .pipe(catchError(() => of(paginaVacia<InventarioMaterialApi>()))),
+    }).pipe(
+      switchMap(({ ordenes, planes, catalogo, inventario }) => {
+        const detalles$ = ordenes.items.length
+          ? forkJoin(ordenes.items.map((resumen) => this.cargarDetalle(resumen)))
+          : of([] as OrdenInterna[]);
+
+        return detalles$.pipe(
+          map((detalles) => {
+            const disponibles = new Map<number, number>();
+            inventario.items.forEach((fila) => disponibles.set(fila.id, numero(fila.disponible)));
+            this.disponiblesMateriales.set(disponibles);
+
+            const opciones: OpcionVariante[] = catalogo.flatMap((producto) =>
+              producto.variantes.map((variante) => ({
+                varianteId: variante.id,
+                sku: variante.sku,
+                nombreProducto: producto.nombre,
+                talla: nombreTalla(variante.talla),
+                color: nombreColor(variante.color),
+                origen: 'M10' as const,
+              })),
+            );
+            this.opcionesVariantes.set(
+              [...opciones].sort((a, b) => a.sku.localeCompare(b.sku, 'es-MX')),
+            );
+
+            this.lista.set(detalles);
+            this.planes.set(this.adaptarPlanes(planes.items, catalogo, detalles));
+          }),
+        );
+      }),
+      tap(() => this.cargado.set(true)),
+      catchError((error: unknown) => {
+        this.cargado.set(true);
+        return throwError(() => error);
+      }),
+    );
+  }
+
+  private recargarSilenciosamente(): void {
+    this.recargar().subscribe({ error: () => undefined });
+  }
+
+  private cargarDetalle(resumen: ResumenOrdenApi): Observable<OrdenInterna> {
+    return this.api
+      .get<DetalleOrdenApi>(`/produccion/ordenes/${resumen.id}`)
+      .pipe(
+        map((detalle) => this.adaptarOrden(detalle)),
+        catchError(() => of(this.adaptarOrden(resumen))),
+      );
+  }
+
+  private adaptarOrden(datos: ResumenOrdenApi | DetalleOrdenApi): OrdenInterna {
+    const lineas = 'lineas' in datos ? (datos.lineas ?? []) : [];
+    const materiales = 'materiales' in datos && Array.isArray(datos.materiales) ? datos.materiales : [];
+    const pedidos = 'pedidos' in datos ? (datos.pedidos ?? []) : [];
+    const revisiones = 'revisiones' in datos ? (datos.revisiones ?? []) : [];
+
+    return {
+      id: datos.id,
+      folio: datos.folio,
+      origen: datos.origen,
+      estado: datos.estado,
+      semaforo: datos.semaforo,
+      fechaRequerida: datos.fecha_requerida,
+      iniciadaEn: datos.iniciada_en,
+      cerradaEn: datos.cerrada_en,
+      creadaPor: String(datos.creada_por ?? ''),
+      notas: datos.notas,
+      lineas: lineas.map((linea) => ({
+        id: linea.id,
+        sku: linea.sku,
+        nombreProducto: linea.producto || nombreProductoDeSku(linea.sku),
+        talla: nombreTalla(linea.sku.split('-')[1] ?? 'UN'),
+        color: colorDeSku(linea.sku),
+        cantidadPlaneada: numero(linea.cantidad_planeada),
+        cantidadAprobada: numero(linea.cantidad_aprobada),
+        cantidadMerma: numero(linea.cantidad_merma),
+        cantidadReproceso: numero(linea.cantidad_reproceso),
+      })),
+      materiales: materiales.map((material) => ({
+        id: material.id,
+        materialId: material.inventario_material_id,
+        nombreMaterial: material.material_nombre || material.material_codigo,
+        color: nombreColor(material.color_codigo ?? 'NA'),
+        unidadBase: material.unidad_base,
+        cantidadRequerida: numero(material.cantidad_requerida),
+        cantidadReservada: numero(material.cantidad_reservada),
+        cantidadConsumida: numero(material.cantidad_consumida),
+      })),
+      pedidosApi: pedidos,
+      revisionesApi: revisiones,
+    };
+  }
+
+  private adaptarPlanes(
+    filas: PlanSugeridoApi[],
+    catalogo: CatalogoApi[],
+    ordenes: OrdenInterna[],
+  ): FilaPlanSugerido[] {
+    const variantes = new Map(
+      catalogo.flatMap((producto) =>
+        producto.variantes.map(
+          (variante): [string, { nombre: string; talla: string; color: string }] => [
+            variante.sku,
+            {
+              nombre: producto.nombre,
+              talla: nombreTalla(variante.talla),
+              color: nombreColor(variante.color),
+            },
+          ],
+        ),
+      ),
+    );
+    const abiertas = ordenes.filter((orden) => !ESTADOS_CERRADOS.includes(orden.estado));
+
+    return filas.map((fila) => {
+      const referencia = variantes.get(fila.sku);
+      const pendienteNoCubierto = redondear4(
+        Math.max(0, fila.pendiente_pedidos - fila.produccion_en_curso - numero(fila.disponible)),
+      );
+      const abierta = abiertas.find((orden) => orden.lineas.some((linea) => linea.sku === fila.sku));
+      return {
+        sku: fila.sku,
+        nombreProducto: referencia?.nombre ?? nombreProductoDeSku(fila.sku),
+        talla: referencia?.talla ?? nombreTalla(fila.sku.split('-')[1] ?? 'UN'),
+        color: referencia?.color ?? colorDeSku(fila.sku),
+        disponible: numero(fila.disponible),
+        minimo: numero(fila.stock_minimo),
+        pendientePedidos: numero(fila.pendiente_pedidos),
+        pedidos: [],
+        produccionEnCurso: numero(fila.produccion_en_curso),
+        pendienteNoCubierto,
+        cantidadReposicion: redondear4(
+          Math.max(0, numero(fila.cantidad_sugerida) - pendienteNoCubierto),
+        ),
+        cantidadSugerida: numero(fila.cantidad_sugerida),
+        ordenAbiertaFolio: abierta?.folio ?? null,
+        varianteId: fila.variante_id,
+      };
+    });
+  }
+
+  private proyectar(orden: OrdenInterna): OrdenVista {
+    const materiales = orden.materiales.map((material) =>
+      this.proyectarMaterial(material, orden.semaforo),
+    );
     const completos = materiales.filter(
       (material) => material.estadoMaterial === 'COMPLETO',
     ).length;
     const faltantes = materiales.filter((material) => material.faltante > TOLERANCIA);
     const vencida =
       orden.fechaRequerida !== null &&
-      orden.fechaRequerida < hoy &&
+      orden.fechaRequerida < hoyISO() &&
       !ESTADOS_CERRADOS.includes(orden.estado);
-    const ocRetrasada = faltantes.some((material) => material.cobertura === 'RETRASADA');
-    const sinCobertura = faltantes.some((material) => material.cobertura === 'NINGUNA');
 
-    let semaforo: TonoSemaforo = 'VERDE';
-    let motivoSemaforo = 'Todos los materiales están reservados y la orden va en tiempo.';
+    let motivoSemaforo = 'Todos los materiales están cubiertos y la orden va en tiempo.';
     if (orden.estado === 'CANCELADA') {
-      semaforo = 'ROJO';
       motivoSemaforo = 'La orden fue cancelada; no debe reanudarse sin una orden nueva.';
+    } else if (orden.semaforo === 'ROJO') {
+      motivoSemaforo =
+        faltantes.length > 0
+          ? 'Falta material sin cobertura vigente o con compra retrasada.'
+          : 'La fecha requerida ya pasó o la orden presenta una condición crítica.';
     } else if (vencida) {
-      semaforo = 'ROJO';
       motivoSemaforo = 'Venció la fecha requerida sin que la orden se cerrara.';
-    } else if (ocRetrasada) {
-      semaforo = 'ROJO';
-      motivoSemaforo = 'Falta material y la orden de compra que lo cubre está retrasada.';
-    } else if (sinCobertura) {
-      semaforo = 'ROJO';
-      motivoSemaforo = 'Falta material sin requisición ni orden de compra vigente.';
     } else if (faltantes.length > 0) {
-      semaforo = 'AMBAR';
-      motivoSemaforo = 'Falta material, pero existe una requisición u orden de compra vigente.';
+      motivoSemaforo = 'Falta material, pero existe cobertura de compra vigente.';
     }
 
     const unidadesPlaneadas = orden.lineas.reduce(
@@ -116,7 +448,7 @@ export class ProduccionServicio {
       materiales,
       materialesCompletos: completos,
       vencida,
-      semaforo,
+      semaforo: orden.semaforo,
       motivoSemaforo,
       unidadesPlaneadas,
       unidadesAprobadas,
@@ -130,35 +462,40 @@ export class ProduccionServicio {
     };
   }
 
-  private proyectarMaterial(material: MaterialOrden): MaterialOrdenVista {
-    const existencia = this.inventario
-      .vistas()
-      .find((item) => item.materialId === material.materialId && item.color === material.color);
-    const disponibleM15 = existencia?.disponible ?? 0;
+  private proyectarMaterial(material: MaterialOrden, semaforoOrden: TonoSemaforo): MaterialOrdenVista {
+    const disponibleM15 = this.disponiblesMateriales().get(material.materialId) ?? 0;
     const faltante = redondear4(
-      Math.max(0, material.cantidadRequerida - material.cantidadReservada),
+      Math.max(
+        0,
+        material.cantidadRequerida -
+          material.cantidadReservada -
+          material.cantidadConsumida,
+      ),
     );
 
-    let estadoMaterial: EstadoMaterial = 'FALTANTE';
-    if (faltante <= TOLERANCIA) {
-      estadoMaterial = 'COMPLETO';
-    } else if (material.cantidadReservada > TOLERANCIA) {
-      estadoMaterial = 'PARCIAL';
+    const estadoMaterial: EstadoMaterial =
+      faltante <= TOLERANCIA
+        ? 'COMPLETO'
+        : material.cantidadReservada + material.cantidadConsumida > TOLERANCIA
+          ? 'PARCIAL'
+          : 'FALTANTE';
+
+    let cobertura: CoberturaCompra = 'NINGUNA';
+    let etiquetaCobertura = 'No requerida';
+    if (faltante > TOLERANCIA) {
+      cobertura = semaforoOrden === 'AMBAR' ? 'REQUISICION' : 'NINGUNA';
+      etiquetaCobertura =
+        cobertura === 'REQUISICION'
+          ? 'Cobertura de compra vigente'
+          : 'Sin cobertura de compra';
     }
 
-    const cobertura = faltante > TOLERANCIA ? this.coberturaDeCompra(material) : 'NINGUNA';
-    const etiquetaCobertura: Record<CoberturaCompra, string> = {
-      REQUISICION: 'Requisición vigente',
-      ORDEN_COMPRA: 'Orden de compra vigente',
-      RETRASADA: 'Orden de compra retrasada',
-      NINGUNA: faltante > TOLERANCIA ? 'Sin cobertura de compra' : 'No requerida',
-    };
     const semaforo: TonoSemaforo =
       estadoMaterial === 'COMPLETO'
         ? 'VERDE'
-        : cobertura === 'NINGUNA' || cobertura === 'RETRASADA'
-          ? 'ROJO'
-          : 'AMBAR';
+        : semaforoOrden === 'AMBAR'
+          ? 'AMBAR'
+          : 'ROJO';
 
     return {
       ...material,
@@ -167,49 +504,8 @@ export class ProduccionServicio {
       estadoMaterial,
       semaforo,
       cobertura,
-      etiquetaCobertura: etiquetaCobertura[cobertura],
+      etiquetaCobertura,
     };
-  }
-
-  /** Consulta de solo lectura a M14: la orden retrasada tiene prioridad sobre la requisición. */
-  private coberturaDeCompra(material: MaterialOrden): CoberturaCompra {
-    const hoy = hoyISO();
-    const requisicion = this.compras
-      .requisiciones()
-      .some(
-        (item) =>
-          !['ATENDIDA', 'CANCELADA'].includes(item.estado) &&
-          item.lineas.some(
-            (linea) =>
-              linea.materialId === material.materialId &&
-              (linea.color === null || linea.color === material.color),
-          ),
-      );
-    const ordenes = this.compras
-      .ordenes()
-      .filter(
-        (item) =>
-          ['EMITIDA', 'PARCIAL'].includes(item.estado) &&
-          item.lineas.some((linea) => linea.materialId === material.materialId),
-      );
-    const retrasada = ordenes.some(
-      (item) => item.fechaPrometida !== null && item.fechaPrometida < hoy,
-    );
-
-    if (retrasada) {
-      return 'RETRASADA';
-    }
-    if (ordenes.length > 0) {
-      return 'ORDEN_COMPRA';
-    }
-    return requisicion ? 'REQUISICION' : 'NINGUNA';
-  }
-
-  private disponibleEnM15(materialId: number, color: string): number {
-    const existencia = this.inventario
-      .vistas()
-      .find((item) => item.materialId === materialId && item.color === color);
-    return existencia?.disponible ?? 0;
   }
 
   vistaPorId(id: number): OrdenVista | undefined {
@@ -221,42 +517,28 @@ export class ProduccionServicio {
     return this.vistas().filter((orden) => {
       switch (tab) {
         case 'ROJAS':
-          if (orden.semaforo !== 'ROJO') {
-            return false;
-          }
+          if (orden.semaforo !== 'ROJO') return false;
           break;
         case 'AMBAR':
-          if (orden.semaforo !== 'AMBAR') {
-            return false;
-          }
+          if (orden.semaforo !== 'AMBAR') return false;
           break;
         case 'VERDES':
-          if (orden.semaforo !== 'VERDE') {
-            return false;
-          }
+          if (orden.semaforo !== 'VERDE') return false;
           break;
         case 'EN_PROCESO':
-          if (orden.estado !== 'EN_PROCESO') {
-            return false;
-          }
+          if (orden.estado !== 'EN_PROCESO') return false;
           break;
         case 'EN_REVISION':
-          if (orden.estado !== 'EN_REVISION') {
-            return false;
-          }
+          if (orden.estado !== 'EN_REVISION') return false;
           break;
         case 'CERRADAS':
-          if (orden.estado !== 'CERRADA') {
-            return false;
-          }
+          if (orden.estado !== 'CERRADA') return false;
           break;
         case 'TODAS':
           break;
       }
 
-      if (busqueda === '') {
-        return true;
-      }
+      if (busqueda === '') return true;
       return [
         orden.folio,
         ETIQUETAS_ORIGEN[orden.origen],
@@ -286,271 +568,33 @@ export class ProduccionServicio {
     };
   }
 
-  /** Unión de variantes activas de M10 con SKU con demanda en M09. */
   variantesDisponibles(): OpcionVariante[] {
-    const opciones = new Map<string, OpcionVariante>();
-
-    for (const fila of this.productos.filasVariantes()) {
-      if (!fila.variante.activa) {
-        continue;
-      }
-      opciones.set(fila.variante.sku, {
-        varianteId: fila.variante.id,
-        sku: fila.variante.sku,
-        nombreProducto: fila.productoNombre,
-        talla: this.productos.nombreTalla(fila.variante.talla),
-        color: this.productos.nombreColor(fila.variante.color),
-        origen: 'M10',
-      });
-    }
-
-    let varianteTemporal = -1;
-    for (const pendiente of this.pedidos.pendientesProduccion()) {
-      if (opciones.has(pendiente.sku)) {
-        continue;
-      }
-      opciones.set(pendiente.sku, {
-        varianteId: varianteTemporal--,
-        sku: pendiente.sku,
-        nombreProducto: pendiente.nombreProducto,
-        talla: pendiente.talla,
-        color: pendiente.color,
-        origen: 'M09',
-      });
-    }
-
-    return [...opciones.values()].sort((a, b) => a.sku.localeCompare(b.sku, 'es-MX'));
+    return this.opcionesVariantes();
   }
 
   pedidosDeOrden(orden: OrdenVista): PendienteProduccion[] {
+    const interna = this.lista().find((item) => item.id === orden.id);
     const skus = new Set(orden.lineas.map((linea) => linea.sku));
-    return this.pedidos.pendientesProduccion().filter((pendiente) => skus.has(pendiente.sku));
+    return (interna?.pedidosApi ?? [])
+      .filter((pedido) => skus.has(pedido.sku))
+      .map((pedido) => ({
+        sku: pedido.sku,
+        nombreProducto: nombreProductoDeSku(pedido.sku),
+        talla: nombreTalla(pedido.sku.split('-')[1] ?? 'UN'),
+        color: colorDeSku(pedido.sku),
+        demanda: pedido.cantidad,
+        pedidos: [`#${pedido.pedido_id}`],
+        ordenFolio: orden.folio,
+        fechaEstimada: orden.fechaRequerida,
+      }));
   }
 
-  explosionEstimada(sku: string, unidades: number): MaterialOrden[] {
-    if (!Number.isInteger(unidades) || unidades <= 0) {
-      return [];
-    }
-    return explosionarMateriales(sku, unidades);
-  }
-
-  crearOrden(
-    datos: DatosNuevaOrden,
-    origen: OrdenProduccion['origen'] = 'MANUAL',
-  ): ResultadoCrearOrden {
-    const lineasValidas = datos.lineas.filter(
-      (linea) => Number.isInteger(linea.cantidad) && linea.cantidad > 0 && linea.sku.trim() !== '',
-    );
-    if (lineasValidas.length === 0) {
-      return {
-        ok: false,
-        mensaje: 'Agrega al menos una variante con cantidad entera mayor a cero.',
-      };
-    }
-
-    const sumadas: string[] = [];
-    const nuevas: LineaNuevaOrden[] = [];
-    for (const linea of lineasValidas) {
-      const abierta = this.vistas().find(
-        (orden) =>
-          !ESTADOS_CERRADOS.includes(orden.estado) &&
-          orden.lineas.some((item) => item.sku === linea.sku),
-      );
-      if (abierta) {
-        this.sumarDemanda(abierta.id, linea);
-        sumadas.push(abierta.folio);
-      } else {
-        nuevas.push(linea);
-      }
-    }
-
-    if (nuevas.length === 0) {
-      const lista = [...new Set(sumadas)].join(', ');
-      return {
-        ok: true,
-        mensaje: `La demanda se sumó a la orden abierta ${lista}. No se creó una orden duplicada.`,
-        sumadaA: [...new Set(sumadas)][0],
-      };
-    }
-
-    const id = this.lista().reduce((maximo, item) => Math.max(maximo, item.id), 0) + 1;
-    const folio = `OP-${new Date().getFullYear()}-${String(++this.correlativoOrdenes).padStart(4, '0')}`;
-    const lineas: LineaOrden[] = nuevas.map((linea, indice) => ({
-      id: id * 100 + indice + 1,
-      sku: linea.sku,
-      nombreProducto: linea.nombreProducto || nombreProductoDeSku(linea.sku),
-      talla: linea.sku.split('-')[1] ?? 'UN',
-      color: colorDeSku(linea.sku),
-      cantidadPlaneada: linea.cantidad,
-      cantidadAprobada: 0,
-      cantidadMerma: 0,
-      cantidadReproceso: 0,
-    }));
-    const materiales = nuevas
-      .flatMap((linea) => explosionarMateriales(linea.sku, linea.cantidad, 'todos'))
-      .map((material, indice): MaterialOrden => ({ ...material, id: id * 100 + indice + 1 }));
-
-    const orden: OrdenProduccion = {
-      id,
-      folio,
-      origen,
-      estado: 'PLANEADA',
-      fechaRequerida:
-        datos.fechaRequerida && datos.fechaRequerida !== '' ? datos.fechaRequerida : null,
-      iniciadaEn: null,
-      cerradaEn: null,
-      creadaPor: 'Operativo · demostración',
-      notas: datos.notas.trim() === '' ? null : datos.notas.trim(),
-      lineas,
-      materiales,
-    };
-    this.lista.update((actuales) => [...actuales, orden]);
-
-    const avisoDuplicado =
-      sumadas.length > 0
-        ? ` El resto se sumó a ${[...new Set(sumadas)].join(', ')} para evitar duplicados.`
-        : '';
-    return {
-      ok: true,
-      mensaje: `Orden ${folio} creada en estado PLANEADA.${avisoDuplicado}`,
-      folio,
-    };
-  }
-
-  /** Suma la nueva demanda a una orden abierta del mismo SKU (regla de M16). */
-  private sumarDemanda(ordenId: number, linea: LineaNuevaOrden): void {
-    const extras = explosionarMateriales(linea.sku, linea.cantidad, 'todos');
-    this.lista.update((actuales) =>
-      actuales.map((orden) => {
-        if (orden.id !== ordenId) {
-          return orden;
-        }
-        const existente = orden.lineas.find((item) => item.sku === linea.sku);
-        const lineas = existente
-          ? orden.lineas.map((item) =>
-              item.sku === linea.sku
-                ? { ...item, cantidadPlaneada: item.cantidadPlaneada + linea.cantidad }
-                : item,
-            )
-          : [
-              ...orden.lineas,
-              {
-                id: orden.lineas.reduce((maximo, item) => Math.max(maximo, item.id), 0) + 1,
-                sku: linea.sku,
-                nombreProducto: linea.nombreProducto || nombreProductoDeSku(linea.sku),
-                talla: linea.sku.split('-')[1] ?? 'UN',
-                color: colorDeSku(linea.sku),
-                cantidadPlaneada: linea.cantidad,
-                cantidadAprobada: 0,
-                cantidadMerma: 0,
-                cantidadReproceso: 0,
-              },
-            ];
-
-        const materiales = [...orden.materiales];
-        for (const extra of extras) {
-          const actual = materiales.find(
-            (item) => item.materialId === extra.materialId && item.color === extra.color,
-          );
-          if (actual) {
-            const indice = materiales.indexOf(actual);
-            materiales[indice] = {
-              ...actual,
-              cantidadRequerida: redondear4(actual.cantidadRequerida + extra.cantidadRequerida),
-            };
-          } else {
-            materiales.push({
-              ...extra,
-              id: materiales.reduce((maximo, item) => Math.max(maximo, item.id), 0) + 1,
-            });
-          }
-        }
-
-        return { ...orden, lineas, materiales };
-      }),
-    );
-  }
-
-  reservar(id: number): ResultadoReserva {
-    const orden = this.lista().find((item) => item.id === id);
+  faltantesDeOrden(id: number) {
+    const orden = this.vistaPorId(id);
     if (!orden) {
-      return {
-        ok: false,
-        mensaje: 'No se encontró la orden.',
-        materialesReservados: 0,
-        materialesCompletos: 0,
-      };
-    }
-    if (!['PLANEADA', 'LISTA'].includes(orden.estado)) {
-      return {
-        ok: false,
-        mensaje: 'Solo se pueden reservar materiales en órdenes PLANEADA o LISTA.',
-        materialesReservados: 0,
-        materialesCompletos: 0,
-      };
-    }
-
-    let reservados = 0;
-    this.lista.update((actuales) =>
-      actuales.map((item) => {
-        if (item.id !== id) {
-          return item;
-        }
-        const materiales = item.materiales.map((material) => {
-          const pendiente = redondear4(material.cantidadRequerida - material.cantidadReservada);
-          if (pendiente <= TOLERANCIA) {
-            return material;
-          }
-          const disponible = this.disponibleEnM15(material.materialId, material.color);
-          const tomar = redondear4(Math.min(pendiente, Math.max(0, disponible)));
-          if (tomar <= TOLERANCIA) {
-            return material;
-          }
-          reservados += 1;
-          return {
-            ...material,
-            cantidadReservada: redondear4(material.cantidadReservada + tomar),
-          };
-        });
-        const completa = materiales.every(
-          (material) => material.cantidadRequerida - material.cantidadReservada <= TOLERANCIA,
-        );
-        return {
-          ...item,
-          materiales,
-          estado: completa ? ('LISTA' as const) : item.estado,
-        };
-      }),
-    );
-
-    const vista = this.vistaPorId(id);
-    const completos = vista?.materialesCompletos ?? 0;
-    const total = vista?.materiales.length ?? 0;
-    if (reservados === 0) {
-      return {
-        ok: false,
-        mensaje: 'No hay disponible en M15 para reservar; revisa la cobertura de compra.',
-        materialesReservados: 0,
-        materialesCompletos: completos,
-      };
-    }
-    return {
-      ok: true,
-      mensaje:
-        completos === total
-          ? `Materiales completos (${completos}/${total}). La orden pasó a LISTA.`
-          : `Se reservaron ${reservados} materiales; faltan ${total - completos} por cubrir.`,
-      materialesReservados: reservados,
-      materialesCompletos: completos,
-    };
-  }
-
-  solicitarCompra(id: number) {
-    const vista = this.vistaPorId(id);
-    if (!vista) {
       return [];
     }
-    return vista.materiales
+    return orden.materiales
       .filter((material) => material.faltante > TOLERANCIA)
       .map((material) => ({
         materialId: material.materialId,
@@ -559,271 +603,231 @@ export class ProduccionServicio {
         unidadBase: material.unidadBase,
         faltante: material.faltante,
         tieneRequisicion: material.cobertura === 'REQUISICION',
-        tieneOrdenCompra: material.cobertura === 'ORDEN_COMPRA',
+        tieneOrdenCompra: false,
         ordenRetrasada: material.cobertura === 'RETRASADA',
       }));
   }
 
-  iniciar(id: number): ResultadoAccion {
-    const vista = this.vistaPorId(id);
-    if (!vista) {
-      return { ok: false, mensaje: 'No se encontró la orden.' };
-    }
-    if (vista.estado !== 'LISTA') {
-      return { ok: false, mensaje: 'La orden debe estar en LISTA para iniciar producción.' };
-    }
+  planSugerido(): FilaPlanSugerido[] {
+    return this.planes();
+  }
 
-    const cambio = vista.materiales.find(
-      (material) =>
-        this.disponibleEnM15(material.materialId, material.color) +
-          material.cantidadReservada +
-          TOLERANCIA <
-        material.cantidadRequerida,
+  ordenesDisponibles(): { id: number; folio: string }[] {
+    return this.lista()
+      .map((orden) => ({ id: orden.id, folio: orden.folio }))
+      .sort((a, b) => b.folio.localeCompare(a.folio, 'es-MX'));
+  }
+
+  crearOrden(
+    datos: DatosNuevaOrden,
+    _origen?: OrdenProduccion['origen'],
+  ): Observable<ResultadoCrearOrden> {
+    const lineasValidas = datos.lineas.filter(
+      (linea) => Number.isInteger(linea.cantidad) && linea.cantidad > 0 && linea.varianteId > 0,
     );
-    if (cambio) {
-      return {
+    if (lineasValidas.length === 0) {
+      return of({
         ok: false,
-        mensaje: `Las existencias de ${cambio.nombreMaterial} cambiaron desde la reserva. No se consumió nada; reserva de nuevo.`,
-      };
+        mensaje: 'Agrega al menos una variante activa con cantidad entera mayor a cero.',
+      });
     }
 
-    this.lista.update((actuales) =>
-      actuales.map((orden) =>
-        orden.id === id
-          ? {
-              ...orden,
-              estado: 'EN_PROCESO' as const,
-              iniciadaEn: hoyISO(),
-              materiales: orden.materiales.map((material) => ({
-                ...material,
-                cantidadConsumida: material.cantidadReservada,
-              })),
-            }
-          : orden,
-      ),
-    );
-    return {
-      ok: true,
-      mensaje:
-        'Producción iniciada. El consumo PEPS con costo real de lote y la reversión atómica quedan pendientes de Flask.',
+    const cuerpo = {
+      lineas: lineasValidas.map((linea) => ({
+        variante_id: linea.varianteId,
+        cantidad: linea.cantidad,
+      })),
+      fecha_requerida: datos.fechaRequerida || null,
+      notas: datos.notas.trim() === '' ? null : datos.notas.trim(),
     };
-  }
 
-  enviarRevision(id: number): ResultadoAccion {
-    const vista = this.vistaPorId(id);
-    if (!vista) {
-      return { ok: false, mensaje: 'No se encontró la orden.' };
-    }
-    if (vista.estado !== 'EN_PROCESO') {
-      return { ok: false, mensaje: 'Solo se puede enviar a revisión una orden EN_PROCESO.' };
-    }
-    this.lista.update((actuales) =>
-      actuales.map((orden) =>
-        orden.id === id ? { ...orden, estado: 'EN_REVISION' as const } : orden,
-      ),
-    );
-    return { ok: true, mensaje: `Orden ${vista.folio} enviada a revisión de calidad.` };
-  }
-
-  dictaminar(id: number, lineas: LineaDictamen[]): ResultadoAccion {
-    const orden = this.lista().find((item) => item.id === id);
-    if (!orden || orden.estado !== 'EN_REVISION') {
-      return { ok: false, mensaje: 'La orden no está disponible para dictamen.' };
-    }
-    if (lineas.length !== orden.lineas.length) {
-      return { ok: false, mensaje: 'Falta dictaminar una o más líneas.' };
-    }
-
-    const porLinea = new Map(lineas.map((linea) => [linea.lineaId, linea]));
-    for (const lineaOrden of orden.lineas) {
-      const dictamen = porLinea.get(lineaOrden.id);
-      // El reproceso vuelve a revisión: sigue pendiente hasta aprobarse o mermarse.
-      const pendiente =
-        lineaOrden.cantidadPlaneada - lineaOrden.cantidadAprobada - lineaOrden.cantidadMerma;
-      if (!dictamen) {
-        return { ok: false, mensaje: `Falta el dictamen de ${lineaOrden.sku}.` };
-      }
-      if (
-        !dictamen.medidasOk ||
-        !dictamen.costurasOk ||
-        !dictamen.bordadoOk ||
-        !dictamen.etiquetasOk
-      ) {
+    return this.api.post<DetalleOrdenApi>('/produccion/ordenes', cuerpo).pipe(
+      map((respuesta) => {
+        const orden = this.adaptarOrden(respuesta);
+        this.lista.update((actuales) => [orden, ...actuales.filter((item) => item.id !== orden.id)]);
+        this.recargarSilenciosamente();
         return {
-          ok: false,
-          mensaje: `Completa la lista de verificación de ${lineaOrden.sku} antes de dictaminar.`,
-        };
-      }
-      const total = dictamen.cantidadAprobada + dictamen.cantidadMerma + dictamen.cantidadReproceso;
-      if (
-        dictamen.cantidadRevisada > pendiente + TOLERANCIA ||
-        total > dictamen.cantidadRevisada + TOLERANCIA
-      ) {
-        return {
-          ok: false,
-          mensaje: `Las cantidades de ${lineaOrden.sku} no pueden superar lo revisado ni lo pendiente.`,
-        };
-      }
-      if (dictamen.cantidadMerma > 0 && dictamen.causaMerma.trim() === '') {
-        return { ok: false, mensaje: `Indica la causa de la merma en ${lineaOrden.sku}.` };
-      }
-    }
-
-    let aprobadas = 0;
-    let mermas = 0;
-    let reprocesos = 0;
-    this.lista.update((actuales) =>
-      actuales.map((item) => {
-        if (item.id !== id) {
-          return item;
-        }
-        const lineasActualizadas = item.lineas.map((linea) => {
-          const dictamen = porLinea.get(linea.id);
-          if (!dictamen) {
-            return linea;
-          }
-          aprobadas += dictamen.cantidadAprobada;
-          mermas += dictamen.cantidadMerma;
-          reprocesos += dictamen.cantidadReproceso;
-          return {
-            ...linea,
-            cantidadAprobada: linea.cantidadAprobada + dictamen.cantidadAprobada,
-            cantidadMerma: linea.cantidadMerma + dictamen.cantidadMerma,
-            // Se reemplaza: el reproceso anterior ya fue revisado en este ciclo.
-            cantidadReproceso: dictamen.cantidadReproceso,
-          };
-        });
-        const planeadas = lineasActualizadas.reduce(
-          (suma, linea) => suma + linea.cantidadPlaneada,
-          0,
-        );
-        const aprobadasFinales = lineasActualizadas.reduce(
-          (suma, linea) => suma + linea.cantidadAprobada,
-          0,
-        );
-        const mermasFinales = lineasActualizadas.reduce(
-          (suma, linea) => suma + linea.cantidadMerma,
-          0,
-        );
-        const estado: OrdenProduccion['estado'] =
-          reprocesos > 0
-            ? 'EN_PROCESO'
-            : aprobadasFinales + mermasFinales >= planeadas - TOLERANCIA
-              ? 'CERRADA'
-              : 'EN_REVISION';
-        return {
-          ...item,
-          lineas: lineasActualizadas,
-          estado,
-          cerradaEn: estado === 'CERRADA' ? hoyISO() : item.cerradaEn,
+          ok: true,
+          mensaje: `Orden ${orden.folio} creada en estado ${orden.estado}.`,
+          folio: orden.folio,
         };
       }),
-    );
-
-    const revision: RevisionCalidad = {
-      id: this.listaRevisiones().length + 1,
-      folio: `REV-${new Date().getFullYear()}-${String(++this.correlativoRevisiones).padStart(4, '0')}`,
-      ordenId: id,
-      ordenFolio: orden.folio,
-      fecha: hoyISO(),
-      revisadaPor: 'Operativo · demostración',
-      lineas: structuredClone(lineas),
-    };
-    this.listaRevisiones.update((actuales) => [revision, ...actuales]);
-
-    const notaMerma =
-      mermas > 0
-        ? ` ${mermas} unidad(es) en merma: M17 registraría la causa y la etapa cuando exista Flask.`
-        : '';
-    const notaReproceso = reprocesos > 0 ? ' El reproceso devolvió la orden a EN_PROCESO.' : '';
-    return {
-      ok: true,
-      mensaje: `Dictamen guardado: ${aprobadas} aprobadas.${notaReproceso}${notaMerma} El alta en M12 y su asignación FIFO a pedidos quedan pendientes de Flask.`,
-    };
-  }
-
-  cancelar(id: number): ResultadoAccion {
-    const vista = this.vistaPorId(id);
-    if (!vista) {
-      return { ok: false, mensaje: 'No se encontró la orden.' };
-    }
-    if (!['PLANEADA', 'LISTA'].includes(vista.estado)) {
-      return {
-        ok: false,
-        mensaje: 'Solo se puede cancelar una orden en PLANEADA o LISTA.',
-      };
-    }
-    this.lista.update((actuales) =>
-      actuales.map((orden) =>
-        orden.id === id ? { ...orden, estado: 'CANCELADA' as const } : orden,
+      catchError((error: unknown) =>
+        of({ ok: false, mensaje: mensajeError(error, 'No fue posible crear la orden.') }),
       ),
     );
-    return {
-      ok: true,
-      mensaje: `Orden ${vista.folio} cancelada. La liberación de reservas en M15 corresponde a Flask.`,
+  }
+
+  reservar(id: number): Observable<ResultadoReserva> {
+    return this.api.post<{ orden: DetalleOrdenApi; reservas: ReservaApi[] }>(
+      `/produccion/ordenes/${id}/reservar`,
+      {},
+    ).pipe(
+      map((respuesta) => {
+        this.actualizarDesdeDetalle(respuesta.orden);
+        const completa = respuesta.reservas.filter((item) => item.estado === 'COMPLETO').length;
+        return {
+          ok: true,
+          mensaje:
+            reservasTexto(respuesta.reservas, completa) ||
+            `Reserva registrada en ${respuesta.orden.folio}.`,
+          materialesReservados: respuesta.reservas.filter((item) => numero(item.reservada) > 0)
+            .length,
+          materialesCompletos: completa,
+        };
+      }),
+      catchError((error: unknown) =>
+        of({
+          ok: false,
+          mensaje: mensajeError(error, 'No fue posible reservar los materiales.'),
+          materialesReservados: 0,
+          materialesCompletos: 0,
+        }),
+      ),
+    );
+  }
+
+  solicitarCompraAccion(id: number): Observable<ResultadoAccion> {
+    return this.api
+      .post<SolicitudCompraApi>(`/produccion/ordenes/${id}/solicitar-compra`, {})
+      .pipe(
+        map((respuesta) => ({
+          ok: true,
+          mensaje: respuesta.duplicada
+            ? `Ya existía la requisición ${respuesta.requisicion.folio}; no se duplicaron faltantes.`
+            : `Requisición ${respuesta.requisicion.folio} creada con los faltantes de la orden.`,
+        })),
+        tap(() => this.recargarSilenciosamente()),
+        catchError((error: unknown) =>
+          of({ ok: false, mensaje: mensajeError(error, 'No fue posible crear la requisición.') }),
+        ),
+      );
+  }
+
+  iniciar(id: number): Observable<ResultadoAccion> {
+    return this.api
+      .post<{ orden: DetalleOrdenApi }>(`/produccion/ordenes/${id}/iniciar`, {}, {
+        idempotencyKey: this.nuevaClaveIdempotencia(),
+      })
+      .pipe(
+        map((respuesta) => {
+          this.actualizarDesdeDetalle(respuesta.orden);
+          return {
+            ok: true,
+            mensaje: `Producción iniciada en ${respuesta.orden.folio}; consumo PEPS registrado.`,
+          };
+        }),
+        catchError((error: unknown) =>
+          of({ ok: false, mensaje: mensajeError(error, 'No fue posible iniciar la producción.') }),
+        ),
+      );
+  }
+
+  enviarRevision(id: number, notas?: string): Observable<ResultadoAccion> {
+    return this.api
+      .post<DetalleOrdenApi>(`/produccion/ordenes/${id}/revision`, {
+        notas: notas?.trim() || null,
+      })
+      .pipe(
+        map((respuesta) => {
+          this.actualizarDesdeDetalle(respuesta);
+          return { ok: true, mensaje: `Orden ${respuesta.folio} enviada a revisión de calidad.` };
+        }),
+        catchError((error: unknown) =>
+          of({ ok: false, mensaje: mensajeError(error, 'No fue posible enviar a revisión.') }),
+        ),
+      );
+  }
+
+  dictaminar(id: number, lineas: LineaDictamen[]): Observable<ResultadoAccion> {
+    if (lineas.length === 0) {
+      return of({ ok: false, mensaje: 'Captura el dictamen de al menos una línea.' });
+    }
+    for (const linea of lineas) {
+      const total = linea.cantidadAprobada + linea.cantidadReproceso + linea.cantidadMerma;
+      if (total !== linea.cantidadRevisada) {
+        return of({
+          ok: false,
+          mensaje: `En ${linea.sku}, aprobadas + reproceso + merma deben igualar la cantidad revisada.`,
+        });
+      }
+      if (
+        linea.cantidadAprobada > 0 &&
+        (!linea.medidasOk || !linea.costurasOk || !linea.bordadoOk || !linea.etiquetasOk)
+      ) {
+        return of({
+          ok: false,
+          mensaje: `Completa la verificación de ${linea.sku} antes de aprobar unidades.`,
+        });
+      }
+    }
+
+    const cuerpo = {
+      lineas: lineas.map((linea) => ({
+        orden_linea_id: linea.lineaId,
+        cantidad_revisada: linea.cantidadRevisada,
+        cantidad_aprobada: linea.cantidadAprobada,
+        cantidad_reproceso: linea.cantidadReproceso,
+        cantidad_merma: linea.cantidadMerma,
+        medidas_ok: linea.medidasOk,
+        costuras_ok: linea.costurasOk,
+        bordado_ok: linea.bordadoOk,
+        etiquetas_ok: linea.etiquetasOk,
+        observaciones: linea.causaMerma.trim() === '' ? null : linea.causaMerma.trim(),
+        etapa_merma: linea.etapaMerma,
+      })),
     };
-  }
 
-  /** Plan sugerido: mayor entre demanda no cubierta y reposición si está en el mínimo. */
-  planSugerido(): FilaPlanSugerido[] {
-    const skus = new Set<string>();
-    for (const opcion of this.variantesDisponibles()) {
-      skus.add(opcion.sku);
-    }
-    const pendientes = this.pedidos.pendientesProduccion();
-    for (const pendiente of pendientes) {
-      skus.add(pendiente.sku);
-    }
-
-    const opcionesPorSku = new Map(this.variantesDisponibles().map((item) => [item.sku, item]));
-    const filasPorVariante = new Map<string, FilaVariante>(
-      this.productos.filasVariantes().map((fila) => [fila.variante.sku, fila]),
-    );
-    const abiertas = this.vistas().filter((orden) => !ESTADOS_CERRADOS.includes(orden.estado));
-
-    const filas: FilaPlanSugerido[] = [...skus].map((sku) => {
-      const opcion = opcionesPorSku.get(sku);
-      const variante = filasPorVariante.get(sku)?.variante;
-      const demanda = pendientes.find((pendiente) => pendiente.sku === sku);
-      const disponible = Math.max(0, (variante?.existencia ?? 0) - (variante?.reservado ?? 0));
-      const minimo = variante?.stockMinimo ?? 0;
-      const cantidadReposicion = disponible <= minimo ? (variante?.cantidadReposicion ?? 0) : 0;
-      const produccionEnCurso = abiertas
-        .flatMap((orden) => orden.lineas)
-        .filter((linea) => linea.sku === sku)
-        .reduce(
-          (suma, linea) =>
-            suma +
-            Math.max(0, linea.cantidadPlaneada - linea.cantidadAprobada - linea.cantidadMerma),
-          0,
-        );
-      const pendienteNoCubierto = redondear4(
-        Math.max(0, (demanda?.demanda ?? 0) - produccionEnCurso - disponible),
-      );
-      const ordenAbierta = abiertas.find((orden) =>
-        orden.lineas.some((linea) => linea.sku === sku),
-      );
-
-      return {
-        sku,
-        nombreProducto:
-          opcion?.nombreProducto ?? demanda?.nombreProducto ?? nombreProductoDeSku(sku),
-        talla: opcion?.talla ?? demanda?.talla ?? 'UN',
-        color: opcion?.color ?? demanda?.color ?? colorDeSku(sku),
-        disponible: redondear4(disponible),
-        minimo,
-        pendientePedidos: demanda?.demanda ?? 0,
-        pedidos: demanda?.pedidos ?? [],
-        produccionEnCurso,
-        pendienteNoCubierto,
-        cantidadReposicion,
-        cantidadSugerida: Math.max(pendienteNoCubierto, cantidadReposicion),
-        ordenAbiertaFolio: ordenAbierta?.folio ?? null,
-      };
-    });
-
-    return filas.sort(
-      (a, b) => b.cantidadSugerida - a.cantidadSugerida || a.sku.localeCompare(b.sku, 'es-MX'),
+    return this.api.post<DetalleOrdenApi>(`/produccion/ordenes/${id}/dictamen`, cuerpo).pipe(
+      map((respuesta) => {
+        this.actualizarDesdeDetalle(respuesta);
+        return {
+          ok: true,
+          mensaje: `Dictamen registrado en ${respuesta.folio}. Estado: ${respuesta.estado}.`,
+        };
+      }),
+      tap(() => this.recargarSilenciosamente()),
+      catchError((error: unknown) =>
+        of({ ok: false, mensaje: mensajeError(error, 'No fue posible registrar el dictamen.') }),
+      ),
     );
   }
+
+  cancelar(id: number, motivo = 'Cancelación solicitada desde el tablero'): Observable<ResultadoAccion> {
+    if (motivo.trim().length < 3) {
+      return of({ ok: false, mensaje: 'Indica el motivo de la cancelación.' });
+    }
+    return this.api
+      .post<DetalleOrdenApi>(`/produccion/ordenes/${id}/cancelar`, { motivo: motivo.trim() })
+      .pipe(
+        map((respuesta) => {
+          this.actualizarDesdeDetalle(respuesta);
+          return { ok: true, mensaje: `Orden ${respuesta.folio} cancelada.` };
+        }),
+        catchError((error: unknown) =>
+          of({ ok: false, mensaje: mensajeError(error, 'No fue posible cancelar la orden.') }),
+        ),
+      );
+  }
+
+  private actualizarDesdeDetalle(detalle: DetalleOrdenApi): void {
+    const actualizado = this.adaptarOrden(detalle);
+    this.lista.update((actuales) =>
+      actuales.map((orden) => (orden.id === actualizado.id ? actualizado : orden)),
+    );
+  }
+
+  private nuevaClaveIdempotencia(): string {
+    return globalThis.crypto?.randomUUID?.() ?? `prod-${Date.now()}-${Math.random()}`;
+  }
+}
+
+function reservasTexto(reservas: ReservaApi[], completos: number): string {
+  const tomadas = reservas.filter((item) => numero(item.reservada) > 0).length;
+  if (tomadas === 0) {
+    return 'No había material disponible para reservar; revisa la cobertura de compra.';
+  }
+  return completos === reservas.length
+    ? `Materiales completos (${completos}/${reservas.length}). La orden pasó a LISTA.`
+    : `Se reservaron ${tomadas} material(es); faltan ${reservas.length - completos} por cubrir.`;
 }

@@ -63,7 +63,7 @@
             Cliente
             <select class="campo__entrada" formControlName="clienteId">
               <option [ngValue]="0">Selecciona un cliente</option>
-              @for (cliente of clientes; track cliente.id) {
+              @for (cliente of clientes(); track cliente.id) {
                 <option [ngValue]="cliente.id">{{ cliente.nombre }}</option>
               }
             </select>
@@ -74,10 +74,17 @@
         } @else {
           <div class="campos">
             <label class="campo">
-              Nombre completo
+              Nombre
               <input class="campo__entrada" type="text" formControlName="nombreNuevo" />
               @if (intentoPaso() && formulario.controls.nombreNuevo.value.trim() === '') {
                 <span class="campo__error">El nombre es obligatorio.</span>
+              }
+            </label>
+            <label class="campo">
+              Apellidos
+              <input class="campo__entrada" type="text" formControlName="apellidosNuevo" />
+              @if (intentoPaso() && formulario.controls.apellidosNuevo.value.trim() === '') {
+                <span class="campo__error">Los apellidos son obligatorios.</span>
               }
             </label>
             <label class="campo">
@@ -115,7 +122,7 @@
                 SKU
                 <select class="campo__entrada" formControlName="sku" (change)="sincronizarLineas()">
                   <option value="">Selecciona una variante</option>
-                  @for (variante of variantes; track variante.sku) {
+                  @for (variante of variantes(); track variante.sku) {
                     <option [value]="variante.sku">
                       {{ variante.sku }} · {{ variante.nombreProducto }} · ${{
                         variante.precioUnitario

@@ -48,7 +48,7 @@ export class DetalleOrden {
     const orden = this.orden();
     return orden ? this.servicio.pedidosDeOrden(orden) : [];
   });
-  protected readonly faltantes = computed(() => this.servicio.solicitarCompra(this.id()));
+  protected readonly faltantes = computed(() => this.servicio.faltantesDeOrden(this.id()));
 
   protected readonly mostrarCompra = signal(false);
   protected readonly cancelando = signal(false);
@@ -72,8 +72,9 @@ export class DetalleOrden {
   });
 
   protected reservar(): void {
-    const resultado = this.servicio.reservar(this.id());
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
+    this.servicio.reservar(this.id()).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
+    });
   }
 
   protected solicitarCompra(): void {
@@ -81,30 +82,33 @@ export class DetalleOrden {
   }
 
   protected registrarSolicitud(): void {
-    const faltantes = this.faltantes();
-    if (faltantes.length === 0) {
+    if (this.faltantes().length === 0) {
       this.avisos.mostrar('informacion', 'No hay materiales faltantes en esta orden.');
       return;
     }
-    this.avisos.mostrar(
-      'informacion',
-      `Solicitud preparada para ${faltantes.length} material(es). Flask debe crear la requisición REQ en M14, verificar duplicados y reevaluar el semáforo; no se guardó nada.`,
-    );
+    this.servicio.solicitarCompraAccion(this.id()).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+    });
   }
 
   protected iniciar(): void {
-    const resultado = this.servicio.iniciar(this.id());
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+    this.servicio.iniciar(this.id()).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+    });
   }
 
   protected enviarRevision(): void {
-    const resultado = this.servicio.enviarRevision(this.id());
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+    this.servicio.enviarRevision(this.id()).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+    });
   }
 
   protected cancelar(): void {
-    const resultado = this.servicio.cancelar(this.id());
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    this.cancelando.set(false);
+    this.servicio.cancelar(this.id(), 'Cancelación solicitada desde el detalle de la orden').subscribe(
+      (resultado) => {
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+        this.cancelando.set(false);
+      },
+    );
   }
 }

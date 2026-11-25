@@ -8,13 +8,13 @@
       <p class="eyebrow">M10 · Catálogo maestro</p>
       <h1 class="titulo">{{ esEdicion ? 'Editar producto' : 'Nuevo producto' }}</h1>
       <p class="subtitulo">
-        El código base y los SKU se generan al guardar. El precio NO se captura: se calcula con
-        materiales, mermas, mano de obra, bordado, indirectos y margen objetivo (§7.5).
+        Los SKU se generan en Flask al guardar. El precio se recalcula en servidor con las recetas
+        vigentes (M11); el desglose de esta pantalla es sólo una vista previa.
       </p>
     </div>
   </div>
 
-  @if (!esEdicion || producto) {
+  @if (!esEdicion || producto()) {
     <form [formGroup]="forma" (ngSubmit)="guardar()" class="formulario" novalidate>
       <fieldset class="tarjeta seccion">
         <legend class="seccion__titulo">1 · Identidad del producto</legend>
@@ -101,8 +101,8 @@
         <legend class="seccion__titulo">2 · Materiales, costos y precio calculado</legend>
         <p class="nota">
           Flujo guiado: <strong>Materiales + Porcentajes + Bordado → Receta → Precio</strong>. Los
-          costos base y las mermas se leen del catálogo de M11/M15; aquí solo se ajusta la captura
-          de demostración. Flask hará el cálculo autoritativo al integrarse.
+          costos base y las mermas se leen del catálogo de M15; Flask calcula el precio con la
+          receta vigente de M11.
         </p>
 
         <div class="selector-material">
@@ -354,7 +354,7 @@
           <div>
             <p class="grupo-opciones__titulo">Colores comerciales *</p>
             <div formArrayName="colores" class="opciones">
-              @for (color of colores; track color.codigo; let indice = $index) {
+              @for (color of colores(); track color.codigo; let indice = $index) {
                 <label class="casilla" [attr.for]="'color-' + color.codigo">
                   <input
                     type="checkbox"
@@ -373,7 +373,7 @@
           <div>
             <p class="grupo-opciones__titulo">Tallas *</p>
             <div formArrayName="tallas" class="opciones">
-              @for (talla of tallas; track talla.codigo; let indice = $index) {
+              @for (talla of tallas(); track talla.codigo; let indice = $index) {
                 <label class="casilla" [attr.for]="'talla-' + talla.codigo">
                   <input
                     type="checkbox"
@@ -440,12 +440,12 @@
         }
       </section>
 
-      @if (esEdicion && producto) {
+      @if (esEdicion && producto()) {
         <section class="tarjeta seccion">
           <h2 class="seccion__titulo">7 · Activación y bitácora</h2>
           @if (razonesActivacion().length === 0) {
             <p class="nota nota--exito">
-              Este producto cumple las condiciones de activación registradas en la demostración:
+              Este producto cumple las condiciones de activación registradas en Flask:
               recetas vigentes por talla y al menos una imagen.
             </p>
           } @else {
@@ -459,10 +459,10 @@
               (M11) y al menos una imagen.
             </p>
           }
-          @if (producto.bitacora.length > 0) {
+          @if (bitacora().length > 0) {
             <h3 class="subtitulo-seccion">Bitácora de precio</h3>
             <ul class="bitacora">
-              @for (entrada of producto.bitacora; track entrada.id) {
+              @for (entrada of bitacora(); track entrada.id) {
                 <li>
                   <strong>{{ entrada.usuario }}</strong>
                   <span>{{ entrada.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}</span>

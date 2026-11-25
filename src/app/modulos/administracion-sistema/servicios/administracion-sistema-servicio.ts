@@ -1,11 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { CLIENTES_SIMULADOS } from '../../ventas/datos-simulados/clientes';
-import { VentasServicio } from '../../ventas/servicios/ventas-servicio';
 import { ProductosServicio } from '../../productos/servicios/productos-servicio';
 import {
   BITACORA_INICIAL,
   CATALOGOS_INICIALES,
-  DEVOLUCIONES_DEMO,
   PARAMETROS_INICIALES,
   USUARIOS_INICIALES,
 } from '../datos-simulados/administracion';
@@ -40,7 +37,6 @@ export interface DatosUsuario {
 })
 export class AdministracionSistemaServicio {
   private readonly productos = inject(ProductosServicio);
-  private readonly ventas = inject(VentasServicio);
 
   private readonly usuariosLista = signal<UsuarioSistema[]>(
     USUARIOS_INICIALES.map((usuario) => ({ ...usuario })),
@@ -71,37 +67,7 @@ export class AdministracionSistemaServicio {
       ).length,
   );
 
-  readonly clientes = computed<ClienteSistema[]>(() => {
-    const saldo =
-      this.parametrosLista().find(
-        (parametro) => parametro.clave === 'saldo_inicial_cuenta_simulada',
-      )?.valor ?? 5000;
-    const ventas = this.ventas.ventas();
-
-    return CLIENTES_SIMULADOS.map((cliente) => {
-      const propias = ventas.filter(
-        (venta) => venta.cliente === cliente.nombre && venta.estado === 'ACTIVA',
-      );
-      return {
-        id: cliente.id,
-        nombre: cliente.nombre,
-        correo: cliente.correo,
-        telefono: cliente.telefono,
-        acceso: cliente.esNuevoSinAcceso ? ('SIN_ACCESO' as const) : ('REGISTRADO' as const),
-        compras: propias.length,
-        totalCompras: propias.reduce((suma, venta) => suma + venta.total, 0),
-        pagosPendientes: propias.filter((venta) => venta.estadoPago === 'PENDIENTE').length,
-        devolucionesDemo: DEVOLUCIONES_DEMO[cliente.id] ?? 0,
-        saldoSimulado: saldo,
-        historial: propias.map((venta) => ({
-          folio: venta.folio,
-          fecha: venta.fecha,
-          total: venta.total,
-          estadoPago: venta.estadoPago,
-        })),
-      };
-    });
-  });
+  readonly clientes = computed<ClienteSistema[]>(() => []);
 
   entradasDe(tipo: TipoCatalogo): EntradaCatalogo[] {
     return this.catalogosLista().filter((entrada) => entrada.tipo === tipo);

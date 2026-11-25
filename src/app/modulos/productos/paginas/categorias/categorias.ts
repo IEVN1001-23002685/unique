@@ -19,6 +19,11 @@ export class Categorias {
 
   protected readonly categorias = this.servicio.categorias;
   protected readonly editando = signal<number | undefined>(undefined);
+
+  constructor() {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly intento = signal(false);
 
   protected readonly forma = this.fb.nonNullable.group({
@@ -43,21 +48,26 @@ export class Categorias {
     }
 
     const raw = this.forma.getRawValue();
-    const resultado = this.servicio.guardarCategoria(
-      {
-        nombre: raw.nombre,
-        prefijo: raw.prefijo,
-        usaTallas: raw.usaTallas,
-        activa: raw.activa,
-        descripcion: raw.descripcion,
-      },
-      this.editando(),
-    );
-
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    if (resultado.ok) {
-      this.nueva();
-    }
+    this.servicio
+      .guardarCategoria(
+        {
+          nombre: raw.nombre,
+          prefijo: raw.prefijo,
+          usaTallas: raw.usaTallas,
+          activa: raw.activa,
+          descripcion: raw.descripcion,
+        },
+        this.editando(),
+      )
+      .subscribe({
+        next: (resultado) => {
+          this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+          if (resultado.ok) {
+            this.nueva();
+          }
+        },
+        error: () => this.avisos.mostrar('error', 'No fue posible guardar la categoría en Flask.'),
+      });
   }
 
   protected editar(categoria: CategoriaProducto): void {
@@ -79,7 +89,10 @@ export class Categorias {
   }
 
   protected alternar(categoria: CategoriaProducto): void {
-    const resultado = this.servicio.alternarCategoria(categoria.id);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+    this.servicio.alternarCategoria(categoria.id).subscribe({
+      next: (resultado) =>
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje),
+      error: () => this.avisos.mostrar('error', 'No fue posible cambiar la categoría en Flask.'),
+    });
   }
 }

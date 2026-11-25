@@ -13,8 +13,6 @@
     <a routerLink="/compras/ordenes" class="boton boton--secundario">Volver a órdenes</a>
   </div>
 
-  <app-selector-perfil-demo />
-
   <div class="tarjeta bloque selector-orden">
     <label class="campo selector">
       Orden de compra a recibir
@@ -208,49 +206,29 @@
 
   @if (resultado(); as visto) {
     <section class="tarjeta bloque resultado" aria-live="polite">
-      <h2 class="titulo-section">{{ visto.recepcion.folio }} · vista previa</h2>
+      <h2 class="titulo-section">{{ visto.recepcion.folio }} · registrada</h2>
       <p>
-        La orden quedó <app-chip-estado-compra [estado]="visto.estadoOrden" />. Nada de esto se
-        guardó en servidor.
+        Flask registró la recepción y la orden quedó
+        <app-chip-estado-compra [estado]="visto.estadoOrden" />.
       </p>
 
-      <h3>Lotes que M15 crearía</h3>
-      @if (visto.lotes.length === 0) {
-        <p class="celda-secundaria">No hay cantidad aceptada para generar lotes.</p>
-      } @else {
-        <ul>
-          @for (lote of visto.lotes; track lote.folio) {
-            <li>
-              <strong>{{ lote.folio }}</strong> ·
-              {{ servicio.obtenerMaterial(lote.materialId)?.nombre }} · {{ lote.cantidadBase }}
-              {{ lote.unidadBase }} · {{ lote.medidas }}
-              @if (esAdministrador()) {
-                · costo real
-                {{ lote.costoReal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
-              }
-            </li>
-          }
-        </ul>
-      }
+      <h3>Detalle recibido</h3>
+      <ul>
+        @for (linea of visto.recepcion.lineas; track linea.id) {
+          <li>
+            Medida {{ linea.cantidadBaseMedida | number: '1.0-4' }} · aceptada
+            {{ linea.cantidadBaseAceptada | number: '1.0-4' }} · rechazada
+            {{ linea.cantidadBaseRechazada | number: '1.0-4' }}
+            @if (linea.motivoRechazo) {
+              · {{ linea.motivoRechazo }}
+            }
+          </li>
+        }
+      </ul>
 
-      <h3>Mermas que M17 registraría</h3>
-      @if (visto.mermas.length === 0) {
-        <p class="celda-secundaria">No hubo material rechazado.</p>
-      } @else {
-        <ul>
-          @for (merma of visto.mermas; track merma.materialId) {
-            <li>
-              {{ servicio.obtenerMaterial(merma.materialId)?.nombre }} · {{ merma.cantidadBase }}
-              {{ merma.unidadBase }} · {{ merma.causa }} · etapa {{ merma.etapa }}
-            </li>
-          }
-        </ul>
-      }
-
-      <p class="nota nota--advertencia">
-        La integración con Flask debe ejecutar registrar_recepcion con Idempotency-Key, crear los
-        lotes, mover inventario en M15, enviar rechazos a M17 y reevaluar alertas y órdenes de
-        producción.
+      <p class="nota">
+        Los lotes con cantidad aceptada están disponibles en M15 y el material rechazado quedó
+        registrado como merma en M17.
       </p>
     </section>
   }

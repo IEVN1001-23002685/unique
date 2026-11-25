@@ -350,10 +350,12 @@ export class ComprasServicio {
           ),
       ),
       concatMap(() => this.recargar()),
-      map(() => ({
-        cantidad: this.cotizaciones().filter((item) => item.requisicionId === requisicionId).length,
-        conAlterno,
-      })),
+      map(() => {
+        const cantidad = this.cotizaciones().filter(
+          (item) => item.requisicionId === requisicionId,
+        ).length;
+        return cantidad > 0 ? { cantidad, conAlterno } : null;
+      }),
     );
   }
 
@@ -519,8 +521,6 @@ export class ComprasServicio {
           return {
             recepcion: this.adaptarRecepcion(respuesta.recepcion),
             estadoOrden: respuesta.orden_compra.estado as ResultadoRecepcion['estadoOrden'],
-            lotes: [],
-            mermas: [],
           };
         }),
       );

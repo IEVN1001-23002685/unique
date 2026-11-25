@@ -1,6 +1,7 @@
 import { CurrencyPipe, DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { DetalleMerma } from '../../componentes/detalle-merma/detalle-merma';
 import { ModalReversarMerma } from '../../componentes/modal-reversar-merma/modal-reversar-merma';
@@ -15,8 +16,6 @@ import {
   type MermaVista,
   type OrigenMerma,
 } from '../../modelos/merma';
-
-type PerfilDemo = 'Operativo' | 'Administrador';
 
 /** Historial de la zona de merma y correcciones por reverso (M17). */
 @Component({
@@ -37,18 +36,13 @@ type PerfilDemo = 'Operativo' | 'Administrador';
 export class ZonaMerma {
   private readonly servicio = inject(MermasServicio);
   private readonly avisos = inject(AvisosServicio);
-  private readonly ruta = inject(ActivatedRoute);
+  private readonly auth = inject(AuthStateService);
 
   private readonly tamanoPagina = 8;
 
   protected readonly etapas = ETAPAS_MERMA;
   protected readonly etiquetasEtapa = ETIQUETAS_ETAPA;
   protected readonly origenes = FILTROS_ORIGEN;
-  protected readonly perfil = signal<PerfilDemo>(
-    String(this.ruta.snapshot.data['rol'] ?? 'Operativo') === 'Administrador'
-      ? 'Administrador'
-      : 'Operativo',
-  );
 
   protected readonly filtroTexto = signal('');
   protected readonly filtroProducto = signal('');
@@ -109,11 +103,7 @@ export class ZonaMerma {
     };
   });
 
-  protected readonly esAdministrador = computed(() => this.perfil() === 'Administrador');
-
-  protected cambiarPerfil(perfil: PerfilDemo): void {
-    this.perfil.set(perfil);
-  }
+  protected readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
 
   protected alCambiarTexto(evento: Event): void {
     this.filtroTexto.set((evento.target as HTMLInputElement).value);
@@ -172,7 +162,7 @@ export class ZonaMerma {
     if (!this.esAdministrador()) {
       this.avisos.mostrar(
         'informacion',
-        'Corregir una merma requiere perfil Administrador; cambia el perfil de demostración.',
+        'Corregir una merma requiere una sesión con perfil Administrador.',
       );
       return;
     }
@@ -188,9 +178,10 @@ export class ZonaMerma {
     if (!merma) {
       return;
     }
-    const resultado = this.servicio.reversar(merma.id, motivo);
-    this.reversar.set(null);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+    this.servicio.reversar(merma.id, motivo).subscribe((resultado) => {
+      this.reversar.set(null);
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+    });
   }
 
   protected etiquetaEstado(merma: MermaVista): string {

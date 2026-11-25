@@ -1,21 +1,20 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { FormControl } from '@angular/forms';
+import { Observable, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { ApiService } from '../../../core/api/api.service';
+import { mensajeError } from '../../../core/api/errores';
+import { AuthStateService } from '../../../core/auth/auth-state.service';
+import { decimalPositivo } from '../../../compartido/validadores/validadores-negocio';
 import type { LoteMaterial, Material } from '../../inventario/modelos/inventario';
-import type { FilaVariante } from '../../productos/modelos/producto-maestro';
 import { InventarioServicio } from '../../inventario/servicios/inventario-servicio';
+import type { FilaVariante } from '../../productos/modelos/producto-maestro';
 import { ProductosServicio } from '../../productos/servicios/productos-servicio';
 import { ProduccionServicio } from '../../produccion/servicios/produccion-servicio';
-import { decimalPositivo } from '../../../compartido/validadores/validadores-negocio';
-import {
-  CAUSAS_SIMULADAS,
-  MERMAS_SIMULADAS,
-  REFERENCIAS_DEMO,
-  hoyISO,
-} from '../datos-simulados/mermas';
 import type {
   AlertaMerma,
   CausaMerma,
   DatosNuevaMerma,
+  EtapaMerma,
   FilaEvolucion,
   FilaIndicador,
   FiltrosZona,
@@ -26,6 +25,7 @@ import type {
   OpcionMaterial,
   OpcionVariante,
   OrigenMerma,
+  ProcedenciaMerma,
   ResultadoAccion,
   ResultadoRegistro,
 } from '../modelos/merma';
@@ -36,7 +36,9 @@ import {
   META_MERMA_PCT,
 } from '../modelos/merma';
 
-export { hoyISO };
+export function hoyISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export function redondear4(valor: number): number {
   return Math.round((valor + Number.EPSILON) * 10000) / 10000;
@@ -46,8 +48,9 @@ function redondear2(valor: number): number {
   return Math.round((valor + Number.EPSILON) * 100) / 100;
 }
 
-function suma(registros: Merma[], selector: (merma: Merma) => number): number {
-  return registros.reduce((total, merma) => total + selector(merma), 0);
+function numero(valor: unknown): number {
+  const resultado = Number(valor ?? 0);
+  return Number.isFinite(resultado) ? resultado : 0;
 }
 
 function mesesDelPeriodo(periodo: string, cantidad: number): string[] {
@@ -62,47 +65,317 @@ function mesesDelPeriodo(periodo: string, cantidad: number): string[] {
   return resultado;
 }
 
+function referenciaDeFolio(fecha: string, id: number): string {
+  return `MER-${fecha.slice(0, 4) || hoyISO().slice(0, 4)}-${String(id).padStart(4, '0')}`;
+}
+
+interface PaginaApi<T> {
+  items: T[];
+  total: number;
+  pagina: number;
+  por_pagina: number;
+}
+
+interface MermaApi {
+  id: number;
+  origen: OrigenMerma;
+  inventario_material_id: number | null;
+  lote_id: number | null;
+  variante_id: number | null;
+  orden_produccion_id: number | null;
+  recepcion_linea_id: number | null;
+  devolucion_linea_id: number | null;
+  reversa_de_id: number | null;
+  etapa: EtapaMerma;
+  causa_id: number;
+  causa_nombre: string | null;
+  cantidad: string;
+  descripcion: string | null;
+  evidencia_url: string | null;
+  registrada_por: number | string | null;
+  fecha: string | null;
+  sku?: string | null;
+  material_codigo?: string | null;
+  costo_perdido?: string;
+}
+
+interface CausaApi {
+  id: number;
+  nombre: string;
+  aplica_a: OrigenMerma | 'AMBOS';
+  etapa_sugerida: string | null;
+  activa: boolean;
+}
+
+interface DetalleIndicadorApi {
+  fecha: string;
+  etapa: string;
+  causa: string;
+  producto: string | null;
+  material: string | null;
+  cantidad: string;
+  costo_perdido: string;
+  porcentaje_etapa: string;
+}
+
+interface IndicadoresApi {
+  meta_pct: string;
+  merma_producto: string;
+  merma_material: string;
+  unidades_producidas: string;
+  material_consumido: string;
+  merma_producto_pct: string;
+  merma_material_pct: string;
+  costo_perdido: string;
+  por_etapa: Record<string, { cantidad: string; costo_perdido: string }>;
+  top_causas: { causa: string; cantidad: string }[];
+  detalle: DetalleIndicadorApi[];
+}
+
+interface IndicadoresVacios {
+  metaPct: number;
+  periodo: string;
+  mermaProductoPct: number;
+  mermaMaterialPct: number;
+  referenciaProducto: number;
+  referenciaMaterial: number;
+  cantidadProducto: number;
+  cantidadMaterial: number;
+  costoPerdido: number;
+  costoPerdidoMes: number;
+  totalRegistros: number;
+  porEtapa: FilaIndicador[];
+  porCausa: FilaIndicador[];
+  porProducto: FilaIndicador[];
+  porMaterial: FilaIndicador[];
+  causasTop5: FilaIndicador[];
+  evolucion: FilaEvolucion[];
+  alertas: AlertaMerma[];
+}
+
 /**
- * Estado en memoria de M17. La interfaz pública está pensada para sustituirse
- * por HttpClient contra GET /mermas, POST /mermas, POST /mermas/{id}/reversar
- * y GET /mermas/indicadores (§9 y §10). Nada persiste en servidor: registrar
- * no descuenta existencias reales ni crea movimientos MERMA en M15/M12, no
- * genera la alerta MERMA_ALTA en M21 y no entrega cifras a M20. Esas fronteras
- * se señalan como pendientes en la interfaz.
+ * Estado de M17 alimentado por Flask. GET /mermas y POST /mermas son A,O;
+ * el catálogo de causas, los indicadores y el reverso son exclusivos de ADMIN.
+ * Nunca se edita un registro: un error se corrige con una nueva fila de reverso.
  */
 @Injectable({ providedIn: 'root' })
 export class MermasServicio {
+  private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthStateService);
   private readonly inventario = inject(InventarioServicio);
   private readonly productos = inject(ProductosServicio);
   private readonly produccion = inject(ProduccionServicio);
 
-  private readonly lista = signal<Merma[]>(structuredClone(MERMAS_SIMULADAS));
-  private readonly listaCausas = signal<CausaMerma[]>(structuredClone(CAUSAS_SIMULADAS));
-  private correlativo = 46;
+  private readonly lista = signal<Merma[]>([]);
+  private readonly listaCausas = signal<CausaMerma[]>([]);
+  private readonly total = signal(0);
+  private readonly indicadoresApi = signal<IndicadoresApi | null>(null);
+  private readonly reversados = signal<Set<number>>(new Set());
+
+  readonly cargado = signal(false);
+  readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
 
   readonly mermas = this.lista.asReadonly();
   readonly causas = this.listaCausas.asReadonly();
 
-  /** Vista ordenada con etiquetas y estado de reverso derivado (nunca se edita el original). */
   readonly vistas = computed<MermaVista[]>(() => {
-    const reversadas = new Set(
-      this.lista()
-        .filter((merma) => merma.reversionDeId !== null)
-        .map((merma) => merma.reversionDeId as number),
-    );
+    const reversados = this.reversados();
     return [...this.lista()]
       .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id)
       .map((merma) => ({
         ...merma,
         etiquetaItem: this.etiquetaItem(merma),
         etiquetaProcedencia: ETIQUETAS_PROCEDENCIA[merma.procedencia],
-        reversada: reversadas.has(merma.id),
+        reversada: reversados.has(merma.id),
       }));
   });
 
+  constructor() {
+    this.recargar().subscribe({ error: () => this.cargado.set(true) });
+  }
+
+  recargar(): Observable<void> {
+    const admin = this.esAdministrador();
+    return forkJoin({
+      pagina: this.listarMermas(),
+      causas: admin
+        ? this.api
+            .get<PaginaApi<CausaApi>>('/catalogos/causa-merma', {
+              params: { por_pagina: 100 },
+            })
+            .pipe(
+              catchError(() => of({ items: [] as CausaApi[] })),
+              map((respuesta) => respuesta.items.map((causa) => this.adaptarCausa(causa))),
+            )
+        : of([] as CausaMerma[]),
+      indicadores: admin
+        ? this.api
+            .get<IndicadoresApi>('/mermas/indicadores')
+            .pipe(catchError(() => of(null)))
+        : of(null),
+    }).pipe(
+      tap(({ pagina, causas, indicadores }) => {
+        const filas = pagina.items.map((fila) => this.adaptarMerma(fila, admin));
+        this.lista.set(filas);
+        this.total.set(pagina.total);
+        this.listaCausas.set(
+          causas.length > 0 ? causas : this.causasObservadas(filas),
+        );
+        this.indicadoresApi.set(indicadores);
+      }),
+      map(() => undefined),
+      tap(() => this.cargado.set(true)),
+    );
+  }
+
+  private listarMermas(): Observable<PaginaApi<MermaApi>> {
+    return this.api
+      .get<PaginaApi<MermaApi>>('/mermas', { params: { por_pagina: 100 } })
+      .pipe(
+        switchMap((primera) => {
+          const paginas = Math.ceil(primera.total / 100);
+          if (paginas <= 1) {
+            return of(primera);
+          }
+          const restantes = Array.from({ length: paginas - 1 }, (_, indice) =>
+            this.api.get<PaginaApi<MermaApi>>('/mermas', {
+              params: { pagina: indice + 2, por_pagina: 100 },
+            }),
+          );
+          return forkJoin(restantes).pipe(
+            map((respuestas) => ({
+              ...primera,
+              items: [
+                ...primera.items,
+                ...respuestas.flatMap((respuesta) => respuesta.items),
+              ],
+            })),
+          );
+        }),
+      );
+  }
+
+  private adaptarCausa(causa: CausaApi): CausaMerma {
+    const etapa = ETAPAS_MERMA.find((item) => item === causa.etapa_sugerida) ?? null;
+    return {
+      id: causa.id,
+      nombre: causa.nombre,
+      aplicaA: causa.aplica_a,
+      etapaSugerida: etapa,
+      activa: causa.activa,
+    };
+  }
+
+  private causasObservadas(filas: Merma[]): CausaMerma[] {
+    const vistas = new Map<number, CausaMerma>();
+    filas.forEach((merma) => {
+      if (!vistas.has(merma.causaId)) {
+        vistas.set(merma.causaId, {
+          id: merma.causaId,
+          nombre: merma.causaNombre,
+          aplicaA: 'AMBOS',
+          etapaSugerida: merma.etapa,
+          activa: true,
+        });
+      }
+    });
+    return [...vistas.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es-MX'));
+  }
+
+  private adaptarMerma(datos: MermaApi, incluirCostos: boolean): Merma {
+    const fecha = datos.fecha ?? hoyISO();
+    const existencia =
+      datos.inventario_material_id === null
+        ? undefined
+        : this.inventario.vistaPorId(datos.inventario_material_id);
+    const lote =
+      datos.lote_id === null
+        ? undefined
+        : this.inventario.lotes().find((item) => item.id === datos.lote_id);
+    const filaVariante =
+      datos.variante_id === null
+        ? undefined
+        : this.productos
+            .filasVariantes()
+            .find((item) => item.variante.id === datos.variante_id);
+    const orden =
+      datos.orden_produccion_id === null
+        ? undefined
+        : this.produccion.ordenes().find((item) => item.id === datos.orden_produccion_id);
+    const procedencia = this.procedencia(datos);
+    const registradaPor = this.nombreRegistrador(datos.registrada_por);
+    const motivo = datos.descripcion ?? null;
+
+    return {
+      id: datos.id,
+      folio: referenciaDeFolio(fecha, datos.id),
+      origen: datos.origen,
+      procedencia,
+      automatica: procedencia !== 'MANUAL' && procedencia !== 'REVERSION',
+      materialId: datos.inventario_material_id,
+      materialCodigo: datos.material_codigo ?? existencia?.material.codigo ?? null,
+      materialNombre: existencia?.material.nombre ?? null,
+      color:
+        datos.origen === 'MATERIAL'
+          ? (lote?.color ?? existencia?.color ?? 'NA')
+          : filaVariante
+            ? this.productos.nombreColor(filaVariante.variante.color)
+            : 'NA',
+      loteId: datos.lote_id,
+      loteFolio: lote?.folio ?? null,
+      unidadBase: existencia?.material.unidadBase ?? 'pieza',
+      varianteId: datos.variante_id,
+      sku: datos.sku ?? filaVariante?.variante.sku ?? null,
+      nombreProducto: filaVariante?.productoNombre ?? null,
+      talla: filaVariante
+        ? this.productos.nombreTalla(filaVariante.variante.talla)
+        : null,
+      cantidad: datos.reversa_de_id !== null ? -numero(datos.cantidad) : numero(datos.cantidad),
+      costoPerdido: incluirCostos ? numero(datos.costo_perdido) : 0,
+      etapa: datos.etapa,
+      causaId: datos.causa_id,
+      causaNombre:
+        datos.causa_nombre ??
+        this.listaCausas().find((causa) => causa.id === datos.causa_id)?.nombre ??
+        `Causa ${datos.causa_id}`,
+      ordenFolio: orden?.folio ?? null,
+      descripcion: motivo,
+      evidenciaNombre: datos.evidencia_url,
+      registradaPor,
+      fecha,
+      esReversion: datos.reversa_de_id !== null,
+      reversionDeId: datos.reversa_de_id,
+      motivoReversion: datos.reversa_de_id !== null ? motivo : null,
+    };
+  }
+
+  private procedencia(datos: MermaApi): ProcedenciaMerma {
+    if (datos.reversa_de_id !== null) {
+      return 'REVERSION';
+    }
+    if (datos.orden_produccion_id !== null) {
+      return 'M16';
+    }
+    if (datos.recepcion_linea_id !== null) {
+      return 'M14';
+    }
+    if (datos.devolucion_linea_id !== null) {
+      return 'M07';
+    }
+    return 'MANUAL';
+  }
+
+  private nombreRegistrador(valor: number | string | null): string {
+    if (valor === null || valor === '') {
+      return 'Sin usuario';
+    }
+    const usuario = this.auth.usuario();
+    return usuario && String(usuario.id) === String(valor) ? usuario.nombre : `Usuario ${valor}`;
+  }
+
   private etiquetaItem(merma: Merma): string {
     if (merma.origen === 'MATERIAL') {
-      return `${merma.materialNombre ?? 'Material'} · ${merma.color ?? 'NA'} · ${merma.loteFolio ?? 'sin lote'}`;
+      return `${merma.materialNombre ?? merma.materialCodigo ?? 'Material'} · ${merma.color ?? 'NA'} · ${merma.loteFolio ?? 'sin lote'}`;
     }
     return `${merma.sku ?? 'SKU'} · ${merma.nombreProducto ?? ''} · ${merma.talla ?? 'UN'}/${merma.color ?? 'NA'}`;
   }
@@ -112,7 +385,7 @@ export class MermasServicio {
   }
 
   esReversada(id: number): boolean {
-    return this.lista().some((merma) => merma.reversionDeId === id);
+    return this.reversados().has(id);
   }
 
   filtrar(filtros: FiltrosZona): MermaVista[] {
@@ -222,7 +495,7 @@ export class MermasServicio {
       .sort((a, b) => b.folio.localeCompare(a.folio, 'es-MX'));
   }
 
-  /** Costo perdido calculado solo: costo del lote (material) o estándar (prenda). */
+  /** Costo estimado solo para la vista; el servidor calcula el costo real al registrar. */
   costoEstimado(
     origen: OrigenMerma,
     materialId: number | null,
@@ -230,281 +503,261 @@ export class MermasServicio {
     sku: string,
     cantidad: number | null,
   ): number {
-    if (cantidad === null || !Number.isFinite(cantidad) || cantidad <= 0) {
+    if (!this.esAdministrador() || cantidad === null || !Number.isFinite(cantidad) || cantidad <= 0) {
       return 0;
     }
     if (origen === 'MATERIAL') {
-      const lote =
-        loteId === null ? undefined : this.inventario.lotes().find((item) => item.id === loteId);
+      const lote = loteId === null ? undefined : this.inventario.lotes().find((item) => item.id === loteId);
       if (lote) {
         return redondear2(lote.costoUnitario * cantidad);
       }
-      const material =
-        materialId === null ? undefined : this.inventario.obtenerMaterial(materialId);
+      const material = materialId === null ? undefined : this.inventario.obtenerMaterial(materialId);
       return material ? redondear2(material.costoEstandarBase * cantidad) : 0;
     }
-    const fila = this.productos.filasVariantes().find((item) => item.variante.sku === sku);
+    const fila = this.productos.filasVariantes().find((item) => item.variante.sku === sku.trim());
     const costo = fila ? (this.productos.obtenerProducto(fila.productoId)?.costoEstandar ?? 0) : 0;
     return redondear2(costo * cantidad);
   }
 
-  registrar(datos: DatosNuevaMerma): ResultadoRegistro {
+  registrar(datos: DatosNuevaMerma): Observable<ResultadoRegistro> {
     const controlCantidad = new FormControl<number | null>(datos.cantidad);
     if (decimalPositivo(controlCantidad) !== null) {
-      return {
+      return of({
         ok: false,
         mensaje: 'La cantidad debe ser mayor que cero y tener hasta 4 decimales.',
-      };
+      });
     }
     if (datos.origen === 'PRODUCTO' && !Number.isInteger(datos.cantidad)) {
-      return { ok: false, mensaje: 'Las prendas se registran en unidades enteras.' };
+      return of({ ok: false, mensaje: 'Las prendas se registran en unidades enteras.' });
     }
 
-    const causa = this.listaCausas().find((item) => item.id === datos.causaId);
-    if (!causa || !causa.activa || !(causa.aplicaA === 'AMBOS' || causa.aplicaA === datos.origen)) {
-      return { ok: false, mensaje: 'Selecciona una causa vigente que aplique al origen elegido.' };
+    const causa = this.causasPara(datos.origen).find((item) => item.id === datos.causaId);
+    if (!causa) {
+      return of({
+        ok: false,
+        mensaje: this.listaCausas().length === 0
+          ? 'El catálogo de causas no está disponible para este perfil; solicita permiso de Administrador.'
+          : 'Selecciona una causa vigente que aplique al origen elegido.',
+      });
     }
 
     let material: Material | undefined;
     let lote: LoteMaterial | undefined;
     let variante: FilaVariante | undefined;
+    let ordenProduccionId: number | null = null;
 
     if (datos.origen === 'MATERIAL') {
       if (datos.materialId === null || datos.loteId === null) {
-        return { ok: false, mensaje: 'Para materiales indica el material, el color y el lote.' };
+        return of({ ok: false, mensaje: 'Para materiales indica el material, el color y el lote.' });
       }
       material = this.inventario.obtenerMaterial(datos.materialId);
       lote = this.inventario.lotes().find((item) => item.id === datos.loteId);
       if (!material || !lote || lote.materialId !== datos.materialId) {
-        return { ok: false, mensaje: 'El lote seleccionado no corresponde al material indicado.' };
+        return of({ ok: false, mensaje: 'El lote seleccionado no corresponde al material indicado.' });
       }
     } else {
       variante = this.productos
         .filasVariantes()
         .find((item) => item.variante.sku === datos.sku.trim());
       if (!variante) {
-        return { ok: false, mensaje: 'Selecciona un SKU válido generado por M10.' };
+        return of({ ok: false, mensaje: 'Selecciona un SKU válido generado por M10.' });
       }
     }
 
-    const folio = `MER-${new Date().getFullYear()}-${String(++this.correlativo).padStart(4, '0')}`;
-    const registro: Merma = {
-      id: this.lista().reduce((maximo, item) => Math.max(maximo, item.id), 0) + 1,
-      folio,
-      origen: datos.origen,
-      procedencia: 'MANUAL',
-      automatica: false,
-      materialId: material?.id ?? null,
-      materialCodigo: material?.codigo ?? null,
-      materialNombre: material?.nombre ?? null,
-      color:
-        datos.origen === 'MATERIAL'
-          ? datos.color || lote?.color || 'NA'
-          : variante
-            ? this.productos.nombreColor(variante.variante.color)
-            : null,
-      loteId: lote?.id ?? null,
-      loteFolio: lote?.folio ?? null,
-      unidadBase: material?.unidadBase ?? 'pieza',
-      varianteId: variante?.variante.id ?? null,
-      sku: variante?.variante.sku ?? null,
-      nombreProducto: variante?.productoNombre ?? null,
-      talla: variante ? this.productos.nombreTalla(variante.variante.talla) : null,
-      cantidad: redondear4(datos.cantidad),
-      costoPerdido: this.costoEstimado(
-        datos.origen,
-        datos.materialId,
-        datos.loteId,
-        datos.sku,
-        datos.cantidad,
-      ),
-      etapa: datos.etapa,
-      causaId: causa.id,
-      causaNombre: causa.nombre,
-      ordenFolio: datos.ordenFolio.trim() === '' ? null : datos.ordenFolio.trim(),
-      descripcion: datos.descripcion.trim() === '' ? null : datos.descripcion.trim(),
-      evidenciaNombre: datos.evidenciaNombre,
-      registradaPor: 'Operativo · demostración',
-      fecha: hoyISO(),
-      esReversion: false,
-      reversionDeId: null,
-      motivoReversion: null,
-    };
-    this.lista.update((actuales) => [...actuales, registro]);
+    if (datos.ordenFolio.trim() !== '') {
+      const orden = this.produccion.ordenes().find((item) => item.folio === datos.ordenFolio.trim());
+      if (!orden) {
+        return of({ ok: false, mensaje: 'La orden de producción indicada ya no está disponible.' });
+      }
+      ordenProduccionId = orden.id;
+    }
 
-    return {
-      ok: true,
-      folio,
-      mensaje: `${folio} registrado. El descuento de existencias y el movimiento MERMA quedan pendientes de Flask; el registro no podrá editarse.`,
+    const descripcion = datos.descripcion.trim();
+    const evidencia = datos.evidenciaNombre?.trim();
+    const cuerpo = {
+      origen: datos.origen,
+      inventario_material_id: material?.id ?? null,
+      lote_id: lote?.id ?? null,
+      variante_id: variante?.variante.id ?? null,
+      orden_produccion_id: ordenProduccionId,
+      etapa: datos.etapa,
+      causa_id: causa.id,
+      cantidad: redondear4(datos.cantidad),
+      descripcion:
+        evidencia === undefined || evidencia === ''
+          ? descripcion || null
+          : `${descripcion || 'Merma registrada'} · Evidencia referida: ${evidencia}`,
     };
+
+    return this.api.post<MermaApi>('/mermas', cuerpo).pipe(
+      map((respuesta) => {
+        const registro = this.adaptarMerma(respuesta, this.esAdministrador());
+        this.lista.update((actuales) => [registro, ...actuales.filter((item) => item.id !== registro.id)]);
+        const mensaje = `${registro.folio} registrado. La existencia se descontó y el movimiento MERMA quedó registrado en el inventario correspondiente.`;
+        return { ok: true as const, folio: registro.folio, mensaje };
+      }),
+      tap(() => this.recargarIndicadores()),
+      catchError((error: unknown) =>
+        of({ ok: false as const, mensaje: mensajeError(error, 'No fue posible registrar la merma.') }),
+      ),
+    );
   }
 
   /** Corrección permitida solo al Administrador: crea un reverso, nunca edita el original. */
-  reversar(id: number, motivo: string): ResultadoAccion {
+  reversar(id: number, motivo: string): Observable<ResultadoAccion> {
+    if (!this.esAdministrador()) {
+      return of({ ok: false, mensaje: 'Corregir una merma requiere perfil Administrador.' });
+    }
+    if (motivo.trim().length < 3) {
+      return of({ ok: false, mensaje: 'Indica el motivo de la corrección.' });
+    }
     const original = this.lista().find((merma) => merma.id === id);
     if (!original) {
-      return { ok: false, mensaje: 'No se encontró la merma.' };
+      return of({ ok: false, mensaje: 'No se encontró la merma.' });
     }
-    if (this.esReversada(id)) {
-      return { ok: false, mensaje: 'Esta merma ya fue corregida con un reverso.' };
-    }
-    if (motivo.trim() === '') {
-      return { ok: false, mensaje: 'Indica el motivo de la corrección.' };
+    if (this.esReversada(id) || original.esReversion) {
+      return of({ ok: false, mensaje: 'Esta merma ya fue corregida con un reverso.' });
     }
 
-    const folio = `MER-${new Date().getFullYear()}-${String(++this.correlativo).padStart(4, '0')}`;
-    const reverso: Merma = {
-      ...original,
-      id: this.lista().reduce((maximo, item) => Math.max(maximo, item.id), 0) + 1,
-      folio,
-      procedencia: 'REVERSION',
-      automatica: false,
-      cantidad: redondear4(-original.cantidad),
-      costoPerdido: redondear2(-original.costoPerdido),
-      esReversion: true,
-      reversionDeId: original.id,
-      motivoReversion: motivo.trim(),
-      descripcion: `Reverso de ${original.folio}. ${motivo.trim()}`,
-      evidenciaNombre: null,
-      registradaPor: 'Administrador · demostración',
-      fecha: hoyISO(),
-    };
-    this.lista.update((actuales) => [...actuales, reverso]);
-    return {
-      ok: true,
-      mensaje: `${folio} registrado como inverso de ${original.folio}. El original se conserva sin cambios.`,
-    };
+    return this.api
+      .post<{ merma: MermaApi; reverso: MermaApi }>(`/mermas/${id}/reversar`, {
+        motivo: motivo.trim(),
+      })
+      .pipe(
+        map((respuesta) => {
+          const reverso = this.adaptarMerma(respuesta.reverso, true);
+          this.lista.update((actuales) => [
+            reverso,
+            ...actuales.filter((item) => item.id !== reverso.id),
+          ]);
+          this.reversados.update((actuales) => new Set([...actuales, id]));
+          return {
+            ok: true,
+            mensaje: `${reverso.folio} registrado como inverso de ${original.folio}. El original se conserva sin cambios.`,
+          };
+        }),
+        tap(() => this.recargarIndicadores()),
+        catchError((error: unknown) =>
+          of({ ok: false, mensaje: mensajeError(error, 'No fue posible reversar la merma.') }),
+        ),
+      );
+  }
+
+  private recargarIndicadores(): void {
+    if (!this.esAdministrador()) {
+      return;
+    }
+    this.api
+      .get<IndicadoresApi>('/mermas/indicadores')
+      .pipe(catchError(() => of(null)))
+      .subscribe((respuesta) => this.indicadoresApi.set(respuesta));
   }
 
   indicadores(): IndicadoresMerma {
-    const periodo = REFERENCIAS_DEMO.periodo;
-    const registros = this.lista();
-    const delMes = registros.filter((merma) => merma.fecha.startsWith(periodo));
-    const materialesM2 = new Set(REFERENCIAS_DEMO.materialesM2);
+    const datos = this.indicadoresApi();
+    if (!datos) {
+      return this.indicadoresVacios();
+    }
 
-    const cantidadProducto = redondear4(
-      suma(delMes, (merma) => (merma.origen === 'PRODUCTO' ? merma.cantidad : 0)),
-    );
-    const cantidadMaterialM2 = redondear4(
-      suma(delMes, (merma) =>
-        merma.origen === 'MATERIAL' &&
-        merma.materialId !== null &&
-        materialesM2.has(merma.materialId)
-          ? merma.cantidad
-          : 0,
-      ),
-    );
-    const mermaProductoPct =
-      REFERENCIAS_DEMO.unidadesProducidasMes > 0
-        ? redondear2((cantidadProducto / REFERENCIAS_DEMO.unidadesProducidasMes) * 100)
-        : 0;
-    const mermaMaterialPct =
-      REFERENCIAS_DEMO.consumoMaterialM2Mes > 0
-        ? redondear2((cantidadMaterialM2 / REFERENCIAS_DEMO.consumoMaterialM2Mes) * 100)
-        : 0;
+    const periodo = hoyISO().slice(0, 7);
+    const detalle = datos.detalle ?? [];
+    const metaPct = numero(datos.meta_pct);
+    const productoPct = numero(datos.merma_producto_pct);
+    const materialPct = numero(datos.merma_material_pct);
+    const cantidadProducto = redondear4(numero(datos.merma_producto));
+    const cantidadMaterial = redondear4(numero(datos.merma_material));
+    const referenciaProducto = numero(datos.unidades_producidas);
+    const referenciaMaterial = numero(datos.material_consumido);
+    const costo = numero(datos.costo_perdido);
 
     const porEtapa: FilaIndicador[] = ETAPAS_MERMA.map((etapa) => {
-      const filas = delMes.filter((merma) => merma.etapa === etapa);
-      const cantidad = redondear4(
-        suma(filas, (merma) => (merma.origen === 'PRODUCTO' ? merma.cantidad : 0)),
+      const filas = detalle.filter((fila) => fila.etapa === etapa);
+      const cantidadPiezas = redondear4(
+        filas.reduce((total, fila) => total + (fila.producto ? numero(fila.cantidad) : 0), 0),
       );
-      const cantidadMaterial = redondear4(
-        suma(filas, (merma) => (merma.origen === 'MATERIAL' ? merma.cantidad : 0)),
+      const cantidadM2 = redondear4(
+        filas.reduce((total, fila) => total + (fila.material ? numero(fila.cantidad) : 0), 0),
       );
-      const referencia = REFERENCIAS_DEMO.unidadesPorEtapa[etapa] ?? 0;
-      const porcentaje = referencia > 0 ? redondear2((cantidad / referencia) * 100) : 0;
+      const referencia = cantidadPiezas > 0 ? referenciaProducto : referenciaMaterial;
+      const porcentaje =
+        referencia > 0
+          ? redondear2((numero(datos.por_etapa[etapa]?.cantidad ?? 0) / referencia) * 100)
+          : 0;
       return {
         clave: etapa,
         etiqueta: ETIQUETAS_ETAPA[etapa],
-        cantidad,
-        cantidadMaterial,
-        costoPerdido: redondear2(suma(filas, (merma) => merma.costoPerdido)),
+        cantidad: cantidadPiezas,
+        cantidadMaterial: cantidadM2,
+        costoPerdido: numero(datos.por_etapa[etapa]?.costo_perdido),
         referencia,
         porcentaje,
         base: 'meta' as const,
-        superaMeta: porcentaje > META_MERMA_PCT,
-        unidad: 'piezas',
+        superaMeta: porcentaje > metaPct,
+        unidad: cantidadPiezas > 0 ? 'piezas' : 'unidad base',
       };
     }).filter((fila) => fila.cantidad !== 0 || fila.cantidadMaterial !== 0);
 
-    const porCausa: FilaIndicador[] = this.listaCausas()
-      .map((causa) => {
-        const filas = delMes.filter((merma) => merma.causaId === causa.id);
-        const porcentaje = delMes.length > 0 ? redondear2((filas.length / delMes.length) * 100) : 0;
+    const causas = new Map<string, string>();
+    this.listaCausas().forEach((causa) => causas.set(causa.nombre, causa.nombre));
+    datos.top_causas.forEach((causa) => causas.set(causa.causa, causa.causa));
+
+    const porCausa: FilaIndicador[] = [...new Set(detalle.map((fila) => fila.causa))]
+      .map((nombre) => {
+        const filas = detalle.filter((fila) => fila.causa === nombre);
+        const cantidad = redondear4(
+          filas.reduce((total, fila) => total + numero(fila.cantidad), 0),
+        );
         return {
-          clave: String(causa.id),
-          etiqueta: causa.nombre,
-          cantidad: redondear4(
-            suma(filas, (merma) => (merma.origen === 'PRODUCTO' ? merma.cantidad : 0)),
+          clave: nombre,
+          etiqueta: causas.get(nombre) ?? nombre,
+          cantidad,
+          cantidadMaterial: 0,
+          costoPerdido: redondear2(
+            filas.reduce((total, fila) => total + numero(fila.costo_perdido), 0),
           ),
-          cantidadMaterial: redondear4(
-            suma(filas, (merma) => (merma.origen === 'MATERIAL' ? merma.cantidad : 0)),
-          ),
-          costoPerdido: redondear2(suma(filas, (merma) => merma.costoPerdido)),
-          referencia: delMes.length,
-          porcentaje,
+          referencia: detalle.length,
+          porcentaje: detalle.length > 0 ? redondear2((filas.length / detalle.length) * 100) : 0,
           base: 'participacion' as const,
           superaMeta: false,
           unidad: 'registros',
         };
       })
-      .filter((fila) => fila.referencia > 0 && fila.porcentaje > 0)
       .sort((a, b) => b.porcentaje - a.porcentaje);
 
-    const skus = new Set(
-      delMes
-        .filter((merma) => merma.origen === 'PRODUCTO' && merma.sku !== null)
-        .map((merma) => merma.sku as string),
+    const porProducto = this.agruparDetalle(
+      detalle.filter((fila) => fila.producto !== null),
+      'producto',
+      referenciaProducto,
+      'piezas',
     );
-    const porProducto: FilaIndicador[] = [...skus]
-      .map((sku) => {
-        const filas = delMes.filter((merma) => merma.sku === sku);
-        const referencia = REFERENCIAS_DEMO.unidadesProducidasPorSku[sku] ?? 0;
-        const cantidad = redondear4(suma(filas, (merma) => merma.cantidad));
-        const porcentaje = referencia > 0 ? redondear2((cantidad / referencia) * 100) : 0;
-        return {
-          clave: sku,
-          etiqueta: `${sku} · ${filas[0]?.nombreProducto ?? ''}`,
-          cantidad,
-          cantidadMaterial: 0,
-          costoPerdido: redondear2(suma(filas, (merma) => merma.costoPerdido)),
-          referencia,
-          porcentaje,
-          base: 'meta' as const,
-          superaMeta: porcentaje > META_MERMA_PCT,
-          unidad: 'piezas',
-        };
-      })
-      .sort((a, b) => b.porcentaje - a.porcentaje);
+    const porMaterial = this.agruparDetalle(
+      detalle.filter((fila) => fila.material !== null),
+      'material',
+      referenciaMaterial,
+      'unidad base',
+    );
 
-    const materiales = new Set(
-      delMes
-        .filter((merma) => merma.origen === 'MATERIAL' && merma.materialId !== null)
-        .map((merma) => merma.materialId as number),
-    );
-    const porMaterial: FilaIndicador[] = [...materiales]
-      .map((materialId) => {
-        const filas = delMes.filter((merma) => merma.materialId === materialId);
-        const referencia = REFERENCIAS_DEMO.consumoPorMaterial[materialId] ?? 0;
-        const cantidad = redondear4(suma(filas, (merma) => merma.cantidad));
-        const porcentaje = referencia > 0 ? redondear2((cantidad / referencia) * 100) : 0;
-        return {
-          clave: String(materialId),
-          etiqueta: `${filas[0]?.materialCodigo ?? ''} · ${filas[0]?.materialNombre ?? ''} · ${filas[0]?.color ?? ''}`,
-          cantidad,
-          cantidadMaterial: 0,
-          costoPerdido: redondear2(suma(filas, (merma) => merma.costoPerdido)),
-          referencia,
-          porcentaje,
-          base: 'meta' as const,
-          superaMeta: porcentaje > META_MERMA_PCT,
-          unidad: filas[0]?.unidadBase ?? 'unidad base',
-        };
-      })
-      .sort((a, b) => b.porcentaje - a.porcentaje);
+    const causasTop5: FilaIndicador[] = datos.top_causas.map((causa) => {
+      const filas = detalle.filter((fila) => fila.causa === causa.causa);
+      return {
+        clave: causa.causa,
+        etiqueta: causas.get(causa.causa) ?? causa.causa,
+        cantidad: numero(causa.cantidad),
+        cantidadMaterial: 0,
+        costoPerdido: redondear2(
+          filas.reduce((total, fila) => total + numero(fila.costo_perdido), 0),
+        ),
+        referencia: filas.length,
+        porcentaje:
+          detalle.length > 0 ? redondear2((filas.length / detalle.length) * 100) : 0,
+        base: 'participacion' as const,
+        superaMeta: false,
+        unidad: 'registros',
+      };
+    });
 
     const evolucion: FilaEvolucion[] = mesesDelPeriodo(periodo, 6).map((mes) => {
-      const filas = registros.filter((merma) => merma.fecha.startsWith(mes));
+      const filas = detalle.filter((fila) => fila.fecha.startsWith(mes));
       const fecha = new Date(`${mes}-01T12:00:00`);
       return {
         mes,
@@ -512,35 +765,49 @@ export class MermasServicio {
           .format(fecha)
           .replace('.', ''),
         cantidadProducto: redondear4(
-          suma(filas, (merma) => (merma.origen === 'PRODUCTO' ? merma.cantidad : 0)),
+          filas.reduce(
+            (total, fila) => total + (fila.producto ? numero(fila.cantidad) : 0),
+            0,
+          ),
         ),
         cantidadMaterial: redondear4(
-          suma(filas, (merma) => (merma.origen === 'MATERIAL' ? merma.cantidad : 0)),
+          filas.reduce(
+            (total, fila) => total + (fila.material ? numero(fila.cantidad) : 0),
+            0,
+          ),
         ),
-        costoPerdido: redondear2(suma(filas, (merma) => merma.costoPerdido)),
+        costoPerdido: redondear2(
+          filas.reduce((total, fila) => total + numero(fila.costo_perdido), 0),
+        ),
       };
     });
 
+    const costoPeriodo = redondear2(
+      detalle
+        .filter((fila) => fila.fecha.startsWith(periodo))
+        .reduce((total, fila) => total + numero(fila.costo_perdido), 0),
+    );
+
     const alertas: AlertaMerma[] = [];
-    if (mermaProductoPct > META_MERMA_PCT || mermaMaterialPct > META_MERMA_PCT) {
+    if (productoPct > metaPct || materialPct > metaPct) {
       alertas.push({
         id: 'general',
         ambito: 'general',
-        etiqueta: 'MERMA_ALTA · merma del mes',
-        detalle: `Producto ${mermaProductoPct}% y materiales m² ${mermaMaterialPct}% contra una meta menor a ${META_MERMA_PCT}%.`,
-        porcentaje: Math.max(mermaProductoPct, mermaMaterialPct),
+        etiqueta: 'MERMA_ALTA · merma acumulada',
+        detalle: `Producto ${productoPct}% y materiales ${materialPct}% contra una meta menor a ${metaPct}%.`,
+        porcentaje: Math.max(productoPct, materialPct),
       });
     }
-    for (const fila of porEtapa.filter((item) => item.superaMeta)) {
+    porEtapa.filter((fila) => fila.superaMeta).forEach((fila) => {
       alertas.push({
         id: `etapa-${fila.clave}`,
         ambito: 'etapa',
         etiqueta: `MERMA_ALTA · etapa ${fila.etiqueta}`,
-        detalle: `${fila.cantidad} piezas en merma sobre ${fila.referencia} producidas (${fila.porcentaje}%).`,
+        detalle: `${fila.cantidad + fila.cantidadMaterial} en merma sobre ${fila.referencia} de referencia (${fila.porcentaje}%).`,
         porcentaje: fila.porcentaje,
       });
-    }
-    for (const fila of porProducto.filter((item) => item.superaMeta)) {
+    });
+    porProducto.filter((fila) => fila.superaMeta).forEach((fila) => {
       alertas.push({
         id: `producto-${fila.clave}`,
         ambito: 'producto',
@@ -548,27 +815,83 @@ export class MermasServicio {
         detalle: `${fila.cantidad} piezas en merma sobre ${fila.referencia} producidas (${fila.porcentaje}%).`,
         porcentaje: fila.porcentaje,
       });
-    }
+    });
 
     return {
-      metaPct: META_MERMA_PCT,
+      metaPct,
       periodo,
-      mermaProductoPct,
-      mermaMaterialPct,
-      referenciaProducto: REFERENCIAS_DEMO.unidadesProducidasMes,
-      referenciaMaterial: REFERENCIAS_DEMO.consumoMaterialM2Mes,
+      mermaProductoPct: productoPct,
+      mermaMaterialPct: materialPct,
+      referenciaProducto,
+      referenciaMaterial,
       cantidadProducto,
-      cantidadMaterial: cantidadMaterialM2,
-      costoPerdido: redondear2(suma(registros, (merma) => merma.costoPerdido)),
-      costoPerdidoMes: redondear2(suma(delMes, (merma) => merma.costoPerdido)),
-      totalRegistros: registros.filter((merma) => !merma.esReversion).length,
+      cantidadMaterial,
+      costoPerdido: costo,
+      costoPerdidoMes: costoPeriodo,
+      totalRegistros: this.total(),
       porEtapa,
       porCausa,
       porProducto,
       porMaterial,
-      causasTop5: [...porCausa].sort((a, b) => b.costoPerdido - a.costoPerdido).slice(0, 5),
+      causasTop5,
       evolucion,
       alertas,
+    };
+  }
+
+  private agruparDetalle(
+    filas: DetalleIndicadorApi[],
+    campo: 'producto' | 'material',
+    referencia: number,
+    unidad: string,
+  ): FilaIndicador[] {
+    const meta = numero(this.indicadoresApi()?.meta_pct);
+    const claves = [...new Set(filas.map((fila) => fila[campo] as string))];
+    return claves
+      .map((clave) => {
+        const delGrupo = filas.filter((fila) => fila[campo] === clave);
+        const cantidad = redondear4(
+          delGrupo.reduce((total, fila) => total + numero(fila.cantidad), 0),
+        );
+        const porcentaje = referencia > 0 ? redondear2((cantidad / referencia) * 100) : 0;
+        return {
+          clave,
+          etiqueta: clave,
+          cantidad,
+          cantidadMaterial: 0,
+          costoPerdido: redondear2(
+            delGrupo.reduce((total, fila) => total + numero(fila.costo_perdido), 0),
+          ),
+          referencia,
+          porcentaje,
+          base: 'meta' as const,
+          superaMeta: porcentaje > meta,
+          unidad,
+        };
+      })
+      .sort((a, b) => b.cantidad - a.cantidad);
+  }
+
+  private indicadoresVacios(): IndicadoresMerma {
+    return {
+      metaPct: META_MERMA_PCT,
+      periodo: hoyISO().slice(0, 7),
+      mermaProductoPct: 0,
+      mermaMaterialPct: 0,
+      referenciaProducto: 0,
+      referenciaMaterial: 0,
+      cantidadProducto: 0,
+      cantidadMaterial: 0,
+      costoPerdido: 0,
+      costoPerdidoMes: 0,
+      totalRegistros: 0,
+      porEtapa: [],
+      porCausa: [],
+      porProducto: [],
+      porMaterial: [],
+      causasTop5: [],
+      evolucion: [],
+      alertas: [],
     };
   }
 }

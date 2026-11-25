@@ -24,7 +24,7 @@
           (change)="alCambiarProducto($event)"
         >
           <option value="TODOS">Todos</option>
-          @for (producto of servicio.productos; track producto.id) {
+          @for (producto of servicio.productos(); track producto.id) {
             <option [value]="producto.id">{{ producto.nombre }}</option>
           }
         </select>
@@ -34,7 +34,12 @@
       </p>
     </div>
 
-    @if (filas().length === 0) {
+    @if (!servicio.puedeVerCostos()) {
+      <div class="estado" role="status">
+        <strong>Información reservada al Administrador.</strong>
+        <p>Flask no expone costos ni márgenes al rol Operativo.</p>
+      </div>
+    } @else if (filas().length === 0) {
       <div class="estado" role="status">
         <strong>Sin recetas vigentes.</strong>
         <p>Activa una receta desde la biblioteca para ver su costeo estándar.</p>
@@ -101,8 +106,8 @@
                 <td data-etiqueta="Margen real">
                   <span
                     class="chip"
-                    [class.chip--bajo]="fila.margen !== null && fila.margen < margenObjetivo"
-                    [class.chip--alto]="fila.margen !== null && fila.margen >= margenObjetivo"
+                    [class.chip--bajo]="fila.margen < margenObjetivoFraccion"
+                    [class.chip--alto]="fila.margen >= margenObjetivoFraccion"
                   >
                     {{ margenTexto(fila.margen) }}
                   </span>
@@ -121,16 +126,16 @@
       </div>
     }
 
-    <p class="nota">
-      Empaque = regla POR_PRENDA del catálogo de materiales (${{
-        servicio.empaquePorPrenda.toFixed(2)
-      }}). El hilo de bordado se incluye en la materia prima cuando el diseño está DIGITALIZADO:
-      metros por aplicación × aplicaciones × costo del hilo; los diseños PENDIENTE consumen 0 m. El
-      PEPS del lote real se aplicará en M16 con Flask.
-    </p>
+    @if (servicio.puedeVerCostos()) {
+      <p class="nota">
+        Flask calcula el empaque con las reglas POR_PRENDA y suma el hilo de bordado cuando el diseño
+        está DIGITALIZADO; los diseños PENDIENTE consumen 0 m. El PEPS del lote real se aplica en M16.
+      </p>
+    }
   </div>
 
-  <div class="tarjeta bloque resumen-bloque">
+  @if (servicio.puedeVerCostos()) {
+    <div class="tarjeta bloque resumen-bloque">
     <h2 class="seccion__titulo">Sugerencia de precio por producto</h2>
     <p class="ayuda">
       La talla de mayor costo define el precio sugerido de la prenda (§7.5). M10 decide si actualiza
@@ -163,17 +168,17 @@
               </td>
               <td data-etiqueta="Precio sugerido">
                 {{
-                  item.costo === null
+                  item.precioSugerido === null
                     ? '—'
-                    : (precioSugerido(item.costo) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX')
+                    : (item.precioSugerido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX')
                 }}
               </td>
               <td data-etiqueta="Precio vigente">
-                {{ precioDe(item.id) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                {{ item.precio | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
               </td>
               <td data-etiqueta="Diferencia">
                 {{
-                  (item.costo === null ? 0 : precioSugerido(item.costo) - precioDe(item.id))
+                  (item.precioSugerido === null ? 0 : item.precioSugerido - item.precio)
                     | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
                 }}
               </td>
@@ -182,9 +187,9 @@
         </tbody>
       </table>
     </div>
-    <p class="nota nota--info">
-      Vista con fines de administración: el Operativo no consulta costos ni márgenes. La separación
-      definitiva por rol se aplicará con los guards del backend.
-    </p>
-  </div>
+      <p class="nota nota--info">
+        Vista de administración: Flask omite costos y márgenes en las respuestas del Operativo.
+      </p>
+    </div>
+  }
 </section>

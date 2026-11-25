@@ -8,7 +8,8 @@ import {
   Validators,
   type ValidatorFn,
 } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { decimalPositivo } from '../../../../compartido/validadores/validadores-negocio';
 import { NavegacionMermas } from '../../componentes/navegacion-mermas/navegacion-mermas';
@@ -35,8 +36,6 @@ interface FormularioMerma {
   evidenciaNombre: FormControl<string | null>;
 }
 
-type PerfilDemo = 'Operativo' | 'Administrador';
-
 const TIPOS_EVIDENCIA = ['image/jpeg', 'image/png', 'image/webp'];
 const TAMANO_MAXIMO_EVIDENCIA = 2 * 1024 * 1024;
 
@@ -50,11 +49,7 @@ const cantidadSegunOrigen: ValidatorFn = (control) => {
   return null;
 };
 
-/**
- * Registro manual de mermas (M17). El registro es inmutable y el costo perdido lo
- * calcula el sistema; aquí solo se proyecta para el perfil Administrador de
- * demostración. Nada se guarda en servidor (§9 y §10).
- */
+/** Registro manual de mermas (M17) contra POST /mermas. */
 @Component({
   selector: 'app-registro-merma',
   imports: [CurrencyPipe, ReactiveFormsModule, RouterLink, NavegacionMermas],
@@ -64,15 +59,10 @@ const cantidadSegunOrigen: ValidatorFn = (control) => {
 export class RegistroMerma {
   private readonly servicio = inject(MermasServicio);
   private readonly avisos = inject(AvisosServicio);
-  private readonly ruta = inject(ActivatedRoute);
+  private readonly auth = inject(AuthStateService);
 
   protected readonly etapas = ETAPAS_MERMA;
   protected readonly etiquetasEtapa = ETIQUETAS_ETAPA;
-  protected readonly perfil = signal<PerfilDemo>(
-    String(this.ruta.snapshot.data['rol'] ?? 'Operativo') === 'Administrador'
-      ? 'Administrador'
-      : 'Operativo',
-  );
   protected readonly errorEvidencia = signal<string | null>(null);
   protected readonly ultimoFolio = signal<string | null>(null);
 
@@ -141,7 +131,7 @@ export class RegistroMerma {
       this.cantidad(),
     ),
   );
-  protected readonly esAdministrador = computed(() => this.perfil() === 'Administrador');
+  protected readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
 
   protected alCambiarOrigen(evento: Event): void {
     const origen = (evento.target as HTMLSelectElement).value as OrigenMerma;
@@ -269,23 +259,18 @@ export class RegistroMerma {
       descripcion: valores.descripcion,
       evidenciaNombre: valores.evidenciaNombre,
     };
-    const resultado = this.servicio.registrar(datos);
-    if (!resultado.ok) {
-      this.avisos.mostrar('error', resultado.mensaje);
-      return;
-    }
-
-    this.ultimoFolio.set(resultado.folio ?? null);
-    this.avisos.mostrar('exito', resultado.mensaje);
-    this.forma.controls.cantidad.reset(null);
-    this.forma.controls.descripcion.reset('');
-    this.forma.controls.evidenciaNombre.reset(null);
-    this.forma.controls.ordenFolio.reset('');
-    this.errorEvidencia.set(null);
-  }
-
-  protected cambiarPerfil(perfil: PerfilDemo): void {
-    this.perfil.set(perfil);
+    this.servicio.registrar(datos).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+      if (!resultado.ok) {
+        return;
+      }
+      this.ultimoFolio.set(resultado.folio ?? null);
+      this.forma.controls.cantidad.reset(null);
+      this.forma.controls.descripcion.reset('');
+      this.forma.controls.evidenciaNombre.reset(null);
+      this.forma.controls.ordenFolio.reset('');
+      this.errorEvidencia.set(null);
+    });
   }
 
   protected etiquetaEtapaForma(): string {

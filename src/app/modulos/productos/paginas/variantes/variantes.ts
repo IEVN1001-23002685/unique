@@ -54,6 +54,7 @@ export class Variantes {
     this.ruta.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       this.productoFiltro.set(params.get('producto') ?? 'TODOS');
     });
+    this.servicio.recargar().subscribe();
   }
 
   protected alBuscar(evento: Event): void {
@@ -69,14 +70,11 @@ export class Variantes {
   }
 
   protected alternar(fila: FilaVariante): void {
-    const estadoAnterior = fila.variante.activa;
-    const ok = this.servicio.alternarVariante(fila.productoId, fila.variante.id);
-    this.avisos.mostrar(
-      ok ? 'exito' : 'error',
-      ok
-        ? `${fila.variante.sku}: variante ${estadoAnterior ? 'desactivada' : 'activada'} en memoria. Las demás variantes no se modificaron.`
-        : 'No fue posible cambiar el estado de esta variante.',
-    );
+    this.servicio.alternarVariante(fila.productoId, fila.variante.id).subscribe({
+      next: (resultado) =>
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje),
+      error: () => this.avisos.mostrar('error', 'No fue posible cambiar la variante en Flask.'),
+    });
   }
 
   protected avisoM12(): void {

@@ -1,25 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionRecetas } from '../../componentes/navegacion-recetas/navegacion-recetas';
-import { IVA_PCT, MARGEN_OBJETIVO_PCT } from '../../servicios/calculos-receta';
+import { MARGEN_OBJETIVO_PCT } from '../../servicios/calculos-receta';
+import type { FilaCosteo } from '../../servicios/recetas-servicio';
 import { RecetasServicio } from '../../servicios/recetas-servicio';
 
-interface FilaCosteo {
-  productoId: number;
-  producto: string;
-  talla: string;
+interface FilaCosteoVista extends FilaCosteo {
   version: number;
-  materiaPrima: number;
-  hiloBordado: number;
-  empaque: number;
-  manoObra: number;
-  bordado: number;
-  indirectos: number;
-  costoEstandar: number;
-  precioSugerido: number;
-  precioVigente: number;
-  margen: number | null;
   bordadosPendientes: number;
 }
 
@@ -31,52 +20,58 @@ interface FilaCosteo {
 })
 export class CosteoEstandar {
   protected readonly servicio = inject(RecetasServicio);
+  private readonly avisos = inject(AvisosServicio);
   protected readonly productoFiltro = signal('TODOS');
 
-  protected readonly filas = computed<FilaCosteo[]>(() =>
+  protected readonly filas = computed<FilaCosteoVista[]>(() =>
     this.servicio
-      .recetas()
-      .filter((receta) => receta.estado === 'VIGENTE')
+      .costeoFilas()
       .filter(
-        (receta) =>
-          this.productoFiltro() === 'TODOS' || String(receta.productoId) === this.productoFiltro(),
+        (fila) =>
+          this.productoFiltro() === 'TODOS' || String(fila.productoId) === this.productoFiltro(),
       )
-      .map((receta) => {
-        const costeo = this.servicio.costeo(receta);
-        const precio = this.servicio.precioVigente(receta.productoId);
+      .map((fila) => {
+        const receta = this.servicio.recetaDe(fila.recetaId);
         return {
-          productoId: receta.productoId,
-          producto: this.servicio.nombreProducto(receta.productoId),
-          talla: receta.talla,
-          version: receta.version,
-          materiaPrima: costeo.materiaPrima,
-          hiloBordado: costeo.hiloBordado,
-          empaque: costeo.empaque,
-          manoObra: costeo.manoObra,
-          bordado: costeo.bordado,
-          indirectos: costeo.indirectos,
-          costoEstandar: costeo.costoEstandar,
-          precioSugerido: costeo.precioSugerido,
-          precioVigente: precio,
-          margen: this.servicio.margenDe(precio, receta),
-          bordadosPendientes: this.servicio.disenosPendientes(receta).length,
+          ...fila,
+          version: receta?.version ?? 0,
+          bordadosPendientes: receta ? this.servicio.disenosPendientes(receta).length : 0,
         };
       })
+      .filter((fila) => fila.version > 0)
       .sort(
         (a, b) => a.producto.localeCompare(b.producto, 'es-MX') || a.talla.localeCompare(b.talla),
       ),
   );
 
-  protected readonly resumen = computed(() =>
-    this.servicio.productos.map((producto) => ({
-      ...producto,
-      // §7.5: el precio sugerido de la prenda usa la talla de mayor costo.
-      costo: this.servicio.costoEstandarDe(producto.id),
-      precio: this.servicio.precioVigente(producto.id),
-    })),
-  );
+  protected readonly resumen = computed(() => {
+    const mayores = new Map<number, FilaCosteo>();
+    for (const fila of this.servicio.costeoFilas()) {
+      const actual = mayores.get(fila.productoId);
+      if (!actual || fila.costoEstandar > actual.costoEstandar) {
+        mayores.set(fila.productoId, fila);
+      }
+    }
+    return this.servicio.productos().map((producto) => {
+      const mayor = mayores.get(producto.id);
+      return {
+        id: producto.id,
+        nombre: producto.nombre,
+        costo: mayor?.costoEstandar ?? null,
+        precioSugerido: mayor?.precioSugerido ?? null,
+        precio: this.servicio.precioVigente(producto.id),
+      };
+    });
+  });
 
   protected readonly margenObjetivo = MARGEN_OBJETIVO_PCT;
+  protected readonly margenObjetivoFraccion = MARGEN_OBJETIVO_PCT / 100;
+
+  constructor() {
+    this.servicio.recargar().subscribe({
+      error: () => this.avisos.mostrar('error', 'No fue posible cargar el costeo desde Flask.'),
+    });
+  }
 
   protected alCambiarProducto(evento: Event): void {
     this.productoFiltro.set((evento.target as HTMLSelectElement).value);
@@ -86,14 +81,7 @@ export class CosteoEstandar {
     return this.servicio.precioVigente(productoId);
   }
 
-  protected precioSugerido(costo: number | null): number {
-    if (costo === null) {
-      return 0;
-    }
-    return Math.round((costo / (1 - this.margenObjetivo / 100)) * (1 + IVA_PCT / 100) * 100) / 100;
-  }
-
-  protected margenTexto(margen: number | null): string {
-    return margen === null ? '—' : `${margen} %`;
+  protected margenTexto(margen: number): string {
+    return `${(margen * 100).toFixed(1)} %`;
   }
 }

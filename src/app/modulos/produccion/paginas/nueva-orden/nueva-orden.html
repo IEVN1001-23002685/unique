@@ -93,52 +93,16 @@
   <section class="tarjeta bloque vista__resumen" aria-live="polite">
     <div class="panel-solicitud__cabecera">
       <div>
-        <p class="eyebrow">Receta vigente de M11 · copia simulada</p>
-        <h2 class="titulo-section">Explosión estimada de materiales</h2>
+        <p class="eyebrow">Receta vigente de M11</p>
+        <h2 class="titulo-section">Resumen de la solicitud</h2>
       </div>
       <span class="etiqueta etiqueta--neutro">{{ unidadesTotales() }} unidades</span>
     </div>
 
-    @if (explosion().length === 0) {
-      <div class="estado" role="status">
-        <strong>Sin materiales estimados.</strong>
-        <p>Captura una cantidad entera para ver la explosión de la receta copiada.</p>
-      </div>
-    } @else {
-      <div class="tabla-contenedor">
-        <table class="tabla">
-          <caption class="sr-only">
-            Materiales estimados por la receta copiada
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Material</th>
-              <th scope="col">Color</th>
-              <th scope="col">Unidad</th>
-              <th scope="col" class="celda-derecha">Cantidad bruta requerida</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (material of explosion(); track $index) {
-              <tr>
-                <td data-etiqueta="Material">{{ material.nombreMaterial }}</td>
-                <td data-etiqueta="Color">{{ material.color }}</td>
-                <td data-etiqueta="Unidad">{{ material.unidadBase }}</td>
-                <td data-etiqueta="Cantidad bruta requerida" class="celda-numero celda-derecha">
-                  {{ material.cantidadRequerida | number: '1.0-4' : 'es-MX' }}
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
-
-    <p class="nota nota--advertencia">
-      La cantidad bruta incluye la merma estándar de la receta. En la integración, Flask debe copiar
-      la receta vigente de M11 al crear la orden y recalcular el semáforo con la disponibilidad de
-      M15. Si ya existe una orden abierta del mismo SKU, la demanda se suma a ella en vez de crear
-      una orden duplicada; esta demostración lo resuelve solo en memoria.
+    <p class="nota">
+      Flask copia la receta vigente de M11 al crear la orden y calcula la explosión de materiales en
+      unidad base, incluida la merma estándar. Podrás revisarla en el detalle de la orden. El
+      contrato no expone una previsualización de explosión antes de crearla.
     </p>
   </section>
 </section>

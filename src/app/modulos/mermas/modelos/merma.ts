@@ -21,7 +21,7 @@ export type EtapaMerma =
 /** Procedencia del registro. Las mermas automáticas llegan de otros módulos. */
 export type ProcedenciaMerma = 'MANUAL' | 'M14' | 'M15' | 'M16' | 'M07' | 'M12' | 'REVERSION';
 
-/** Catálogo de causa_merma (M22); en demostración se sirve desde datos simulados. */
+/** Catálogo de causa_merma (M22), leído por el Administrador desde /catalogos/causa-merma. */
 export interface CausaMerma {
   id: number;
   nombre: string;

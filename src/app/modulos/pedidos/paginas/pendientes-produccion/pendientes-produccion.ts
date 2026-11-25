@@ -19,10 +19,10 @@ export class PendientesProduccion {
   protected readonly busqueda = signal('');
 
   constructor() {
-    this.servicio.sincronizarDesdeVentas();
+    this.servicio.recargar().subscribe();
   }
 
-  protected readonly pendientes = this.servicio.pendientesProduccion;
+  protected readonly pendientes = computed(() => this.servicio.pendientesProduccion());
 
   protected readonly filtrados = computed(() => {
     const termino = this.busqueda().trim().toLowerCase();

@@ -52,8 +52,7 @@ export class BandejaPedidos {
   ];
 
   constructor() {
-    // M08 entrega pagos validados y cancelaciones; M09 conserva la propiedad del estado.
-    this.servicio.sincronizarDesdeVentas();
+    this.servicio.recargar().subscribe();
   }
 
   protected readonly indicadores = this.servicio.indicadores;

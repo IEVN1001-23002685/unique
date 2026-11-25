@@ -74,8 +74,12 @@
                   <strong class="demanda">{{ grupo.demanda }}</strong>
                 </td>
                 <td data-etiqueta="Pedidos">
-                  @for (folio of grupo.pedidos; track folio) {
-                    <a class="accion" [routerLink]="['/admin/pedidos', folio]">{{ folio }}</a>
+                  @if (grupo.pedidos.length === 0) {
+                    <span class="celda-secundaria">No informado por la API</span>
+                  } @else {
+                    @for (folio of grupo.pedidos; track folio) {
+                      <a class="accion" [routerLink]="['/admin/pedidos', folio]">{{ folio }}</a>
+                    }
                   }
                 </td>
                 <td data-etiqueta="Orden">

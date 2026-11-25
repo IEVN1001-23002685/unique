@@ -36,11 +36,15 @@ export class PlanSugerido {
     if (fila.cantidadSugerida <= 0) {
       return;
     }
-    const resultado = this.servicio.crearOrden(
-      {
+    if (!fila.varianteId || fila.varianteId <= 0) {
+      this.avisos.mostrar('error', 'La variante sugerida no está disponible en el catálogo.');
+      return;
+    }
+    this.servicio
+      .crearOrden({
         lineas: [
           {
-            varianteId: 0,
+            varianteId: fila.varianteId,
             sku: fila.sku,
             nombreProducto: fila.nombreProducto,
             cantidad: fila.cantidadSugerida,
@@ -48,19 +52,16 @@ export class PlanSugerido {
         ],
         fechaRequerida: null,
         notas: `Sugerencia de M16: pendiente no cubierto ${fila.pendienteNoCubierto}, reposición ${fila.cantidadReposicion}.`,
-      },
-      fila.pendienteNoCubierto > 0 ? 'PEDIDO' : 'STOCK_MINIMO',
-    );
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    if (!resultado.ok) {
-      return;
-    }
-
-    const destino =
-      this.servicio.ordenes().find((orden) => orden.folio === resultado.folio)?.id ??
-      this.servicio.ordenes().find((orden) => orden.folio === resultado.sumadaA)?.id;
-    if (destino !== undefined) {
-      void this.router.navigate(['/produccion', destino]);
-    }
+      })
+      .subscribe((resultado) => {
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+        if (!resultado.ok || !resultado.folio) {
+          return;
+        }
+        const destino = this.servicio.ordenes().find((orden) => orden.folio === resultado.folio)?.id;
+        if (destino !== undefined) {
+          void this.router.navigate(['/produccion', destino]);
+        }
+      });
   }
 }

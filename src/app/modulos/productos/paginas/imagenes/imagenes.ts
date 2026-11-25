@@ -7,7 +7,7 @@ import { ProductosServicio } from '../../servicios/productos-servicio';
 
 type DestinoImagen = 'Producto' | 'Categoría' | 'Material' | 'Bordado' | 'Nuevas';
 
-/** Biblioteca de imágenes reales + carga local con previsualización (sin persistencia). */
+/** Biblioteca de imágenes reales y subida persistente al producto mediante M10. */
 @Component({
   selector: 'app-imagenes',
   imports: [NavegacionProductos],
@@ -22,6 +22,11 @@ export class Imagenes {
   protected readonly productos = this.productosServicio.productos;
   protected readonly colores = this.productosServicio.colores;
   protected readonly biblioteca = this.imagenesServicio.biblioteca;
+
+  constructor() {
+    this.productosServicio.recargar().subscribe();
+  }
+
   protected readonly fallidos = signal<ReadonlySet<string>>(new Set<string>());
 
   protected readonly destinos: readonly DestinoImagen[] = [
@@ -44,6 +49,7 @@ export class Imagenes {
   protected readonly etiquetaCarga = signal('');
   protected readonly vistaPrevia = signal('');
   protected readonly errorArchivo = signal('');
+  private readonly archivo = signal<File | null>(null);
 
   protected readonly visibles = computed(() => {
     const filtro = this.categoriaFiltro();
@@ -91,6 +97,7 @@ export class Imagenes {
     const archivo = entrada.files?.[0];
     this.errorArchivo.set('');
     this.vistaPrevia.set('');
+    this.archivo.set(null);
     if (!archivo) {
       return;
     }
@@ -103,11 +110,12 @@ export class Imagenes {
       return;
     }
 
+    this.archivo.set(archivo);
+    this.etiquetaCarga.set(archivo.name.replace(/\.[^.]+$/, ''));
     const lector = new FileReader();
     lector.onload = () => {
       if (typeof lector.result === 'string') {
         this.vistaPrevia.set(lector.result);
-        this.etiquetaCarga.set(archivo.name.replace(/\.[^.]+$/, ''));
       }
     };
     lector.onerror = () => {
@@ -117,37 +125,29 @@ export class Imagenes {
   }
 
   protected agregarCarga(): void {
-    if (this.vistaPrevia() === '') {
-      this.avisos.mostrar('advertencia', 'Selecciona una imagen válida antes de agregarla.');
+    const archivo = this.archivo();
+    const id = Number(this.productoId());
+    if (!archivo || !Number.isInteger(id) || id <= 0) {
+      this.avisos.mostrar('error', 'Selecciona una imagen válida y el producto de destino.');
       return;
     }
-    this.imagenesServicio.registrar(
-      this.vistaPrevia(),
-      this.etiquetaCarga() || 'Imagen cargada',
-      'Carga local',
-    );
-    this.avisos.mostrar(
-      'exito',
-      'Imagen agregada a la biblioteca de demostración. No se guarda en servidor.',
-    );
-    this.vistaPrevia.set('');
-    this.categoriaFiltro.set('TODAS');
+    const color = this.color();
+    this.imagenesServicio.subir(archivo, id, color === '' ? null : color).subscribe({
+      next: (imagen) => {
+        this.avisos.mostrar('exito', `Imagen guardada en Flask (${imagen.url}).`);
+        this.vistaPrevia.set('');
+        this.archivo.set(null);
+        this.categoriaFiltro.set('TODAS');
+        this.productosServicio.recargar().subscribe();
+      },
+      error: () => this.avisos.mostrar('error', 'No fue posible guardar la imagen en Flask.'),
+    });
   }
 
   protected asignar(): void {
-    const recurso = this.seleccionada();
-    const id = Number(this.productoId());
-    if (!recurso || !Number.isInteger(id) || id <= 0) {
-      this.avisos.mostrar('error', 'Elige una imagen y un producto válidos.');
-      return;
-    }
-
-    const color = this.color();
-    const resultado = this.productosServicio.asignarImagen(
-      id,
-      color === '' ? null : color,
-      recurso.url,
+    this.avisos.mostrar(
+      'informacion',
+      'Las imágenes de la biblioteca son recursos del proyecto. Para persistir una imagen, selecciónala con «Subir imagen local», elige el producto y usa «Guardar en producto».',
     );
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
   }
 }

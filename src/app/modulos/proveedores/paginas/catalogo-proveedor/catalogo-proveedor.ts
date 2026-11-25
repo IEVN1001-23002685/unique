@@ -107,7 +107,7 @@ export class CatalogoProveedor {
     });
   }
 
-  /** Alertas de cobertura calculadas con el padrón guardado (demostración). */
+  /** Alertas de cobertura calculadas con el padrón devuelto por Flask. */
   protected readonly materialesConAlerta = computed(() => {
     const proveedor = this.proveedor();
     if (!proveedor) {
@@ -196,7 +196,7 @@ export class CatalogoProveedor {
     this.lineaAEliminar.set(null);
     this.avisos.mostrar(
       'informacion',
-      'Línea removida solo en memoria; la eliminación real queda pendiente de Flask.',
+      'Línea removida; Flask persiste el cambio al guardar el proveedor.',
     );
   }
 

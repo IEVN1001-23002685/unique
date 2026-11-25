@@ -3,13 +3,13 @@
 
   <a routerLink="/admin/recetas" class="volver">← Volver a la biblioteca</a>
 
-  @if (!receta) {
+  @if (!receta()) {
     <div class="tarjeta seccion estado" role="status">
-      <strong>No encontramos la receta solicitada.</strong>
-      <p>Regresa a la biblioteca para elegir una versión disponible.</p>
+      <strong>Cargando la receta desde Flask…</strong>
+      <p>Si no aparece, regresa a la biblioteca para elegir una versión disponible.</p>
       <a routerLink="/admin/recetas" class="boton boton--primario">Ir a la biblioteca</a>
     </div>
-  } @else if (receta; as actual) {
+  } @else if (receta(); as actual) {
     <div class="cabecera">
       <div>
         <p class="eyebrow">M11 · Editor de receta</p>
@@ -21,7 +21,7 @@
           }}
         </h1>
         <p class="subtitulo">
-          Versión <strong>v{{ actual.version }}</strong> ·
+          Versión <strong>{{ actual.version > 0 ? 'v' + actual.version : 'por asignar' }}</strong> ·
           <span
             class="chip"
             [class.chip--vigente]="actual.estado === 'VIGENTE'"
@@ -29,14 +29,11 @@
             [class.chip--archivada]="actual.estado === 'ARCHIVADA'"
             >{{ actual.estado }}</span
           >
-          @if (actual.origenRecetaId !== null) {
-            · copiada de otra versión
-          }
         </p>
       </div>
     </div>
 
-    @if (soloLectura) {
+    @if (soloLectura()) {
       <p class="nota nota--adv">
         Esta versión no se edita. Las recetas VIGENTES y ARCHIVADAS se copian a un borrador nuevo
         para ajustarlas; las órdenes de producción conservan la receta con la que fueron creadas.
@@ -55,7 +52,7 @@
                 formControlName="productoId"
                 (change)="alCambiarProductoNuevo($event)"
               >
-                @for (producto of servicio.productos; track producto.id) {
+                @for (producto of servicio.productos(); track producto.id) {
                   <option [value]="producto.id">{{ producto.nombre }}</option>
                 }
               </select>
@@ -123,7 +120,9 @@
                 <th scope="col">Factor</th>
                 <th scope="col">Merma %</th>
                 <th scope="col">Bruta</th>
-                <th scope="col">Costo</th>
+                @if (servicio.puedeVerCostos()) {
+                  <th scope="col">Costo</th>
+                }
                 <th scope="col"></th>
               </tr>
             </thead>
@@ -137,7 +136,7 @@
                       (change)="alCambiarMaterial(indice, $event)"
                       aria-label="Material de la línea"
                     >
-                      @for (material of materiales; track material.codigo) {
+                      @for (material of materiales(); track material.codigo) {
                         <option [value]="material.codigo">
                           {{ material.codigo }} · {{ material.nombre }}
                         </option>
@@ -195,14 +194,16 @@
                     />
                   </td>
                   <td data-etiqueta="Bruta">{{ lineasVista()[indice]?.bruta }}</td>
-                  <td data-etiqueta="Costo">
-                    {{
-                      lineasVista()[indice]?.costo ?? 0
-                        | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-                    }}
-                  </td>
+                  @if (servicio.puedeVerCostos()) {
+                    <td data-etiqueta="Costo">
+                      {{
+                        lineasVista()[indice]?.costo ?? 0
+                          | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+                      }}
+                    </td>
+                  }
                   <td>
-                    @if (!soloLectura) {
+                    @if (!soloLectura()) {
                       <button
                         type="button"
                         class="accion accion--peligro"
@@ -216,7 +217,7 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="8" class="celda-vacia">
+                  <td [attr.colspan]="servicio.puedeVerCostos() ? 8 : 7" class="celda-vacia">
                     Sin líneas. Agrega materiales o las etiquetas precargadas.
                   </td>
                 </tr>
@@ -225,7 +226,7 @@
           </table>
         </div>
 
-        @if (!soloLectura) {
+        @if (!soloLectura()) {
           <div class="acciones-lineas">
             <label class="campo campo--compacto">
               Material a agregar
@@ -234,7 +235,7 @@
                 [value]="materialNuevo()"
                 (change)="alCambiarMaterialNuevo($event)"
               >
-                @for (material of materiales; track material.codigo) {
+                @for (material of materiales(); track material.codigo) {
                   <option [value]="material.codigo">
                     {{ material.codigo }} · {{ material.nombre }}
                   </option>
@@ -288,7 +289,7 @@
                 Ubicación
                 <input class="campo__entrada" formControlName="ubicacion" maxlength="40" />
               </label>
-              @if (!soloLectura) {
+              @if (!soloLectura()) {
                 <button
                   type="button"
                   class="accion accion--peligro"
@@ -302,7 +303,7 @@
             <p class="estado-linea">Esta receta no lleva bordado.</p>
           }
         </div>
-        @if (!soloLectura) {
+        @if (!soloLectura()) {
           <button type="button" class="boton boton--secundario" (click)="agregarBordado()">
             Agregar bordado
           </button>
@@ -369,67 +370,73 @@
       <section class="tarjeta seccion">
         <h2 class="seccion__titulo">5 · Vista previa en vivo</h2>
         <div class="resumen">
-          <div class="resumen__dato">
-            <span>Materia prima</span
-            ><strong>{{
-              costeo().materiaPrima | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-            }}</strong>
-          </div>
-          <div class="resumen__dato">
-            <span>Hilo de bordado (incluido arriba)</span
-            ><strong>{{
-              costeo().hiloBordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-            }}</strong>
-          </div>
-          <div class="resumen__dato">
-            <span>Empaque por prenda</span
-            ><strong>{{
-              costeo().empaque | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-            }}</strong>
-          </div>
-          <div class="resumen__dato">
-            <span>Mano de obra</span
-            ><strong>{{
-              costeo().manoObra | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-            }}</strong>
-          </div>
-          <div class="resumen__dato">
-            <span>Bordado</span
-            ><strong>{{
-              costeo().bordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-            }}</strong>
-          </div>
-          <div class="resumen__dato">
-            <span>Indirectos</span
-            ><strong>{{
-              costeo().indirectos | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-            }}</strong>
-          </div>
-          <div class="resumen__dato resumen__dato--destacado">
-            <span>Costo estándar</span
-            ><strong>{{
-              costeo().costoEstandar | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-            }}</strong>
-          </div>
-          <div class="resumen__dato">
-            <span>Precio sugerido (IVA incluido)</span
-            ><strong>{{
-              costeo().precioSugerido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
-            }}</strong>
-          </div>
-          <div class="resumen__dato">
-            <span>Margen con precio vigente</span
-            ><strong>{{ margen() === null ? '—' : margen() + '%' }}</strong>
-          </div>
+          @if (servicio.puedeVerCostos()) {
+            <div class="resumen__dato">
+              <span>Materia prima</span
+              ><strong>{{
+                costeo().materiaPrima | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+              }}</strong>
+            </div>
+            <div class="resumen__dato">
+              <span>Hilo de bordado (incluido arriba)</span
+              ><strong>{{
+                costeo().hiloBordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+              }}</strong>
+            </div>
+            <div class="resumen__dato">
+              <span>Empaque por prenda</span
+              ><strong>{{
+                costeo().empaque | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+              }}</strong>
+            </div>
+            <div class="resumen__dato">
+              <span>Mano de obra</span
+              ><strong>{{
+                costeo().manoObra | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+              }}</strong>
+            </div>
+            <div class="resumen__dato">
+              <span>Bordado</span
+              ><strong>{{
+                costeo().bordado | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+              }}</strong>
+            </div>
+            <div class="resumen__dato">
+              <span>Indirectos</span
+              ><strong>{{
+                costeo().indirectos | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+              }}</strong>
+            </div>
+            <div class="resumen__dato resumen__dato--destacado">
+              <span>Costo estándar</span
+              ><strong>{{
+                costeo().costoEstandar | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+              }}</strong>
+            </div>
+            <div class="resumen__dato">
+              <span>Precio sugerido (IVA incluido)</span
+              ><strong>{{
+                costeo().precioSugerido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+              }}</strong>
+            </div>
+            <div class="resumen__dato">
+              <span>Margen con precio vigente</span
+              ><strong>{{ margen() === null ? '—' : margen() + '%' }}</strong>
+            </div>
+          }
           <div class="resumen__dato">
             <span>Alcanza para</span>
             <strong>{{ alcanza() === null ? '—' : alcanza() + ' prendas' }}</strong>
           </div>
         </div>
-        <p class="ayuda">
-          Margen objetivo {{ costeo().margenObjetivo }} %. Existencia de materiales leída de la
-          instantánea de demostración de M15; el inventario real se consultará en Flask.
-        </p>
+        @if (servicio.puedeVerCostos()) {
+          <p class="ayuda">
+            Margen objetivo {{ costeo().margenObjetivo }} %. Costos y disponibilidad calculados por
+            Flask.
+          </p>
+        } @else {
+          <p class="ayuda">Disponibilidad calculada por Flask. Los costos son reservados al Administrador.</p>
+        }
 
         @if (razones().length > 0) {
           <ul class="razones">
@@ -445,7 +452,7 @@
         }
       </section>
 
-      @if (!soloLectura && !esNueva) {
+      @if (!soloLectura() && !esNueva) {
         <section class="tarjeta seccion">
           <h2 class="seccion__titulo">6 · Copiar a otra talla o producto</h2>
           <div class="copiar">
@@ -456,7 +463,7 @@
                 [value]="copiarProducto()"
                 (change)="alCambiarProductoCopia($event)"
               >
-                @for (producto of servicio.productos; track producto.id) {
+                @for (producto of servicio.productos(); track producto.id) {
                   <option [value]="producto.id">{{ producto.nombre }}</option>
                 }
               </select>
@@ -480,24 +487,8 @@
         </section>
       }
 
-      @if (actual.bitacora.length > 0) {
-        <section class="tarjeta seccion">
-          <h2 class="seccion__titulo">Bitácora</h2>
-          <ul class="bitacora">
-            @for (entrada of actual.bitacora; track entrada.id) {
-              <li>
-                <strong>{{ entrada.usuario }}</strong>
-                <span>{{ entrada.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}</span>
-                <em>{{ entrada.accion }}</em>
-                <p>{{ entrada.detalle }}</p>
-              </li>
-            }
-          </ul>
-        </section>
-      }
-
       <div class="acciones-forma">
-        @if (!soloLectura) {
+        @if (!soloLectura()) {
           <button type="submit" class="boton boton--primario">Guardar borrador</button>
           <button type="button" class="boton boton--primario" (click)="activar()">
             Activar versión

@@ -142,9 +142,8 @@
       }
 
       <p class="nota nota--advertencia">
-        El ajuste y su movimiento viven solo en memoria. Flask debe aplicar PEPS sobre los lotes,
-        conservar la bitácora del movimiento y, si aplica, crear la merma en M17 con
-        Idempotency-Key.
+        Flask aplica PEPS sobre los lotes, conserva el movimiento como solo lectura y registra la
+        merma en M17 cuando se solicita. El historial nunca se edita.
       </p>
     </section>
   }
@@ -157,7 +156,7 @@
   @if (confirmarMerma()) {
     <app-modal-confirmacion
       titulo="Mandar diferencia a merma"
-      mensaje="La diferencia a la baja saldrá del inventario y se enviará como merma pendiente a M17. Solo se registrará en la demostración; Flask debe ejecutar la operación real."
+      mensaje="La diferencia a la baja saldrá del inventario y Flask la registrará como merma en M17."
       etiquetaConfirmar="Confirmar merma"
       (confirmar)="confirmarEnvioMerma()"
       (cancelar)="confirmarMerma.set(false)"

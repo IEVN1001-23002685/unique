@@ -52,7 +52,7 @@
         </button>
       </div>
       <p class="barra__texto">
-        Cifras de demostración en unidades enteras; precios y costos no se muestran.
+        Sugerencias calculadas por Flask en unidades enteras; no se muestran costos.
       </p>
     </div>
 
@@ -89,9 +89,6 @@
                   <span class="celda-secundaria"
                     >{{ fila.nombreProducto }} · {{ fila.talla }} / {{ fila.color }}</span
                   >
-                  @if (fila.pedidos.length > 0) {
-                    <span class="celda-secundaria">Folios: {{ fila.pedidos.join(', ') }}</span>
-                  }
                 </td>
                 <td data-etiqueta="Disponible" class="celda-numero celda-derecha">
                   {{ fila.disponible | number: '1.0-0' : 'es-MX' }}
@@ -131,7 +128,7 @@
                       [disabled]="fila.cantidadSugerida <= 0"
                       (click)="crearDesdePlan(fila)"
                     >
-                      {{ fila.ordenAbiertaFolio ? 'Sumar a orden' : 'Crear orden' }}
+                      Crear orden
                     </button>
                   </div>
                 </td>
@@ -144,9 +141,7 @@
 
     <p class="nota">
       «En curso» descuenta lo pendiente de órdenes abiertas del mismo SKU para no duplicar demanda.
-      Si ya existe una orden abierta, la nueva sugerencia se suma a ella; esta demostración lo
-      resuelve solo en memoria. El plan real debe recalcularse con las existencias y los pedidos
-      vigentes en Flask.
+      Las existencias y los pedidos se consultan en el servidor al recargar la pantalla.
     </p>
   </div>
 

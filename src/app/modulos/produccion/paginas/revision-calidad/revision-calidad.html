@@ -151,10 +151,9 @@
     </form>
 
     <p class="nota">
-      Regla de cierre: aprobadas + merma = planeadas. Si hay reproceso, la orden regresa a
-      EN_PROCESO sin consumir material adicional. Aprobar debe subir las unidades a M12 y asignarlas
-      al pedido más antiguo en espera (FIFO); la merma se reporta a M17 con causa y etapa. Nada de
-      eso se ejecuta en esta demostración.
+      Regla de cierre: aprobadas + reproceso + merma = revisadas, sin exceder lo planeado. Si hay
+      reproceso, la orden regresa a EN_PROCESO. Aprobar sube las unidades al inventario de producto
+      terminado y las asigna por antigüedad (FIFO); la merma se reporta a M17.
     </p>
   } @else {
     <div class="cabecera">
@@ -162,7 +161,7 @@
         <p class="eyebrow">Bloque 5 · Producción y merma · M16</p>
         <h1 class="titulo">Revisión de calidad</h1>
         <p class="subtitulo">
-          Órdenes listas para verificar y dictámenes capturados en esta sesión de demostración.
+          Órdenes listas para verificar e historial de dictámenes registrados.
         </p>
       </div>
       <a routerLink="/produccion" class="boton boton--secundario">Volver al tablero</a>
@@ -230,7 +229,7 @@
         <div class="tabla-contenedor">
           <table class="tabla">
             <caption class="sr-only">
-              Historial de revisiones de calidad de demostración
+              Historial de revisiones de calidad
             </caption>
             <thead>
               <tr>

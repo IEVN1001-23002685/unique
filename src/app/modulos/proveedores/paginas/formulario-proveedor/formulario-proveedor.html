@@ -6,7 +6,7 @@
   @if (noEncontrado()) {
     <div class="tarjeta error" role="alert">
       <h1 class="titulo">Proveedor no encontrado</h1>
-      <p>El folio solicitado no existe en el padrón de demostración.</p>
+      <p>El proveedor solicitado no existe o fue desactivado.</p>
       <a routerLink="/proveedores" class="boton boton--primario">Ir al padrón</a>
     </div>
   } @else {
@@ -167,8 +167,8 @@
       </fieldset>
 
       <p class="nota">
-        El alta o edición se registra únicamente en memoria para probar la interfaz. La validación
-        definitiva y la persistencia se conectarán a Flask.
+        El alta o edición se persiste en Flask. El servidor valida los campos y decide la
+        desactivación lógica cuando el proveedor tiene historial.
       </p>
 
       <div class="acciones-formulario">

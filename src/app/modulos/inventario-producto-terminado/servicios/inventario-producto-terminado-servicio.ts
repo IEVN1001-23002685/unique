@@ -275,17 +275,18 @@ export class InventarioProductoServicio {
   }
 
   private registrarEfectoLocal(respuesta: AjusteApi): void {
-    if (respuesta.alerta_id !== null) {
+    const alertaId = respuesta.alerta_id;
+    if (alertaId !== null) {
       this.alertasLista.update((lista) => [
         {
-          id: respuesta.alerta_id,
+          id: alertaId,
           fecha: new Date().toISOString(),
           clave: 'PT_STOCK_MINIMO',
           sku: respuesta.sku,
           mensaje: `Flask abrió la alerta PT_STOCK_MINIMO. Disponible ${respuesta.disponible}, semáforo ${respuesta.semaforo}.`,
           severidad: 'PREVENTIVA',
         },
-        ...lista.filter((alerta) => alerta.id !== respuesta.alerta_id),
+        ...lista.filter((alerta) => alerta.id !== alertaId),
       ]);
     }
     if (respuesta.orden_produccion_id !== null) {

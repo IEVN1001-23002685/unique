@@ -113,17 +113,11 @@ export class DetalleVenta {
     }
 
     const valor = this.formaPago.getRawValue();
-    const ultimos4 = valor.ultimos4.trim();
-    if (valor.metodo === 'TARJETA' && ultimos4 !== '' && !/^\d{4}$/.test(ultimos4)) {
-      this.avisos.mostrar('error', 'Captura únicamente los últimos 4 dígitos, sin PAN ni CVV.');
-      return;
-    }
 
     this.servicio
       .registrarPago(this.folio, {
         monto: valor.monto,
         metodo: valor.metodo,
-        ultimos4: ultimos4 === '' ? null : ultimos4,
         estado: valor.estado,
       })
       .subscribe((resultado) => {
@@ -198,6 +192,8 @@ export class DetalleVenta {
       return;
     }
 
+    const subtotal =
+      venta.subtotal === null ? 'No disponible' : `$${venta.subtotal.toFixed(2)} MXN`;
     const texto = [
       'COMPROBANTE DIGITAL SIMULADO — UNIQUE',
       'Sin timbrado ni valor fiscal.',
@@ -206,13 +202,13 @@ export class DetalleVenta {
       `Cliente: ${venta.cliente}`,
       `Fecha: ${venta.fecha.replace('T', ' ')}`,
       `Canal: ${venta.canal}`,
-      `Subtotal: $${venta.subtotal.toFixed(2)} MXN`,
+      `Subtotal: ${subtotal}`,
       `Descuento: $${venta.descuentoMonto.toFixed(2)} MXN`,
       `Envío: $${venta.costoEnvio.toFixed(2)} MXN`,
       `Total: $${venta.total.toFixed(2)} MXN`,
       `IVA informativo incluido: $${venta.ivaIncluido.toFixed(2)} MXN`,
       '',
-      'Ejemplar de demostración generado por el frontend.',
+      'Generado desde la API UNIQUE. Sin timbrado ni valor fiscal.',
     ].join('\n');
 
     const url = URL.createObjectURL(new Blob([texto], { type: 'text/plain;charset=utf-8;' }));

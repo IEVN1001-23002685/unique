@@ -15,36 +15,11 @@
 
   <div class="dos-columnas">
     <section class="tarjeta bloque" aria-labelledby="titulo-formulario">
-      <div class="perfil-demo">
-        <span>Perfil de demostración</span>
-        <div class="filtros" role="group" aria-label="Perfil de demostración">
-          <button
-            type="button"
-            class="filtro"
-            [class.filtro--activo]="perfil() === 'Operativo'"
-            (click)="cambiarPerfil('Operativo')"
-          >
-            Operativo
-          </button>
-          <button
-            type="button"
-            class="filtro"
-            [class.filtro--activo]="perfil() === 'Administrador'"
-            (click)="cambiarPerfil('Administrador')"
-          >
-            Administrador
-          </button>
-        </div>
-      </div>
-      <p class="nota nota--advertencia">
-        El selector solo demuestra la visibilidad por rol; no es autenticación. Los guards y la
-        validación autoritativa corresponderán a Flask.
-      </p>
 
       @if (ultimoFolio(); as folio) {
         <p class="confirmacion" role="status">
-          <strong>{{ folio }}</strong> quedó registrado en memoria. El descuento de existencias y el
-          movimiento MERMA están pendientes de Flask.
+          <strong>{{ folio }}</strong> quedó registrado. La existencia se descontó y el movimiento
+          MERMA quedó asentado en el inventario correspondiente.
         </p>
       }
 
@@ -311,8 +286,8 @@
         </div>
       } @else {
         <p class="nota">
-          El costo perdido se calcula automáticamente, pero no se muestra a Operativo. Para
-          consultarlo usa la vista de Indicadores con perfil Administrador.
+          El costo perdido lo calcula el servidor y no se muestra a Operativo. Consúltalo en
+          Indicadores si tu sesión tiene perfil Administrador.
         </p>
       }
 
@@ -326,9 +301,10 @@
         </li>
         <li>Un error se corrige con un reverso del Administrador; este registro no se modifica.</li>
       </ul>
-      <p class="nota nota--advertencia">
-        Pendiente de Flask: descontar existencias, generar el movimiento MERMA, calcular el costo
-        definitivo y evaluar la alerta MERMA_ALTA.
+      <p class="nota">
+        Al registrar se descuenta la existencia, se genera el movimiento MERMA y se evalúa la alerta
+        MERMA_ALTA. El archivo de evidencia solo se referencia por nombre: este módulo no tiene
+        endpoint de carga de archivos.
       </p>
     </aside>
   </div>

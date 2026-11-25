@@ -40,7 +40,7 @@ export class DetallePedido {
   });
 
   constructor() {
-    this.servicio.sincronizarDesdeVentas();
+    this.servicio.cargarDetalle(this.folio).subscribe();
   }
 
   protected readonly puedeCancelar = computed(() => {
@@ -65,13 +65,9 @@ export class DetallePedido {
 
   protected cambiarPrioridad(evento: Event): void {
     const prioridad = (evento.target as HTMLSelectElement).value as PrioridadPedido;
-    const ok = this.servicio.cambiarPrioridad(this.folio, prioridad);
-    this.avisos.mostrar(
-      ok ? 'exito' : 'advertencia',
-      ok
-        ? `Prioridad actualizada a ${prioridad}. El cambio quedó solo en memoria.`
-        : 'No fue posible cambiar la prioridad de este pedido.',
-    );
+    this.servicio.cambiarPrioridad(this.folio, prioridad).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
+    });
   }
 
   protected guardarNota(): void {
@@ -81,28 +77,20 @@ export class DetallePedido {
       return;
     }
 
-    const ok = this.servicio.agregarNota(this.folio, this.formaNota.getRawValue().texto);
-    this.avisos.mostrar(
-      ok ? 'exito' : 'error',
-      ok
-        ? 'Nota interna agregada al historial de demostración.'
-        : 'No fue posible agregar la nota. Revisa el texto capturado.',
-    );
-    if (ok) {
-      this.formaNota.reset();
-      this.notaIntento.set(false);
-    }
+    this.servicio.agregarNota(this.folio, this.formaNota.getRawValue().texto).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+      if (resultado.ok) {
+        this.formaNota.reset();
+        this.notaIntento.set(false);
+      }
+    });
   }
 
   protected cancelar(motivo: string): void {
-    const ok = this.servicio.cancelarPedido(this.folio, motivo);
     this.cancelando.set(false);
-    this.avisos.mostrar(
-      ok ? 'advertencia' : 'error',
-      ok
-        ? 'Pedido cancelado en memoria. Reembolsos (M08), reservas (M12) y órdenes (M16) requieren Flask.'
-        : 'Este pedido ya no puede cancelarse desde la interfaz.',
-    );
+    this.servicio.cancelarPedido(this.folio, motivo).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
+    });
   }
 
   protected avisoModulo(modulo: string, nombre: string): void {

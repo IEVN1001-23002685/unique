@@ -1,5 +1,5 @@
-import { CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import {
   FormArray,
   FormBuilder,
@@ -12,10 +12,10 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
-import { SelectorPerfilDemo } from '../../../../compartido/componentes/selector-perfil-demo/selector-perfil-demo';
 import { decimalPositivo } from '../../../../compartido/validadores/validadores-negocio';
+import { mensajeError } from '../../../../core/api/errores';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
-import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
 import { ChipEstadoCompra } from '../../componentes/chip-estado-compra/chip-estado-compra';
 import { NavegacionCompras } from '../../componentes/navegacion-compras/navegacion-compras';
 import type { DatosRecepcion, LineaOrdenCompra, ResultadoRecepcion } from '../../modelos/compra';
@@ -63,12 +63,12 @@ const validarLineaRecepcion: ValidatorFn = (control): ValidationErrors | null =>
   selector: 'app-recepciones',
   imports: [
     CurrencyPipe,
+    DecimalPipe,
     ReactiveFormsModule,
     RouterLink,
     ChipEstadoCompra,
     NavegacionCompras,
     ModalConfirmacion,
-    SelectorPerfilDemo,
   ],
   templateUrl: './recepciones.html',
   styleUrls: ['./recepciones.css', '../../compras-compartido.css'],
@@ -76,10 +76,10 @@ const validarLineaRecepcion: ValidatorFn = (control): ValidationErrors | null =>
 export class Recepciones {
   private readonly fb = inject(FormBuilder);
   private readonly ruta = inject(ActivatedRoute);
+  private readonly auth = inject(AuthStateService);
   private readonly avisos = inject(AvisosServicio);
   protected readonly servicio = inject(ComprasServicio);
-  protected readonly perfilDemo = inject(PerfilDemoServicio);
-  protected readonly esAdministrador = this.perfilDemo.esAdministrador;
+  protected readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
 
   protected readonly ordenesDisponibles = computed(() =>
     this.servicio.ordenes().filter((orden) => ['EMITIDA', 'PARCIAL'].includes(orden.estado)),
@@ -98,17 +98,26 @@ export class Recepciones {
 
   protected readonly formulario = this.fb.group({
     documentoProveedor: [''],
-    recibidaPor: ['Operativo · demostración', [Validators.required]],
+    recibidaPor: [this.auth.usuario()?.nombre ?? '', [Validators.required]],
     notas: [''],
     cerrarConFaltante: [false],
     lineas: this.lineasForm,
   });
 
+  private ordenInicializada = false;
+
   constructor() {
-    const orden = this.orden();
-    if (orden) {
-      this.prepararLineas(orden.lineas);
-    }
+    effect(() => {
+      if (this.ordenInicializada || !this.servicio.cargado()) {
+        return;
+      }
+      const inicial = this.inicial();
+      if (inicial > 0) {
+        this.ordenInicializada = true;
+        this.ordenId.set(inicial);
+        this.prepararLineas(this.orden()?.lineas ?? []);
+      }
+    });
   }
 
   protected alCambiar(evento: Event): void {
@@ -203,17 +212,20 @@ export class Recepciones {
       })),
     };
 
-    const resultado = this.servicio.registrarRecepcion(datos);
-    if (!resultado) {
-      this.avisos.mostrar('error', 'La orden ya no admite recepciones en este estado.');
-      return;
-    }
-
-    this.resultado.set(resultado);
-    this.avisos.mostrar(
-      'exito',
-      `${resultado.recepcion.folio} se registró en la demostración. Lotes y mermas son vista previa; M15, M17 y Flask están pendientes.`,
-    );
+    this.servicio.registrarRecepcion(datos).subscribe({
+      next: (resultado) => {
+        if (!resultado) {
+          this.avisos.mostrar('error', 'La orden ya no admite recepciones en este estado.');
+          return;
+        }
+        this.resultado.set(resultado);
+        this.avisos.mostrar(
+          'exito',
+          `${resultado.recepcion.folio} se registró en Flask; la orden quedó ${resultado.estadoOrden}.`,
+        );
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   private prepararLineas(lineas: LineaOrdenCompra[]): void {

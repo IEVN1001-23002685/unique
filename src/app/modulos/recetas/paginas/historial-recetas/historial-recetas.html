@@ -18,7 +18,7 @@
       <label class="campo">
         Producto
         <select class="campo__entrada" [value]="producto()" (change)="alCambiarProducto($event)">
-          @for (item of productos; track item.id) {
+          @for (item of productos(); track item.id) {
             <option [value]="item.id">{{ item.nombre }}</option>
           }
         </select>
@@ -36,7 +36,7 @@
     @if (versiones().length === 0) {
       <div class="estado" role="status">
         <strong>Sin versiones registradas.</strong>
-        <p>Este producto y talla aún no tienen recetas en la demostración.</p>
+        <p>Este producto y talla aún no tienen recetas registradas en Flask.</p>
       </div>
     } @else {
       <div class="versiones">

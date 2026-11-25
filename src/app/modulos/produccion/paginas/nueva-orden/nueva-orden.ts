@@ -1,4 +1,3 @@
-import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
@@ -12,7 +11,6 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionProduccion } from '../../componentes/navegacion-produccion/navegacion-produccion';
-import type { MaterialOrden } from '../../modelos/produccion';
 import { hoyISO, ProduccionServicio } from '../../servicios/produccion-servicio';
 import { enteroPositivo } from '../../validadores/cantidad-entera';
 
@@ -24,7 +22,7 @@ type LineaForm = FormGroup<{
 
 @Component({
   selector: 'app-nueva-orden',
-  imports: [DecimalPipe, ReactiveFormsModule, RouterLink, NavegacionProduccion],
+  imports: [ReactiveFormsModule, RouterLink, NavegacionProduccion],
   templateUrl: './nueva-orden.html',
   styleUrls: ['./nueva-orden.css', '../../produccion-compartido.css'],
 })
@@ -45,17 +43,6 @@ export class NuevaOrden {
 
   private readonly valores = toSignal(this.form.valueChanges, {
     initialValue: this.form.getRawValue(),
-  });
-
-  protected readonly explosion = computed<MaterialOrden[]>(() => {
-    const valores = this.valores();
-    return (valores.lineas ?? []).flatMap((linea) => {
-      const sku = linea.sku;
-      const cantidad = linea.cantidad;
-      return sku && Number.isInteger(cantidad) && (cantidad ?? 0) > 0
-        ? this.servicio.explosionEstimada(sku, cantidad ?? 0)
-        : [];
-    });
   });
 
   protected readonly unidadesTotales = computed(() =>
@@ -110,28 +97,34 @@ export class NuevaOrden {
     }
     this.enviando.set(true);
     const valores = this.form.getRawValue();
-    const resultado = this.servicio.crearOrden({
-      lineas: valores.lineas.map((linea) => ({
-        varianteId: Number(linea.varianteId),
-        sku: String(linea.sku),
-        nombreProducto:
-          this.opciones().find((item) => item.varianteId === Number(linea.varianteId))
-            ?.nombreProducto ?? '',
-        cantidad: Number(linea.cantidad),
-      })),
-      fechaRequerida: valores.fechaRequerida || null,
-      notas: valores.notas ?? '',
-    });
-
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    this.enviando.set(false);
-    if (!resultado.ok) {
-      return;
-    }
-
-    const destino = resultado.folio
-      ? this.servicio.ordenes().find((orden) => orden.folio === resultado.folio)?.id
-      : this.servicio.ordenes().find((orden) => orden.folio === resultado.sumadaA)?.id;
-    void this.router.navigate(destino === undefined ? ['/produccion'] : ['/produccion', destino]);
+    this.servicio
+      .crearOrden({
+        lineas: valores.lineas.map((linea) => ({
+          varianteId: Number(linea.varianteId),
+          sku: String(linea.sku),
+          nombreProducto:
+            this.opciones().find((item) => item.varianteId === Number(linea.varianteId))
+              ?.nombreProducto ?? '',
+          cantidad: Number(linea.cantidad),
+        })),
+        fechaRequerida: valores.fechaRequerida || null,
+        notas: valores.notas ?? '',
+      })
+      .subscribe({
+        next: (resultado) => {
+          this.enviando.set(false);
+          this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+          if (!resultado.ok) {
+            return;
+          }
+          const destino = resultado.folio
+            ? this.servicio.ordenes().find((orden) => orden.folio === resultado.folio)?.id
+            : undefined;
+          void this.router.navigate(
+            destino === undefined ? ['/produccion'] : ['/produccion', destino],
+          );
+        },
+        error: () => this.enviando.set(false),
+      });
   }
 }

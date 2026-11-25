@@ -157,7 +157,7 @@ export class RegistroVentas {
       venta.canal,
       venta.total.toFixed(2),
       venta.estadoPago,
-      venta.estadoPedido,
+      venta.estadoPedido ?? '',
     ]);
     const contenido = [cabecera, ...cuerpo].map((fila) => fila.map(escapar).join(',')).join('\r\n');
     const url = URL.createObjectURL(
@@ -171,7 +171,7 @@ export class RegistroVentas {
 
     this.avisos.mostrar(
       'exito',
-      `${filas.length} ventas exportadas a CSV de demostración. No se envió nada a un servidor.`,
+      `${filas.length} ventas exportadas a CSV desde los datos de la API.`,
     );
   }
 }

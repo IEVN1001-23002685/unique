@@ -1,10 +1,6 @@
 import { Routes } from '@angular/router';
 
-/**
- * Rutas de M17 · Mermas, montadas bajo /mermas (§10 del documento).
- * La categoría `rol` y la marca `soloAdministrador` son contrato de acceso
- * para futuros guards: hoy solo etiquetan la pantalla, sin bloqueos ficticios.
- */
+/** Rutas de M17 · Mermas, montadas bajo /mermas (§10 del documento). */
 export const MERMAS_RUTAS: Routes = [
   {
     path: '',

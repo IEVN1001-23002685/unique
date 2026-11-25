@@ -214,10 +214,11 @@ export class RevisionCalidad {
       };
     });
 
-    const resultado = this.servicio.dictaminar(orden.id, dictamenes);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    if (resultado.ok) {
-      void this.router.navigate(['/produccion', orden.id]);
-    }
+    this.servicio.dictaminar(orden.id, dictamenes).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+      if (resultado.ok) {
+        void this.router.navigate(['/produccion', orden.id]);
+      }
+    });
   }
 }

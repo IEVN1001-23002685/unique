@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, concatMap, forkJoin, from, map, of, tap } from 'rxjs';
+import { Observable, concatMap, forkJoin, from, map, of, tap, toArray } from 'rxjs';
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
 import { ProveedoresServicio } from '../../proveedores/servicios/proveedores-servicio';
 import {
@@ -382,12 +382,13 @@ export class InventarioServicio {
             cambio.consumoDiarioManual === 0 ? null : redondear4(cambio.consumoDiarioManual),
         }),
       ),
+      toArray(),
       concatMap(() => this.recargar()),
       map(() => undefined),
     );
   }
 
-  /** Flask escrib el movimiento de ajuste y, si aplica, la merma; Angular solo lee. */
+  /** Flask escribe el movimiento de ajuste y, si aplica, la merma; Angular solo lee. */
   registrarAjuste(datos: DatosAjuste): Observable<ResultadoAjuste | null> {
     const existencia = this.obtenerExistencia(datos.existenciaId);
     if (!existencia || !Number.isFinite(datos.cantidadContada) || datos.cantidadContada < 0) {
