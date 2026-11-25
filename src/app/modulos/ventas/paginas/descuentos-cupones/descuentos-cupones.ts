@@ -24,6 +24,10 @@ export class DescuentosCupones {
   protected readonly activo = signal<FiltroActivo>('TODOS');
   protected readonly descuentoAEliminar = signal<Descuento | null>(null);
 
+  constructor() {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly filtrados = computed(() => {
     const termino = this.busqueda().trim().toLowerCase();
     const aplicacion = this.aplicacion();
@@ -72,20 +76,20 @@ export class DescuentosCupones {
       return;
     }
 
-    const resultado = this.servicio.eliminarDescuento(descuento.id);
-    this.descuentoAEliminar.set(null);
-
-    if (resultado === 'desactivado') {
-      this.avisos.mostrar(
-        'advertencia',
-        `«${descuento.nombre}» ya tenía ${descuento.usosActuales} usos: se desactivó en memoria. El historial se conserva.`,
-      );
-      return;
-    }
-
-    this.avisos.mostrar(
-      'exito',
-      `«${descuento.nombre}» se eliminó de la lista de demostración. Persistencia pendiente de Flask.`,
-    );
+    this.servicio.eliminarDescuento(descuento.id).subscribe((resultado) => {
+      this.descuentoAEliminar.set(null);
+      if (resultado === 'desactivado') {
+        this.avisos.mostrar(
+          'advertencia',
+          `«${descuento.nombre}» ya tenía ${descuento.usosActuales} usos: el servidor lo desactivó y conservó el historial.`,
+        );
+        return;
+      }
+      if (resultado === 'no-encontrado') {
+        this.avisos.mostrar('error', 'El descuento ya no existe.');
+        return;
+      }
+      this.avisos.mostrar('exito', `«${descuento.nombre}» se eliminó del servidor.`);
+    });
   }
 }

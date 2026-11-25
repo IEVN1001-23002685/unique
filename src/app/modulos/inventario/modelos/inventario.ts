@@ -29,6 +29,8 @@ export interface Material {
   /** Plazo del proveedor principal, leído de M13 como referencia de demostración. */
   plazoDias: number;
   activo: boolean;
+  /** Id del catálogo M22, necesario para dar de alta un material desde M15. */
+  categoriaMaterialId?: number;
 }
 
 /** Un registro por material y color (color «NA» cuando no aplica). */
@@ -45,6 +47,12 @@ export interface Existencia {
   /** Falso cuando una orden confirmada no queda cubierta por el disponible. */
   cubreOrdenConfirmada: boolean;
   activo: boolean;
+  /** Métricas calculadas por Flask; se prefieren sobre cualquier cálculo local. */
+  consumoDiarioApi?: number;
+  puntoReordenApi?: number | null;
+  coberturaDiasApi?: number | null;
+  posicionApi?: number;
+  semaforoApi?: TonoSemaforo;
 }
 
 /** Proyección calculada en el servicio; nunca se persiste. */

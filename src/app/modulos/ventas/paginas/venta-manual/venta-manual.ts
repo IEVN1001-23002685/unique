@@ -136,6 +136,7 @@ export class VentaManual {
   });
 
   constructor() {
+    this.servicio.recargar().subscribe();
     this.sincronizarLineas();
   }
 
@@ -294,32 +295,28 @@ export class VentaManual {
     const ultimos4 =
       valor.metodoPago === 'TARJETA' && valor.ultimos4.trim() !== '' ? valor.ultimos4.trim() : null;
 
-    const venta = this.servicio.crearVentaManual({
-      cliente,
-      lineas: this.lineas.getRawValue().map((linea) => ({
-        sku: linea.sku,
-        cantidad: linea.cantidad,
-      })),
-      direccionEnvio: envio,
-      direccionFacturacion: facturacion,
-      descuentoId: this.descuentoAplicado()?.id ?? null,
-      metodoPago: valor.metodoPago,
-      estadoPago: valor.estadoPago,
-      ultimos4,
-      titular: cliente.nombre,
-      costoEnvio: this.costoEnvio(),
-    });
-
-    const avisoReserva =
-      venta.estadoPago === 'PENDIENTE'
-        ? ' La reserva de existencias y la alerta de pago pendiente dependen de M12 y M21.'
-        : '';
-
-    this.avisos.mostrar(
-      'exito',
-      `Venta ${venta.folio} registrada solo en memoria.${avisoReserva} Persistencia pendiente de Flask.`,
-    );
-    this.router.navigate(['/ventas', venta.folio]);
+    this.servicio
+      .crearVentaManual({
+        cliente,
+        lineas: this.lineas.getRawValue().map((linea) => ({
+          sku: linea.sku,
+          cantidad: linea.cantidad,
+        })),
+        direccionEnvio: envio,
+        direccionFacturacion: facturacion,
+        descuentoId: this.descuentoAplicado()?.id ?? null,
+        metodoPago: valor.metodoPago,
+        estadoPago: valor.estadoPago,
+        ultimos4,
+        titular: cliente.nombre,
+        costoEnvio: this.costoEnvio(),
+      })
+      .subscribe((resultado) => {
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+        if (resultado.ok && resultado.venta) {
+          this.router.navigate(['/ventas', resultado.venta.folio]);
+        }
+      });
   }
 
   private contexto(): ContextoDescuento {

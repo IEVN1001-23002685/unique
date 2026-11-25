@@ -1,7 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { decimalPositivo } from '../../../../compartido/validadores/validadores-negocio';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionCompras } from '../../componentes/navegacion-compras/navegacion-compras';
 import type {
@@ -51,35 +52,42 @@ export class FormularioRequisicion {
     lineas: this.fb.nonNullable.array([this.nuevaLinea()]),
   });
 
+  private formularioInicializado = false;
+
   constructor() {
     if (!this.esEdicion) {
       return;
     }
 
-    const requisicion = this.servicio.obtenerRequisicion(this.idEditar);
-    if (!requisicion) {
-      this.noEncontrado.set(true);
-      return;
-    }
+    effect(() => {
+      if (this.formularioInicializado || !this.servicio.cargado()) {
+        return;
+      }
+      const requisicion = this.servicio.obtenerRequisicion(this.idEditar);
+      if (!requisicion) {
+        this.noEncontrado.set(true);
+        return;
+      }
+      this.formularioInicializado = true;
+      this.formulario.patchValue({
+        origen: requisicion.origen,
+        ordenProduccion: requisicion.ordenProduccion ?? '',
+        prioridad: requisicion.prioridad,
+        solicitadaPor: requisicion.solicitadaPor,
+        notas: requisicion.notas ?? '',
+      });
+      this.formulario.controls.lineas.clear();
+      for (const linea of requisicion.lineas) {
+        this.formulario.controls.lineas.push(this.nuevaLinea(linea));
+      }
 
-    this.formulario.patchValue({
-      origen: requisicion.origen,
-      ordenProduccion: requisicion.ordenProduccion ?? '',
-      prioridad: requisicion.prioridad,
-      solicitadaPor: requisicion.solicitadaPor,
-      notas: requisicion.notas ?? '',
+      // En edición se conservan origen, material y faltante; solo se ajustan cantidades.
+      this.formulario.controls.origen.disable();
+      for (const control of this.formulario.controls.lineas.controls) {
+        control.controls.materialId.disable();
+        control.controls.cantidadBaseFaltante.disable();
+      }
     });
-    this.formulario.controls.lineas.clear();
-    for (const linea of requisicion.lineas) {
-      this.formulario.controls.lineas.push(this.nuevaLinea(linea));
-    }
-
-    // En edición se conservan origen, material y faltante; solo se ajustan cantidades.
-    this.formulario.controls.origen.disable();
-    for (const control of this.formulario.controls.lineas.controls) {
-      control.controls.materialId.disable();
-      control.controls.cantidadBaseFaltante.disable();
-    }
   }
 
   protected materialDe(indice: number): MaterialCompra | undefined {
@@ -177,12 +185,13 @@ export class FormularioRequisicion {
       })),
     };
 
-    const guardada = this.servicio.guardarRequisicion(requisicion);
-    this.avisos.mostrar(
-      'exito',
-      `${guardada.folio} se guardó en la demostración. La validación definitiva corresponde a Flask.`,
-    );
-    void this.router.navigate(['/compras']);
+    this.servicio.guardarRequisicion(requisicion).subscribe({
+      next: (guardada) => {
+        this.avisos.mostrar('exito', `${guardada.folio} se guardó en Flask.`);
+        void this.router.navigate(['/compras']);
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   private nuevaLinea(linea?: LineaRequisicion) {

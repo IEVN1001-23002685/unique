@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import {
   FormArray,
   FormBuilder,
@@ -9,6 +9,7 @@ import {
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { decimalNoNegativo } from '../../../../compartido/validadores/validadores-negocio';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionInventario } from '../../componentes/navegacion-inventario/navegacion-inventario';
 import type { CambioPolitica, ExistenciaVista } from '../../modelos/inventario';
@@ -55,8 +56,16 @@ export class Politicas {
 
   protected readonly formulario = this.fb.group({ filas: this.filas });
 
+  private filasInicializadas = false;
+
   constructor() {
-    this.prepararFilas(this.todas());
+    effect(() => {
+      if (this.filasInicializadas || !this.servicio.cargado()) {
+        return;
+      }
+      this.filasInicializadas = true;
+      this.prepararFilas(this.todas());
+    });
   }
 
   protected alBuscar(evento: Event): void {
@@ -77,7 +86,10 @@ export class Politicas {
     if (!vista || !fila) {
       return 0;
     }
-    // Con historial de CONSUMO el promedio manda; sin él aplica el valor manual.
+    if (vista.puntoReorden !== undefined && vista.puntoReorden !== null) {
+      return vista.puntoReorden;
+    }
+    // Flask calcula el punto de reorden; este cálculo solo aplica si no vino en la respuesta.
     const consumo = this.servicio.tieneHistoricoConsumo(vista.materialId, vista.color)
       ? vista.consumoDiario
       : fila.controls.consumoDiarioManual.value;
@@ -110,11 +122,13 @@ export class Politicas {
       stockSeguridad: fila.stockSeguridad,
       consumoDiarioManual: fila.consumoDiarioManual,
     }));
-    this.servicio.guardarPoliticas(cambios);
-    this.avisos.mostrar(
-      'exito',
-      'Políticas actualizadas en la demostración. El cálculo definitivo lo ejecutará Flask.',
-    );
+    this.servicio.guardarPoliticas(cambios).subscribe({
+      next: () => {
+        this.prepararFilas(this.todas());
+        this.avisos.mostrar('exito', 'Políticas actualizadas en Flask.');
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   private prepararFilas(vistas: ExistenciaVista[]): void {

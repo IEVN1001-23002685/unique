@@ -11,6 +11,8 @@ export interface ArticuloPedido {
   cantidad: number;
   precioUnitarioConIva: number;
   ventaLineaId: number;
+  varianteId: number;
+  productoId: number;
 }
 
 export interface PasoSeguimientoPedido {
@@ -70,6 +72,8 @@ interface PedidoListaApi {
 interface PedidoLineaApi {
   id: number;
   venta_linea_id: number;
+  variante_id: number;
+  producto_id: number;
   sku: string;
   nombre_producto: string;
   talla: string;
@@ -194,9 +198,15 @@ export class MisPedidosServicio {
 
   private aDetalle(pedido: PedidoDetalleApi): PedidoCliente {
     return {
-      ...this.aPedido(pedido),
+      id: pedido.id,
+      folio: pedido.folio,
+      fecha: pedido.fecha,
+      estado: pedido.estado,
+      totalConIva: Number(pedido.total),
       direccionResumen: resumenDireccion(pedido.direccion),
       medioPagoResumen: pedido.estado_pago,
+      guia: pedido.guia,
+      articulosCount: pedido.total_articulos ?? pedido.articulos.length,
       articulos: pedido.articulos.map((linea) => ({
         nombre: linea.nombre_producto,
         sku: linea.sku,
@@ -205,6 +215,8 @@ export class MisPedidosServicio {
         cantidad: linea.cantidad,
         precioUnitarioConIva: Number(linea.precio_unitario),
         ventaLineaId: linea.venta_linea_id,
+        varianteId: linea.variante_id,
+        productoId: linea.producto_id,
       })),
       seguimiento: pedido.eventos.map((evento) => ({
         estado: etiquetaEstado(evento.estado),

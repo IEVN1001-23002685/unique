@@ -1,9 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { VentasServicio } from '../../ventas/servicios/ventas-servicio';
-import type { Venta } from '../../ventas/modelos/venta';
-import { PEDIDOS_SIMULADOS } from '../datos-simulados/pedidos';
+import { Observable, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { ApiService } from '../../../core/api/api.service';
+import { aNumero } from '../../../core/api/formato';
+import { mensajeError } from '../../../core/api/errores';
 import type {
   EstadoPedido,
+  EventoPedido,
+  LineaPedido,
   Pedido,
   PendienteProduccion,
   PrioridadPedido,
@@ -47,70 +50,177 @@ export const ESTADOS_TABLERO: EstadoPedido[] = [
   'EN_REPARTO',
 ];
 
-/**
- * Estado en memoria de M09 · Pedidos. La interfaz pública está pensada para
- * sustituirse por HttpClient contra:
- *   GET /pedidos · GET /pedidos/{id} · GET /pedidos/pendientes-produccion
- *   PATCH /pedidos/{id} (prioridad, nota) · POST /pedidos/{id}/cancelar
- * Nada persiste en servidor y no se escriben reservas ni estados de pago,
- * que son propiedad de M12 y M08 respectivamente.
- */
-@Injectable({
-  providedIn: 'root',
-})
+export interface ResultadoPedido {
+  ok: boolean;
+  mensaje: string;
+  pedido?: Pedido;
+}
+
+interface Pagina<T> {
+  items: T[];
+  total: number;
+  pagina: number;
+  por_pagina: number;
+}
+
+interface PedidoResumenApi {
+  id: number;
+  folio: string;
+  cliente: { nombre?: string; apellidos?: string };
+  estado: string;
+  estado_desde: string;
+  prioridad: string;
+  semaforo: string;
+  articulos: number;
+  total: string;
+  guia: string | null;
+}
+
+interface PedidoDetalleApi {
+  id: number;
+  folio: string;
+  fecha: string;
+  estado: string;
+  estado_desde: string;
+  fecha_promesa?: string | null;
+  prioridad: string;
+  estado_pago: string;
+  cliente?: { nombre?: string; apellidos?: string };
+  venta_id?: number;
+  guia?: string | null;
+  repartidor?: { nombre?: string } | null;
+  articulos?: Array<{
+    id: number;
+    sku: string;
+    nombre_producto: string;
+    talla: string;
+    color: string;
+    cantidad: number;
+    cant_reservada: number;
+    cant_pendiente: number;
+    precio_unitario: string;
+    subtotal: string;
+  }>;
+  eventos?: Array<{
+    estado: string;
+    descripcion: string;
+    fecha: string;
+    visible_cliente: boolean;
+  }>;
+  ordenes?: Array<{ folio: string; cantidad: number }>;
+  preparacion?: { id: number; estado: string } | null;
+  entrega?: { id: number; folio: string; estado: string; intento: number } | null;
+}
+
+interface PendienteApi {
+  variante_id: number;
+  sku: string;
+  orden_id: number;
+  orden_folio: string;
+  demanda: number;
+  fecha_estimada: string | null;
+  semaforo: string;
+}
+
+function nombreCliente(cliente: PedidoResumenApi['cliente'] | undefined): string {
+  return [cliente?.nombre, cliente?.apellidos].filter(Boolean).join(' ').trim() || 'Cliente';
+}
+
+function deResumenApi(item: PedidoResumenApi): Pedido {
+  const cancelado = item.estado === 'CANCELADO';
+  return {
+    id: item.id,
+    folio: item.folio,
+    ventaFolio: item.folio,
+    cliente: nombreCliente(item.cliente),
+    estado: item.estado as EstadoPedido,
+    estadoDesde: item.estado_desde,
+    fechaCreacion: item.estado_desde,
+    fechaPromesa: null,
+    entregadoEn: item.estado === 'ENTREGADO' ? item.estado_desde : null,
+    prioridad: (item.prioridad === 'ALTA' ? 'ALTA' : 'NORMAL') as PrioridadPedido,
+    estadoPago: 'PENDIENTE',
+    canceladoEn: cancelado ? item.estado_desde : null,
+    motivoCancelacion: null,
+    canceladoPor: null,
+    preparacionFolio: null,
+    entregaGuia: item.guia,
+    lineas: [],
+    eventos: [],
+    notas: [],
+  };
+}
+
+function lineasDeApi(articulos: PedidoDetalleApi['articulos']): LineaPedido[] {
+  return (articulos ?? []).map((articulo) => ({
+    sku: articulo.sku,
+    nombreProducto: articulo.nombre_producto,
+    talla: articulo.talla,
+    color: articulo.color,
+    cantidad: articulo.cantidad,
+    cantReservada: articulo.cant_reservada,
+    cantPendiente: articulo.cant_pendiente,
+    cantPreparada: 0,
+    ordenProduccionFolio: null,
+    fechaEstimada: null,
+  }));
+}
+
+function eventosDeApi(eventos: PedidoDetalleApi['eventos']): EventoPedido[] {
+  return (eventos ?? []).map((evento, indice) => ({
+    id: indice + 1,
+    fecha: evento.fecha,
+    descripcion: evento.descripcion,
+    estado: evento.estado as EstadoPedido,
+    visibleCliente: evento.visible_cliente,
+    usuario: evento.visible_cliente ? 'Sistema' : 'Administrador',
+  }));
+}
+
+function deDetalleApi(item: PedidoDetalleApi): Pedido {
+  const base = deResumenApi({
+    id: item.id,
+    folio: item.folio,
+    cliente: item.cliente ?? {},
+    estado: item.estado,
+    estado_desde: item.estado_desde,
+    prioridad: item.prioridad,
+    semaforo: '',
+    articulos: item.articulos?.length ?? 0,
+    total: '0',
+    guia: item.guia ?? null,
+  });
+  const eventos = eventosDeApi(item.eventos);
+  return {
+    ...base,
+    fechaCreacion: item.fecha,
+    fechaPromesa: item.fecha_promesa ?? null,
+    estadoPago: item.estado_pago as Pedido['estadoPago'],
+    preparacionFolio: item.preparacion ? String(item.preparacion.id) : null,
+    entregaGuia: item.entrega?.folio ?? item.guia ?? null,
+    lineas: lineasDeApi(item.articulos),
+    eventos,
+    notas: eventos
+      .filter((evento) => !evento.visibleCliente)
+      .map((evento, indice) => ({
+        id: indice + 1,
+        fecha: evento.fecha,
+        usuario: evento.usuario,
+        texto: evento.descripcion,
+      })),
+  };
+}
+
+/** Estado de M09 leído de /pedidos; M09 no escribe ventas, pagos ni inventario. */
+@Injectable({ providedIn: 'root' })
 export class PedidosServicio {
-  // Lectura de M08 (dueño del dinero). M09 no escribe ventas ni pagos.
-  private readonly ventas = inject(VentasServicio);
-  private readonly lista = signal<Pedido[]>(structuredClone(PEDIDOS_SIMULADOS));
+  private readonly api = inject(ApiService);
+  private readonly lista = signal<Pedido[]>([]);
+  private readonly detalles = signal<Record<number, Pedido>>({});
+  private readonly pendientes = signal<PendienteProduccion[]>([]);
 
   readonly pedidos = this.lista.asReadonly();
-
-  readonly pendientesProduccion = computed<PendienteProduccion[]>(() => {
-    const agrupados = new Map<string, PendienteProduccion>();
-
-    for (const pedido of this.lista()) {
-      if (pedido.estado === 'CANCELADO' || pedido.estado === 'ENTREGADO') {
-        continue;
-      }
-
-      for (const linea of pedido.lineas) {
-        if (linea.cantPendiente <= 0) {
-          continue;
-        }
-
-        const actual = agrupados.get(linea.sku);
-        if (actual) {
-          actual.demanda += linea.cantPendiente;
-          if (!actual.pedidos.includes(pedido.folio)) {
-            actual.pedidos.push(pedido.folio);
-          }
-          if (actual.ordenFolio === null && linea.ordenProduccionFolio !== null) {
-            actual.ordenFolio = linea.ordenProduccionFolio;
-          }
-          if (
-            linea.fechaEstimada !== null &&
-            (actual.fechaEstimada === null || linea.fechaEstimada < actual.fechaEstimada)
-          ) {
-            actual.fechaEstimada = linea.fechaEstimada;
-          }
-          continue;
-        }
-
-        agrupados.set(linea.sku, {
-          sku: linea.sku,
-          nombreProducto: linea.nombreProducto,
-          talla: linea.talla,
-          color: linea.color,
-          demanda: linea.cantPendiente,
-          pedidos: [pedido.folio],
-          ordenFolio: linea.ordenProduccionFolio,
-          fechaEstimada: linea.fechaEstimada,
-        });
-      }
-    }
-
-    return [...agrupados.values()].sort((a, b) => b.demanda - a.demanda);
-  });
+  readonly pendientesProduccion = this.pendientes.asReadonly();
 
   readonly cancelados = computed(() =>
     this.lista()
@@ -125,107 +235,85 @@ export class PedidosServicio {
     return {
       activos: activos.length,
       estancados: activos.filter((pedido) => this.tono(pedido) === 'rojo').length,
-      demandaPendiente: this.pendientesProduccion().reduce(
-        (suma, grupo) => suma + grupo.demanda,
-        0,
-      ),
+      demandaPendiente: this.pendientes().reduce((suma, grupo) => suma + grupo.demanda, 0),
       urgentes: activos.filter((pedido) => pedido.prioridad === 'ALTA').length,
       entregados: this.lista().filter((pedido) => pedido.estado === 'ENTREGADO').length,
     };
   });
 
+  private listarTodo<T>(path: string, params: Record<string, string> = {}): Observable<T[]> {
+    return this.api.get<Pagina<T>>(path, { params: { ...params, pagina: 1, por_pagina: 100 } }).pipe(
+      switchMap((primera) => {
+        const faltantes = Math.max(0, Math.ceil(primera.total / 100) - 1);
+        if (faltantes === 0) {
+          return of(primera.items);
+        }
+        return forkJoin(
+          Array.from({ length: faltantes }, (_, indice) =>
+            this.api.get<Pagina<T>>(path, {
+              params: { ...params, pagina: indice + 2, por_pagina: 100 },
+            }),
+          ),
+        ).pipe(map((paginas) => [...primera.items, ...paginas.flatMap((pagina) => pagina.items)]));
+      }),
+    );
+  }
+
+  recargar(): Observable<void> {
+    return forkJoin({
+      pedidos: this.listarTodo<PedidoResumenApi>('/pedidos'),
+      pendientes: this.listarTodo<PendienteApi>('/pedidos/pendientes-produccion'),
+    }).pipe(
+      tap(({ pedidos, pendientes }) => {
+        this.lista.set(pedidos.map(deResumenApi));
+        this.pendientes.set(
+          pendientes.map((item) => ({
+            sku: item.sku,
+            nombreProducto: item.sku,
+            talla: '—',
+            color: '—',
+            demanda: item.demanda,
+            pedidos: [],
+            ordenFolio: item.orden_folio,
+            fechaEstimada: item.fecha_estimada,
+          })),
+        );
+      }),
+      map(() => undefined),
+    );
+  }
+
+  /** La ruta Angular usa `folio`; el contrato usa `id` para detalle y mutaciones. */
+  private idPorFolio(folio: string): number | undefined {
+    const exacto = this.lista().find((pedido) => pedido.folio === folio);
+    if (exacto) {
+      return exacto.id;
+    }
+    const porId = Number(folio);
+    return Number.isInteger(porId) && porId > 0 ? porId : undefined;
+  }
+
+  cargarDetalle(folio: string): Observable<Pedido | undefined> {
+    const id = this.idPorFolio(folio);
+    if (id === undefined) {
+      return this.recargar().pipe(switchMap(() => this.cargarDetalle(folio)));
+    }
+    return this.api.get<PedidoDetalleApi>(`/pedidos/${id}`).pipe(
+      map((item) => {
+        const pedido = deDetalleApi(item);
+        this.detalles.update((actuales) => ({ ...actuales, [pedido.id]: pedido }));
+        return pedido;
+      }),
+    );
+  }
+
   obtenerPedido(folio: string): Pedido | undefined {
-    return this.lista().find((pedido) => pedido.folio === folio);
+    const id = this.idPorFolio(folio);
+    return id === undefined ? undefined : (this.detalles()[id] ?? this.lista().find((p) => p.id === id));
   }
 
-  /** Permite no enlazar a M08 cuando el pedido de ejemplo no tiene venta asociada. */
   tieneVentaRegistrada(folioVenta: string): boolean {
-    return this.ventas.ventas().some((venta) => venta.folio === folioVenta);
-  }
-
-  /**
-   * Proyecta los dos eventos que M08 entrega a M09 según §5: pago validado y
-   * cancelación. M09 conserva la propiedad del estado del pedido: solo aplica
-   * la transición RECIBIDO → CONFIRMADO/EN_PRODUCCION cuando ya hay pago
-   * aprobado, y la cancelación cuando la venta fue cancelada.
-   * Se invoca desde las pantallas; sin Flask equivale a una sincronización local.
-   */
-  sincronizarDesdeVentas(): void {
-    const cambios = new Map<string, Pedido>();
-    const ahora = fechaAhoraIso();
-    let siguienteId = this.siguienteEventoId();
-    let siguientePedidoId =
-      this.lista().reduce((maximo, pedido) => Math.max(maximo, pedido.id), 0) + 1;
-
-    for (const venta of this.ventas.ventas()) {
-      const pedido = this.lista().find((item) => item.folio === venta.pedidoFolio);
-      if (!pedido) {
-        // Una venta manual de M08 puede crear un folio nuevo. Se proyecta el
-        // pedido sin inventar reservas: M12 es dueño de la existencia.
-        cambios.set(
-          venta.pedidoFolio,
-          this.crearDesdeVenta(venta, siguienteId++, siguientePedidoId++),
-        );
-        continue;
-      }
-
-      if (venta.estadoPedido === 'CANCELADO' && pedido.estado !== 'CANCELADO') {
-        cambios.set(pedido.folio, {
-          ...pedido,
-          estado: 'CANCELADO',
-          estadoDesde: ahora,
-          canceladoEn: ahora,
-          canceladoPor: venta.creadaPor === 'Cliente' ? 'Cliente' : 'Administrador',
-          motivoCancelacion:
-            venta.motivoCancelacion ?? 'Cancelación registrada desde M08 · Ventas.',
-          estadoPago: venta.estadoPago,
-          eventos: [
-            ...pedido.eventos,
-            {
-              id: siguienteId++,
-              fecha: ahora,
-              usuario: 'M08 · Ventas',
-              descripcion: 'Cancelación recibida desde la venta; pendiente de reembolso real.',
-              estado: 'CANCELADO',
-              visibleCliente: true,
-            },
-          ],
-        });
-        continue;
-      }
-
-      if (venta.estadoPago === 'PAGADA' && pedido.estado === 'RECIBIDO') {
-        const reservaCompleta = pedido.lineas.every(
-          (linea) => linea.cantReservada >= linea.cantidad,
-        );
-        const estado: EstadoPedido = reservaCompleta ? 'CONFIRMADO' : 'EN_PRODUCCION';
-        cambios.set(pedido.folio, {
-          ...pedido,
-          estado,
-          estadoDesde: ahora,
-          estadoPago: venta.estadoPago,
-          eventos: [
-            ...pedido.eventos,
-            {
-              id: siguienteId++,
-              fecha: ahora,
-              usuario: 'M08 · Ventas',
-              descripcion: reservaCompleta
-                ? 'Pago aprobado y reserva completa; pedido listo para preparación.'
-                : 'Pago aprobado con líneas sin reserva; se mantiene demanda de producción.',
-              estado,
-              visibleCliente: true,
-            },
-          ],
-        });
-      }
-    }
-
-    if (cambios.size === 0) {
-      return;
-    }
-
-    this.lista.update((actuales) => actuales.map((pedido) => cambios.get(pedido.folio) ?? pedido));
+    return this.lista().some((pedido) => pedido.folio === folioVenta || pedido.ventaFolio === folioVenta);
   }
 
   /** Horas transcurridas en el estado actual; para terminados se usa su fecha final. */
@@ -243,12 +331,10 @@ export class PedidosServicio {
     if (pedido.estado === 'ENTREGADO') {
       return 'verde';
     }
-
     const umbral = UMBRALES_ESTADO[pedido.estado];
     if (umbral === undefined) {
       return 'neutro';
     }
-
     const razon = this.horasEnEstado(pedido) / umbral;
     if (razon > 1) {
       return 'rojo';
@@ -269,65 +355,60 @@ export class PedidosServicio {
     return restantes === 0 ? `${dias} d` : `${dias} d ${restantes} h`;
   }
 
-  cambiarPrioridad(folio: string, prioridad: PrioridadPedido): boolean {
+  private mutar(id: number, cuerpo: unknown, mensaje: string): Observable<ResultadoPedido> {
+    return this.api.patch<PedidoDetalleApi>(`/pedidos/${id}`, cuerpo).pipe(
+      map((item) => {
+        const pedido = deDetalleApi(item);
+        this.detalles.update((actuales) => ({ ...actuales, [pedido.id]: pedido }));
+        return { ok: true, mensaje, pedido };
+      }),
+      tap(() => this.recargar().subscribe()),
+      catchError((error) => of({ ok: false, mensaje: mensajeError(error) })),
+    );
+  }
+
+  private mutarCancelacion(id: number, motivo: string): Observable<ResultadoPedido> {
+    return this.api.post<PedidoDetalleApi>(`/pedidos/${id}/cancelar`, { motivo }).pipe(
+      map((item) => {
+        const pedido = deDetalleApi(item);
+        this.detalles.update((actuales) => ({ ...actuales, [pedido.id]: pedido }));
+        return {
+          ok: true,
+          mensaje: `Pedido ${pedido.folio} cancelado; reservas y orden ajustadas por el servidor.`,
+          pedido,
+        };
+      }),
+      tap(() => this.recargar().subscribe()),
+      catchError((error) => of({ ok: false, mensaje: mensajeError(error) })),
+    );
+  }
+
+  cambiarPrioridad(folio: string, prioridad: PrioridadPedido): Observable<ResultadoPedido> {
     const pedido = this.obtenerPedido(folio);
     if (!pedido || pedido.estado === 'CANCELADO' || pedido.prioridad === prioridad) {
-      return false;
+      return of({ ok: false, mensaje: 'No es posible cambiar la prioridad de este pedido.' });
     }
-
-    this.actualizar(folio, (actual) => ({
-      ...actual,
-      prioridad,
-      eventos: [
-        ...actual.eventos,
-        {
-          id: this.siguienteEventoId(),
-          fecha: fechaAhoraIso(),
-          usuario: 'Administrador',
-          descripcion: `Prioridad cambiada a ${prioridad}.`,
-          estado: actual.estado,
-          visibleCliente: false,
-        },
-      ],
-    }));
-
-    return true;
+    return this.mutar(
+      pedido.id,
+      { prioridad },
+      `Prioridad del pedido ${pedido.folio} actualizada a ${prioridad}.`,
+    );
   }
 
-  agregarNota(folio: string, texto: string): boolean {
+  agregarNota(folio: string, texto: string): Observable<ResultadoPedido> {
+    const pedido = this.obtenerPedido(folio);
     const limpio = texto.trim();
-    if (limpio === '' || !this.obtenerPedido(folio)) {
-      return false;
+    if (!pedido || limpio === '') {
+      return of({ ok: false, mensaje: 'Captura una nota válida.' });
     }
-
-    this.actualizar(folio, (actual) => ({
-      ...actual,
-      notas: [
-        ...actual.notas,
-        {
-          id: actual.notas.reduce((maximo, nota) => Math.max(maximo, nota.id), 0) + 1,
-          fecha: fechaAhoraIso(),
-          usuario: 'Administrador',
-          texto: limpio,
-        },
-      ],
-      eventos: [
-        ...actual.eventos,
-        {
-          id: this.siguienteEventoId(),
-          fecha: fechaAhoraIso(),
-          usuario: 'Administrador',
-          descripcion: 'Nota interna agregada al pedido.',
-          estado: actual.estado,
-          visibleCliente: false,
-        },
-      ],
-    }));
-
-    return true;
+    return this.mutar(
+      pedido.id,
+      { nota: limpio },
+      `Nota interna agregada al pedido ${pedido.folio}.`,
+    );
   }
 
-  cancelarPedido(folio: string, motivo: string): boolean {
+  cancelarPedido(folio: string, motivo: string): Observable<ResultadoPedido> {
     const pedido = this.obtenerPedido(folio);
     const cancelables: EstadoPedido[] = [
       'RECIBIDO',
@@ -338,30 +419,9 @@ export class PedidosServicio {
     ];
     const limpio = motivo.trim();
     if (!pedido || limpio === '' || !cancelables.includes(pedido.estado)) {
-      return false;
+      return of({ ok: false, mensaje: 'Este pedido no puede cancelarse.' });
     }
-
-    this.actualizar(folio, (actual) => ({
-      ...actual,
-      estado: 'CANCELADO',
-      estadoDesde: fechaAhoraIso(),
-      canceladoEn: fechaAhoraIso(),
-      canceladoPor: 'Administrador',
-      motivoCancelacion: limpio,
-      eventos: [
-        ...actual.eventos,
-        {
-          id: this.siguienteEventoId(),
-          fecha: fechaAhoraIso(),
-          usuario: 'Administrador',
-          descripcion: `Pedido cancelado. Motivo: ${limpio}. Liberación de reservas (M12), ajuste de orden (M16) y reembolso (M08) pendientes de integración.`,
-          estado: 'CANCELADO',
-          visibleCliente: true,
-        },
-      ],
-    }));
-
-    return true;
+    return this.mutarCancelacion(pedido.id, limpio);
   }
 
   totalReservado(pedido: Pedido): number {
@@ -378,75 +438,5 @@ export class PedidosServicio {
 
   articulos(pedido: Pedido): number {
     return pedido.lineas.reduce((suma, linea) => suma + linea.cantidad, 0);
-  }
-
-  /** Proyección de un pedido nuevo a partir de la copia histórica de una venta. */
-  private crearDesdeVenta(venta: Venta, idEvento: number, idPedido: number): Pedido {
-    const cancelada = venta.estadoPedido === 'CANCELADO';
-    return {
-      id: idPedido,
-      folio: venta.pedidoFolio,
-      ventaFolio: venta.folio,
-      cliente: venta.cliente,
-      estado: cancelada ? 'CANCELADO' : 'RECIBIDO',
-      estadoDesde: venta.fecha,
-      fechaCreacion: venta.fecha,
-      fechaPromesa: venta.fechaPromesa,
-      entregadoEn: null,
-      prioridad: 'NORMAL',
-      estadoPago: venta.estadoPago,
-      canceladoEn: cancelada ? (venta.canceladaEn ?? venta.fecha) : null,
-      motivoCancelacion: cancelada
-        ? (venta.motivoCancelacion ?? 'Cancelación registrada desde M08 · Ventas.')
-        : null,
-      canceladoPor: cancelada
-        ? venta.creadaPor === 'Cliente'
-          ? 'Cliente'
-          : 'Administrador'
-        : null,
-      preparacionFolio: null,
-      entregaGuia: null,
-      lineas: venta.lineas.map((linea) => ({
-        sku: linea.sku,
-        nombreProducto: linea.nombreProducto,
-        talla: linea.talla,
-        color: linea.color,
-        cantidad: linea.cantidad,
-        cantReservada: 0,
-        cantPendiente: linea.cantidad,
-        cantPreparada: 0,
-        ordenProduccionFolio: null,
-        fechaEstimada: null,
-      })),
-      eventos: [
-        {
-          id: idEvento,
-          fecha: venta.fecha,
-          usuario: 'Sistema',
-          descripcion: cancelada
-            ? 'Pedido creado y cancelado desde la venta de M08.'
-            : 'Pedido creado a partir de la venta confirmada; reservas pendientes de M12.',
-          estado: cancelada ? 'CANCELADO' : 'RECIBIDO',
-          visibleCliente: true,
-        },
-      ],
-      notas: [],
-    };
-  }
-
-  private actualizar(folio: string, transformar: (pedido: Pedido) => Pedido): void {
-    this.lista.update((actuales) =>
-      actuales.map((pedido) => (pedido.folio === folio ? transformar(pedido) : pedido)),
-    );
-  }
-
-  private siguienteEventoId(): number {
-    return (
-      this.lista().reduce(
-        (maximo, pedido) =>
-          pedido.eventos.reduce((interno, evento) => Math.max(interno, evento.id), maximo),
-        0,
-      ) + 1
-    );
   }
 }

@@ -412,11 +412,8 @@
         <div style="background-color: #ffffff; border-radius: 14px; padding: 12px 14px">
           <strong style="display: block; margin-bottom: 4px; color: #332736">Estado de pago</strong>
           <span style="color: #534057">{{ pedidoSeleccionado.medioPagoResumen }}</span>
-          <div
-            *ngIf="pedidoSeleccionado.facturaResumen"
-            style="margin-top: 6px; color: #4f2857; font-weight: 600"
-          >
-            Factura: {{ pedidoSeleccionado.facturaResumen }}
+          <div style="margin-top: 6px; color: #4f2857; font-weight: 600">
+            Artículos: {{ pedidoSeleccionado.articulosCount }}
           </div>
         </div>
       </div>

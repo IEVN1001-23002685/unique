@@ -1,6 +1,7 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Observable, concatMap, forkJoin, from, map, of, tap } from 'rxjs';
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
+import { AuthStateService } from '../../../core/auth/auth-state.service';
 import { InventarioServicio } from '../../inventario/servicios/inventario-servicio';
 import type { MaterialProveedor } from '../../proveedores/modelos/proveedor';
 import { ProveedoresServicio } from '../../proveedores/servicios/proveedores-servicio';
@@ -50,7 +51,7 @@ interface RequisicionApi {
   estado: string;
   prioridad: string;
   solicitada_por: string | number;
-  fecha: string;
+  fecha: string | null;
   notas: string | null;
   lineas: RequisicionLineaApi[];
 }
@@ -169,6 +170,7 @@ function codigoColor(color: string | null): string {
 @Injectable({ providedIn: 'root' })
 export class ComprasServicio {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthStateService);
   private readonly proveedores = inject(ProveedoresServicio);
   private readonly inventario = inject(InventarioServicio);
 
@@ -189,14 +191,20 @@ export class ComprasServicio {
   readonly cargado = signal(false);
 
   constructor() {
-    this.recargar().subscribe();
+    effect(() => {
+      if (this.auth.usuario()?.rol === 'ADMIN' || this.auth.usuario()?.rol === 'OPERATIVO') {
+        this.recargar().subscribe();
+      }
+    });
   }
 
   recargar(): Observable<void> {
+    // Cotizaciones y órdenes son de Administrador: un Operativo solo registra recepciones.
+    const esAdmin = this.auth.puede(['ADMIN']);
     return forkJoin({
       requisiciones: listarTodo<RequisicionApi>(this.api, '/requisiciones'),
-      cotizaciones: listarTodo<CotizacionApi>(this.api, '/cotizaciones'),
-      ordenes: listarTodo<OrdenApi>(this.api, '/ordenes-compra'),
+      cotizaciones: esAdmin ? listarTodo<CotizacionApi>(this.api, '/cotizaciones') : of([]),
+      ordenes: esAdmin ? listarTodo<OrdenApi>(this.api, '/ordenes-compra') : of([]),
     }).pipe(
       tap(({ requisiciones, cotizaciones, ordenes }) => {
         const materiales = this.materialesDeM15();
@@ -583,7 +591,7 @@ export class ComprasServicio {
       origen: fila.origen as Requisicion['origen'],
       ordenProduccion:
         fila.orden_produccion_id === null ? null : `OP-${fila.orden_produccion_id}`,
-      fecha: fila.fecha,
+      fecha: fila.fecha ?? '',
       estado: fila.estado as Requisicion['estado'],
       prioridad: fila.prioridad as Requisicion['prioridad'],
       solicitadaPor: String(fila.solicitada_por ?? ''),
@@ -604,7 +612,7 @@ export class ComprasServicio {
   private adaptarCotizacion(fila: CotizacionApi): Cotizacion {
     return {
       id: fila.id,
-      folio: `COT-${new Date(fila.fecha).getFullYear()}-${String(fila.id).padStart(4, '0')}`,
+      folio: `COT-${fila.fecha ? new Date(fila.fecha).getFullYear() : new Date().getFullYear()}-${String(fila.id).padStart(4, '0')}`,
       requisicionId: fila.requisicion_id,
       proveedorId: fila.proveedor_id,
       fecha: fila.fecha,

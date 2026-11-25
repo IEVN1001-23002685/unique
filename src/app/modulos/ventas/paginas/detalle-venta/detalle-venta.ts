@@ -51,6 +51,10 @@ export class DetalleVenta {
   protected readonly accion = signal<AccionVenta | null>(null);
   protected readonly intentoPago = signal(false);
 
+  constructor() {
+    this.servicio.cargarDetalle(this.folio).subscribe();
+  }
+
   protected readonly formaPago = this.fb.nonNullable.group({
     monto: [0, [Validators.required, Validators.min(0.01)]],
     metodo: ['TRANSFERENCIA' as MetodoPago, [Validators.required]],
@@ -115,34 +119,28 @@ export class DetalleVenta {
       return;
     }
 
-    const pago = this.servicio.registrarPago(this.folio, {
-      monto: valor.monto,
-      metodo: valor.metodo,
-      ultimos4: ultimos4 === '' ? null : ultimos4,
-      estado: valor.estado,
-    });
-
-    if (!pago) {
-      this.avisos.mostrar('error', 'No fue posible registrar el pago en la venta de demostración.');
-      return;
-    }
-
-    this.pagoAbierto.set(false);
-    this.avisos.mostrar(
-      'exito',
-      `Pago ${pago.referencia} registrado solo en memoria. Validación real pendiente de Flask.`,
-    );
+    this.servicio
+      .registrarPago(this.folio, {
+        monto: valor.monto,
+        metodo: valor.metodo,
+        ultimos4: ultimos4 === '' ? null : ultimos4,
+        estado: valor.estado,
+      })
+      .subscribe((resultado) => {
+        if (!resultado.ok) {
+          this.avisos.mostrar('error', resultado.mensaje);
+          return;
+        }
+        this.pagoAbierto.set(false);
+        this.avisos.mostrar('exito', resultado.mensaje);
+      });
   }
 
   protected confirmarValidarPago(): void {
-    const ok = this.servicio.validarPago(this.folio);
     this.validarPagoAbierto.set(false);
-    this.avisos.mostrar(
-      ok ? 'exito' : 'advertencia',
-      ok
-        ? 'Pago validado en la vista de demostración. El cambio no persiste en servidor.'
-        : 'No hay un pago pendiente que validar en esta venta.',
-    );
+    this.servicio.validarPago(this.folio).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
+    });
   }
 
   protected abrirCancelacion(): void {
@@ -176,21 +174,15 @@ export class DetalleVenta {
     }
 
     if (accion.tipo === 'cancelar') {
-      const ok = this.servicio.cancelarVenta(this.folio, resultado.motivo);
-      this.avisos.mostrar(
-        ok ? 'advertencia' : 'error',
-        ok
-          ? 'Venta cancelada en memoria. M09 reflejará la cancelación al abrir el pedido; liberación de reservas pendiente de M12.'
-          : 'No fue posible cancelar esta venta de demostración.',
-      );
+      this.servicio.cancelarVenta(this.folio, resultado.motivo).subscribe((respuesta) => {
+        this.avisos.mostrar(respuesta.ok ? 'advertencia' : 'error', respuesta.mensaje);
+      });
     } else {
-      const ok = this.servicio.reembolsar(this.folio, resultado.monto, resultado.motivo);
-      this.avisos.mostrar(
-        ok ? 'exito' : 'error',
-        ok
-          ? 'Reembolso simulado registrado en memoria; sin movimiento bancario real.'
-          : 'Revisa el monto del reembolso.',
-      );
+      this.servicio
+        .reembolsar(this.folio, resultado.monto, resultado.motivo)
+        .subscribe((respuesta) => {
+          this.avisos.mostrar(respuesta.ok ? 'exito' : 'error', respuesta.mensaje);
+        });
     }
 
     this.accion.set(null);

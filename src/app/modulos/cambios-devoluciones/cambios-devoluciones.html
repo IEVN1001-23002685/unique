@@ -18,7 +18,6 @@
       box-sizing: border-box;
     "
   >
-    <!-- Encabezado -->
     <div
       style="
         display: flex;
@@ -36,11 +35,10 @@
             Cambios y devoluciones
           </h2>
           <span style="font-size: 12px; color: #4f2857; font-weight: 600"
-            >Gestión de solicitudes, bandeja e inspección</span
+            >Solicitudes, recepción, inspección y resolución</span
           >
         </div>
       </div>
-
       <button
         type="button"
         (click)="cerrarCasos()"
@@ -59,7 +57,6 @@
       </button>
     </div>
 
-    <!-- Navegación de subvistas -->
     <div
       style="
         display: flex;
@@ -71,72 +68,47 @@
       "
     >
       <button
+        *ngIf="esCliente"
         type="button"
         (click)="cambiarSeccion('solicitar')"
         [style.backgroundColor]="seccionActiva === 'solicitar' ? '#4f2857' : '#f3ecf4'"
         [style.color]="seccionActiva === 'solicitar' ? '#ffffff' : '#332736'"
-        style="
-          padding: 8px 16px;
-          border: none;
-          border-radius: 999px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-        "
+        style="padding: 8px 16px; border: none; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer"
       >
         Solicitar
       </button>
       <button
+        *ngIf="esCliente"
         type="button"
         (click)="cambiarSeccion('mis-solicitudes')"
         [style.backgroundColor]="seccionActiva === 'mis-solicitudes' ? '#4f2857' : '#f3ecf4'"
         [style.color]="seccionActiva === 'mis-solicitudes' ? '#ffffff' : '#332736'"
-        style="
-          padding: 8px 16px;
-          border: none;
-          border-radius: 999px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-        "
+        style="padding: 8px 16px; border: none; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer"
       >
         Mis solicitudes
       </button>
       <button
+        *ngIf="puedeOperar"
         type="button"
         (click)="cambiarSeccion('bandeja')"
         [style.backgroundColor]="seccionActiva === 'bandeja' ? '#4f2857' : '#f3ecf4'"
         [style.color]="seccionActiva === 'bandeja' ? '#ffffff' : '#332736'"
-        style="
-          padding: 8px 16px;
-          border: none;
-          border-radius: 999px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-        "
+        style="padding: 8px 16px; border: none; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer"
       >
         Bandeja
       </button>
       <button
+        *ngIf="puedeOperar"
         type="button"
         (click)="cambiarSeccion('inspeccion')"
         [style.backgroundColor]="seccionActiva === 'inspeccion' ? '#4f2857' : '#f3ecf4'"
         [style.color]="seccionActiva === 'inspeccion' ? '#ffffff' : '#332736'"
-        style="
-          padding: 8px 16px;
-          border: none;
-          border-radius: 999px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-        "
+        style="padding: 8px 16px; border: none; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer"
       >
         Inspección
       </button>
     </div>
 
-    <!-- Mensaje informativo -->
     <div
       *ngIf="mensajeAviso"
       style="
@@ -153,388 +125,278 @@
       {{ mensajeAviso }}
     </div>
 
-    <!-- ==================== 1. SOLICITAR ==================== -->
+    <!-- 1. Solicitud del cliente -->
     <form
       *ngIf="seccionActiva === 'solicitar'"
       (ngSubmit)="enviarSolicitud()"
-      style="
-        background-color: #f3ecf4;
-        border-radius: 22px;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        box-sizing: border-box;
-      "
+      style="background-color: #f3ecf4; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box"
     >
       <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #332736">
         Nueva solicitud de cambio o devolución
       </h3>
 
-      <div
-        style="
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-          gap: 12px;
-        "
-      >
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px">
         <div>
-          <label style="font-size: 12px; font-weight: 600">Folio del pedido:</label>
-          <input
-            name="folioPed"
-            [(ngModel)]="nuevaSolicitud.folioPedido"
+          <label style="font-size: 12px; font-weight: 600">Pedido entregado:</label>
+          <select
+            name="pedidoSol"
+            [(ngModel)]="nuevaSolicitud.pedidoId"
+            (ngModelChange)="seleccionarPedido($event)"
             required
-            style="
-              width: 100%;
-              height: 38px;
-              border: none;
-              border-radius: 999px;
-              background-color: #ffffff;
-              padding: 0 14px;
-              font-size: 13px;
-              margin-top: 4px;
-              box-sizing: border-box;
-            "
-          />
+            style="width: 100%; height: 38px; border: none; border-radius: 999px; background-color: #ffffff; padding: 0 12px; font-size: 13px; margin-top: 4px"
+          >
+            <option [ngValue]="0">Selecciona un pedido</option>
+            <option *ngFor="let pedido of pedidos" [ngValue]="pedido.id">
+              {{ pedido.folio }}
+            </option>
+          </select>
         </div>
-
         <div>
           <label style="font-size: 12px; font-weight: 600">Tipo de solicitud:</label>
           <select
             name="tipoSol"
             [(ngModel)]="nuevaSolicitud.tipo"
-            style="
-              width: 100%;
-              height: 38px;
-              border: none;
-              border-radius: 999px;
-              background-color: #ffffff;
-              padding: 0 12px;
-              font-size: 13px;
-              margin-top: 4px;
-            "
+            (ngModelChange)="cambiarTipo()"
+            style="width: 100%; height: 38px; border: none; border-radius: 999px; background-color: #ffffff; padding: 0 12px; font-size: 13px; margin-top: 4px"
           >
-            <option value="Cambio">Cambio</option>
-            <option value="Devolución">Devolución</option>
+            <option *ngFor="let tipo of tipos" [value]="tipo.valor">{{ tipo.etiqueta }}</option>
           </select>
         </div>
-
         <div>
           <label style="font-size: 12px; font-weight: 600">Motivo:</label>
           <select
             name="motivoSol"
             [(ngModel)]="nuevaSolicitud.motivo"
-            style="
-              width: 100%;
-              height: 38px;
-              border: none;
-              border-radius: 999px;
-              background-color: #ffffff;
-              padding: 0 12px;
-              font-size: 13px;
-              margin-top: 4px;
-            "
+            style="width: 100%; height: 38px; border: none; border-radius: 999px; background-color: #ffffff; padding: 0 12px; font-size: 13px; margin-top: 4px"
           >
-            <option value="Talla ajustada">Talla ajustada</option>
-            <option value="Color distinto al esperado">Color distinto al esperado</option>
-            <option value="No cumplió expectativas">No cumplió expectativas</option>
-            <option value="Detalle en prenda">Detalle en prenda</option>
+            <option *ngFor="let motivo of motivos" [value]="motivo.valor">
+              {{ motivo.etiqueta }}
+            </option>
           </select>
         </div>
       </div>
 
-      <div>
-        <label style="font-size: 12px; font-weight: 600"
-          >Prenda y detalle (talla, color, cantidad):</label
+      <div *ngIf="lineasSolicitud.length > 0" style="display: flex; flex-direction: column; gap: 8px">
+        <strong style="font-size: 13px; color: #332736">Prendas del pedido</strong>
+        <div
+          *ngFor="let linea of lineasSolicitud"
+          style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background-color: #ffffff; border-radius: 14px; padding: 10px 12px; font-size: 12px"
         >
-        <input
-          name="prendaSol"
-          [(ngModel)]="nuevaSolicitud.prendaResumen"
-          required
-          placeholder="Ej. SUDADERA (Talla CH) x1 → cambiar a MD"
-          style="
-            width: 100%;
-            height: 38px;
-            border: none;
-            border-radius: 999px;
-            background-color: #ffffff;
-            padding: 0 14px;
-            font-size: 13px;
-            margin-top: 4px;
-            box-sizing: border-box;
-          "
-        />
+          <span style="flex: 1 1 240px">
+            <strong>{{ linea.sku }}</strong> · {{ linea.descripcion }} · compradas
+            {{ linea.cantidad }}
+          </span>
+          <label>
+            Cantidad:
+            <input
+              type="number"
+              min="0"
+              [max]="linea.cantidad"
+              [(ngModel)]="linea.cantidadSolicitada"
+              [name]="'cantidad-' + linea.ventaLineaId"
+              style="width: 64px; height: 32px; border-radius: 10px; border: 1px solid #cdb7d1; padding: 0 8px"
+            />
+          </label>
+          <label *ngIf="nuevaSolicitud.tipo === 'CAMBIO'">
+            Reemplazo:
+            <select
+              [(ngModel)]="linea.varianteCambioId"
+              [name]="'variante-' + linea.ventaLineaId"
+              style="height: 32px; border-radius: 10px; border: 1px solid #cdb7d1; padding: 0 8px"
+            >
+              <option [ngValue]="null">Selecciona variante</option>
+              <option *ngFor="let opcion of linea.opcionesVariante" [ngValue]="opcion.id">
+                {{ opcion.sku }} · {{ opcion.talla }} · {{ opcion.color }}
+              </option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div *ngIf="pedidos.length === 0" style="font-size: 12px; color: #534057">
+        No tienes pedidos entregados disponibles para solicitar un cambio o devolución.
       </div>
 
       <div>
-        <label style="font-size: 12px; font-weight: 600">Comentario adicional:</label>
+        <label style="font-size: 12px; font-weight: 600">Descripción:</label>
+        <textarea
+          name="descripcionSol"
+          [(ngModel)]="nuevaSolicitud.descripcion"
+          required
+          rows="3"
+          placeholder="Explica el motivo y el estado de la prenda"
+          style="width: 100%; border: none; border-radius: 14px; background-color: #ffffff; padding: 10px 14px; font-size: 13px; margin-top: 4px; box-sizing: border-box"
+        ></textarea>
+      </div>
+
+      <div>
+        <label style="font-size: 12px; font-weight: 600">Evidencias (JPG, PNG o WebP, máx. 3):</label>
         <input
-          name="comSol"
-          [(ngModel)]="nuevaSolicitud.comentario"
-          placeholder="Detalles opcionales para revisión..."
-          style="
-            width: 100%;
-            height: 38px;
-            border: none;
-            border-radius: 999px;
-            background-color: #ffffff;
-            padding: 0 14px;
-            font-size: 13px;
-            margin-top: 4px;
-            box-sizing: border-box;
-          "
+          type="file"
+          name="evidenciasSol"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          (change)="onEvidencias($event)"
+          style="display: block; margin-top: 6px; font-size: 12px"
         />
       </div>
 
       <button
         type="submit"
-        style="
-          align-self: flex-start;
-          padding: 10px 26px;
-          border: none;
-          border-radius: 999px;
-          background-color: #4f2857;
-          color: #ffffff;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-        "
+        style="align-self: flex-start; padding: 10px 26px; border: none; border-radius: 999px; background-color: #4f2857; color: #ffffff; font-size: 13px; font-weight: 600; cursor: pointer"
       >
         Enviar solicitud
       </button>
     </form>
 
-    <!-- ==================== 2. MIS SOLICITUDES ==================== -->
-    <div
-      *ngIf="seccionActiva === 'mis-solicitudes'"
-      style="display: flex; flex-direction: column; gap: 12px"
-    >
+    <!-- 2. Solicitudes propias -->
+    <div *ngIf="seccionActiva === 'mis-solicitudes'" style="display: flex; flex-direction: column; gap: 12px">
       <div
         *ngFor="let sol of solicitudes"
-        style="
-          background-color: #f3ecf4;
-          border-radius: 20px;
-          padding: 16px 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          box-sizing: border-box;
-        "
+        style="background-color: #f3ecf4; border-radius: 20px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box"
       >
-        <div
-          style="
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-          "
-        >
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
           <div>
             <strong style="font-size: 15px; color: #332736">Caso {{ sol.folioCaso }}</strong>
-            <span style="margin-left: 8px; font-size: 12px; color: #534057"
-              >· Pedido {{ sol.folioPedido }} · {{ sol.tipo }}</span
-            >
+            <span style="margin-left: 8px; font-size: 12px; color: #534057">
+              · Pedido {{ sol.folioPedido || '—' }} · {{ sol.tipo }}
+            </span>
           </div>
-          <span
-            style="
-              background-color: #4f2857;
-              color: #ffffff;
-              padding: 2px 10px;
-              border-radius: 999px;
-              font-size: 11px;
-              font-weight: 700;
-            "
-          >
-            {{ sol.estado }}
+          <span style="background-color: #4f2857; color: #ffffff; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700">
+            {{ etiqueta(sol.estado) }}
           </span>
         </div>
         <div style="font-size: 13px; color: #3b2d3e">{{ sol.prendaResumen }}</div>
         <div style="font-size: 12px; color: #534057">
           Motivo: <strong>{{ sol.motivo }}</strong>
         </div>
+        <div style="font-size: 12px; color: #534057">{{ sol.descripcion }}</div>
         <div
           *ngIf="sol.dictamen"
-          style="
-            margin-top: 4px;
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 8px 12px;
-            font-size: 12px;
-            color: #4f2857;
-            font-weight: 600;
-          "
+          style="margin-top: 4px; background-color: #ffffff; border-radius: 12px; padding: 8px 12px; font-size: 12px; color: #4f2857; font-weight: 600"
         >
           Resolución: {{ sol.dictamen }}
         </div>
+        <div *ngIf="sol.reembolsoMonto" style="font-size: 12px; color: #4f2857">
+          Reembolso: ${{ sol.reembolsoMonto }}
+        </div>
+      </div>
+      <div *ngIf="solicitudes.length === 0" style="font-size: 13px; color: #534057">
+        Aún no has registrado solicitudes.
       </div>
     </div>
 
-    <!-- ==================== 3. BANDEJA ==================== -->
-    <div
-      *ngIf="seccionActiva === 'bandeja'"
-      style="display: flex; flex-direction: column; gap: 12px"
-    >
+    <!-- 3. Bandeja operativa -->
+    <div *ngIf="seccionActiva === 'bandeja'" style="display: flex; flex-direction: column; gap: 12px">
       <div
         *ngFor="let sol of solicitudes"
-        style="
-          background-color: #f3ecf4;
-          border-radius: 20px;
-          padding: 16px 20px;
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          box-sizing: border-box;
-        "
+        style="background-color: #f3ecf4; border-radius: 20px; padding: 16px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; box-sizing: border-box"
       >
         <div style="font-size: 13px">
-          <strong>{{ sol.folioCaso }}</strong> · Pedido {{ sol.folioPedido }} ·
-          <span style="color: #4f2857; font-weight: 700">{{ sol.estado }}</span>
-          <div style="color: #534057; margin-top: 2px">
-            {{ sol.tipo }} — {{ sol.prendaResumen }}
-          </div>
+          <strong>{{ sol.folioCaso }}</strong> · Pedido {{ sol.folioPedido || '—' }} ·
+          <span style="color: #4f2857; font-weight: 700">{{ etiqueta(sol.estado) }}</span>
+          <div style="color: #534057; margin-top: 2px">{{ sol.tipo }} — {{ sol.prendaResumen }}</div>
+          <div style="color: #534057; margin-top: 2px">{{ sol.descripcion }}</div>
         </div>
-
-        <button
-          type="button"
-          (click)="enviarAInspeccion(sol)"
-          style="
-            padding: 8px 16px;
-            border: none;
-            border-radius: 999px;
-            background-color: #4f2857;
-            color: #ffffff;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >
-          Pasar a inspección
-        </button>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button
+            *ngIf="sol.estado === 'SOLICITADA' && puedeAprobar"
+            type="button"
+            (click)="aprobar(sol)"
+            style="padding: 8px 14px; border: none; border-radius: 999px; background-color: #4f2857; color: #ffffff; font-size: 12px; font-weight: 600; cursor: pointer"
+          >
+            Aprobar
+          </button>
+          <button
+            *ngIf="sol.estado === 'SOLICITADA' && puedeAprobar"
+            type="button"
+            (click)="rechazar(sol)"
+            style="padding: 8px 14px; border: 1px solid #8b1e3f; border-radius: 999px; background-color: #ffffff; color: #8b1e3f; font-size: 12px; font-weight: 700; cursor: pointer"
+          >
+            Rechazar
+          </button>
+          <button
+            *ngIf="sol.estado === 'APROBADA'"
+            type="button"
+            (click)="recibir(sol)"
+            style="padding: 8px 14px; border: none; border-radius: 999px; background-color: #4f2857; color: #ffffff; font-size: 12px; font-weight: 600; cursor: pointer"
+          >
+            Registrar recepción
+          </button>
+          <button
+            *ngIf="sol.estado === 'RECIBIDA'"
+            type="button"
+            (click)="abrirInspeccion(sol)"
+            style="padding: 8px 14px; border: none; border-radius: 999px; background-color: #4f2857; color: #ffffff; font-size: 12px; font-weight: 600; cursor: pointer"
+          >
+            Inspeccionar
+          </button>
+          <button
+            *ngIf="sol.estado === 'RECIBIDA' && sol.lineas.length > 0 && sol.lineas.every((l) => l.dictamen !== 'PENDIENTE') && puedeAprobar"
+            type="button"
+            (click)="resolver(sol, 'REEMBOLSO')"
+            style="padding: 8px 14px; border: none; border-radius: 999px; background-color: #4f2857; color: #ffffff; font-size: 12px; font-weight: 600; cursor: pointer"
+          >
+            Reembolsar
+          </button>
+          <button
+            *ngIf="sol.estado === 'RECIBIDA' && sol.tipo === 'CAMBIO' && sol.lineas.length > 0 && sol.lineas.every((l) => l.dictamen !== 'PENDIENTE') && puedeAprobar"
+            type="button"
+            (click)="resolver(sol, 'CAMBIO')"
+            style="padding: 8px 14px; border: none; border-radius: 999px; background-color: #4f2857; color: #ffffff; font-size: 12px; font-weight: 600; cursor: pointer"
+          >
+            Generar reemplazo
+          </button>
+        </div>
+      </div>
+      <div *ngIf="solicitudes.length === 0" style="font-size: 13px; color: #534057">
+        No hay solicitudes registradas.
       </div>
     </div>
 
-    <!-- ==================== 4. INSPECCIÓN ==================== -->
+    <!-- 4. Inspección -->
     <div
       *ngIf="seccionActiva === 'inspeccion'"
-      style="
-        background-color: #f3ecf4;
-        border-radius: 22px;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        box-sizing: border-box;
-      "
+      style="background-color: #f3ecf4; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box"
     >
       <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #332736">
-        Inspección física de prenda
+        Inspección física de prendas
       </h3>
-
       <div *ngIf="!casoEnInspeccion" style="font-size: 13px; color: #534057">
-        No hay casos seleccionados para inspección.
+        Selecciona una solicitud recibida en la bandeja.
       </div>
-
       <div *ngIf="casoEnInspeccion" style="display: flex; flex-direction: column; gap: 12px">
-        <div
-          style="
-            background-color: #ffffff;
-            border-radius: 14px;
-            padding: 12px 14px;
-            font-size: 13px;
-          "
-        >
+        <div style="background-color: #ffffff; border-radius: 14px; padding: 12px 14px; font-size: 13px">
           <strong>Caso {{ casoEnInspeccion.folioCaso }}</strong> · Pedido
-          {{ casoEnInspeccion.folioPedido }} · {{ casoEnInspeccion.tipo }}
-          <div style="color: #534057; margin-top: 2px">{{ casoEnInspeccion.prendaResumen }}</div>
+          {{ casoEnInspeccion.folioPedido || '—' }} · {{ casoEnInspeccion.tipo }}
+          <div style="color: #534057; margin-top: 2px">{{ casoEnInspeccion.descripcion }}</div>
         </div>
-
         <div
-          style="
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-          "
+          *ngFor="let linea of casoEnInspeccion.lineas"
+          style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background-color: #ffffff; border-radius: 14px; padding: 10px 12px; font-size: 12px"
         >
-          <div>
-            <label style="font-size: 12px; font-weight: 600">Estado físico de la prenda:</label>
-            <select
-              name="estFis"
-              [(ngModel)]="revisionFisica.estadoFisico"
-              style="
-                width: 100%;
-                height: 38px;
-                border: none;
-                border-radius: 999px;
-                background-color: #ffffff;
-                padding: 0 12px;
-                font-size: 13px;
-                margin-top: 4px;
-              "
-            >
-              <option value="Buen estado">Buen estado</option>
-              <option value="Con detalles">Con detalles</option>
-              <option value="Sin etiquetas">Sin etiquetas</option>
-            </select>
-          </div>
-
-          <div>
-            <label style="font-size: 12px; font-weight: 600">Dictamen / nota de revisión:</label>
-            <input
-              name="dictInsp"
-              [(ngModel)]="revisionFisica.dictamenTexto"
-              placeholder="Ej. Etiqueta intacta, sin manchas"
-              style="
-                width: 100%;
-                height: 38px;
-                border: none;
-                border-radius: 999px;
-                background-color: #ffffff;
-                padding: 0 14px;
-                font-size: 13px;
-                margin-top: 4px;
-                box-sizing: border-box;
-              "
-            />
-          </div>
-        </div>
-
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px">
-          <button
-            type="button"
-            (click)="resolverInspeccion(true)"
-            style="
-              padding: 9px 22px;
-              border: none;
-              border-radius: 999px;
-              background-color: #4f2857;
-              color: #ffffff;
-              font-size: 13px;
-              font-weight: 600;
-              cursor: pointer;
-            "
+          <span style="flex: 1 1 200px">
+            <strong>{{ linea.sku || 'SKU' }}</strong> · {{ linea.cantidad }} pieza(s) ·
+            {{ linea.dictamen }}
+          </span>
+          <select
+            *ngIf="linea.dictamen === 'PENDIENTE'"
+            [(ngModel)]="dictamenes[linea.id]"
+            name="dictamenLinea"
+            style="height: 32px; border-radius: 10px; border: 1px solid #cdb7d1; padding: 0 8px"
           >
-            Aprobar caso
-          </button>
-          <button
-            type="button"
-            (click)="resolverInspeccion(false)"
-            style="
-              padding: 9px 22px;
-              border: 1px solid #8b1e3f;
-              border-radius: 999px;
-              background-color: #ffffff;
-              color: #8b1e3f;
-              font-size: 13px;
-              font-weight: 700;
-              cursor: pointer;
-            "
-          >
-            Rechazar caso
-          </button>
+            <option value="REINGRESO">Reingreso a inventario</option>
+            <option value="MERMA">Merma</option>
+          </select>
         </div>
+        <button
+          *ngIf="casoEnInspeccion.lineas.some((l) => l.dictamen === 'PENDIENTE')"
+          type="button"
+          (click)="guardarDictamen()"
+          style="align-self: flex-start; padding: 9px 22px; border: none; border-radius: 999px; background-color: #4f2857; color: #ffffff; font-size: 13px; font-weight: 600; cursor: pointer"
+        >
+          Guardar dictamen
+        </button>
       </div>
     </div>
   </div>

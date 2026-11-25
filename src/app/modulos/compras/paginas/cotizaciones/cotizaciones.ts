@@ -1,6 +1,7 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionCompras } from '../../componentes/navegacion-compras/navegacion-compras';
 import type { Cotizacion, LineaCotizacion } from '../../modelos/compra';
@@ -17,6 +18,20 @@ export class Cotizaciones {
   private readonly avisos = inject(AvisosServicio);
   private readonly router = inject(Router);
   private readonly ruta = inject(ActivatedRoute);
+  private seleccionInicializada = false;
+
+  constructor() {
+    effect(() => {
+      if (this.seleccionInicializada || !this.servicio.cargado()) {
+        return;
+      }
+      const inicial = this.inicial();
+      if (inicial > 0) {
+        this.seleccionInicializada = true;
+        this.seleccionId.set(inicial);
+      }
+    });
+  }
 
   protected readonly candidatas = computed(() =>
     this.servicio
@@ -66,30 +81,38 @@ export class Cotizaciones {
     if (!requisicion) {
       return;
     }
-    const resultado = this.servicio.generarCotizaciones(requisicion.id);
-    if (!resultado) {
-      this.avisos.mostrar('error', 'No hay proveedores activos que surtan este material.');
-      return;
-    }
-    this.avisos.mostrar(
-      'exito',
-      resultado.conAlterno
-        ? `${resultado.cantidad} cotizaciones listas para comparar. Datos de M13, pendiente de Flask.`
-        : `${resultado.cantidad} cotización disponible: no hay proveedor alterno.`,
-    );
+    this.servicio.generarCotizaciones(requisicion.id).subscribe({
+      next: (resultado) => {
+        if (!resultado) {
+          this.avisos.mostrar('error', 'No hay proveedores activos que surtan este material.');
+          return;
+        }
+        this.avisos.mostrar(
+          'exito',
+          resultado.conAlterno
+            ? `${resultado.cantidad} cotizaciones creadas en Flask para comparar.`
+            : `${resultado.cantidad} cotización creada en Flask: no hay proveedor alterno.`,
+        );
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   protected elegir(cotizacion: Cotizacion): void {
-    const orden = this.servicio.elegirCotizacion(cotizacion.id);
-    if (!orden) {
-      this.avisos.mostrar('error', 'No fue posible generar la orden desde esta cotización.');
-      return;
-    }
-    this.avisos.mostrar(
-      'exito',
-      `${orden.folio} se creó en BORRADOR con el precio pactado. Revisa la fecha prometida.`,
-    );
-    void this.router.navigate(['/compras/ordenes', orden.id, 'editar']);
+    this.servicio.elegirCotizacion(cotizacion.id).subscribe({
+      next: (orden) => {
+        if (!orden) {
+          this.avisos.mostrar('error', 'No fue posible localizar la orden generada por Flask.');
+          return;
+        }
+        this.avisos.mostrar(
+          'exito',
+          `${orden.folio} se creó en BORRADOR con el precio pactado. Revisa la fecha prometida.`,
+        );
+        void this.router.navigate(['/compras/ordenes', orden.id, 'editar']);
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   private inicial(): number {

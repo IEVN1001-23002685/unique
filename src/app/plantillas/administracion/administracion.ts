@@ -64,6 +64,7 @@ export class Administracion {
         { etiqueta: 'Preparación', ruta: '/preparacion', roles: this.operacion },
         { etiqueta: 'Entregas', ruta: '/entregas', roles: this.operacion },
         { etiqueta: 'Recepciones', ruta: '/recepciones', roles: this.operacion },
+        { etiqueta: 'Devoluciones', ruta: '/operacion/devoluciones', roles: this.operacion },
       ],
     },
     {

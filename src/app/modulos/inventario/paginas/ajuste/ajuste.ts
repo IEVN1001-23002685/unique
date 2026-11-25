@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
 import { decimalNoNegativo } from '../../../../compartido/validadores/validadores-negocio';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionInventario } from '../../componentes/navegacion-inventario/navegacion-inventario';
 import { MOTIVOS_AJUSTE, type ResultadoAjuste } from '../../modelos/inventario';
@@ -90,22 +91,27 @@ export class Ajuste {
 
   private registrar(): void {
     const valor = this.formulario.getRawValue();
-    const resultado = this.servicio.registrarAjuste({
-      existenciaId: valor.existenciaId,
-      cantidadContada: redondear4(valor.cantidadContada),
-      motivo: valor.motivo,
-      enviarAMerma: valor.enviarAMerma,
-    });
-    if (!resultado) {
-      this.avisos.mostrar('error', 'No fue posible registrar el ajuste con esos datos.');
-      return;
-    }
-
-    this.resultado.set(resultado);
-    this.avisos.mostrar(
-      'exito',
-      `${resultado.movimiento.documento} se registró solo en la demostración. No hay persistencia en Flask.`,
-    );
+    this.servicio
+      .registrarAjuste({
+        existenciaId: valor.existenciaId,
+        cantidadContada: redondear4(valor.cantidadContada),
+        motivo: valor.motivo,
+        enviarAMerma: valor.enviarAMerma,
+      })
+      .subscribe({
+        next: (resultado) => {
+          if (!resultado) {
+            this.avisos.mostrar('error', 'No fue posible registrar el ajuste con esos datos.');
+            return;
+          }
+          this.resultado.set(resultado);
+          this.avisos.mostrar(
+            'exito',
+            `Ajuste registrado en Flask${resultado.merma ? '; la merma quedó registrada' : ''}.`,
+          );
+        },
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 
   protected nuevoAjuste(): void {

@@ -93,6 +93,10 @@ export class RegistroVentas {
     return this.filtrados().slice(inicio, inicio + this.tamanoPagina);
   });
 
+  constructor() {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly sinFiltros = computed(
     () =>
       this.busqueda().trim() === '' &&

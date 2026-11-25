@@ -1,6 +1,7 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Observable, concatMap, forkJoin, from, map, of, tap } from 'rxjs';
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
+import { AuthStateService } from '../../../core/auth/auth-state.service';
 import type { EvaluacionProveedor, MaterialProveedor, Proveedor } from '../modelos/proveedor';
 
 export type ResultadoEliminacion = 'eliminado' | 'desactivado' | 'no-encontrado';
@@ -75,6 +76,7 @@ function listarTodo<T>(
 @Injectable({ providedIn: 'root' })
 export class ProveedoresServicio {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthStateService);
 
   private readonly lista = signal<Proveedor[]>([]);
   private readonly evaluaciones = signal<EvaluacionProveedor[]>([]);
@@ -103,10 +105,21 @@ export class ProveedoresServicio {
   });
 
   constructor() {
-    this.recargar().subscribe();
+    effect(() => {
+      if (this.auth.usuario()?.rol === 'ADMIN') {
+        this.recargar().subscribe();
+      }
+    });
   }
 
   recargar(): Observable<void> {
+    // M13 es de Administrador: un Operativo no debe recibir 403 al abrir M14/M15.
+    if (!this.auth.puede(['ADMIN'])) {
+      this.lista.set([]);
+      this.evaluaciones.set([]);
+      this.cargado.set(true);
+      return of(undefined);
+    }
     return this.api
       .get<{ items: ProveedorApi[] }>('/proveedores', {
         params: { incluir_inactivos: true, por_pagina: 100 },

@@ -1,8 +1,9 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { decimalPositivo } from '../../../../compartido/validadores/validadores-negocio';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionCompras } from '../../componentes/navegacion-compras/navegacion-compras';
 import type { LineaOrdenCompra, OrdenCompra } from '../../modelos/compra';
@@ -45,32 +46,39 @@ export class FormularioOrden {
     lineas: this.fb.nonNullable.array([this.nuevaLinea()]),
   });
 
+  private formularioInicializado = false;
+
   constructor() {
-    const orden = this.servicio.obtenerOrden(this.idEditar);
-    if (!orden) {
-      this.noEncontrado.set(true);
-      return;
-    }
+    effect(() => {
+      if (this.formularioInicializado || !this.servicio.cargado()) {
+        return;
+      }
+      const orden = this.servicio.obtenerOrden(this.idEditar);
+      if (!orden) {
+        this.noEncontrado.set(true);
+        return;
+      }
+      this.formularioInicializado = true;
+      this.formulario.patchValue({
+        proveedorId: orden.proveedorId,
+        condicionesPago: orden.condicionesPago,
+        fechaPrometida: orden.fechaPrometida ?? '',
+        notas: orden.notas ?? '',
+      });
+      this.formulario.controls.lineas.clear();
+      for (const linea of orden.lineas) {
+        this.formulario.controls.lineas.push(this.nuevaLinea(linea));
+      }
+      // El material de una línea ya pactada no se cambia desde esta pantalla.
+      for (const control of this.formulario.controls.lineas.controls) {
+        control.controls.materialId.disable();
+      }
 
-    this.formulario.patchValue({
-      proveedorId: orden.proveedorId,
-      condicionesPago: orden.condicionesPago,
-      fechaPrometida: orden.fechaPrometida ?? '',
-      notas: orden.notas ?? '',
+      if (orden.estado !== 'BORRADOR') {
+        this.soloLectura.set(true);
+        this.formulario.disable();
+      }
     });
-    this.formulario.controls.lineas.clear();
-    for (const linea of orden.lineas) {
-      this.formulario.controls.lineas.push(this.nuevaLinea(linea));
-    }
-    // El material de una línea ya pactada no se cambia desde esta pantalla.
-    for (const control of this.formulario.controls.lineas.controls) {
-      control.controls.materialId.disable();
-    }
-
-    if (orden.estado !== 'BORRADOR') {
-      this.soloLectura.set(true);
-      this.formulario.disable();
-    }
   }
 
   protected materialDe(indice: number) {
@@ -141,12 +149,20 @@ export class FormularioOrden {
       })),
     };
 
-    this.servicio.guardarOrden(orden);
-    this.avisos.mostrar(
-      'exito',
-      `${orden.folio} se actualizó en la demostración; emítela cuando el precio y plazo estén listos.`,
-    );
-    void this.router.navigate(['/compras/ordenes']);
+    this.servicio.guardarOrden(orden).subscribe({
+      next: (guardada) => {
+        if (!guardada) {
+          this.avisos.mostrar('error', 'Flask no pudo actualizar la orden.');
+          return;
+        }
+        this.avisos.mostrar(
+          'exito',
+          `${guardada.folio} se actualizó en Flask; emítela cuando el precio y plazo estén listos.`,
+        );
+        void this.router.navigate(['/compras/ordenes']);
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   private nuevaLinea(linea?: LineaOrdenCompra) {

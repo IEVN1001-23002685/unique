@@ -1,5 +1,5 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, type ValidatorFn } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
@@ -10,6 +10,7 @@ import {
   decimalPositivo,
   mermaPct,
 } from '../../../../compartido/validadores/validadores-negocio';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionInventario } from '../../componentes/navegacion-inventario/navegacion-inventario';
 import {
@@ -79,30 +80,38 @@ export class CatalogoMateriales {
     porColor: [false],
   });
 
+  private formularioInicializado = false;
+
   constructor() {
     if (!this.esEdicion) {
       return;
     }
-    const material = this.servicio.obtenerMaterial(this.idEditar);
-    if (!material) {
-      this.noEncontrado.set(true);
-      return;
-    }
-    this.formulario.patchValue({
-      codigo: material.codigo,
-      nombre: material.nombre,
-      categoria: material.categoria,
-      unidadBase: material.unidadBase,
-      unidadCompra: material.unidadCompra,
-      factorCompraBase: material.factorCompraBase,
-      presentacion: material.presentacion,
-      costoEstandarBase: material.costoEstandarBase,
-      mermaEstandarPct: material.mermaEstandarPct,
-      plazoDias: material.plazoDias,
-      porColor: material.porColor,
+    effect(() => {
+      if (this.formularioInicializado || !this.servicio.cargado()) {
+        return;
+      }
+      const material = this.servicio.obtenerMaterial(this.idEditar);
+      if (!material) {
+        this.noEncontrado.set(true);
+        return;
+      }
+      this.formularioInicializado = true;
+      this.formulario.patchValue({
+        codigo: material.codigo,
+        nombre: material.nombre,
+        categoria: material.categoria,
+        unidadBase: material.unidadBase,
+        unidadCompra: material.unidadCompra,
+        factorCompraBase: material.factorCompraBase,
+        presentacion: material.presentacion,
+        costoEstandarBase: material.costoEstandarBase,
+        mermaEstandarPct: material.mermaEstandarPct,
+        plazoDias: material.plazoDias,
+        porColor: material.porColor,
+      });
+      // El código identifica al material en recetas y movimientos: no se cambia.
+      this.formulario.controls.codigo.disable();
     });
-    // El código identifica al material en recetas y movimientos: no se cambia.
-    this.formulario.controls.codigo.disable();
   }
 
   protected esInvalido(
@@ -146,14 +155,22 @@ export class CatalogoMateriales {
       activo: anterior?.activo ?? true,
     };
 
-    this.servicio.guardarMaterial(material);
-    this.avisos.mostrar(
-      'exito',
-      this.esEdicion
-        ? `${material.codigo} se actualizó en la demostración.`
-        : `${material.codigo} se dio de alta; sus existencias se crearon en memoria.`,
-    );
-    void this.router.navigate(['/inventario-mp/catalogo']);
+    this.servicio.guardarMaterial(material).subscribe({
+      next: (guardado) => {
+        if (!guardado) {
+          this.avisos.mostrar('error', 'No se pudo resolver la categoría del material en Flask.');
+          return;
+        }
+        this.avisos.mostrar(
+          'exito',
+          this.esEdicion
+            ? `${guardado.codigo} se actualizó en Flask.`
+            : `${guardado.codigo} se dio de alta en Flask.`,
+        );
+        void this.router.navigate(['/inventario-mp/catalogo']);
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 
   protected confirmarEliminar(material: Material): void {
@@ -166,14 +183,15 @@ export class CatalogoMateriales {
     if (!material) {
       return;
     }
-    const resultado = this.servicio.eliminarMaterial(material.id);
-    if (resultado === 'desactivado') {
-      this.avisos.mostrar(
-        'advertencia',
-        `${material.codigo} tiene lotes: se desactivó en lugar de eliminarse. Flask debe validar recetas antes de una baja definitiva.`,
-      );
-      return;
-    }
-    this.avisos.mostrar('exito', `${material.codigo} se eliminó del catálogo de demostración.`);
+    this.servicio.eliminarMaterial(material.id).subscribe({
+      next: (resultado) =>
+        this.avisos.mostrar(
+          resultado === 'desactivado' ? 'advertencia' : 'exito',
+          resultado === 'desactivado'
+            ? `${material.codigo} tiene historial: Flask lo desactivó.`
+            : `${material.codigo} se eliminó del catálogo en Flask.`,
+        ),
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 }

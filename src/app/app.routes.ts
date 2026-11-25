@@ -245,6 +245,23 @@ export const routes: Routes = [
     data: { titulo: 'Mermas', roles: ['ADMIN', 'OPERATIVO'] },
     loadChildren: () => import('./modulos/mermas/mermas.routes').then((m) => m.MERMAS_RUTAS),
   },
+  {
+    path: 'operacion/devoluciones',
+    component: Administracion,
+    canActivate: OPERATIVO,
+    data: { titulo: 'Devoluciones', roles: ['ADMIN', 'OPERATIVO'] },
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+            (c) => c.CambiosDevoluciones,
+          ),
+      },
+    ],
+  },
+  { path: 'admin/devoluciones', redirectTo: 'operacion/devoluciones' },
   ...ADMIN_UNIQUE_ROUTES,
   { path: '**', redirectTo: 'no-encontrado' },
 ];

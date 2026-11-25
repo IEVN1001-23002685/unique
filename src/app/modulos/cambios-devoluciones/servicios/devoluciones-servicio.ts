@@ -122,9 +122,17 @@ export class DevolucionesServicio {
       .pipe(map((producto) => producto.variantes));
   }
 
-  crear(cuerpo: Record<string, unknown>): Observable<SolicitudCambioDevolucion> {
+  crear(cuerpo: Record<string, unknown>, archivos: File[] = []): Observable<SolicitudCambioDevolucion> {
+    if (archivos.length === 0) {
+      return this.api
+        .post<DevolucionApi>('/devoluciones', cuerpo)
+        .pipe(map((item) => this.aCaso(item)));
+    }
+    const datos = new FormData();
+    datos.append('datos', new Blob([JSON.stringify(cuerpo)], { type: 'application/json' }));
+    archivos.forEach((archivo) => datos.append('evidencias', archivo, archivo.name));
     return this.api
-      .post<DevolucionApi>('/devoluciones', cuerpo)
+      .postForm<DevolucionApi>('/devoluciones', datos)
       .pipe(map((item) => this.aCaso(item)));
   }
 
