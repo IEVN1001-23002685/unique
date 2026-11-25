@@ -1,7 +1,7 @@
 import { Component, HostListener, inject } from '@angular/core';
-import { InicioSesion } from '../../../modulos/inicio-sesion/inicio-sesion';
-import type { CredencialesLogin } from '../../../modulos/inicio-sesion/inicio-sesion';
-import { Registro } from '../../../modulos/registro/registro';
+import { InicioSesion } from '../../../modulos/acceso-registro/paginas/inicio-sesion/inicio-sesion';
+import type { CredencialesLogin } from '../../../modulos/acceso-registro/modelos/acceso-registro';
+import { Registro } from '../../../modulos/acceso-registro/paginas/registro/registro';
 import { ModalAutenticacionServicio } from '../../../nucleo/servicios/modal-autenticacion-servicio';
 
 @Component({

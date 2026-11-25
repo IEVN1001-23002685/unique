@@ -1,0 +1,133 @@
+<div class="autenticacion">
+  <button
+    type="button"
+    class="autenticacion__cerrar"
+    aria-label="Cerrar registro"
+    (click)="onCerrar()"
+  >
+    ✕
+  </button>
+
+  <div class="autenticacion__encabezado">
+    <img src="/Logo1.png" alt="UNIQUE - tan unico como tu" class="autenticacion__logo" />
+    <h2 class="autenticacion__titulo">Registro</h2>
+  </div>
+
+  <form class="autenticacion__formulario" (ngSubmit)="onSubmit()" [formGroup]="formulario">
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="nombre">Nombre:</label>
+      <input
+        id="nombre"
+        formControlName="nombre"
+        type="text"
+        autofocus
+        class="autenticacion__entrada"
+      />
+      @if (errorEn('nombre')) {
+        <p class="autenticacion__error">Escribe tu nombre.</p>
+      }
+    </div>
+
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="apellidos">Apellidos:</label>
+      <input id="apellidos" formControlName="apellidos" type="text" class="autenticacion__entrada" />
+      @if (errorEn('apellidos')) {
+        <p class="autenticacion__error">Escribe tus apellidos.</p>
+      }
+    </div>
+
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="telefono">Teléfono:</label>
+      <input
+        id="telefono"
+        formControlName="telefono"
+        type="tel"
+        inputmode="numeric"
+        maxlength="10"
+        class="autenticacion__entrada"
+      />
+      @if (errorEn('telefono')) {
+        <p class="autenticacion__error">Escribe exactamente 10 dígitos.</p>
+      }
+    </div>
+
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="correo">Correo electrónico:</label>
+      <input id="correo" formControlName="correo" type="email" class="autenticacion__entrada" />
+      @if (errorEn('correo')) {
+        <p class="autenticacion__error">Escribe un correo electrónico válido.</p>
+      }
+    </div>
+
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="contrasena">Contraseña</label>
+      <input
+        id="contrasena"
+        formControlName="contrasena"
+        type="password"
+        class="autenticacion__entrada"
+      />
+      @if (errorEn('contrasena')) {
+        <p class="autenticacion__error">
+          Mínimo 8 caracteres con mayúscula, minúscula, número y símbolo.
+        </p>
+      }
+    </div>
+
+    <div class="autenticacion__campo">
+      <label class="autenticacion__etiqueta" for="repetirContrasena">Repetir contraseña:</label>
+      <input
+        id="repetirContrasena"
+        formControlName="repetirContrasena"
+        type="password"
+        class="autenticacion__entrada"
+      />
+      @if (errorEn('repetirContrasena')) {
+        <p class="autenticacion__error">Repite tu contraseña.</p>
+      }
+      @if (contrasenasNoCoinciden) {
+        <p class="autenticacion__error">Las contraseñas no coinciden.</p>
+      }
+    </div>
+
+    <div class="autenticacion__campo autenticacion__campo--casilla">
+      <label class="autenticacion__etiqueta" for="aceptaPrivacidad">
+        <input
+          id="aceptaPrivacidad"
+          formControlName="aceptaPrivacidad"
+          type="checkbox"
+          class="autenticacion__casilla"
+        />
+        Acepto el aviso de privacidad (obligatorio)
+      </label>
+      @if (errorEn('aceptaPrivacidad')) {
+        <p class="autenticacion__error">Debes aceptar el aviso de privacidad.</p>
+      }
+    </div>
+
+    <div class="autenticacion__campo autenticacion__campo--casilla">
+      <label class="autenticacion__etiqueta" for="recibirPromociones">
+        <input
+          id="recibirPromociones"
+          formControlName="recibirPromociones"
+          type="checkbox"
+          class="autenticacion__casilla"
+        />
+        Recibir promociones (opcional)
+      </label>
+    </div>
+
+    <button type="submit" class="autenticacion__boton">Registrarse</button>
+  </form>
+
+  @if (mensaje) {
+    <p class="autenticacion__aviso" role="status">{{ mensaje }}</p>
+  }
+
+  <p class="autenticacion__pie">
+    ¿Ya estás registrado?
+    <button type="button" class="autenticacion__enlace" (click)="onIrAIniciarSesion()">
+      Iniciar Sesión
+    </button>
+  </p>
+</div>
