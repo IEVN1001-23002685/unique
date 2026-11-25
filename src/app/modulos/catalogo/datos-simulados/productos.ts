@@ -57,7 +57,7 @@ export const PRODUCTOS_SIMULADOS: ProductoCatalogo[] = [
   {
     id: 1,
     slug: 'hoodie-roja',
-    nombre: 'HOODIE ROJA',
+    nombre: 'HOODIE',
     descripcion: 'Barnesmith Sudadera con capucha, unisex.',
     descripcionDetalle:
       'Barnesmith Sudadera con capucha, unisex, mezcla de algodón/poliéster, logotipo de Heritage',
