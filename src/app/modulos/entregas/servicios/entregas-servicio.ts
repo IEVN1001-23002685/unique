@@ -99,7 +99,9 @@ export class EntregasServicio {
   readonly alertasCriticas = computed<Entrega[]>(() =>
     this.lista().filter(
       (entrega) =>
-        entrega.estado === 'FALLIDA' && this.tieneAlertaCritica(entrega) && entrega.decision === null,
+        entrega.estado === 'FALLIDA' &&
+        this.tieneAlertaCritica(entrega) &&
+        entrega.decision === null,
     ),
   );
 
@@ -239,7 +241,11 @@ export class EntregasServicio {
       };
     }
 
-    this.actualizar(folio, (actual) => ({ ...actual, estado: 'EN_RUTA', salidaEn: fechaAhoraIso() }));
+    this.actualizar(folio, (actual) => ({
+      ...actual,
+      estado: 'EN_RUTA',
+      salidaEn: fechaAhoraIso(),
+    }));
     return {
       ok: true,
       mensaje:
@@ -367,7 +373,11 @@ export class EntregasServicio {
   productosRepartidos(): ProductoRepartido[] {
     const agrupados = new Map<string, ProductoRepartido>();
     for (const entrega of this.lista()) {
-      if (entrega.salidaEn === null || entrega.estado === 'FALLIDA' || entrega.estado === 'CANCELADA') {
+      if (
+        entrega.salidaEn === null ||
+        entrega.estado === 'FALLIDA' ||
+        entrega.estado === 'CANCELADA'
+      ) {
         continue;
       }
       for (const linea of entrega.lineas) {
@@ -487,10 +497,11 @@ export class EntregasServicio {
   }
 
   private siguienteFolio(): string {
-    const numero = this.lista().reduce((maximo, entrega) => {
-      const parte = entrega.folio.split('-').at(-1) ?? '0';
-      return Math.max(maximo, Number(parte) || 0);
-    }, 0) + 1;
+    const numero =
+      this.lista().reduce((maximo, entrega) => {
+        const parte = entrega.folio.split('-').at(-1) ?? '0';
+        return Math.max(maximo, Number(parte) || 0);
+      }, 0) + 1;
     return `EN-${new Date().getFullYear()}-${String(numero).padStart(6, '0')}`;
   }
 

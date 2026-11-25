@@ -25,10 +25,34 @@ const folioIncidencia = (numero: number): string =>
   `INC-${anio}-${String(numero).padStart(4, '0')}`;
 
 export const REGLAS_EMPAQUE_SIMULADAS: ReglaEmpaque[] = [
-  { materialId: 'EMP-BOL', nombre: 'Bolsa individual', base: 'POR_PRENDA', cantidad: 1, activa: true },
-  { materialId: 'EMP-PAP', nombre: 'Papel protector', base: 'POR_PRENDA', cantidad: 1, activa: true },
-  { materialId: 'EMP-TAR', nombre: 'Tarjeta con QR', base: 'POR_PEDIDO', cantidad: 1, activa: true },
-  { materialId: 'EMP-ETE', nombre: 'Etiqueta de envío', base: 'POR_PEDIDO', cantidad: 1, activa: true },
+  {
+    materialId: 'EMP-BOL',
+    nombre: 'Bolsa individual',
+    base: 'POR_PRENDA',
+    cantidad: 1,
+    activa: true,
+  },
+  {
+    materialId: 'EMP-PAP',
+    nombre: 'Papel protector',
+    base: 'POR_PRENDA',
+    cantidad: 1,
+    activa: true,
+  },
+  {
+    materialId: 'EMP-TAR',
+    nombre: 'Tarjeta con QR',
+    base: 'POR_PEDIDO',
+    cantidad: 1,
+    activa: true,
+  },
+  {
+    materialId: 'EMP-ETE',
+    nombre: 'Etiqueta de envío',
+    base: 'POR_PEDIDO',
+    cantidad: 1,
+    activa: true,
+  },
 ];
 
 export const DIRECCIONES_SIMULADAS: Record<string, DireccionEntrega> = {

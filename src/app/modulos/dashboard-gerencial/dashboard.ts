@@ -66,7 +66,10 @@ export class Dashboard {
   }
 
   protected alCambiarProducto(evento: Event): void {
-    this.servicio.actualizarFiltro('productoId', Number((evento.target as HTMLSelectElement).value));
+    this.servicio.actualizarFiltro(
+      'productoId',
+      Number((evento.target as HTMLSelectElement).value),
+    );
   }
 
   protected alCambiarColor(evento: Event): void {

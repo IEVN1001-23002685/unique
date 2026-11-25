@@ -1,12 +1,7 @@
 <div class="modal" (keydown)="alPulsarTecla($event)">
   <div class="modal__telon" (click)="cancelar.emit()" aria-hidden="true"></div>
 
-  <section
-    class="modal__panel"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="titulo-incidencia"
-  >
+  <section class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="titulo-incidencia">
     <h2 class="modal__titulo" id="titulo-incidencia">Registrar incidencia</h2>
     <p class="modal__mensaje">
       Se anota en la hoja; el movimiento de merma o de material real se deja para Flask.

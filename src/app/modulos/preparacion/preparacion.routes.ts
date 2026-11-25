@@ -7,23 +7,18 @@ export const PREPARACION_RUTAS: Routes = [
     pathMatch: 'full',
     title: 'Cola de preparación · UNIQUE',
     loadComponent: () =>
-      import('./paginas/cola-preparacion/cola-preparacion').then(
-        (c) => c.ColaPreparacion,
-      ),
+      import('./paginas/cola-preparacion/cola-preparacion').then((c) => c.ColaPreparacion),
   },
   {
     path: 'incidencias',
     title: 'Incidencias de preparación · UNIQUE',
-    loadComponent: () =>
-      import('./paginas/incidencias/incidencias').then((c) => c.Incidencias),
+    loadComponent: () => import('./paginas/incidencias/incidencias').then((c) => c.Incidencias),
   },
   {
     path: ':folio',
     title: 'Hoja de preparación · UNIQUE',
     loadComponent: () =>
-      import('./paginas/hoja-preparacion/hoja-preparacion').then(
-        (c) => c.HojaPreparacion,
-      ),
+      import('./paginas/hoja-preparacion/hoja-preparacion').then((c) => c.HojaPreparacion),
   },
   { path: '**', redirectTo: '' },
 ];

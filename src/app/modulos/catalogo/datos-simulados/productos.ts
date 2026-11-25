@@ -12,7 +12,9 @@ import type {
  * la etiqueta de disponibilidad; nunca se muestran como número exacto.
  */
 
-type Existencias = Partial<Record<CodigoTallaCatalogo, Partial<Record<CodigoColorCatalogo, number>>>>;
+type Existencias = Partial<
+  Record<CodigoTallaCatalogo, Partial<Record<CodigoColorCatalogo, number>>>
+>;
 
 const COLORES: CodigoColorCatalogo[] = ['BL', 'NG', 'GR'];
 const DIAS_PRODUCCION = 5;

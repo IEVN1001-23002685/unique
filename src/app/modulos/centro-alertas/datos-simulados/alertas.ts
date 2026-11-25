@@ -1,8 +1,4 @@
-import type {
-  AlertaCentro,
-  RegistroTipoAlerta,
-  ReglaAlerta,
-} from '../modelos/alerta-centro';
+import type { AlertaCentro, RegistroTipoAlerta, ReglaAlerta } from '../modelos/alerta-centro';
 
 /**
  * DATOS DE DEMOSTRACIÓN DE M21. Las condiciones de M12, M09, M08 y M19 se
@@ -289,7 +285,8 @@ export const ALERTAS_DEMO: AlertaCentro[] = [
       tipo: 'MP_INSUFICIENTE',
       severidad: 'CRITICA',
       titulo: 'Felpa negra insuficiente · OP-0112',
-      detalle: 'La orden requiere 40 kg; hay 0 kg disponibles y 12 kg en compra. Sin orden de compra que cubra el faltante.',
+      detalle:
+        'La orden requiere 40 kg; hay 0 kg disponibles y 12 kg en compra. Sin orden de compra que cubra el faltante.',
       entidadTipo: 'orden_produccion',
       entidadId: 'OP-0112',
       rolDestino: 'AMBOS',
@@ -305,7 +302,8 @@ export const ALERTAS_DEMO: AlertaCentro[] = [
       tipo: 'MP_REORDEN',
       severidad: 'PREVENTIVA',
       titulo: 'Cierre 60 cm bajo el punto de reorden',
-      detalle: 'Posición 18 unidades contra punto de reorden de 25. La solicitud debe emitirse en M14.',
+      detalle:
+        'Posición 18 unidades contra punto de reorden de 25. La solicitud debe emitirse en M14.',
       entidadTipo: 'material',
       entidadId: 'MP-CIE-002',
       rolDestino: 'ADMIN',
@@ -321,7 +319,8 @@ export const ALERTAS_DEMO: AlertaCentro[] = [
       tipo: 'ORDEN_ROJA',
       severidad: 'CRITICA',
       titulo: 'Orden roja · OP-0114',
-      detalle: 'Lleva 14 h en revisión con material sin recepción. El plan de 200 piezas lleva 118 aprobadas.',
+      detalle:
+        'Lleva 14 h en revisión con material sin recepción. El plan de 200 piezas lleva 118 aprobadas.',
       entidadTipo: 'orden_produccion',
       entidadId: 'OP-0114',
       rolDestino: 'AMBOS',
@@ -337,7 +336,8 @@ export const ALERTAS_DEMO: AlertaCentro[] = [
       tipo: 'OC_RETRASADA',
       severidad: 'CRITICA',
       titulo: 'OC-0084 retrasada y bloquea OP-0112',
-      detalle: 'Compromiso vencido del proveedor Textiles León; sin recepción y con orden roja asociada.',
+      detalle:
+        'Compromiso vencido del proveedor Textiles León; sin recepción y con orden roja asociada.',
       entidadTipo: 'orden_compra',
       entidadId: 'OC-0084',
       rolDestino: 'ADMIN',
@@ -353,7 +353,8 @@ export const ALERTAS_DEMO: AlertaCentro[] = [
       tipo: 'MERMA_ALTA',
       severidad: 'PREVENTIVA',
       titulo: 'Merma de corte por encima de la meta',
-      detalle: 'Corte acumula 27 unidades en el mes contra meta de 5 %; causa principal: tela manchada.',
+      detalle:
+        'Corte acumula 27 unidades en el mes contra meta de 5 %; causa principal: tela manchada.',
       entidadTipo: 'etapa',
       entidadId: 'Corte',
       rolDestino: 'ADMIN',
@@ -369,7 +370,8 @@ export const ALERTAS_DEMO: AlertaCentro[] = [
       tipo: 'DEVOLUCION_PENDIENTE',
       severidad: 'PREVENTIVA',
       titulo: 'Devolución sin atender · VTA-1042',
-      detalle: 'Solicitud por cambio de talla abierta hace más de 48 h, sin inspección del almacén.',
+      detalle:
+        'Solicitud por cambio de talla abierta hace más de 48 h, sin inspección del almacén.',
       entidadTipo: 'devolucion',
       entidadId: 'VTA-1042',
       rolDestino: 'AMBOS',
@@ -385,7 +387,8 @@ export const ALERTAS_DEMO: AlertaCentro[] = [
       tipo: 'DISENO_PENDIENTE',
       severidad: 'INFORMATIVA',
       titulo: 'Diseño de bordado sin digitalizar · OP-0121',
-      detalle: 'La orden de gorros tiene diseño pendiente de digitalización antes de iniciar bordado.',
+      detalle:
+        'La orden de gorros tiene diseño pendiente de digitalización antes de iniciar bordado.',
       entidadTipo: 'orden_produccion',
       entidadId: 'OP-0121',
       rolDestino: 'ADMIN',

@@ -28,12 +28,60 @@ export const ACEPTACION_MATERIAL_DEMO = 96.4;
 export const ENTREGAS_PROVEEDOR_DEMO = 87.5;
 
 export const ORDENES_PRODUCCION_DEMO: OrdenProduccionDemo[] = [
-  { folio: `OP-${anio}-0112`, sku: 'SD-GD-NG', tono: 'ROJO', planeadas: 120, aprobadas: 74, alcanzaPara: 1, etapa: 'Producción' },
-  { folio: `OP-${anio}-0114`, sku: 'PL-MD-GR', tono: 'ROJO', planeadas: 200, aprobadas: 118, alcanzaPara: 2, etapa: 'Revisión' },
-  { folio: `OP-${anio}-0118`, sku: 'PN-UN-BL', tono: 'AMBAR', planeadas: 80, aprobadas: 69, alcanzaPara: 4, etapa: 'Producción' },
-  { folio: `OP-${anio}-0121`, sku: 'GO-UN-NG', tono: 'AMBAR', planeadas: 150, aprobadas: 136, alcanzaPara: 6, etapa: 'Bordado' },
-  { folio: `OP-${anio}-0123`, sku: 'BO-UN-GR', tono: 'VERDE', planeadas: 90, aprobadas: 89, alcanzaPara: 11, etapa: 'Terminada' },
-  { folio: `OP-${anio}-0127`, sku: 'SD-CH-BL', tono: 'VERDE', planeadas: 110, aprobadas: 108, alcanzaPara: 9, etapa: 'Revisión' },
+  {
+    folio: `OP-${anio}-0112`,
+    sku: 'SD-GD-NG',
+    tono: 'ROJO',
+    planeadas: 120,
+    aprobadas: 74,
+    alcanzaPara: 1,
+    etapa: 'Producción',
+  },
+  {
+    folio: `OP-${anio}-0114`,
+    sku: 'PL-MD-GR',
+    tono: 'ROJO',
+    planeadas: 200,
+    aprobadas: 118,
+    alcanzaPara: 2,
+    etapa: 'Revisión',
+  },
+  {
+    folio: `OP-${anio}-0118`,
+    sku: 'PN-UN-BL',
+    tono: 'AMBAR',
+    planeadas: 80,
+    aprobadas: 69,
+    alcanzaPara: 4,
+    etapa: 'Producción',
+  },
+  {
+    folio: `OP-${anio}-0121`,
+    sku: 'GO-UN-NG',
+    tono: 'AMBAR',
+    planeadas: 150,
+    aprobadas: 136,
+    alcanzaPara: 6,
+    etapa: 'Bordado',
+  },
+  {
+    folio: `OP-${anio}-0123`,
+    sku: 'BO-UN-GR',
+    tono: 'VERDE',
+    planeadas: 90,
+    aprobadas: 89,
+    alcanzaPara: 11,
+    etapa: 'Terminada',
+  },
+  {
+    folio: `OP-${anio}-0127`,
+    sku: 'SD-CH-BL',
+    tono: 'VERDE',
+    planeadas: 110,
+    aprobadas: 108,
+    alcanzaPara: 9,
+    etapa: 'Revisión',
+  },
 ];
 
 export const MERMAS_DEMO: MermaDemo[] = [
@@ -50,15 +98,56 @@ export const MATERIALES_DEMO: MaterialDemo[] = [
   { material: 'Hilo poliéster negro', sku: 'MP-HIL-004', disponible: 3, minimo: 20, tono: 'ROJO' },
   { material: 'Cierre 60 cm', sku: 'MP-CIE-002', disponible: 18, minimo: 25, tono: 'AMBAR' },
   { material: 'Etiqueta tejida', sku: 'MP-ETI-006', disponible: 120, minimo: 150, tono: 'AMBAR' },
-  { material: 'Tela de lona natural', sku: 'MP-LON-003', disponible: 310, minimo: 80, tono: 'AMBAR' },
+  {
+    material: 'Tela de lona natural',
+    sku: 'MP-LON-003',
+    disponible: 310,
+    minimo: 80,
+    tono: 'AMBAR',
+  },
 ];
 
 export const COMPRAS_DEMO: CompraDemo[] = [
-  { folio: `OC-${anio}-0084`, proveedor: 'Textiles León', material: 'Algodón peinado', cantidad: 120, compromiso: `${anio}-11-20`, estado: 'RETRASADA' },
-  { folio: `OC-${anio}-0087`, proveedor: 'Hilos del Bajío', material: 'Hilo poliéster negro', cantidad: 80, compromiso: `${anio}-11-24`, estado: 'RETRASADA' },
-  { folio: `OC-${anio}-0091`, proveedor: 'Cierres Mexicanos', material: 'Cierre 60 cm', cantidad: 200, compromiso: `${anio}-11-28`, estado: 'PENDIENTE' },
-  { folio: `OC-${anio}-0093`, proveedor: 'Etiquetas GDL', material: 'Etiqueta tejida', cantidad: 500, compromiso: `${anio}-12-02`, estado: 'PENDIENTE' },
-  { folio: `OC-${anio}-0079`, proveedor: 'Lonas del Centro', material: 'Tela de lona natural', cantidad: 150, compromiso: `${anio}-11-12`, estado: 'RECIBIDA' },
+  {
+    folio: `OC-${anio}-0084`,
+    proveedor: 'Textiles León',
+    material: 'Algodón peinado',
+    cantidad: 120,
+    compromiso: `${anio}-11-20`,
+    estado: 'RETRASADA',
+  },
+  {
+    folio: `OC-${anio}-0087`,
+    proveedor: 'Hilos del Bajío',
+    material: 'Hilo poliéster negro',
+    cantidad: 80,
+    compromiso: `${anio}-11-24`,
+    estado: 'RETRASADA',
+  },
+  {
+    folio: `OC-${anio}-0091`,
+    proveedor: 'Cierres Mexicanos',
+    material: 'Cierre 60 cm',
+    cantidad: 200,
+    compromiso: `${anio}-11-28`,
+    estado: 'PENDIENTE',
+  },
+  {
+    folio: `OC-${anio}-0093`,
+    proveedor: 'Etiquetas GDL',
+    material: 'Etiqueta tejida',
+    cantidad: 500,
+    compromiso: `${anio}-12-02`,
+    estado: 'PENDIENTE',
+  },
+  {
+    folio: `OC-${anio}-0079`,
+    proveedor: 'Lonas del Centro',
+    material: 'Tela de lona natural',
+    cantidad: 150,
+    compromiso: `${anio}-11-12`,
+    estado: 'RECIBIDA',
+  },
 ];
 
 export const PROVEEDORES_DEMO: ProveedorDemo[] = [

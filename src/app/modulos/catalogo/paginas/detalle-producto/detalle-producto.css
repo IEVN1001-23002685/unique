@@ -171,7 +171,9 @@
 
 .detalle__miniatura--activa {
   border-color: var(--color-morado-profundo);
-  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--color-morado-profundo);
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px var(--color-morado-profundo);
 }
 
 .detalle__selectores {
@@ -211,7 +213,9 @@
 }
 
 .detalle__color--activo {
-  box-shadow: 0 0 0 2px var(--color-rosa-tarjeta), 0 0 0 4px var(--color-morado-profundo);
+  box-shadow:
+    0 0 0 2px var(--color-rosa-tarjeta),
+    0 0 0 4px var(--color-morado-profundo);
 }
 
 .detalle__talla {

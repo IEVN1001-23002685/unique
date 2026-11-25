@@ -75,10 +75,7 @@ export class Seguimiento {
           (hasta === '' || entrega.fechaProgramada <= hasta);
         return coincideEstado && coincideRepartidor && coincideTexto && coincidePeriodo;
       })
-      .sort(
-        (a, b) =>
-          b.fechaProgramada.localeCompare(a.fechaProgramada) || b.id - a.id,
-      );
+      .sort((a, b) => b.fechaProgramada.localeCompare(a.fechaProgramada) || b.id - a.id);
   });
 
   protected readonly sinFiltros = computed(

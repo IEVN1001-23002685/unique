@@ -7,12 +7,7 @@
 export type RolUsuarioSistema = 'ADMIN' | 'OPERATIVO';
 export type EstadoCuentaUsuario = 'ACTIVA' | 'SIN_ACCESO' | 'BLOQUEADA' | 'INACTIVA';
 export type TipoCatalogo =
-  | 'COLOR'
-  | 'TALLA'
-  | 'CATEGORIA_PRODUCTO'
-  | 'CATEGORIA_MATERIAL'
-  | 'CAUSA_MERMA'
-  | 'TARIFA_ENVIO';
+  'COLOR' | 'TALLA' | 'CATEGORIA_PRODUCTO' | 'CATEGORIA_MATERIAL' | 'CAUSA_MERMA' | 'TARIFA_ENVIO';
 export type AplicaCausaMerma = 'MATERIAL' | 'PRODUCTO' | 'AMBOS';
 
 export interface UsuarioSistema {

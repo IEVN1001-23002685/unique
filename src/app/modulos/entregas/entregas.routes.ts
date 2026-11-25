@@ -6,20 +6,17 @@ export const ENTREGAS_RUTAS: Routes = [
     path: '',
     pathMatch: 'full',
     title: 'Por asignar · UNIQUE',
-    loadComponent: () =>
-      import('./paginas/por-asignar/por-asignar').then((c) => c.PorAsignar),
+    loadComponent: () => import('./paginas/por-asignar/por-asignar').then((c) => c.PorAsignar),
   },
   {
     path: 'hoja-reparto',
     title: 'Hoja de reparto · UNIQUE',
-    loadComponent: () =>
-      import('./paginas/hoja-reparto/hoja-reparto').then((c) => c.HojaReparto),
+    loadComponent: () => import('./paginas/hoja-reparto/hoja-reparto').then((c) => c.HojaReparto),
   },
   {
     path: 'seguimiento',
     title: 'Seguimiento de entregas · UNIQUE',
-    loadComponent: () =>
-      import('./paginas/seguimiento/seguimiento').then((c) => c.Seguimiento),
+    loadComponent: () => import('./paginas/seguimiento/seguimiento').then((c) => c.Seguimiento),
   },
   {
     path: 'productos-repartidos',
@@ -32,8 +29,7 @@ export const ENTREGAS_RUTAS: Routes = [
   {
     path: 'repartidores',
     title: 'Repartidores · UNIQUE',
-    loadComponent: () =>
-      import('./paginas/repartidores/repartidores').then((c) => c.Repartidores),
+    loadComponent: () => import('./paginas/repartidores/repartidores').then((c) => c.Repartidores),
   },
   { path: '**', redirectTo: '' },
 ];

@@ -9,10 +9,7 @@ import type { IProducto } from '../../../nucleo/modelos/producto';
 export type CodigoColorCatalogo = 'BL' | 'NG' | 'GR';
 export type CodigoTallaCatalogo = 'CH' | 'MD' | 'GD' | 'UN';
 export type EstadoDisponibilidadCatalogo =
-  | 'Disponible'
-  | 'Pocas unidades'
-  | 'Bajo pedido'
-  | 'Agotado';
+  'Disponible' | 'Pocas unidades' | 'Bajo pedido' | 'Agotado';
 export type OrdenCatalogo = 'relevancia' | 'precio-asc' | 'precio-desc' | 'novedad';
 
 export interface VarianteCatalogo {
@@ -47,7 +44,11 @@ export const COLORES_CATALOGO: Record<CodigoColorCatalogo, { nombre: string; hex
 
 export const TALLAS_CATALOGO: CodigoTallaCatalogo[] = ['CH', 'MD', 'GD', 'UN'];
 
-export const GUIA_MEDIDAS: ReadonlyArray<{ talla: CodigoTallaCatalogo; pecho: string; largo: string }> = [
+export const GUIA_MEDIDAS: ReadonlyArray<{
+  talla: CodigoTallaCatalogo;
+  pecho: string;
+  largo: string;
+}> = [
   { talla: 'CH', pecho: '86 cm', largo: '64 cm' },
   { talla: 'MD', pecho: '96 cm', largo: '67 cm' },
   { talla: 'GD', pecho: '106 cm', largo: '70 cm' },

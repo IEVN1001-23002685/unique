@@ -1,40 +1,272 @@
 /* Estilos compartidos de las tres pantallas de M21. */
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.vista{font-family:var(--font-texto);color:var(--color-unique-texto)}
-.cabecera{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1.25rem}
-.eyebrow{margin:0 0 .35rem;color:var(--color-unique-ciruela);font-family:var(--font-interfaz);font-size:.75rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
-.titulo{margin:0;color:var(--color-unique-morado);font-family:var(--font-titulo);font-size:clamp(1.5rem,3vw,2rem)}
-.subtitulo{max-width:55rem;margin:.4rem 0 0;color:var(--color-unique-texto-suave);font-size:.9rem;line-height:1.5}
-.cabecera__acciones{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.75rem}
-.campo{display:flex;flex-direction:column;gap:.35rem;font-family:var(--font-interfaz);font-size:.76rem;font-weight:600;color:var(--color-unique-morado)}
-.campo__entrada{width:100%;min-height:2.6rem;padding:.5rem .75rem;border:1px solid #d9bfdb;border-radius:12px;background-color:#fff;color:var(--color-unique-texto);font-family:var(--font-texto);font-size:.82rem}
-.pestanas{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem}
-.pestana{padding:.55rem 1.05rem;border-radius:999px;background-color:var(--color-unique-rosa-lavanda);color:var(--color-unique-ciruela);font-family:var(--font-interfaz);font-size:.82rem;font-weight:600;text-decoration:none}
-.pestana:hover{background-color:var(--color-unique-orquidea);color:#fff}
-.pestana--activa,.pestana--activa:hover{background-color:var(--color-unique-morado);color:#fff}
-.tarjeta{padding:1.1rem;border:1px solid #e7d7e8;border-radius:20px;background-color:#fff;box-shadow:0 6px 18px rgba(84,45,89,.06)}
-.metricas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin-bottom:1.25rem}
-.metrica{padding:1rem;border:1px solid #e7d7e8;border-radius:20px;background-color:#fff;box-shadow:0 6px 18px rgba(84,45,89,.06)}
-.metrica__etiqueta{display:block;color:var(--color-unique-texto-suave);font-family:var(--font-interfaz);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
-.metrica__valor{display:block;margin-top:.25rem;color:var(--color-unique-morado);font-family:var(--font-titulo);font-size:1.55rem;font-weight:700}
-.metrica--critica{border-left:5px solid var(--color-unique-error)}
-.metrica--preventiva{border-left:5px solid var(--color-unique-adv)}
-.metrica--informativa{border-left:5px solid var(--color-unique-info)}
-.bloque{padding:1.1rem;margin-bottom:1.25rem}
-.bloque__titulo{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:.5rem;margin-bottom:.9rem}
-.bloque__titulo h2{margin:0;color:var(--color-unique-morado);font-family:var(--font-titulo);font-size:1.08rem}
-.bloque__titulo span{color:var(--color-unique-texto-suave);font-size:.75rem}
-.nota{margin:0;padding:.8rem 1rem;border-radius:12px;background-color:var(--color-unique-info-suave);color:#2b5496;font-size:.78rem;line-height:1.5}
-.nota--adv{background-color:var(--color-unique-adv-suave);color:#745008}
-.vacio{margin:0;padding:1.2rem 1rem;border:1px dashed var(--color-unique-orquidea);border-radius:14px;background-color:var(--color-unique-fila);color:var(--color-unique-texto-suave);font-size:.85rem;text-align:center}
-.tabla-contenedor{overflow-x:auto}
-.tabla{width:100%;min-width:48rem;border-collapse:collapse;font-size:.82rem}
-.tabla th{padding:.65rem .7rem;background-color:var(--color-unique-ciruela);color:#fff;font-family:var(--font-interfaz);font-size:.73rem;text-align:left;white-space:nowrap}
-.tabla td{padding:.6rem .7rem;border-bottom:1px solid #eadcea;vertical-align:top}
-.tabla tbody tr:nth-child(even){background-color:var(--color-unique-fila)}
-.mono{font-family:ui-monospace,'SFMono-Regular',Consolas,monospace;font-size:.78rem;color:var(--color-unique-ciruela)}
-.celda-principal,.celda-secundaria{display:block}
-.celda-principal{font-weight:600}
-.celda-secundaria{color:var(--color-unique-texto-suave);font-size:.72rem}
-@media (min-width:768px){.metricas{grid-template-columns:repeat(4,minmax(0,1fr))}.bloque{padding:1.35rem}}
-@media (max-width:719px){.tabla,.tabla tbody,.tabla tr,.tabla td{display:block;width:100%;min-width:0}.tabla thead{display:none}.tabla tr{margin-bottom:.8rem;padding:.7rem;border:1px solid #e7d7e8;border-radius:14px;background-color:#fff}.tabla td{display:flex;gap:.6rem;padding:.3rem 0;border-bottom:0}.tabla td::before{content:attr(data-etiqueta);flex:0 0 7rem;color:var(--color-unique-texto-suave);font-family:var(--font-interfaz);font-size:.7rem;font-weight:600}}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.vista {
+  font-family: var(--font-texto);
+  color: var(--color-unique-texto);
+}
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.titulo {
+  margin: 0;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+.subtitulo {
+  max-width: 55rem;
+  margin: 0.4rem 0 0;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.cabecera__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: var(--font-interfaz);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-unique-morado);
+}
+.campo__entrada {
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d9bfdb;
+  border-radius: 12px;
+  background-color: #fff;
+  color: var(--color-unique-texto);
+  font-family: var(--font-texto);
+  font-size: 0.82rem;
+}
+.pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.pestana {
+  padding: 0.55rem 1.05rem;
+  border-radius: 999px;
+  background-color: var(--color-unique-rosa-lavanda);
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.pestana:hover {
+  background-color: var(--color-unique-orquidea);
+  color: #fff;
+}
+.pestana--activa,
+.pestana--activa:hover {
+  background-color: var(--color-unique-morado);
+  color: #fff;
+}
+.tarjeta {
+  padding: 1.1rem;
+  border: 1px solid #e7d7e8;
+  border-radius: 20px;
+  background-color: #fff;
+  box-shadow: 0 6px 18px rgba(84, 45, 89, 0.06);
+}
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.metrica {
+  padding: 1rem;
+  border: 1px solid #e7d7e8;
+  border-radius: 20px;
+  background-color: #fff;
+  box-shadow: 0 6px 18px rgba(84, 45, 89, 0.06);
+}
+.metrica__etiqueta {
+  display: block;
+  color: var(--color-unique-texto-suave);
+  font-family: var(--font-interfaz);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.metrica__valor {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: 1.55rem;
+  font-weight: 700;
+}
+.metrica--critica {
+  border-left: 5px solid var(--color-unique-error);
+}
+.metrica--preventiva {
+  border-left: 5px solid var(--color-unique-adv);
+}
+.metrica--informativa {
+  border-left: 5px solid var(--color-unique-info);
+}
+.bloque {
+  padding: 1.1rem;
+  margin-bottom: 1.25rem;
+}
+.bloque__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+.bloque__titulo h2 {
+  margin: 0;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: 1.08rem;
+}
+.bloque__titulo span {
+  color: var(--color-unique-texto-suave);
+  font-size: 0.75rem;
+}
+.nota {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-info-suave);
+  color: #2b5496;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.nota--adv {
+  background-color: var(--color-unique-adv-suave);
+  color: #745008;
+}
+.vacio {
+  margin: 0;
+  padding: 1.2rem 1rem;
+  border: 1px dashed var(--color-unique-orquidea);
+  border-radius: 14px;
+  background-color: var(--color-unique-fila);
+  color: var(--color-unique-texto-suave);
+  font-size: 0.85rem;
+  text-align: center;
+}
+.tabla-contenedor {
+  overflow-x: auto;
+}
+.tabla {
+  width: 100%;
+  min-width: 48rem;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.tabla th {
+  padding: 0.65rem 0.7rem;
+  background-color: var(--color-unique-ciruela);
+  color: #fff;
+  font-family: var(--font-interfaz);
+  font-size: 0.73rem;
+  text-align: left;
+  white-space: nowrap;
+}
+.tabla td {
+  padding: 0.6rem 0.7rem;
+  border-bottom: 1px solid #eadcea;
+  vertical-align: top;
+}
+.tabla tbody tr:nth-child(even) {
+  background-color: var(--color-unique-fila);
+}
+.mono {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--color-unique-ciruela);
+}
+.celda-principal,
+.celda-secundaria {
+  display: block;
+}
+.celda-principal {
+  font-weight: 600;
+}
+.celda-secundaria {
+  color: var(--color-unique-texto-suave);
+  font-size: 0.72rem;
+}
+@media (min-width: 768px) {
+  .metricas {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .bloque {
+    padding: 1.35rem;
+  }
+}
+@media (max-width: 719px) {
+  .tabla,
+  .tabla tbody,
+  .tabla tr,
+  .tabla td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .tabla thead {
+    display: none;
+  }
+  .tabla tr {
+    margin-bottom: 0.8rem;
+    padding: 0.7rem;
+    border: 1px solid #e7d7e8;
+    border-radius: 14px;
+    background-color: #fff;
+  }
+  .tabla td {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.3rem 0;
+    border-bottom: 0;
+  }
+  .tabla td::before {
+    content: attr(data-etiqueta);
+    flex: 0 0 7rem;
+    color: var(--color-unique-texto-suave);
+    font-family: var(--font-interfaz);
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+}

@@ -1,7 +1,28 @@
-.pagina{display:block}
-.formulario{display:grid;gap:.75rem}
-.error-servicio,.temporal{margin-top:.85rem}
-.acciones--form{margin-top:1rem}
-.nota-final{margin-top:1.25rem}
-@media (min-width:768px){.formulario{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:719px){.acciones .boton{width:100%;text-align:left}}
+.pagina {
+  display: block;
+}
+.formulario {
+  display: grid;
+  gap: 0.75rem;
+}
+.error-servicio,
+.temporal {
+  margin-top: 0.85rem;
+}
+.acciones--form {
+  margin-top: 1rem;
+}
+.nota-final {
+  margin-top: 1.25rem;
+}
+@media (min-width: 768px) {
+  .formulario {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 719px) {
+  .acciones .boton {
+    width: 100%;
+    text-align: left;
+  }
+}

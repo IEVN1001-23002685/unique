@@ -93,7 +93,9 @@ export class Usuarios {
   protected guardar(): void {
     this.formulario.markAllAsTouched();
     if (this.formulario.invalid) {
-      this.errorFormulario.set('Revisa los campos marcados. La contraseña debe tener 8 caracteres, mayúscula, minúscula, número y símbolo.');
+      this.errorFormulario.set(
+        'Revisa los campos marcados. La contraseña debe tener 8 caracteres, mayúscula, minúscula, número y símbolo.',
+      );
       return;
     }
     const valor = this.formulario.getRawValue();
@@ -145,7 +147,9 @@ export class Usuarios {
     return iso === null ? 'Sin acceso' : fechaLegible(iso);
   }
 
-  protected errorEn(control: 'nombre' | 'apellidos' | 'correo' | 'telefono' | 'contrasena'): boolean {
+  protected errorEn(
+    control: 'nombre' | 'apellidos' | 'correo' | 'telefono' | 'contrasena',
+  ): boolean {
     const campo = this.formulario.controls[control];
     return campo.invalid && (campo.touched || campo.dirty);
   }

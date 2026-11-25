@@ -45,7 +45,9 @@ export class PorAsignar {
       }
       const cpA = this.servicio.direccionDe(a).cp;
       const cpB = this.servicio.direccionDe(b).cp;
-      return cpA.localeCompare(cpB) || (a.fechaPromesa ?? '9999').localeCompare(b.fechaPromesa ?? '9999');
+      return (
+        cpA.localeCompare(cpB) || (a.fechaPromesa ?? '9999').localeCompare(b.fechaPromesa ?? '9999')
+      );
     });
   });
 

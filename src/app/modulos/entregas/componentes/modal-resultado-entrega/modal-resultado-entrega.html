@@ -1,7 +1,12 @@
 <div class="modal" (keydown)="alPulsarTecla($event)">
   <div class="modal__telon" (click)="cancelar.emit()" aria-hidden="true"></div>
 
-  <section class="modal__panel" role="dialog" aria-modal="true" [attr.aria-label]="modo() === 'ENTREGADO' ? 'Registrar entrega' : 'Registrar intento fallido'">
+  <section
+    class="modal__panel"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="modo() === 'ENTREGADO' ? 'Registrar entrega' : 'Registrar intento fallido'"
+  >
     <h2 class="modal__titulo">
       {{ modo() === 'ENTREGADO' ? 'Registrar entrega' : 'Registrar intento fallido' }}
     </h2>
@@ -38,7 +43,9 @@
           ></textarea>
         </label>
         <div class="modal__acciones">
-          <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">Cancelar</button>
+          <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">
+            Cancelar
+          </button>
           <button type="submit" class="boton boton--primario">Confirmar entrega</button>
         </div>
       </form>
@@ -67,7 +74,9 @@
           (M09). Con dos intentos fallidos se abre una alerta crítica.
         </p>
         <div class="modal__acciones">
-          <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">Cancelar</button>
+          <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">
+            Cancelar
+          </button>
           <button type="submit" class="boton boton--peligro">Registrar fallo</button>
         </div>
       </form>

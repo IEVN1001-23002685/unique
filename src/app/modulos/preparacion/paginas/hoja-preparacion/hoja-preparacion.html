@@ -10,7 +10,9 @@
         <h1 class="titulo mono">{{ hoja.folio }}</h1>
         <p class="subtitulo">
           Pedido
-          <a class="accion" [routerLink]="['/admin/pedidos', hoja.pedidoFolio]">{{ hoja.pedidoFolio }}</a>
+          <a class="accion" [routerLink]="['/admin/pedidos', hoja.pedidoFolio]">{{
+            hoja.pedidoFolio
+          }}</a>
           · {{ hoja.cliente }} · Tomada por {{ hoja.tomadaPor }}
           @if (hoja.terminadaEn) {
             · Terminada el {{ hoja.terminadaEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
@@ -53,7 +55,12 @@
 
       <div class="tabla-contenedor">
         <table class="tabla tabla-lineas">
-          <caption class="sr-only">Líneas de la hoja {{ hoja.folio }}</caption>
+          <caption class="sr-only">
+            Líneas de la hoja
+            {{
+              hoja.folio
+            }}
+          </caption>
           <thead>
             <tr>
               <th scope="col">SKU</th>
@@ -71,7 +78,9 @@
           <tbody>
             @for (linea of hoja.lineas; track linea.id) {
               <tr>
-                <td data-etiqueta="SKU"><span class="mono">{{ linea.sku }}</span></td>
+                <td data-etiqueta="SKU">
+                  <span class="mono">{{ linea.sku }}</span>
+                </td>
                 <td data-etiqueta="Prenda">
                   <span class="celda-principal">{{ linea.nombreProducto }}</span>
                 </td>
@@ -111,7 +120,11 @@
                   />
                 </td>
                 <td data-etiqueta="Incidencia">
-                  <button type="button" class="boton boton--enlace" (click)="abrirIncidencia(linea.sku)">
+                  <button
+                    type="button"
+                    class="boton boton--enlace"
+                    (click)="abrirIncidencia(linea.sku)"
+                  >
                     Registrar
                   </button>
                 </td>
@@ -182,7 +195,9 @@
       </div>
       <div class="tabla-contenedor">
         <table class="tabla tabla-empaque">
-          <caption class="sr-only">Materiales de empaque por preparación</caption>
+          <caption class="sr-only">
+            Materiales de empaque por preparación
+          </caption>
           <thead>
             <tr>
               <th scope="col">Material</th>
@@ -195,7 +210,9 @@
           <tbody>
             @for (consumo of consumos(); track consumo.materialId) {
               <tr>
-                <td data-etiqueta="Material"><span class="mono">{{ consumo.materialId }}</span></td>
+                <td data-etiqueta="Material">
+                  <span class="mono">{{ consumo.materialId }}</span>
+                </td>
                 <td data-etiqueta="Concepto">{{ consumo.nombre }}</td>
                 <td data-etiqueta="Base">
                   {{ consumo.base === 'POR_PRENDA' ? 'Por prenda' : 'Por pedido' }}
@@ -208,8 +225,8 @@
         </table>
       </div>
       <p class="nota">
-        Bolsa individual y papel protector por prenda; tarjeta con QR y etiqueta de envío por pedido.
-        Las existencias de Empaque se consumen en Flask contra M15 al marcar el empaque.
+        Bolsa individual y papel protector por prenda; tarjeta con QR y etiqueta de envío por
+        pedido. Las existencias de Empaque se consumen en Flask contra M15 al marcar el empaque.
       </p>
     </div>
 
@@ -221,17 +238,46 @@
       <div class="etiqueta">
         <p class="etiqueta__marca">UNIQUE <small>tan único como tú</small></p>
         <dl>
-          <div><dt>Folio</dt><dd class="mono">{{ hoja.folio }}</dd></div>
-          <div><dt>Pedido</dt><dd class="mono">{{ hoja.pedidoFolio }}</dd></div>
-          <div><dt>Destinatario</dt><dd>{{ hoja.direccion.destinatario }}</dd></div>
-          <div><dt>Dirección</dt><dd>{{ hoja.direccion.calle }}, {{ hoja.direccion.colonia }}</dd></div>
-          <div><dt>CP y ciudad</dt><dd>{{ hoja.direccion.cp }} · {{ hoja.direccion.ciudad }}, {{ hoja.direccion.estado }}</dd></div>
-          <div><dt>Teléfono</dt><dd>{{ hoja.direccion.telefono }}</dd></div>
+          <div>
+            <dt>Folio</dt>
+            <dd class="mono">{{ hoja.folio }}</dd>
+          </div>
+          <div>
+            <dt>Pedido</dt>
+            <dd class="mono">{{ hoja.pedidoFolio }}</dd>
+          </div>
+          <div>
+            <dt>Destinatario</dt>
+            <dd>{{ hoja.direccion.destinatario }}</dd>
+          </div>
+          <div>
+            <dt>Dirección</dt>
+            <dd>{{ hoja.direccion.calle }}, {{ hoja.direccion.colonia }}</dd>
+          </div>
+          <div>
+            <dt>CP y ciudad</dt>
+            <dd>
+              {{ hoja.direccion.cp }} · {{ hoja.direccion.ciudad }}, {{ hoja.direccion.estado }}
+            </dd>
+          </div>
+          <div>
+            <dt>Teléfono</dt>
+            <dd>{{ hoja.direccion.telefono }}</dd>
+          </div>
         </dl>
         <div class="etiqueta__qr">
-          <svg width="64" height="64" viewBox="0 0 9 9" aria-hidden="true" shape-rendering="crispEdges">
+          <svg
+            width="64"
+            height="64"
+            viewBox="0 0 9 9"
+            aria-hidden="true"
+            shape-rendering="crispEdges"
+          >
             <rect width="9" height="9" fill="#fff" />
-            <path fill="#542d59" d="M0 0h3v3H0zM6 0h3v3H6zM0 6h3v3H0zM4 1h1v1H4zM5 3h2v1H5zM3 4h2v1H3zM6 5h1v1H6zM2 6h1v2H2zM5 7h2v1H5zM8 4h1v4H8z" />
+            <path
+              fill="#542d59"
+              d="M0 0h3v3H0zM6 0h3v3H6zM0 6h3v3H0zM4 1h1v1H4zM5 3h2v1H5zM3 4h2v1H3zM6 5h1v1H6zM2 6h1v2H2zM5 7h2v1H5zM8 4h1v4H8z"
+            />
           </svg>
           <span>Código QR de demostración</span>
         </div>
@@ -250,7 +296,9 @@
           @for (incidencia of incidencias(); track incidencia.id) {
             <li>
               <span class="mono">{{ incidencia.folio }}</span>
-              <span class="celda-principal">{{ incidencia.sku }} · {{ incidencia.descripcion }}</span>
+              <span class="celda-principal"
+                >{{ incidencia.sku }} · {{ incidencia.descripcion }}</span
+              >
               <span
                 class="chip"
                 [class.chip--exito]="incidencia.estado === 'RESUELTA'"
@@ -258,7 +306,13 @@
                 [class.chip--error]="incidencia.estado === 'PENDIENTE_PRODUCCION'"
               >
                 <span class="chip__punto" aria-hidden="true"></span>
-                {{ incidencia.estado === 'PENDIENTE_PRODUCCION' ? 'Vuelve a producción' : incidencia.estado === 'ABIERTA' ? 'Abierta' : 'Resuelta' }}
+                {{
+                  incidencia.estado === 'PENDIENTE_PRODUCCION'
+                    ? 'Vuelve a producción'
+                    : incidencia.estado === 'ABIERTA'
+                      ? 'Abierta'
+                      : 'Resuelta'
+                }}
               </span>
             </li>
           }

@@ -16,19 +16,14 @@
           <option value="Operativo">Operativo</option>
         </select>
       </label>
-      <button type="button" class="boton boton--primario" (click)="exportar()">
-        Exportar CSV
-      </button>
+      <button type="button" class="boton boton--primario" (click)="exportar()">Exportar CSV</button>
     </div>
   </div>
 
   @if (servicio.alertasCriticas().length > 0) {
     <div class="alertas" aria-label="Alertas críticas abiertas">
       @for (alerta of servicio.alertasCriticas(); track alerta.id) {
-        <article
-          class="alerta"
-          [class.alerta--preventiva]="alerta.severidad === 'PREVENTIVA'"
-        >
+        <article class="alerta" [class.alerta--preventiva]="alerta.severidad === 'PREVENTIVA'">
           <span class="alerta__clave">{{ alerta.clave }}</span>
           <div class="alerta__cuerpo">
             <strong class="alerta__titulo">{{ alerta.titulo }}</strong>
@@ -50,7 +45,11 @@
     <div class="filtros__grid">
       <label class="campo">
         Periodo
-        <select class="campo__entrada" [value]="servicio.filtros().periodo" (change)="alCambiarPeriodo($event)">
+        <select
+          class="campo__entrada"
+          [value]="servicio.filtros().periodo"
+          (change)="alCambiarPeriodo($event)"
+        >
           @for (opcion of servicio.periodos; track opcion.valor) {
             <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
           }
@@ -58,7 +57,11 @@
       </label>
       <label class="campo">
         Categoría
-        <select class="campo__entrada" [value]="servicio.filtros().categoriaId" (change)="alCambiarCategoria($event)">
+        <select
+          class="campo__entrada"
+          [value]="servicio.filtros().categoriaId"
+          (change)="alCambiarCategoria($event)"
+        >
           <option value="0">Todas las categorías</option>
           @for (categoria of servicio.categorias; track categoria.id) {
             <option [value]="categoria.id">{{ categoria.nombre }}</option>
@@ -67,7 +70,11 @@
       </label>
       <label class="campo">
         Producto
-        <select class="campo__entrada" [value]="servicio.filtros().productoId" (change)="alCambiarProducto($event)">
+        <select
+          class="campo__entrada"
+          [value]="servicio.filtros().productoId"
+          (change)="alCambiarProducto($event)"
+        >
           <option value="0">Todos los productos</option>
           @for (producto of servicio.productosCatalogo(); track producto.id) {
             <option [value]="producto.id">{{ producto.nombre }}</option>
@@ -76,7 +83,11 @@
       </label>
       <label class="campo">
         Color observado
-        <select class="campo__entrada" [value]="servicio.filtros().color" (change)="alCambiarColor($event)">
+        <select
+          class="campo__entrada"
+          [value]="servicio.filtros().color"
+          (change)="alCambiarColor($event)"
+        >
           <option value="">Todos los colores</option>
           @for (color of servicio.coloresVendidos(); track color) {
             <option [value]="color">{{ color }}</option>
@@ -85,7 +96,11 @@
       </label>
       <label class="campo">
         Talla observada
-        <select class="campo__entrada" [value]="servicio.filtros().talla" (change)="alCambiarTalla($event)">
+        <select
+          class="campo__entrada"
+          [value]="servicio.filtros().talla"
+          (change)="alCambiarTalla($event)"
+        >
           <option value="">Todas las tallas</option>
           @for (talla of servicio.tallasVendidas(); track talla) {
             <option [value]="talla">{{ talla }}</option>
@@ -94,7 +109,11 @@
       </label>
       <label class="campo">
         Canal
-        <select class="campo__entrada" [value]="servicio.filtros().canal" (change)="alCambiarCanal($event)">
+        <select
+          class="campo__entrada"
+          [value]="servicio.filtros().canal"
+          (change)="alCambiarCanal($event)"
+        >
           @for (canal of servicio.canales; track canal.valor) {
             <option [value]="canal.valor">{{ canal.etiqueta }}</option>
           }
@@ -114,11 +133,7 @@
   <nav class="pestanas" aria-label="Pestañas del dashboard">
     @for (pestana of pestanas; track pestana.seccion) {
       @if (servicio.esAdmin() || !pestana.soloAdmin) {
-        <a
-          class="pestana"
-          [routerLink]="pestana.ruta"
-          routerLinkActive="pestana--activa"
-        >
+        <a class="pestana" [routerLink]="pestana.ruta" routerLinkActive="pestana--activa">
           {{ pestana.etiqueta }}
         </a>
       }

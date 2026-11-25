@@ -72,9 +72,10 @@ export class AdministracionSistemaServicio {
   );
 
   readonly clientes = computed<ClienteSistema[]>(() => {
-    const saldo = this.parametrosLista().find(
-      (parametro) => parametro.clave === 'saldo_inicial_cuenta_simulada',
-    )?.valor ?? 5000;
+    const saldo =
+      this.parametrosLista().find(
+        (parametro) => parametro.clave === 'saldo_inicial_cuenta_simulada',
+      )?.valor ?? 5000;
     const ventas = this.ventas.ventas();
 
     return CLIENTES_SIMULADOS.map((cliente) => {
@@ -184,7 +185,10 @@ export class AdministracionSistemaServicio {
         ? `${original.nombre} ${original.apellidos}: rol ${original.rol} → ${datos.rol}.`
         : `Datos de ${original.nombre} ${original.apellidos} actualizados.`,
     );
-    return { ok: true, mensaje: 'Cuenta actualizada en memoria y registrada en la bitácora local.' };
+    return {
+      ok: true,
+      mensaje: 'Cuenta actualizada en memoria y registrada en la bitácora local.',
+    };
   }
 
   cambiarEstadoUsuario(id: number, activar: boolean): ResultadoAdmin {
@@ -255,8 +259,13 @@ export class AdministracionSistemaServicio {
       return { ok: false, mensaje: 'El código o el nombre ya existe en este catálogo.' };
     }
 
-    const original = id === undefined ? undefined : this.catalogosLista().find((item) => item.id === id);
-    if (original && this.codigoUsadoEnSku(original.tipo, original.codigo) && original.codigo !== codigo) {
+    const original =
+      id === undefined ? undefined : this.catalogosLista().find((item) => item.id === id);
+    if (
+      original &&
+      this.codigoUsadoEnSku(original.tipo, original.codigo) &&
+      original.codigo !== codigo
+    ) {
       return {
         ok: false,
         mensaje: 'Ese código ya generó SKU: no se puede cambiar, solo desactivar.',
@@ -347,7 +356,10 @@ export class AdministracionSistemaServicio {
       clave,
       `${parametro.etiqueta}: ${parametro.valor} → ${valor} ${parametro.unidad}.`,
     );
-    return { ok: true, mensaje: `${parametro.etiqueta} actualizado en memoria; Flask aplicará PATCH.` };
+    return {
+      ok: true,
+      mensaje: `${parametro.etiqueta} actualizado en memoria; Flask aplicará PATCH.`,
+    };
   }
 
   restablecerParametros(): void {
@@ -388,7 +400,10 @@ export class AdministracionSistemaServicio {
     if (datos.tipo === 'TALLA' && (datos.orden === null || datos.orden < 1)) {
       return { ok: false, mensaje: 'El orden de la talla debe ser un entero mayor a cero.' };
     }
-    if (datos.tipo === 'CATEGORIA_PRODUCTO' && !/^[A-Z]{2}$/.test(datos.prefijo.trim().toUpperCase())) {
+    if (
+      datos.tipo === 'CATEGORIA_PRODUCTO' &&
+      !/^[A-Z]{2}$/.test(datos.prefijo.trim().toUpperCase())
+    ) {
       return { ok: false, mensaje: 'El prefijo del SKU debe tener exactamente dos letras.' };
     }
     if (datos.tipo === 'CAUSA_MERMA' && datos.aplicaA === '') {

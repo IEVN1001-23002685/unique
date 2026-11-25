@@ -28,15 +28,21 @@
           formControlName="codigo"
           [attr.readonly]="codigoBloqueado() ? '' : null"
         />
-        @if (errorEn('codigo')) { <span class="campo__error">El código es obligatorio.</span> }
+        @if (errorEn('codigo')) {
+          <span class="campo__error">El código es obligatorio.</span>
+        }
         @if (codigoBloqueado()) {
-          <span class="campo__error">Código usado en SKU: no se puede cambiar, solo desactivar.</span>
+          <span class="campo__error"
+            >Código usado en SKU: no se puede cambiar, solo desactivar.</span
+          >
         }
       </label>
       <label class="campo">
         Nombre
         <input class="campo__entrada" formControlName="nombre" />
-        @if (errorEn('nombre')) { <span class="campo__error">El nombre es obligatorio.</span> }
+        @if (errorEn('nombre')) {
+          <span class="campo__error">El nombre es obligatorio.</span>
+        }
       </label>
       <label class="campo campo--amplio">
         Descripción
@@ -48,21 +54,27 @@
           <label class="campo">
             Color hexadecimal
             <input class="campo__entrada" type="text" formControlName="hex" />
-            @if (errorEn('hex')) { <span class="campo__error">Usa el formato #RRGGBB.</span> }
+            @if (errorEn('hex')) {
+              <span class="campo__error">Usa el formato #RRGGBB.</span>
+            }
           </label>
         }
         @case ('TALLA') {
           <label class="campo">
             Orden de despliegue
             <input class="campo__entrada" type="number" min="1" formControlName="orden" />
-            @if (errorEn('orden')) { <span class="campo__error">Debe ser un entero mayor a cero.</span> }
+            @if (errorEn('orden')) {
+              <span class="campo__error">Debe ser un entero mayor a cero.</span>
+            }
           </label>
         }
         @case ('CATEGORIA_PRODUCTO') {
           <label class="campo">
             Prefijo del SKU (2 letras)
             <input class="campo__entrada" formControlName="prefijo" />
-            @if (errorEn('prefijo')) { <span class="campo__error">Debe tener exactamente dos letras.</span> }
+            @if (errorEn('prefijo')) {
+              <span class="campo__error">Debe tener exactamente dos letras.</span>
+            }
           </label>
           <label class="campo campo--check">
             <input type="checkbox" formControlName="usaTallas" />
@@ -81,29 +93,57 @@
           </label>
           <label class="campo">
             Etapa sugerida
-            <input class="campo__entrada" formControlName="etapaSugerida" placeholder="Ej. Recepción" />
+            <input
+              class="campo__entrada"
+              formControlName="etapaSugerida"
+              placeholder="Ej. Recepción"
+            />
           </label>
         }
         @case ('TARIFA_ENVIO') {
           <label class="campo">
             CP inicial
-            <input class="campo__entrada" inputmode="numeric" formControlName="cpInicio" placeholder="37000" />
-            @if (errorEn('cpInicio')) { <span class="campo__error">Cinco dígitos.</span> }
+            <input
+              class="campo__entrada"
+              inputmode="numeric"
+              formControlName="cpInicio"
+              placeholder="37000"
+            />
+            @if (errorEn('cpInicio')) {
+              <span class="campo__error">Cinco dígitos.</span>
+            }
           </label>
           <label class="campo">
             CP final
-            <input class="campo__entrada" inputmode="numeric" formControlName="cpFin" placeholder="37999" />
-            @if (errorEn('cpFin')) { <span class="campo__error">Cinco dígitos.</span> }
+            <input
+              class="campo__entrada"
+              inputmode="numeric"
+              formControlName="cpFin"
+              placeholder="37999"
+            />
+            @if (errorEn('cpFin')) {
+              <span class="campo__error">Cinco dígitos.</span>
+            }
           </label>
           <label class="campo">
             Costo de envío (MXN)
-            <input class="campo__entrada" type="number" min="0" step="0.01" formControlName="costo" />
-            @if (errorEn('costo')) { <span class="campo__error">No puede ser negativo.</span> }
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="costo"
+            />
+            @if (errorEn('costo')) {
+              <span class="campo__error">No puede ser negativo.</span>
+            }
           </label>
           <label class="campo">
             Días estimados
             <input class="campo__entrada" type="number" min="1" formControlName="diasEstimados" />
-            @if (errorEn('diasEstimados')) { <span class="campo__error">Debe ser al menos 1.</span> }
+            @if (errorEn('diasEstimados')) {
+              <span class="campo__error">Debe ser al menos 1.</span>
+            }
           </label>
         }
       }
@@ -114,7 +154,9 @@
       </label>
     </div>
 
-    @if (errorFormulario(); as error) { <p class="nota nota--adv error-servicio">{{ error }}</p> }
+    @if (errorFormulario(); as error) {
+      <p class="nota nota--adv error-servicio">{{ error }}</p>
+    }
     <div class="acciones acciones--form">
       <button type="submit" class="boton boton--primario">
         {{ editando() === null ? 'Agregar entrada' : 'Guardar cambios' }}
@@ -139,7 +181,9 @@
       <tbody>
         @for (entrada of entradas(); track entrada.id) {
           <tr>
-            <td data-etiqueta="Código"><span class="mono">{{ entrada.codigo }}</span></td>
+            <td data-etiqueta="Código">
+              <span class="mono">{{ entrada.codigo }}</span>
+            </td>
             <td data-etiqueta="Nombre">
               <span class="celda-principal">{{ entrada.nombre }}</span>
               <span class="celda-secundaria">{{ entrada.descripcion }}</span>
@@ -150,31 +194,46 @@
                   <span class="muestra-color" [style.background-color]="entrada.hex"></span>
                   <span class="mono">{{ entrada.hex }}</span>
                 }
-                @case ('TALLA') { Orden {{ entrada.orden }} }
-                @case ('CATEGORIA_PRODUCTO') {
-                  Prefijo {{ entrada.prefijo }} · {{ entrada.usaTallas ? 'con tallas' : 'talla única' }}
+                @case ('TALLA') {
+                  Orden {{ entrada.orden }}
                 }
-                @case ('CATEGORIA_MATERIAL') { Categoría de insumo }
+                @case ('CATEGORIA_PRODUCTO') {
+                  Prefijo {{ entrada.prefijo }} ·
+                  {{ entrada.usaTallas ? 'con tallas' : 'talla única' }}
+                }
+                @case ('CATEGORIA_MATERIAL') {
+                  Categoría de insumo
+                }
                 @case ('CAUSA_MERMA') {
                   {{ etiquetasAplica[entrada.aplicaA ?? 'AMBOS'] }} · {{ entrada.etapaSugerida }}
                 }
                 @case ('TARIFA_ENVIO') {
-                  CP {{ entrada.cpInicio }}–{{ entrada.cpFin }} · {{ formatoMXN(entrada.costo ?? 0) }} ·
-                  {{ entrada.diasEstimados }} d
+                  CP {{ entrada.cpInicio }}–{{ entrada.cpFin }} ·
+                  {{ formatoMXN(entrada.costo ?? 0) }} · {{ entrada.diasEstimados }} d
                 }
               }
             </td>
             <td data-etiqueta="Estado">
-              <span class="chip" [class.chip--activa]="entrada.activo" [class.chip--inactiva]="!entrada.activo">
+              <span
+                class="chip"
+                [class.chip--activa]="entrada.activo"
+                [class.chip--inactiva]="!entrada.activo"
+              >
                 <span class="chip__punto" aria-hidden="true"></span>
                 {{ entrada.activo ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
             <td data-etiqueta="Acciones">
               <div class="acciones">
-                <button type="button" class="boton boton--enlace" (click)="editar(entrada)">Editar</button>
+                <button type="button" class="boton boton--enlace" (click)="editar(entrada)">
+                  Editar
+                </button>
                 @if (entrada.activo) {
-                  <button type="button" class="boton boton--enlace" (click)="pedirDesactivacion(entrada)">
+                  <button
+                    type="button"
+                    class="boton boton--enlace"
+                    (click)="pedirDesactivacion(entrada)"
+                  >
                     Desactivar
                   </button>
                 }
@@ -199,7 +258,11 @@
   @if (pendiente(); as entrada) {
     <app-modal-confirmacion
       titulo="Desactivar entrada del catálogo"
-      [mensaje]="'Desactivar ' + entrada.nombre + '. Los SKU y movimientos históricos se conservan; solo deja de estar disponible para nuevas capturas.'"
+      [mensaje]="
+        'Desactivar ' +
+        entrada.nombre +
+        '. Los SKU y movimientos históricos se conservan; solo deja de estar disponible para nuevas capturas.'
+      "
       etiquetaConfirmar="Desactivar"
       (confirmar)="confirmarDesactivacion()"
       (cancelar)="cancelarDesactivacion()"

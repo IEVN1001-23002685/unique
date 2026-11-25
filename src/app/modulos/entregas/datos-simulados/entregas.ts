@@ -32,10 +32,38 @@ export const folioEntregaDemo = (numero: number): string =>
   `EN-${anio}-${String(numero).padStart(6, '0')}`;
 
 export const REPARTIDORES_SIMULADOS: Repartidor[] = [
-  { id: 1, nombre: 'Luis Ramírez', telefono: '477 145 8820', vehiculo: 'Motocicleta', activo: true, eliminadoEn: null },
-  { id: 2, nombre: 'María Elena Soto', telefono: '477 238 4491', vehiculo: 'Automóvil', activo: true, eliminadoEn: null },
-  { id: 3, nombre: 'Jorge Alberto Cruz', telefono: '477 612 7734', vehiculo: null, activo: true, eliminadoEn: null },
-  { id: 4, nombre: 'Rosa Isela Vega', telefono: '477 905 1162', vehiculo: 'Motocicleta', activo: false, eliminadoEn: null },
+  {
+    id: 1,
+    nombre: 'Luis Ramírez',
+    telefono: '477 145 8820',
+    vehiculo: 'Motocicleta',
+    activo: true,
+    eliminadoEn: null,
+  },
+  {
+    id: 2,
+    nombre: 'María Elena Soto',
+    telefono: '477 238 4491',
+    vehiculo: 'Automóvil',
+    activo: true,
+    eliminadoEn: null,
+  },
+  {
+    id: 3,
+    nombre: 'Jorge Alberto Cruz',
+    telefono: '477 612 7734',
+    vehiculo: null,
+    activo: true,
+    eliminadoEn: null,
+  },
+  {
+    id: 4,
+    nombre: 'Rosa Isela Vega',
+    telefono: '477 905 1162',
+    vehiculo: 'Motocicleta',
+    activo: false,
+    eliminadoEn: null,
+  },
 ];
 
 const DIRECCIONES_SIMULADAS: Record<string, DireccionEntrega> = {
@@ -92,7 +120,13 @@ export function direccionPara(folio: string, cliente: string): DireccionEntrega 
   );
 }
 
-const prenda = (sku: string, nombreProducto: string, talla: string, color: string, cantidad: number) => ({
+const prenda = (
+  sku: string,
+  nombreProducto: string,
+  talla: string,
+  color: string,
+  cantidad: number,
+) => ({
   sku,
   nombreProducto,
   talla,
@@ -142,7 +176,8 @@ export const ENTREGAS_SIMULADAS: Entrega[] = [
     resultadoEn: haceHoras(3 * 24),
     receptor: null,
     motivoFallo: 'DIRECCION_INCORRECTA',
-    notas: 'La colonia indicada no coincide con el domicilio; se reprogramó por decisión del Administrador.',
+    notas:
+      'La colonia indicada no coincide con el domicilio; se reprogramó por decisión del Administrador.',
     decision: 'REPROGRAMADA',
     lineas: [prenda('HOODIE-M-ROJA', 'Hoodie roja', 'M', 'Roja', 1)],
   },

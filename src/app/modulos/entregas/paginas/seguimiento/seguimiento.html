@@ -12,7 +12,9 @@
     </div>
     <div class="cabecera__acciones">
       <a routerLink="/entregas/hoja-reparto" class="boton boton--secundario">Hoja de reparto</a>
-      <a routerLink="/entregas/productos-repartidos" class="boton boton--secundario">Productos repartidos</a>
+      <a routerLink="/entregas/productos-repartidos" class="boton boton--secundario"
+        >Productos repartidos</a
+      >
     </div>
   </div>
 
@@ -32,10 +34,18 @@
             </span>
           </div>
           <div class="acciones">
-            <button type="button" class="boton boton--primario" (click)="abrirConfirmacion(entrega.folio, 'REPROGRAMAR')">
+            <button
+              type="button"
+              class="boton boton--primario"
+              (click)="abrirConfirmacion(entrega.folio, 'REPROGRAMAR')"
+            >
               Reprogramar
             </button>
-            <button type="button" class="boton boton--secundario" (click)="abrirConfirmacion(entrega.folio, 'CANCELAR')">
+            <button
+              type="button"
+              class="boton boton--secundario"
+              (click)="abrirConfirmacion(entrega.folio, 'CANCELAR')"
+            >
               Cancelar con reembolso
             </button>
           </div>
@@ -70,7 +80,11 @@
       </label>
       <label class="campo filtro">
         Repartidor
-        <select class="campo__entrada" [value]="repartidorId()" (change)="alCambiarRepartidor($event)">
+        <select
+          class="campo__entrada"
+          [value]="repartidorId()"
+          (change)="alCambiarRepartidor($event)"
+        >
           <option value="0">Todos los repartidores</option>
           @for (repartidor of repartidores(); track repartidor.id) {
             <option [value]="repartidor.id">{{ repartidor.nombre }}</option>
@@ -87,17 +101,29 @@
       </label>
       <label class="campo filtro">
         Desde
-        <input class="campo__entrada" type="date" [value]="desde()" (change)="alCambiarDesde($event)" />
+        <input
+          class="campo__entrada"
+          type="date"
+          [value]="desde()"
+          (change)="alCambiarDesde($event)"
+        />
       </label>
       <label class="campo filtro">
         Hasta
-        <input class="campo__entrada" type="date" [value]="hasta()" (change)="alCambiarHasta($event)" />
+        <input
+          class="campo__entrada"
+          type="date"
+          [value]="hasta()"
+          (change)="alCambiarHasta($event)"
+        />
       </label>
     </div>
 
     @if (!sinFiltros()) {
       <p class="filtros">
-        <button type="button" class="boton boton--enlace" (click)="restablecer()">Limpiar filtros</button>
+        <button type="button" class="boton boton--enlace" (click)="restablecer()">
+          Limpiar filtros
+        </button>
       </p>
     }
 
@@ -114,7 +140,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla tabla--historial">
-          <caption class="sr-only">Historial filtrado de entregas</caption>
+          <caption class="sr-only">
+            Historial filtrado de entregas
+          </caption>
           <thead>
             <tr>
               <th scope="col">Guía rastreable</th>
@@ -131,22 +159,34 @@
           <tbody>
             @for (entrega of filtrados(); track entrega.folio) {
               <tr>
-                <td data-etiqueta="Guía"><span class="mono">{{ entrega.folio }}</span></td>
+                <td data-etiqueta="Guía">
+                  <span class="mono">{{ entrega.folio }}</span>
+                </td>
                 <td data-etiqueta="Pedido">
                   <span class="celda-principal">{{ entrega.pedidoFolio }}</span>
                   <span class="celda-secundaria">{{ entrega.cliente }}</span>
                 </td>
                 <td data-etiqueta="Intento">{{ entrega.intento }}</td>
-                <td data-etiqueta="Estado"><app-chip-estado-entrega [estado]="entrega.estado" /></td>
-                <td data-etiqueta="Repartidor">{{ servicio.nombreRepartidor(entrega.repartidorId) }}</td>
+                <td data-etiqueta="Estado">
+                  <app-chip-estado-entrega [estado]="entrega.estado" />
+                </td>
+                <td data-etiqueta="Repartidor">
+                  {{ servicio.nombreRepartidor(entrega.repartidorId) }}
+                </td>
                 <td data-etiqueta="Programada">
                   {{ entrega.fechaProgramada | date: 'dd/MM/yyyy' : '' : 'es-MX' }}
                 </td>
                 <td data-etiqueta="Salida">
-                  {{ entrega.salidaEn ? (entrega.salidaEn | date: 'dd/MM HH:mm' : '' : 'es-MX') : '—' }}
+                  {{
+                    entrega.salidaEn ? (entrega.salidaEn | date: 'dd/MM HH:mm' : '' : 'es-MX') : '—'
+                  }}
                 </td>
                 <td data-etiqueta="Resultado">
-                  {{ entrega.resultadoEn ? (entrega.resultadoEn | date: 'dd/MM HH:mm' : '' : 'es-MX') : '—' }}
+                  {{
+                    entrega.resultadoEn
+                      ? (entrega.resultadoEn | date: 'dd/MM HH:mm' : '' : 'es-MX')
+                      : '—'
+                  }}
                   @if (entrega.receptor) {
                     <span class="celda-secundaria">Recibió {{ entrega.receptor }}</span>
                   }

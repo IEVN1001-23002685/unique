@@ -11,7 +11,9 @@
       </p>
     </div>
     <div class="cabecera__acciones">
-      <button type="button" class="boton boton--secundario" (click)="imprimir()">Imprimir hoja</button>
+      <button type="button" class="boton boton--secundario" (click)="imprimir()">
+        Imprimir hoja
+      </button>
       <a routerLink="/entregas/seguimiento" class="boton boton--secundario">Seguimiento</a>
     </div>
   </div>
@@ -25,7 +27,11 @@
     <div class="barra">
       <label class="campo filtro">
         Repartidor
-        <select class="campo__entrada" [value]="repartidorId()" (change)="alCambiarRepartidor($event)">
+        <select
+          class="campo__entrada"
+          [value]="repartidorId()"
+          (change)="alCambiarRepartidor($event)"
+        >
           <option value="0" disabled>Selecciona un repartidor</option>
           @for (repartidor of activos(); track repartidor.id) {
             <option [value]="repartidor.id">{{ repartidor.nombre }}</option>
@@ -34,7 +40,12 @@
       </label>
       <label class="campo filtro">
         Fecha programada
-        <input class="campo__entrada" type="date" [value]="fecha()" (change)="alCambiarFecha($event)" />
+        <input
+          class="campo__entrada"
+          type="date"
+          [value]="fecha()"
+          (change)="alCambiarFecha($event)"
+        />
       </label>
       <div class="resumen" aria-live="polite">
         <strong>{{ paradas().length }} paradas</strong>
@@ -55,7 +66,16 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla tabla--paradas">
-          <caption class="sr-only">Hoja de reparto de {{ repartidor()?.nombre }} para {{ fecha() }}</caption>
+          <caption class="sr-only">
+            Hoja de reparto de
+            {{
+              repartidor()?.nombre
+            }}
+            para
+            {{
+              fecha()
+            }}
+          </caption>
           <thead>
             <tr>
               <th scope="col">Guía / pedido</th>
@@ -77,7 +97,9 @@
                 <td data-etiqueta="Destinatario">{{ entrega.direccion.destinatario }}</td>
                 <td data-etiqueta="Dirección">
                   <span class="celda-principal">{{ entrega.direccion.calle }}</span>
-                  <span class="celda-secundaria">{{ entrega.direccion.colonia }}, {{ entrega.direccion.ciudad }}</span>
+                  <span class="celda-secundaria"
+                    >{{ entrega.direccion.colonia }}, {{ entrega.direccion.ciudad }}</span
+                  >
                 </td>
                 <td data-etiqueta="CP / teléfono">
                   <span class="celda-principal">CP {{ entrega.direccion.cp }}</span>
@@ -85,22 +107,36 @@
                 </td>
                 <td data-etiqueta="Prendas">
                   <span class="celda-principal">{{ prendas(entrega) }}</span>
-                  <span class="celda-secundaria">{{ servicio.piezas(entrega) }} piezas · intento {{ entrega.intento }}</span>
+                  <span class="celda-secundaria"
+                    >{{ servicio.piezas(entrega) }} piezas · intento {{ entrega.intento }}</span
+                  >
                 </td>
                 <td data-etiqueta="Estado">
                   <app-chip-estado-entrega [estado]="entrega.estado" />
                 </td>
                 <td data-etiqueta="Acciones">
                   @if (entrega.estado === 'PROGRAMADA') {
-                    <button type="button" class="boton boton--enlace" (click)="confirmarSalida(entrega)">
+                    <button
+                      type="button"
+                      class="boton boton--enlace"
+                      (click)="confirmarSalida(entrega)"
+                    >
                       Confirmar salida
                     </button>
                   } @else {
                     <div class="acciones">
-                      <button type="button" class="boton boton--enlace" (click)="abrirResultado(entrega, 'ENTREGADO')">
+                      <button
+                        type="button"
+                        class="boton boton--enlace"
+                        (click)="abrirResultado(entrega, 'ENTREGADO')"
+                      >
                         Entregado
                       </button>
-                      <button type="button" class="boton boton--enlace" (click)="abrirResultado(entrega, 'FALLIDA')">
+                      <button
+                        type="button"
+                        class="boton boton--enlace"
+                        (click)="abrirResultado(entrega, 'FALLIDA')"
+                      >
                         Fallida
                       </button>
                     </div>

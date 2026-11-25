@@ -30,7 +30,12 @@
 
     <div class="autenticacion__campo">
       <label class="autenticacion__etiqueta" for="apellidos">Apellidos:</label>
-      <input id="apellidos" formControlName="apellidos" type="text" class="autenticacion__entrada" />
+      <input
+        id="apellidos"
+        formControlName="apellidos"
+        type="text"
+        class="autenticacion__entrada"
+      />
       @if (errorEn('apellidos')) {
         <p class="autenticacion__error">Escribe tus apellidos.</p>
       }

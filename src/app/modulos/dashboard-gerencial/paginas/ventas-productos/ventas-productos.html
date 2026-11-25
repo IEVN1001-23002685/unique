@@ -34,7 +34,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla tabla--corta">
-          <caption class="sr-only">Ventas agrupadas por mes</caption>
+          <caption class="sr-only">
+            Ventas agrupadas por mes
+          </caption>
           <thead>
             <tr>
               <th scope="col">Mes</th>
@@ -68,7 +70,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Ingresos y margen real por SKU</caption>
+          <caption class="sr-only">
+            Ingresos y margen real por SKU
+          </caption>
           <thead>
             <tr>
               <th scope="col">SKU</th>
@@ -84,7 +88,9 @@
           <tbody>
             @for (item of servicio.ingresosPorSku(); track item.sku) {
               <tr>
-                <td data-etiqueta="SKU"><span class="mono">{{ item.sku }}</span></td>
+                <td data-etiqueta="SKU">
+                  <span class="mono">{{ item.sku }}</span>
+                </td>
                 <td data-etiqueta="Prenda">{{ item.producto }}</td>
                 <td data-etiqueta="Categoría">{{ item.categoria }}</td>
                 <td data-etiqueta="Color">{{ item.color }}</td>
@@ -92,10 +98,9 @@
                 <td data-etiqueta="Piezas">{{ numero(item.piezas) }}</td>
                 <td data-etiqueta="Ingresos">{{ mxn(item.ingresos) }}</td>
                 <td data-etiqueta="Margen real">
-                  <span
-                    class="valor-margen"
-                    [class.valor-margen--bajo]="item.margen < 55"
-                  >{{ porcentaje(item.margen) }}</span>
+                  <span class="valor-margen" [class.valor-margen--bajo]="item.margen < 55">{{
+                    porcentaje(item.margen)
+                  }}</span>
                 </td>
               </tr>
             }
@@ -114,9 +119,15 @@
       </div>
       <div class="tabla-contenedor">
         <table class="tabla tabla--corta">
-          <caption class="sr-only">Ingresos por categoría</caption>
+          <caption class="sr-only">
+            Ingresos por categoría
+          </caption>
           <thead>
-            <tr><th scope="col">Categoría</th><th scope="col">Piezas</th><th scope="col">Ingresos</th></tr>
+            <tr>
+              <th scope="col">Categoría</th>
+              <th scope="col">Piezas</th>
+              <th scope="col">Ingresos</th>
+            </tr>
           </thead>
           <tbody>
             @for (item of servicio.ingresosPorCategoria(); track item.etiqueta) {
@@ -126,7 +137,9 @@
                 <td data-etiqueta="Ingresos">{{ mxn(item.ingresos) }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="3" class="vacio">Sin datos para los filtros actuales.</td></tr>
+              <tr>
+                <td colspan="3" class="vacio">Sin datos para los filtros actuales.</td>
+              </tr>
             }
           </tbody>
         </table>
@@ -140,9 +153,15 @@
       </div>
       <div class="tabla-contenedor">
         <table class="tabla tabla--corta">
-          <caption class="sr-only">Ingresos por color</caption>
+          <caption class="sr-only">
+            Ingresos por color
+          </caption>
           <thead>
-            <tr><th scope="col">Color</th><th scope="col">Piezas</th><th scope="col">Ingresos</th></tr>
+            <tr>
+              <th scope="col">Color</th>
+              <th scope="col">Piezas</th>
+              <th scope="col">Ingresos</th>
+            </tr>
           </thead>
           <tbody>
             @for (item of servicio.ingresosPorColor(); track item.etiqueta) {
@@ -152,16 +171,24 @@
                 <td data-etiqueta="Ingresos">{{ mxn(item.ingresos) }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="3" class="vacio">Sin datos para los filtros actuales.</td></tr>
+              <tr>
+                <td colspan="3" class="vacio">Sin datos para los filtros actuales.</td>
+              </tr>
             }
           </tbody>
         </table>
       </div>
       <div class="tabla-contenedor">
         <table class="tabla tabla--corta">
-          <caption class="sr-only">Ingresos por talla</caption>
+          <caption class="sr-only">
+            Ingresos por talla
+          </caption>
           <thead>
-            <tr><th scope="col">Talla</th><th scope="col">Piezas</th><th scope="col">Ingresos</th></tr>
+            <tr>
+              <th scope="col">Talla</th>
+              <th scope="col">Piezas</th>
+              <th scope="col">Ingresos</th>
+            </tr>
           </thead>
           <tbody>
             @for (item of servicio.ingresosPorTalla(); track item.etiqueta) {
@@ -171,7 +198,9 @@
                 <td data-etiqueta="Ingresos">{{ mxn(item.ingresos) }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="3" class="vacio">Sin datos para los filtros actuales.</td></tr>
+              <tr>
+                <td colspan="3" class="vacio">Sin datos para los filtros actuales.</td>
+              </tr>
             }
           </tbody>
         </table>
@@ -187,7 +216,9 @@
       </div>
       <ol class="ranking">
         @for (item of servicio.masVendidos(); track item.sku) {
-          <li><span class="mono">{{ item.sku }}</span> · {{ numero(item.piezas) }} pzas</li>
+          <li>
+            <span class="mono">{{ item.sku }}</span> · {{ numero(item.piezas) }} pzas
+          </li>
         } @empty {
           <li class="vacio">Sin datos para los filtros actuales.</li>
         }
@@ -200,7 +231,9 @@
       </div>
       <ol class="ranking">
         @for (item of servicio.menosVendidos(); track item.sku) {
-          <li><span class="mono">{{ item.sku }}</span> · {{ numero(item.piezas) }} pzas</li>
+          <li>
+            <span class="mono">{{ item.sku }}</span> · {{ numero(item.piezas) }} pzas
+          </li>
         } @empty {
           <li class="vacio">Sin datos para los filtros actuales.</li>
         }

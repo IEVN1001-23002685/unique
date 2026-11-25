@@ -6,10 +6,7 @@ import { ChipEstadoPreparacion } from '../../componentes/chip-estado-preparacion
 import { ModalIncidencia } from '../../componentes/modal-incidencia/modal-incidencia';
 import { NavegacionPreparacion } from '../../componentes/navegacion-preparacion/navegacion-preparacion';
 import { PasosPreparacion } from '../../componentes/pasos-preparacion/pasos-preparacion';
-import type {
-  DatosIncidencia,
-  PasoPreparacion,
-} from '../../modelos/preparacion';
+import type { DatosIncidencia, PasoPreparacion } from '../../modelos/preparacion';
 import { PreparacionServicio } from '../../servicios/preparacion-servicio';
 
 @Component({

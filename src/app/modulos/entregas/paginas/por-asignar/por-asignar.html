@@ -66,7 +66,9 @@
 
     @if (!sinFiltros()) {
       <p class="filtros">
-        <button type="button" class="boton boton--enlace" (click)="restablecer()">Limpiar filtros</button>
+        <button type="button" class="boton boton--enlace" (click)="restablecer()">
+          Limpiar filtros
+        </button>
       </p>
     }
 
@@ -83,7 +85,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Pedidos LISTO_ENVIO pendientes de asignar</caption>
+          <caption class="sr-only">
+            Pedidos LISTO_ENVIO pendientes de asignar
+          </caption>
           <thead>
             <tr>
               <th scope="col">Pedido / venta</th>
@@ -111,7 +115,11 @@
                   <span class="celda-secundaria">{{ direccion(pedido).colonia }}</span>
                 </td>
                 <td data-etiqueta="Fecha prometida">
-                  {{ pedido.fechaPromesa ? (pedido.fechaPromesa | date: 'dd/MM/yyyy' : '' : 'es-MX') : 'Sin fecha' }}
+                  {{
+                    pedido.fechaPromesa
+                      ? (pedido.fechaPromesa | date: 'dd/MM/yyyy' : '' : 'es-MX')
+                      : 'Sin fecha'
+                  }}
                 </td>
                 <td data-etiqueta="Prendas">{{ piezas(pedido) }}</td>
                 <td data-etiqueta="Prioridad">
@@ -132,8 +140,8 @@
     }
 
     <p class="nota">
-      Asignar crea la entrega en memoria con folio EN-AAAA-NNNNNN. La baja SALIDA_ENVIO en M12,
-      el paso a EN_REPARTO en M09 y la publicación de la guía en M06 requieren Flask.
+      Asignar crea la entrega en memoria con folio EN-AAAA-NNNNNN. La baja SALIDA_ENVIO en M12, el
+      paso a EN_REPARTO en M09 y la publicación de la guía en M06 requieren Flask.
     </p>
   </div>
 

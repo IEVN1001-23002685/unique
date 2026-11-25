@@ -176,7 +176,11 @@ export const routes: Routes = [
     // prevé una vista operativa sin ventas ni costos; el rol es demostrativo.
     path: 'dashboard',
     component: Administracion,
-    data: { titulo: 'Dashboard gerencial', rol: 'Administrador', roles: ['Administrador', 'Operativo'] },
+    data: {
+      titulo: 'Dashboard gerencial',
+      rol: 'Administrador',
+      roles: ['Administrador', 'Operativo'],
+    },
     loadChildren: () =>
       import('./modulos/dashboard-gerencial/dashboard.routes').then((m) => m.DASHBOARD_RUTAS),
   },
@@ -185,8 +189,13 @@ export const routes: Routes = [
     // el selector de rol de la pantalla es demostrativo, no un guard real.
     path: 'alertas',
     component: Administracion,
-    data: { titulo: 'Centro de alertas', rol: 'Administrador', roles: ['Administrador', 'Operativo'] },
-    loadChildren: () => import('./modulos/centro-alertas/centro-alertas.routes').then((m) => m.ALERTAS_RUTAS),
+    data: {
+      titulo: 'Centro de alertas',
+      rol: 'Administrador',
+      roles: ['Administrador', 'Operativo'],
+    },
+    loadChildren: () =>
+      import('./modulos/centro-alertas/centro-alertas.routes').then((m) => m.ALERTAS_RUTAS),
   },
   {
     // M22 se monta en /sistema según el mapa del §10 y es exclusivo del Administrador.

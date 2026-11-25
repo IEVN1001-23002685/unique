@@ -1,8 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import {
-  ETIQUETAS_ESTADO_ENTREGA,
-  type EstadoEntrega,
-} from '../../modelos/entrega';
+import { ETIQUETAS_ESTADO_ENTREGA, type EstadoEntrega } from '../../modelos/entrega';
 
 /** Chip de estado con círculo de color y etiqueta textual. */
 @Component({

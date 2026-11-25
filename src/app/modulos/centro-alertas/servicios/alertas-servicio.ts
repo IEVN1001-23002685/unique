@@ -87,7 +87,9 @@ export class AlertasServicio {
   sincronizar(): void {
     const actuales = this.condicionesActuales();
     const claves = new Set(
-      actuales.map((alerta) => alerta.claveUnica).filter((clave): clave is string => clave !== null),
+      actuales
+        .map((alerta) => alerta.claveUnica)
+        .filter((clave): clave is string => clave !== null),
     );
 
     this.lista.update((lista) => {
@@ -105,9 +107,7 @@ export class AlertasServicio {
 
       const ahora = new Date().toISOString();
       return resultado.map((alerta) =>
-        alerta.estado === 'ABIERTA' &&
-        alerta.claveUnica !== null &&
-        !claves.has(alerta.claveUnica)
+        alerta.estado === 'ABIERTA' && alerta.claveUnica !== null && !claves.has(alerta.claveUnica)
           ? {
               ...alerta,
               estado: 'RESUELTA_AUTO' as const,
@@ -186,9 +186,7 @@ export class AlertasServicio {
   private puedeVer(alerta: AlertaCentro, rol: RolVistaAlertas): boolean {
     return (
       alerta.rolDestino === 'AMBOS' ||
-      (rol === 'Administrador'
-        ? alerta.rolDestino === 'ADMIN'
-        : alerta.rolDestino === 'OPERATIVO')
+      (rol === 'Administrador' ? alerta.rolDestino === 'ADMIN' : alerta.rolDestino === 'OPERATIVO')
     );
   }
 
@@ -198,9 +196,8 @@ export class AlertasServicio {
     const limitePago =
       this.reglasLista().find((regla) => regla.clave === 'horas_max_recibido')?.valor ?? 2;
     const minimoATiempo =
-      this.reglasLista().find(
-        (regla) => regla.clave === 'proveedor_minimo_a_tiempo_pct',
-      )?.valor ?? 80;
+      this.reglasLista().find((regla) => regla.clave === 'proveedor_minimo_a_tiempo_pct')?.valor ??
+      80;
 
     const pedidosEspera = this.pedidos
       .pedidos()
