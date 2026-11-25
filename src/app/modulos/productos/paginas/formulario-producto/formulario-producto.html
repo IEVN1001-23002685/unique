@@ -36,7 +36,7 @@
           <label class="campo">
             Categoría *
             <select class="campo__entrada" formControlName="categoriaId">
-              @for (categoria of servicio.categorias; track categoria.id) {
+              @for (categoria of servicio.categorias(); track categoria.id) {
                 <option [value]="categoria.id">{{ categoria.nombre }}</option>
               }
             </select>

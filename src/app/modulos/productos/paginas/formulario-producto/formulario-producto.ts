@@ -30,6 +30,9 @@ import type {
 import { calcularCosteo, porcentajeTelas } from '../../servicios/calculos-producto';
 import { ProductosServicio } from '../../servicios/productos-servicio';
 
+type CampoRaiz = 'nombre' | 'stockMinimo' | 'cantidadReposicion';
+type CampoCosteo = 'manoObra' | 'bordado' | 'indirectos' | 'margenObjetivoPct';
+
 /** Validación de presentación: hace falta al menos un color y una talla habilitada. */
 const seleccionesRequeridas: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const colores = control.get('colores');
@@ -238,17 +241,11 @@ export class FormularioProducto {
     );
   }
 
-  protected invalido(
-    campo:
-      | 'nombre'
-      | 'stockMinimo'
-      | 'cantidadReposicion'
-      | 'manoObra'
-      | 'bordado'
-      | 'indirectos'
-      | 'margenObjetivoPct',
-  ): boolean {
-    const control = this.forma.controls[campo];
+  protected invalido(campo: CampoRaiz | CampoCosteo): boolean {
+    const control: AbstractControl =
+      campo in this.forma.controls.costeo.controls
+        ? this.forma.controls.costeo.controls[campo as CampoCosteo]
+        : this.forma.controls[campo as CampoRaiz];
     return control.invalid && (control.touched || this.intento());
   }
 

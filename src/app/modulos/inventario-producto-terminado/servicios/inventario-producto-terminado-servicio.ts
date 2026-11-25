@@ -51,7 +51,7 @@ export class InventarioProductoServicio {
   readonly movimientos = this.movimientosLista.asReadonly();
   readonly alertas = this.alertasLista.asReadonly();
   readonly senales = this.senalesLista.asReadonly();
-  readonly categorias = this.catalogo.categorias.filter((categoria) => categoria.activa);
+  readonly categorias = this.catalogo.categorias().filter((categoria) => categoria.activa);
 
   readonly existencias = computed<FilaExistencia[]>(() =>
     this.filasLista().map((fila) => this.conDetalle(fila)),

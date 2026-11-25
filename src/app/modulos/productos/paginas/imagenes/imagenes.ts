@@ -142,9 +142,10 @@ export class Imagenes {
       return;
     }
 
+    const color = this.color();
     const resultado = this.productosServicio.asignarImagen(
       id,
-      this.color() === '' ? null : this.color(),
+      color === '' ? null : color,
       recurso.url,
     );
     this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);

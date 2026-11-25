@@ -55,7 +55,7 @@
         Categoría
         <select class="campo__entrada" [value]="categoria()" (change)="alCambiarCategoria($event)">
           <option value="TODAS">Todas</option>
-          @for (categoria of servicio.categorias; track categoria.id) {
+          @for (categoria of servicio.categorias(); track categoria.id) {
             <option [value]="categoria.id">{{ categoria.nombre }}</option>
           }
         </select>

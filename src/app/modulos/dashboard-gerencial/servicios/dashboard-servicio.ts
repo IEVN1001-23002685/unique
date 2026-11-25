@@ -145,7 +145,7 @@ export class DashboardServicio {
     { valor: 'CAMBIO', etiqueta: 'Cambio' },
   ];
 
-  readonly categorias = this.productos.categorias.filter((categoria) => categoria.activa);
+  readonly categorias = this.productos.categorias().filter((categoria) => categoria.activa);
   readonly productosCatalogo = this.productos.visibles;
   readonly compras = signal(COMPRAS_DEMO).asReadonly();
   readonly materiales = signal(MATERIALES_DEMO).asReadonly();
