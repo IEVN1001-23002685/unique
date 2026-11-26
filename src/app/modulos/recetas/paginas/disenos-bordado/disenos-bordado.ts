@@ -101,6 +101,17 @@ export class DisenosBordado {
     });
   }
 
+  protected reintentar(): void {
+    const anterior = this.seleccionado();
+    this.servicio.recargar().subscribe({
+      next: () => {
+        const disponible = anterior !== null && this.servicio.disenoDe(anterior);
+        this.seleccionar(disponible ? anterior : (this.servicio.disenos()[0]?.id ?? null));
+      },
+      error: () => this.avisos.mostrar('error', 'No fue posible recargar los diseños desde Flask.'),
+    });
+  }
+
   protected seleccionar(id: number | null): void {
     this.seleccionado.set(id);
     this.creando.set(false);
@@ -152,27 +163,10 @@ export class DisenosBordado {
   }
 
   protected guardar(): void {
-    this.intento.set(true);
-    if (this.formas.invalid) {
-      this.formas.markAllAsTouched();
-      this.avisos.mostrar(
-        'error',
-        'Revisa el nombre, las dimensiones y los metros de hilo capturados.',
-      );
+    const datos = this.datosDelFormulario();
+    if (!datos) {
       return;
     }
-    const raw = this.formas.getRawValue();
-    const datos: DatosDiseno = {
-      nombre: raw.nombre.trim(),
-      anchoCm: Number(raw.anchoCm),
-      altoCm: Number(raw.altoCm),
-      notas: raw.notas.trim(),
-      activo: raw.activo,
-      hilos: raw.hilos.map((hilo) => ({
-        materialCodigo: hilo.materialCodigo,
-        metrosPorAplicacion: Number(hilo.metrosPorAplicacion),
-      })),
-    };
     const id = this.seleccionado();
     this.servicio.guardarDiseno(datos, id ?? undefined).subscribe((resultado) => {
       this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
@@ -184,15 +178,40 @@ export class DisenosBordado {
 
   protected digitalizar(): void {
     const id = this.seleccionado();
-    if (id === null) {
+    const datos = this.datosDelFormulario();
+    if (id === null || !datos) {
       return;
     }
-    this.servicio.digitalizarDiseno(id).subscribe((resultado) => {
+    this.servicio.digitalizarDiseno(id, datos).subscribe((resultado) => {
       this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
       if (resultado.ok) {
         this.seleccionar(id);
       }
     });
+  }
+
+  private datosDelFormulario(): DatosDiseno | null {
+    this.intento.set(true);
+    if (this.formas.invalid) {
+      this.formas.markAllAsTouched();
+      this.avisos.mostrar(
+        'error',
+        'Revisa el nombre, las dimensiones y los metros de hilo capturados.',
+      );
+      return null;
+    }
+    const raw = this.formas.getRawValue();
+    return {
+      nombre: raw.nombre.trim(),
+      anchoCm: Number(raw.anchoCm),
+      altoCm: Number(raw.altoCm),
+      notas: raw.notas.trim(),
+      activo: raw.activo,
+      hilos: raw.hilos.map((hilo) => ({
+        materialCodigo: hilo.materialCodigo,
+        metrosPorAplicacion: Number(hilo.metrosPorAplicacion),
+      })),
+    };
   }
 
   protected pedirEliminacion(diseno: DisenoBordado): void {

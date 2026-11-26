@@ -15,6 +15,16 @@
     </a>
   </div>
 
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar las requisiciones.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  }
+
   <div class="indicadores" aria-label="Resumen de requisiciones">
     <div class="indicador" data-tono="adv">
       <span class="indicador__numero">{{ totales().pendientes }}</span>
@@ -65,7 +75,11 @@
       </div>
     </div>
 
-    @if (filtradas().length === 0) {
+    @if (!servicio.cargado() && !servicio.errorCarga() && !servicio.errorDetalle()) {
+      <div class="estado" role="status">
+        <strong>Cargando requisiciones desde Flask…</strong>
+      </div>
+    } @else if (filtradas().length === 0) {
       <div class="estado" role="status">
         <strong>Sin requisiciones para mostrar.</strong>
         <p>Crea una nueva o ajusta la búsqueda y el filtro de estado.</p>
@@ -153,10 +167,20 @@
                 <td data-etiqueta="Acciones">
                   <div class="acciones">
                     @if (puedeGestionar(requisicion)) {
-                      <button type="button" class="accion" (click)="cotizar(requisicion)">
+                      <button
+                        type="button"
+                        class="accion"
+                        [disabled]="guardando()"
+                        (click)="cotizar(requisicion)"
+                      >
                         Cotizar
                       </button>
-                      <button type="button" class="accion" (click)="ordenDirecta(requisicion)">
+                      <button
+                        type="button"
+                        class="accion"
+                        [disabled]="guardando()"
+                        (click)="ordenDirecta(requisicion)"
+                      >
                         Emitir orden directa
                       </button>
                       <a
@@ -168,6 +192,7 @@
                       <button
                         type="button"
                         class="accion accion--peligro"
+                        [disabled]="guardando()"
                         (click)="porCancelar.set(requisicion)"
                       >
                         Cancelar
@@ -187,8 +212,10 @@
     <p class="nota">
       La cantidad sugerida se convierte a la presentación comercial del material y se redondea hacia
       arriba respetando el mínimo del proveedor (ejemplo del documento: 120 m² ÷ 64.80 = 2 rollos =
-      129.60 m²). La creación manual por Operativo queda sujeta al roleGuard de Flask: §10 reserva
-      /compras al Administrador. Los cambios se guardan en Flask.
+      129.60 m²). §9 habilita la API de requisiciones para Administrador y Operativo, pero §10
+      reserva la ruta /compras al Administrador: la captura manual de Operativo queda pendiente de
+      que Flask defina su ruta y sus permisos. Los cambios se envían a Flask, no se guardan en el
+      navegador.
     </p>
   </div>
 

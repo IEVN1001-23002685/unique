@@ -1,483 +1,447 @@
-<div
-  style="
-    min-height: 100vh;
-    padding: 24px 16px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #3b2d3e;
-    box-sizing: border-box;
-  "
->
-  <div
-    style="
-      max-width: 920px;
-      margin: 0 auto;
-      background-color: #e6cce8;
-      border-radius: 28px;
-      padding: 28px 32px;
-      box-shadow: 0 12px 30px rgba(66, 33, 75, 0.14);
-      box-sizing: border-box;
-    "
-  >
-    <!-- Encabezado -->
-    <div
-      style="
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-bottom: 20px;
-      "
-    >
-      <div style="display: flex; align-items: center; gap: 14px">
-        <img src="/Logo1.png" alt="UNIQUE" style="height: 48px; width: auto" />
-        <div>
-          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #332736">Mis pedidos</h2>
-          <span style="font-size: 12px; color: #4f2857; font-weight: 600"
-            >Rol: Cliente · Historial y seguimiento</span
-          >
-        </div>
-      </div>
+<main class="pedidos">
+  <app-aviso-toast />
 
-      <button
-        type="button"
-        (click)="cerrarPedidos()"
-        style="
-          padding: 8px 16px;
-          border-radius: 999px;
-          border: 2px solid #2b212d;
-          background-color: #ffffff;
-          color: #2b212d;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-        "
-      >
-        ✕ Cerrar
+  <header class="pedidos__cabecera">
+    <div>
+      <p class="pedidos__ojeada">UNIQUE · Área del cliente</p>
+      <h1>Mis pedidos</h1>
+      <p class="pedidos__subtitulo">
+        Consulta el avance de tus compras, la guía de entrega y tus comprobantes. Los estados
+        provienen de Flask; esta pantalla no modifica el pedido salvo la cancelación documentada.
+      </p>
+    </div>
+    <a class="boton boton--secundario" routerLink="/catalogo">Volver al catálogo</a>
+  </header>
+
+  <p class="pedidos__actualizacion" role="status">
+    @if (actualizando()) {
+      Actualizando…
+    } @else if (ultimaActualizacion()) {
+      Actualizado {{ formatearFechaHora(ultimaActualizacion()?.toISOString()) }} · se refresca cada
+      30 segundos
+    } @else {
+      Consultando el historial…
+    }
+    <button type="button" class="boton boton--enlace" (click)="actualizar()">
+      Actualizar ahora
+    </button>
+  </p>
+
+  @if (error()) {
+    <div class="pedidos__error" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
       </button>
     </div>
+  }
 
-    <!-- Mensaje informativo -->
-    <div
-      *ngIf="mensajeAviso"
-      style="
-        margin-bottom: 16px;
-        background-color: #f3ecf4;
-        border-left: 4px solid #4f2857;
-        border-radius: 12px;
-        padding: 10px 14px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #332736;
-      "
-    >
-      {{ mensajeAviso }}
+  @if (cargando() || detalleCargando()) {
+    <div class="pedidos__cargando" aria-live="polite" aria-busy="true">
+      <div class="pedidos__esqueleto"></div>
+      <p>Cargando tus pedidos…</p>
     </div>
+  } @else {
+    @if (detalle(); as pedido) {
+      <section class="seguimiento" aria-labelledby="seguimiento-titulo">
+        <div class="seguimiento__navegacion">
+          <button type="button" class="boton boton--enlace" (click)="volverALista()">
+            ← Volver a mis pedidos
+          </button>
+          <span class="seguimiento__folio">Pedido {{ pedido.folio }}</span>
+        </div>
 
-    <!-- ==================== VISTA 1: LISTADO DE PEDIDOS ==================== -->
-    <div *ngIf="!pedidoSeleccionado" style="display: flex; flex-direction: column; gap: 16px">
-      <!-- Búsqueda y filtro por estado -->
-      <div
-        style="
-          background-color: #f3ecf4;
-          border-radius: 20px;
-          padding: 14px 16px;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-          align-items: center;
-          justify-content: space-between;
-          box-sizing: border-box;
-        "
-      >
-        <input
-          type="text"
-          [(ngModel)]="busquedaFolio"
-          placeholder="Buscar por folio (ej. UNQ-849201)..."
-          style="
-            flex: 1;
-            min-width: 200px;
-            height: 38px;
-            border: none;
-            border-radius: 999px;
-            background-color: #ffffff;
-            padding: 0 14px;
-            font-size: 13px;
-            box-sizing: border-box;
-          "
-        />
+        <div class="seguimiento__cabecera">
+          <div>
+            <h2 id="seguimiento-titulo">{{ pedido.folio }}</h2>
+            <p>
+              Realizado el {{ formatearFechaHora(pedido.fecha) }} ·
+              {{ pedido.articulosCount }} {{ pedido.articulosCount === 1 ? 'prenda' : 'prendas' }}
+            </p>
+          </div>
+          <span class="chip" [class]="estadoClase(pedido.estado)">
+            {{ etiquetaEstado(pedido.estado) }}
+          </span>
+        </div>
 
-        <label
-          style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600"
-        >
-          Estado:
-          <select
-            [(ngModel)]="filtroEstado"
-            (ngModelChange)="cambiarFiltro($event)"
-            style="
-              height: 38px;
-              border: none;
-              border-radius: 999px;
-              background-color: #ffffff;
-              padding: 0 12px;
-              font-size: 13px;
-            "
+        <div class="seguimiento__acciones">
+          <button
+            type="button"
+            class="boton boton--primario"
+            [disabled]="descargando()"
+            (click)="descargarComprobante(pedido)"
           >
-            <option *ngFor="let filtro of filtros" [value]="filtro.valor">
-              {{ filtro.etiqueta }}
-            </option>
-          </select>
-        </label>
-      </div>
+            {{ descargando() ? 'Preparando…' : 'Descargar comprobante digital' }}
+          </button>
+          @if (puedeCancelar(pedido)) {
+            <button
+              type="button"
+              class="boton boton--peligro"
+              (click)="abrirCancelacion(pedido)"
+            >
+              Cancelar pedido
+            </button>
+          }
+          @if (puedeSolicitarDevolucion(pedido)) {
+            <button type="button" class="boton boton--secundario" (click)="solicitarCambio(pedido)">
+              Solicitar cambio o devolución
+            </button>
+          }
+        </div>
 
-      <!-- Sin pedidos -->
-      <div
-        *ngIf="pedidosFiltrados.length === 0"
-        style="
-          background-color: #f3ecf4;
-          border-radius: 22px;
-          padding: 32px 20px;
-          text-align: center;
-        "
+        <div class="seguimiento__informacion">
+          <article class="dato">
+            <h3>Guía de entrega</h3>
+            <p>{{ pedido.guia || 'Sin asignar por el servidor' }}</p>
+            @if (pedido.guia && pedido.estado === 'EN_REPARTO') {
+              <button type="button" class="boton boton--enlace" (click)="abrirGuia(pedido)">
+                Rastrear guía
+              </button>
+            }
+          </article>
+          <article class="dato">
+            <h3>Entrega estimada</h3>
+            <p>{{ formatearFecha(pedido.fechaEstimada) }}</p>
+            @if (pedido.fechaEntrega) {
+              <small>Entregado el {{ formatearFechaHora(pedido.fechaEntrega) }}</small>
+            }
+          </article>
+          <article class="dato">
+            <h3>Dirección de entrega</h3>
+            <p>{{ pedido.direccionResumen || 'No disponible' }}</p>
+          </article>
+          <article class="dato">
+            <h3>Pago</h3>
+            <p>{{ pedido.medioPagoResumen }}</p>
+          </article>
+        </div>
+
+        @if (pedido.repartidor; as repartidor) {
+          @if (pedido.estado === 'EN_REPARTO') {
+            <article class="repartidor">
+              <div>
+                <h3>Repartidor asignado</h3>
+                <p>{{ repartidor.nombre }}</p>
+              </div>
+              @if (repartidor.telefono) {
+                <a class="boton boton--secundario" [href]="'tel:' + repartidor.telefono">
+                  Llamar a {{ repartidor.telefono }}
+                </a>
+              }
+            </article>
+          }
+        }
+
+        <div class="seguimiento__cuadro">
+          <section class="bloque" aria-labelledby="linea-tiempo-titulo">
+            <h3 id="linea-tiempo-titulo">Línea de tiempo</h3>
+            <ol class="linea-tiempo">
+              @for (paso of lineaTiempo(); track paso.codigo) {
+                <li class="paso" [class.paso--activo]="paso.estado === 'en-curso'">
+                  <span
+                    class="paso__punto"
+                    [class.paso__punto--hecho]="paso.estado === 'completado'"
+                    [class.paso__punto--curso]="paso.estado === 'en-curso'"
+                    aria-hidden="true"
+                  ></span>
+                  <div class="paso__contenido">
+                    <div class="paso__titulo">
+                      <strong>{{ paso.etiqueta }}</strong>
+                      <time>{{ paso.fecha }}</time>
+                    </div>
+                    <p>{{ paso.descripcion }}</p>
+                    @if (paso.fechaEstimada) {
+                      <small>Fecha estimada: {{ formatearFecha(paso.fechaEstimada) }}</small>
+                    }
+                  </div>
+                </li>
+              } @empty {
+                <li class="bloque__vacio">Aún no hay eventos visibles para este pedido.</li>
+              }
+            </ol>
+          </section>
+
+          <aside class="bloque" aria-labelledby="notificaciones-titulo">
+            <h3 id="notificaciones-titulo">Notificaciones</h3>
+            <p class="bloque__ayuda">Eventos que Flask marcó como visibles para el cliente.</p>
+            <ul class="notificaciones">
+              @for (evento of notificaciones(); track $index) {
+                <li>
+                  <strong>{{ evento.titulo }}</strong>
+                  <time>{{ evento.fecha }}</time>
+                  <p>{{ evento.descripcion }}</p>
+                </li>
+              } @empty {
+                <li class="bloque__vacio">Sin notificaciones disponibles.</li>
+              }
+            </ul>
+          </aside>
+        </div>
+
+        <section class="bloque" aria-labelledby="articulos-titulo">
+          <h3 id="articulos-titulo">Artículos del pedido</h3>
+          <ul class="articulos">
+            @for (articulo of pedido.articulos; track articulo.ventaLineaId) {
+              <li>
+                <span class="articulos__marca" aria-hidden="true">{{ articulo.sku.slice(0, 2) }}</span>
+                <div>
+                  <strong>{{ articulo.nombre }}</strong>
+                  <small>
+                    SKU {{ articulo.sku }} · {{ articulo.colorNombre }} · Talla
+                    {{ articulo.talla }} · {{ articulo.cantidad }} ×
+                    {{ articulo.precioUnitarioConIva | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                  </small>
+                </div>
+                <strong>
+                  {{
+                    articulo.precioUnitarioConIva * articulo.cantidad
+                      | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+                  }}
+                </strong>
+              </li>
+            } @empty {
+              <li class="bloque__vacio">El servidor no devolvió líneas para este pedido.</li>
+            }
+          </ul>
+
+          <dl class="importes">
+            <div>
+              <dt>Subtotal con IVA</dt>
+              <dd>{{ (pedido.subtotal ?? 0) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd>
+            </div>
+            <div>
+              <dt>Descuento</dt>
+              <dd>− {{ (pedido.descuento ?? 0) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd>
+            </div>
+            <div>
+              <dt>Envío</dt>
+              <dd>{{ (pedido.envio ?? 0) | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd>
+            </div>
+            <div class="importes__total">
+              <dt>Total pagado</dt>
+              <dd>{{ pedido.totalConIva | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        @if (pedido.estado === 'ENTREGADO' && !puedeSolicitarDevolucion(pedido)) {
+          <p class="seguimiento__nota">
+            La ventana de {{ diasDevolucion }} días para cambio o devolución ya concluyó.
+          </p>
+        }
+      </section>
+    } @else {
+      <section class="listado" aria-labelledby="listado-titulo">
+        <div class="listado__controles">
+          <div class="busqueda">
+            <label for="buscar-folio">Buscar por folio</label>
+            <input
+              id="buscar-folio"
+              type="search"
+              placeholder="Ej. UNQ-2026-000123"
+              [formControl]="busqueda"
+            />
+          </div>
+          <div class="filtros" role="group" aria-label="Filtrar pedidos por estado">
+            @for (opcion of filtros; track opcion.valor) {
+              <button
+                type="button"
+                class="filtros__boton"
+                [class.filtros__boton--activo]="filtro() === opcion.valor"
+                [attr.aria-pressed]="filtro() === opcion.valor"
+                (click)="cambiarFiltro(opcion.valor)"
+              >
+                {{ opcion.etiqueta }}
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (pedidosFiltrados().length === 0) {
+          <div class="listado__vacio">
+            <h2 id="listado-titulo">Sin pedidos para mostrar</h2>
+            <p>
+              No hay pedidos con ese filtro o todavía no has realizado una compra. Cuando pagues,
+              el folio aparecerá aquí.
+            </p>
+            <a class="boton boton--primario" routerLink="/catalogo">Explorar catálogo</a>
+          </div>
+        } @else {
+          <h2 id="listado-titulo" class="listado__titulo">Historial de compras</h2>
+          <div class="listado__tarjetas">
+            @for (pedido of pedidosFiltrados(); track pedido.id) {
+              <article class="tarjeta-pedido">
+                <div class="tarjeta-pedido__miniatura">
+                  @if (tieneMiniatura(pedido)) {
+                    <img
+                      [src]="pedido.miniaturaUrl ?? ''"
+                      [alt]="'Prenda del pedido ' + pedido.folio"
+                      (error)="marcarImagenFallida(pedido.id)"
+                    />
+                  } @else {
+                    <span>Imagen no disponible</span>
+                  }
+                </div>
+
+                <div class="tarjeta-pedido__datos">
+                  <div class="tarjeta-pedido__titulo">
+                    <h3>{{ pedido.folio }}</h3>
+                    <span class="chip" [class]="estadoClase(pedido.estado)">
+                      {{ etiquetaEstado(pedido.estado) }}
+                    </span>
+                  </div>
+                  <p>
+                    {{ formatearFechaHora(pedido.fecha) }} ·
+                    {{ pedido.articulosCount }} {{ pedido.articulosCount === 1 ? 'artículo' : 'artículos' }}
+                  </p>
+                  <p class="tarjeta-pedido__guia">
+                    Guía: {{ pedido.guia || 'sin asignar' }}
+                  </p>
+                  <strong class="tarjeta-pedido__total">
+                    {{ pedido.totalConIva | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                  </strong>
+                </div>
+
+                <div class="tarjeta-pedido__acciones">
+                  @switch (accionPedido(pedido)) {
+                    @case ('guia') {
+                      <button
+                        type="button"
+                        class="boton boton--primario"
+                        (click)="abrirGuia(pedido)"
+                      >
+                        Rastrear guía
+                      </button>
+                    }
+                    @case ('devolucion') {
+                      <button
+                        type="button"
+                        class="boton boton--primario"
+                        (click)="solicitarCambio(pedido)"
+                      >
+                        Cambio / devolución
+                      </button>
+                    }
+                    @default {
+                      <button
+                        type="button"
+                        class="boton boton--primario"
+                        (click)="verSeguimiento(pedido)"
+                      >
+                        Ver seguimiento
+                      </button>
+                    }
+                  }
+                  @if (accionPedido(pedido) !== 'seguimiento') {
+                    <button
+                      type="button"
+                      class="boton boton--enlace"
+                      (click)="verSeguimiento(pedido)"
+                    >
+                      Ver seguimiento
+                    </button>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+  }
+
+  @if (guiaPedido(); as pedido) {
+    <div class="modal">
+      <div class="modal__telon" (click)="cerrarGuia()" aria-hidden="true"></div>
+      <section
+        class="modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="guia-titulo"
+        tabindex="-1"
+        (keydown)="alPulsarTecla($event, 'guia')"
       >
-        <p style="margin: 0 0 12px; font-size: 15px; font-weight: 700; color: #332736">
-          No se encontraron pedidos con ese filtro
+        <h2 id="guia-titulo">Guía de entrega</h2>
+        <dl class="modal__datos">
+          <div>
+            <dt>Folio</dt>
+            <dd>{{ pedido.folio }}</dd>
+          </div>
+          <div>
+            <dt>Guía rastreable</dt>
+            <dd>{{ pedido.guia || 'Sin asignar' }}</dd>
+          </div>
+          <div>
+            <dt>Estado</dt>
+            <dd>{{ etiquetaEstado(pedido.estado) }}</dd>
+          </div>
+          <div>
+            <dt>Entrega estimada</dt>
+            <dd>{{ formatearFecha(pedido.fechaEstimada) }}</dd>
+          </div>
+        </dl>
+        @if (pedido.repartidor; as repartidor) {
+          <p>Repartidor: {{ repartidor.nombre }}</p>
+          @if (repartidor.telefono) {
+            <p>
+              Teléfono:
+              <a [href]="'tel:' + repartidor.telefono">{{ repartidor.telefono }}</a>
+            </p>
+          }
+        }
+        <p class="modal__nota">
+          El folio de entrega es la guía rastreable documentada. El rastreo externo se habilitará
+          cuando Flask publique la integración con el repartidor.
         </p>
-        <button
-          type="button"
-          (click)="explorarCatalogo()"
-          style="
-            padding: 9px 22px;
-            border: none;
-            border-radius: 999px;
-            background-color: #4f2857;
-            color: #ffffff;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >
-          Explorar catálogo
-        </button>
-      </div>
-
-      <!-- Tarjetas de pedidos -->
-      <div
-        *ngFor="let pedido of pedidosFiltrados"
-        style="
-          background-color: #f3ecf4;
-          border-radius: 20px;
-          padding: 18px 20px;
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: space-between;
-          align-items: center;
-          gap: 14px;
-          box-sizing: border-box;
-        "
-      >
-        <div style="font-size: 13px; line-height: 1.45">
-          <div
-            style="
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              flex-wrap: wrap;
-              margin-bottom: 4px;
-            "
-          >
-            <strong style="font-size: 16px; color: #332736">Folio {{ pedido.folio }}</strong>
-            <span
-              [style.backgroundColor]="pedido.estado === 'CANCELADO' ? '#8b1e3f' : '#4f2857'"
-              style="
-                color: #ffffff;
-                padding: 2px 10px;
-                border-radius: 999px;
-                font-size: 11px;
-                font-weight: 700;
-              "
-            >
-              {{ etiquetaEstado(pedido.estado) }}
-            </span>
-            <span style="color: #534057; font-size: 12px"
-              >· Fecha: {{ pedido.fecha | date: 'dd/MM/yyyy HH:mm' }}</span
-            >
-          </div>
-          <div style="color: #534057">
-            Artículos: <strong>{{ pedido.articulosCount }}</strong> ·
-            Guía: {{ pedido.guia || 'sin asignar' }}
-          </div>
-          <div style="margin-top: 4px; font-size: 14px; font-weight: 700; color: #4f2857">
-            Total (IVA incluido): ${{ pedido.totalConIva }}
-          </div>
-        </div>
-
-        <div style="display: flex; flex-wrap: wrap; gap: 8px">
-          <button
-            type="button"
-            (click)="abrirSeguimiento(pedido)"
-            style="
-              padding: 9px 18px;
-              border: none;
-              border-radius: 999px;
-              background-color: #4f2857;
-              color: #ffffff;
-              font-size: 13px;
-              font-weight: 600;
-              cursor: pointer;
-            "
-          >
-            Ver seguimiento
+        <div class="modal__acciones">
+          <button type="button" class="boton boton--secundario" autofocus (click)="cerrarGuia()">
+            Cerrar
           </button>
         </div>
-      </div>
+      </section>
     </div>
+  }
 
-    <!-- ==================== VISTA 2: DETALLE Y SEGUIMIENTO ==================== -->
-    <div
-      *ngIf="pedidoSeleccionado"
-      style="
-        background-color: #f3ecf4;
-        border-radius: 22px;
-        padding: 22px;
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-        box-sizing: border-box;
-      "
-    >
-      <div
-        style="
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: space-between;
-          align-items: center;
-          gap: 10px;
-        "
+  @if (pedidoACancelar(); as pedido) {
+    <form class="modal" [formGroup]="cancelacionForm" (ngSubmit)="confirmarCancelacion()">
+      <div class="modal__telon" (click)="cerrarCancelacion()" aria-hidden="true"></div>
+      <section
+        class="modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cancelar-titulo"
+        tabindex="-1"
+        (keydown)="alPulsarTecla($event, 'cancelar')"
       >
-        <button
-          type="button"
-          (click)="volverALista()"
-          style="
-            padding: 6px 14px;
-            border: 1px solid #4f2857;
-            border-radius: 999px;
-            background-color: #ffffff;
-            color: #4f2857;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >
-          ← Volver a mis pedidos
-        </button>
-
-        <div style="display: flex; gap: 8px; flex-wrap: wrap">
-          <button
-            type="button"
-            (click)="verComprobante(pedidoSeleccionado)"
-            style="
-              padding: 7px 14px;
-              border: 1px solid #4f2857;
-              border-radius: 999px;
-              background-color: #ffffff;
-              color: #4f2857;
-              font-size: 12px;
-              font-weight: 700;
-              cursor: pointer;
-            "
-          >
-            Ver comprobante
+        <h2 id="cancelar-titulo">Cancelar pedido {{ pedido.folio }}</h2>
+        <p>
+          Esta acción solo es válida en Recibido, Confirmado o En producción. El servidor debe
+          liberar reservas y generar el reembolso simulado; aquí no se ejecuta ninguna transacción.
+        </p>
+        <label for="motivo-cancelacion">Motivo de la cancelación</label>
+        <textarea
+          id="motivo-cancelacion"
+          formControlName="motivo"
+          rows="3"
+          maxlength="200"
+          autofocus
+          [attr.aria-invalid]="cancelacionForm.controls.motivo.invalid"
+        ></textarea>
+        @if (
+          cancelacionForm.controls.motivo.invalid &&
+          (cancelacionForm.controls.motivo.dirty || cancelacionForm.controls.motivo.touched)
+        ) {
+          <small class="campo__error">Indica un motivo de al menos 3 caracteres.</small>
+        }
+        <div class="modal__acciones">
+          <button type="button" class="boton boton--secundario" (click)="cerrarCancelacion()">
+            Conservar pedido
           </button>
-          <button
-            *ngIf="puedeCancelar(pedidoSeleccionado)"
-            type="button"
-            (click)="cancelarPedido(pedidoSeleccionado)"
-            style="
-              padding: 7px 14px;
-              border: 1px solid #8b1e3f;
-              border-radius: 999px;
-              background-color: #ffffff;
-              color: #8b1e3f;
-              font-size: 12px;
-              font-weight: 700;
-              cursor: pointer;
-            "
-          >
-            Cancelar pedido
-          </button>
-          <button
-            *ngIf="pedidoSeleccionado.estado === 'ENTREGADO'"
-            type="button"
-            (click)="onSolicitarCambio(pedidoSeleccionado)"
-            style="
-              padding: 7px 14px;
-              border: none;
-              border-radius: 999px;
-              background-color: #4f2857;
-              color: #ffffff;
-              font-size: 12px;
-              font-weight: 600;
-              cursor: pointer;
-            "
-          >
-            Solicitar cambio o devolución
+          <button type="submit" class="boton boton--peligro" [disabled]="cancelando()">
+            {{ cancelando() ? 'Cancelando…' : 'Cancelar pedido' }}
           </button>
         </div>
-      </div>
-
-      <!-- Cabecera del folio -->
-      <div
-        style="
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: space-between;
-          align-items: baseline;
-          gap: 10px;
-          border-bottom: 1px solid rgba(79, 40, 87, 0.2);
-          padding-bottom: 12px;
-        "
-      >
-        <div>
-          <h3 style="margin: 0; font-size: 20px; font-weight: 700; color: #332736">
-            Pedido {{ pedidoSeleccionado.folio }}
-          </h3>
-          <span style="font-size: 12px; color: #534057"
-            >Realizado el {{ pedidoSeleccionado.fecha | date: 'dd/MM/yyyy HH:mm' }} · Guía
-            {{ pedidoSeleccionado.guia || 'sin asignar' }}</span
-          >
-        </div>
-        <span
-          style="
-            background-color: #4f2857;
-            color: #ffffff;
-            padding: 4px 12px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-          "
-        >
-          {{ etiquetaEstado(pedidoSeleccionado.estado) }}
-        </span>
-      </div>
-
-      <!-- Línea de seguimiento -->
-      <div>
-        <h4 style="margin: 0 0 10px; font-size: 15px; font-weight: 700; color: #332736">
-          Seguimiento del envío
-        </h4>
-        <div style="display: flex; flex-direction: column; gap: 10px">
-          <div
-            *ngFor="let paso of pedidoSeleccionado.seguimiento"
-            style="
-              background-color: #ffffff;
-              border-radius: 14px;
-              padding: 12px 14px;
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              gap: 12px;
-            "
-          >
-            <div>
-              <div style="font-size: 13px; font-weight: 700; color: #4f2857">
-                {{ paso.completado ? '✓ ' : '• ' }}{{ paso.estado }}
-              </div>
-              <div style="font-size: 12px; color: #534057; margin-top: 2px">
-                {{ paso.descripcion }}
-              </div>
-            </div>
-            <span style="font-size: 11px; color: #534057; font-weight: 600; white-space: nowrap">{{
-              paso.fecha
-            }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Datos de entrega, pago y facturación -->
-      <div
-        style="
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 12px;
-          font-size: 12px;
-        "
-      >
-        <div style="background-color: #ffffff; border-radius: 14px; padding: 12px 14px">
-          <strong style="display: block; margin-bottom: 4px; color: #332736"
-            >Dirección de entrega</strong
-          >
-          <span style="color: #534057">{{ pedidoSeleccionado.direccionResumen }}</span>
-        </div>
-        <div style="background-color: #ffffff; border-radius: 14px; padding: 12px 14px">
-          <strong style="display: block; margin-bottom: 4px; color: #332736">Estado de pago</strong>
-          <span style="color: #534057">{{ pedidoSeleccionado.medioPagoResumen }}</span>
-          <div style="margin-top: 6px; color: #4f2857; font-weight: 600">
-            Artículos: {{ pedidoSeleccionado.articulosCount }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Comprobante histórico -->
-      <div
-        *ngIf="comprobante"
-        style="
-          background-color: #ffffff;
-          border-radius: 14px;
-          padding: 14px;
-          font-size: 12px;
-          color: #534057;
-        "
-      >
-        <strong style="display: block; margin-bottom: 6px; color: #332736"
-          >Comprobante {{ comprobante.folio }}</strong
-        >
-        <div>Estado de pago: {{ comprobante.estado_pago }}</div>
-        <div>Subtotal: ${{ comprobante.subtotal }} · Envío: ${{ comprobante.costo_envio }}</div>
-        <div>Descuento: ${{ comprobante.descuento_monto }} · Total: ${{ comprobante.total }}</div>
-      </div>
-
-      <!-- Artículos del pedido -->
-      <div>
-        <h4 style="margin: 0 0 8px; font-size: 15px; font-weight: 700; color: #332736">
-          Artículos incluidos
-        </h4>
-        <div style="display: flex; flex-direction: column; gap: 8px">
-          <div
-            *ngFor="let art of pedidoSeleccionado.articulos"
-            style="
-              background-color: #ffffff;
-              border-radius: 14px;
-              padding: 10px 14px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              font-size: 13px;
-            "
-          >
-            <div>
-              <strong>{{ art.nombre }}</strong>
-              <div style="font-size: 12px; color: #534057">
-                Color: {{ art.colorNombre }} · Talla: {{ art.talla }} · Cant: {{ art.cantidad }} ·
-                SKU: {{ art.sku }}
-              </div>
-            </div>
-            <strong style="color: #4f2857">${{ art.precioUnitarioConIva * art.cantidad }}</strong>
-          </div>
-        </div>
-        <div
-          style="
-            margin-top: 10px;
-            text-align: right;
-            font-size: 15px;
-            font-weight: 700;
-            color: #332736;
-          "
-        >
-          Total pagado (IVA incluido):
-          <span style="color: #4f2857">${{ pedidoSeleccionado.totalConIva }}</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+      </section>
+    </form>
+  }
+</main>

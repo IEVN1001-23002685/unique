@@ -1,0 +1,21 @@
+.cd-lineas-resumen {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.875rem 0;
+}
+
+.cd-evidencias--amplias figure {
+  width: 6rem;
+}
+
+.cd-evidencias--amplias img,
+.cd-evidencias--amplias .cd-evidencias__vacio {
+  width: 6rem;
+  height: 6rem;
+}
+
+@media (max-width: 30rem) {
+  .cd-acciones .boton {
+    width: 100%;
+  }
+}

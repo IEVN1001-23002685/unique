@@ -32,19 +32,39 @@ export class PlanSugerido {
     () => this.servicio.planSugerido().filter((fila) => fila.cantidadSugerida > 0).length,
   );
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
+  protected puedeCrear(fila: FilaPlanSugerido): boolean {
+    return (
+      fila.cantidadSugerida > 0 &&
+      fila.ordenAbiertaFolio === null &&
+      !!fila.varianteId &&
+      fila.varianteId > 0 &&
+      !this.servicio.errorCarga()
+    );
+  }
+
   protected crearDesdePlan(fila: FilaPlanSugerido): void {
-    if (fila.cantidadSugerida <= 0) {
+    if (!this.puedeCrear(fila)) {
+      if (fila.ordenAbiertaFolio) {
+        this.avisos.mostrar(
+          'informacion',
+          `Ya existe la orden ${fila.ordenAbiertaFolio}: Flask debe sumar la demanda a esa orden.`,
+        );
+      }
       return;
     }
-    if (!fila.varianteId || fila.varianteId <= 0) {
-      this.avisos.mostrar('error', 'La variante sugerida no está disponible en el catálogo.');
+    const varianteId = fila.varianteId;
+    if (varianteId === undefined || varianteId <= 0) {
       return;
     }
     this.servicio
       .crearOrden({
         lineas: [
           {
-            varianteId: fila.varianteId,
+            varianteId,
             sku: fila.sku,
             nombreProducto: fila.nombreProducto,
             cantidad: fila.cantidadSugerida,

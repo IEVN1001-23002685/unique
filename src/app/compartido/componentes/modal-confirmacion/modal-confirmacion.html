@@ -10,7 +10,12 @@
       <button type="button" class="boton boton--secundario" autofocus (click)="cancelar.emit()">
         Cancelar
       </button>
-      <button type="button" class="boton boton--peligro" (click)="confirmar.emit()">
+      <button
+        type="button"
+        class="boton boton--peligro"
+        [disabled]="disabledConfirmar()"
+        (click)="confirmar.emit()"
+      >
         {{ etiquetaConfirmar() }}
       </button>
     </div>

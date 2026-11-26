@@ -3,8 +3,10 @@ import { Component, computed, HostListener, inject, signal } from '@angular/core
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { mensajeError } from '../../../../core/api/errores';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
+import { MAX_PIEZAS_POR_LINEA } from '../../../carrito/modelos/carrito';
 import { CarritoServicio } from '../../../carrito/servicios/carrito-servicio';
-import { CatalogoServicio } from '../../servicios/catalogo-servicio';
+import { CatalogoServicio, type OrigenCatalogo } from '../../servicios/catalogo-servicio';
 import {
   COLORES_CATALOGO,
   CodigoColorCatalogo,
@@ -28,6 +30,7 @@ export class DetalleProducto {
   private readonly router = inject(Router);
   private readonly carrito = inject(CarritoServicio);
   private readonly catalogo = inject(CatalogoServicio);
+  private readonly sesion = inject(AuthStateService);
 
   protected readonly producto = signal<ProductoCatalogo | undefined>(undefined);
   protected readonly imagenNoDisponible = signal(false);
@@ -36,6 +39,8 @@ export class DetalleProducto {
   protected readonly cantidad = signal(1);
   protected readonly mensaje = signal('');
   protected readonly error = signal('');
+  protected readonly origen = signal<OrigenCatalogo>('servidor');
+  protected readonly miniaturasSinImagen = signal<CodigoColorCatalogo[]>([]);
   protected readonly sinConexion = signal(
     typeof navigator !== 'undefined' ? !navigator.onLine : false,
   );
@@ -50,15 +55,19 @@ export class DetalleProducto {
       this.mensaje.set('');
       this.error.set('');
       this.imagenNoDisponible.set(false);
+      this.miniaturasSinImagen.set([]);
+      this.origen.set('servidor');
       if (!Number.isInteger(productoId) || productoId <= 0) {
         this.producto.set(undefined);
         return;
       }
 
       this.catalogo.obtener(productoId).subscribe({
-        next: (encontrado) => {
+        next: (respuesta) => {
+          const encontrado = respuesta.datos;
           const primeraVariante = encontrado?.variantes.find((variante) => variante.activa);
           this.producto.set(encontrado && productoVisible(encontrado) ? encontrado : undefined);
+          this.origen.set(respuesta.origen);
           this.colorSeleccionado.set(primeraVariante?.colorCodigo ?? null);
           this.tallaSeleccionada.set(primeraVariante?.talla ?? null);
         },
@@ -77,6 +86,27 @@ export class DetalleProducto {
   protected readonly colores = computed(() => [
     ...new Set(this.variantes().map((variante) => variante.colorCodigo)),
   ]);
+
+  protected readonly aviso = computed(() => {
+    if (this.sinConexion()) {
+      return 'Sin conexión: existencias y precios pueden no estar actualizados.';
+    }
+    if (this.origen() === 'cache') {
+      return 'Sin conexión: se muestran los últimos datos consultados. Existencias y precios pueden no estar actualizados.';
+    }
+    if (this.origen() === 'demostracion') {
+      return 'Detalle de demostración: Flask no respondió. Precios, existencias y fechas son ejemplos.';
+    }
+    return '';
+  });
+
+  protected readonly miniaturas = computed(() =>
+    this.colores().map((color) => ({
+      color,
+      nombre: COLORES_CATALOGO[color].nombre,
+      imagen: this.variantes().find((variante) => variante.colorCodigo === color)?.imagen ?? '',
+    })),
+  );
 
   protected readonly tallas = computed(() => [
     ...new Set(
@@ -141,6 +171,17 @@ export class DetalleProducto {
     );
   }
 
+  protected imagenMiniatura(color: CodigoColorCatalogo): string {
+    if (this.miniaturasSinImagen().includes(color)) return '';
+    return this.miniaturas().find((miniatura) => miniatura.color === color)?.imagen ?? '';
+  }
+
+  protected marcarMiniaturaSinImagen(color: CodigoColorCatalogo): void {
+    this.miniaturasSinImagen.update((lista) =>
+      lista.includes(color) ? lista : [...lista, color],
+    );
+  }
+
   protected seleccionarColor(color: CodigoColorCatalogo): void {
     this.colorSeleccionado.set(color);
     this.imagenNoDisponible.set(false);
@@ -160,13 +201,13 @@ export class DetalleProducto {
   }
 
   protected aumentarCantidad(): void {
-    this.cantidad.update((cantidad) => Math.min(10, cantidad + 1));
+    this.cantidad.update((cantidad) => Math.min(MAX_PIEZAS_POR_LINEA, cantidad + 1));
   }
 
   protected cambiarCantidad(evento: Event): void {
     const valor = Number((evento.target as HTMLInputElement).value);
     const entero = Number.isFinite(valor) ? Math.trunc(valor) : 1;
-    this.cantidad.set(Math.min(10, Math.max(1, entero)));
+    this.cantidad.set(Math.min(MAX_PIEZAS_POR_LINEA, Math.max(1, entero)));
   }
 
   /** Entrega variante (SKU) y cantidad a M04; no reserva existencias (§5 y §7). */
@@ -180,6 +221,15 @@ export class DetalleProducto {
     const estado = estadoDisponibilidad(variante);
     if (!variante.comprable || estado === 'Agotado') {
       this.mensaje.set('Esta variante no está disponible. Elige otra talla o color.');
+      return;
+    }
+
+    // Un invitado puede llevar la muestra al carrito de su navegador; una cuenta
+    // con sesión solo puede agregar prendas confirmadas por Flask.
+    if (this.origen() !== 'servidor' && this.sesion.autenticado()) {
+      this.mensaje.set(
+        'Los datos son de demostración y Flask no respondió. No se guardó ningún producto en tu carrito.',
+      );
       return;
     }
 

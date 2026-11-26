@@ -21,7 +21,15 @@
     <form class="tarjeta bloque" [formGroup]="forma" (ngSubmit)="enviar()" novalidate>
       <h2 class="panel-titulo">Capturar conteo</h2>
 
-      @if (filas().length === 0) {
+      @if (servicio.errorCarga() || servicio.errorDetalle()) {
+        <div class="estado estado--error" role="alert">
+          <strong>No fue posible cargar los SKU.</strong>
+          <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+          <button type="button" class="boton boton--secundario" (click)="reintentar()">
+            Reintentar
+          </button>
+        </div>
+      } @else if (filas().length === 0) {
         <div class="estado" role="status">
           <strong>No hay SKU disponibles.</strong>
           <p>Da de alta variantes en M10 antes de registrar un conteo.</p>

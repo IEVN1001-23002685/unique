@@ -1,9 +1,10 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { Observable, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
-import { ApiService } from '../../../core/api/api.service';
+import { Observable, catchError, concatMap, forkJoin, map, of, tap } from 'rxjs';
+import { ApiService, type ValorParametro } from '../../../core/api/api.service';
 import { mensajeError } from '../../../core/api/errores';
 import { AuthStateService } from '../../../core/auth/auth-state.service';
+import { PerfilDemoServicio } from '../../../nucleo/servicios/perfil-demo-servicio';
 import { decimalPositivo } from '../../../compartido/validadores/validadores-negocio';
 import type { LoteMaterial, Material } from '../../inventario/modelos/inventario';
 import { InventarioServicio } from '../../inventario/servicios/inventario-servicio';
@@ -36,8 +37,13 @@ import {
   META_MERMA_PCT,
 } from '../modelos/merma';
 
+/** Fecha local de México; toISOString() usaría UTC y podría cambiar el día. */
 export function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  const hoy = new Date();
+  const anio = hoy.getFullYear();
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoy.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
 }
 
 export function redondear4(valor: number): number {
@@ -65,10 +71,6 @@ function mesesDelPeriodo(periodo: string, cantidad: number): string[] {
   return resultado;
 }
 
-function referenciaDeFolio(fecha: string, id: number): string {
-  return `MER-${fecha.slice(0, 4) || hoyISO().slice(0, 4)}-${String(id).padStart(4, '0')}`;
-}
-
 interface PaginaApi<T> {
   items: T[];
   total: number;
@@ -76,8 +78,82 @@ interface PaginaApi<T> {
   por_pagina: number;
 }
 
+/**
+ * Lectura paginada con tope defensivo. Acepta envelope paginado o arreglo plano;
+ * una API que ignore `pagina` no debe generar un ciclo infinito.
+ */
+function listarTodo<T>(
+  api: ApiService,
+  ruta: string,
+  params: Record<string, ValorParametro> = {},
+): Observable<T[]> {
+  const porPagina = 100;
+  const maxPaginas = 50;
+  const pedir = (pagina: number, previos: T[], restantes: number): Observable<T[]> =>
+    api
+      .get<PaginaApi<T> | T[]>(ruta, { params: { ...params, pagina, por_pagina: porPagina } })
+      .pipe(
+        concatMap((respuesta) => {
+          const items = Array.isArray(respuesta) ? respuesta : (respuesta.items ?? []);
+          const acumulados = [...previos, ...items];
+          const total = Array.isArray(respuesta)
+            ? acumulados.length
+            : typeof respuesta.total === 'number'
+              ? respuesta.total
+              : acumulados.length;
+          if (
+            items.length === 0 ||
+            items.length < porPagina ||
+            acumulados.length >= total ||
+            restantes <= 1
+          ) {
+            return of(acumulados);
+          }
+          return pedir(pagina + 1, acumulados, restantes - 1);
+        }),
+      );
+  return pedir(1, [], maxPaginas);
+}
+
+const PROCEDENCIAS: readonly ProcedenciaMerma[] = [
+  'MANUAL',
+  'M14',
+  'M15',
+  'M16',
+  'M07',
+  'M12',
+  'REVERSION',
+];
+
+function extraerReverso(
+  respuesta:
+    | MermaApi
+    | { merma?: MermaApi; reverso?: MermaApi; merma_inversa?: MermaApi },
+): MermaApi {
+  if ('id' in respuesta && typeof respuesta.id === 'number') {
+    return respuesta;
+  }
+  if ('reverso' in respuesta && respuesta.reverso) {
+    return respuesta.reverso;
+  }
+  if ('merma_inversa' in respuesta && respuesta.merma_inversa) {
+    return respuesta.merma_inversa;
+  }
+  if ('merma' in respuesta && respuesta.merma) {
+    return respuesta.merma;
+  }
+  throw new Error('Flask no devolvió el registro inverso de la corrección.');
+}
+
 interface MermaApi {
   id: number;
+  /** Si Flask define un folio propio se muestra; si no, se usa el id como referencia. */
+  folio?: string | null;
+  /**
+   * Procedencia declarada por Flask (M07, M12, M14, M15, M16). Se respeta cuando
+   * viene: el frontend no puede inferir de forma fiable una merma de M15 o M12.
+   */
+  procedencia?: string | null;
   origen: OrigenMerma;
   inventario_material_id: number | null;
   lote_id: number | null;
@@ -115,7 +191,8 @@ interface DetalleIndicadorApi {
   material: string | null;
   cantidad: string;
   costo_perdido: string;
-  porcentaje_etapa: string;
+  /** Lo calcula Flask en v_merma_resumen; si no viene, la vista lo deriva del detalle. */
+  porcentaje_etapa?: string | null;
 }
 
 interface IndicadoresApi {
@@ -127,8 +204,8 @@ interface IndicadoresApi {
   merma_producto_pct: string;
   merma_material_pct: string;
   costo_perdido: string;
-  por_etapa: Record<string, { cantidad: string; costo_perdido: string }>;
-  top_causas: { causa: string; cantidad: string }[];
+  por_etapa?: Record<string, { cantidad: string; costo_perdido: string }>;
+  top_causas?: { causa: string; cantidad: string }[];
   detalle: DetalleIndicadorApi[];
 }
 
@@ -162,6 +239,7 @@ interface IndicadoresVacios {
 export class MermasServicio {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthStateService);
+  private readonly perfilDemo = inject(PerfilDemoServicio);
   private readonly inventario = inject(InventarioServicio);
   private readonly productos = inject(ProductosServicio);
   private readonly produccion = inject(ProduccionServicio);
@@ -171,9 +249,21 @@ export class MermasServicio {
   private readonly total = signal(0);
   private readonly indicadoresApi = signal<IndicadoresApi | null>(null);
   private readonly reversados = signal<Set<number>>(new Set());
+  private readonly cargandoInterno = signal(false);
+  private readonly errorCargaInterno = signal('');
+  private readonly limitacionAdminInterno = signal('');
 
   readonly cargado = signal(false);
-  readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
+  readonly cargando = this.cargandoInterno.asReadonly();
+  /** Lista vacía no debe confundirse con un fallo de Flask. */
+  readonly errorCarga = this.errorCargaInterno.asReadonly();
+  /** Catálogo e indicadores son de Administrador; si fallan, el historial sigue útil. */
+  readonly limitacionAdmin = this.limitacionAdminInterno.asReadonly();
+  readonly esAdministrador = computed(() =>
+    this.auth.autenticado()
+      ? this.auth.puede(['ADMIN'])
+      : this.perfilDemo.esAdministrador(),
+  );
 
   readonly mermas = this.lista.asReadonly();
   readonly causas = this.listaCausas.asReadonly();
@@ -191,68 +281,71 @@ export class MermasServicio {
   });
 
   constructor() {
-    this.recargar().subscribe({ error: () => this.cargado.set(true) });
+    this.recargar().subscribe();
   }
 
+  /** Recarga desde Flask. Nunca sustituye datos buenos por listas vacías ante un error. */
   recargar(): Observable<void> {
     const admin = this.esAdministrador();
-    return forkJoin({
-      pagina: this.listarMermas(),
-      causas: admin
-        ? this.api
-            .get<PaginaApi<CausaApi>>('/catalogos/causa-merma', {
-              params: { por_pagina: 100 },
-            })
-            .pipe(
-              catchError(() => of({ items: [] as CausaApi[] })),
-              map((respuesta) => respuesta.items.map((causa) => this.adaptarCausa(causa))),
-            )
-        : of([] as CausaMerma[]),
-      indicadores: admin
-        ? this.api
-            .get<IndicadoresApi>('/mermas/indicadores')
-            .pipe(catchError(() => of(null)))
-        : of(null),
-    }).pipe(
-      tap(({ pagina, causas, indicadores }) => {
-        const filas = pagina.items.map((fila) => this.adaptarMerma(fila, admin));
-        this.lista.set(filas);
-        this.total.set(pagina.total);
-        this.listaCausas.set(
-          causas.length > 0 ? causas : this.causasObservadas(filas),
+    this.cargandoInterno.set(true);
+    this.errorCargaInterno.set('');
+    this.limitacionAdminInterno.set('');
+
+    const causas = listarTodo<CausaApi>(this.api, '/catalogos/causa-merma').pipe(
+      map((respuesta) => respuesta.map((causa) => this.adaptarCausa(causa))),
+      catchError((error: unknown) => {
+        this.limitacionAdminInterno.set(
+          `No fue posible consultar el catálogo de causas de M22: ${mensajeError(error)}. ` +
+            'Se muestran solo las causas observadas en el historial.',
         );
-        this.indicadoresApi.set(indicadores);
+        return of([] as CausaMerma[]);
+      }),
+    );
+
+    const indicadores = admin
+      ? this.api.get<IndicadoresApi>('/mermas/indicadores').pipe(
+          catchError((error: unknown) => {
+            const aviso =
+              `No fue posible consultar los indicadores de M17: ${mensajeError(error)}. ` +
+              'Las cifras se muestran como no disponibles hasta reintentar.';
+            this.limitacionAdminInterno.set(
+              this.limitacionAdminInterno()
+                ? `${this.limitacionAdminInterno()} ${aviso}`
+                : aviso,
+            );
+            return of(null);
+          }),
+        )
+      : of(null);
+
+    return forkJoin({
+      mermas: listarTodo<MermaApi>(this.api, '/mermas'),
+      causas: admin ? causas : of([] as CausaMerma[]),
+      indicadores,
+    }).pipe(
+      tap(({ mermas, causas: catalogoCausas, indicadores: datosIndicadores }) => {
+        const filas = mermas.map((fila) => this.adaptarMerma(fila, admin));
+        this.lista.set(filas);
+        this.total.set(filas.length);
+        this.listaCausas.set(
+          catalogoCausas.length > 0 ? catalogoCausas : this.causasObservadas(filas),
+        );
+        this.indicadoresApi.set(datosIndicadores);
+      }),
+      tap(() => {
+        this.cargandoInterno.set(false);
+        this.cargado.set(true);
+      }),
+      catchError((error: unknown) => {
+        this.errorCargaInterno.set(
+          mensajeError(error, 'No fue posible cargar las mermas desde Flask.'),
+        );
+        this.cargandoInterno.set(false);
+        this.cargado.set(true);
+        return of(undefined);
       }),
       map(() => undefined),
-      tap(() => this.cargado.set(true)),
     );
-  }
-
-  private listarMermas(): Observable<PaginaApi<MermaApi>> {
-    return this.api
-      .get<PaginaApi<MermaApi>>('/mermas', { params: { por_pagina: 100 } })
-      .pipe(
-        switchMap((primera) => {
-          const paginas = Math.ceil(primera.total / 100);
-          if (paginas <= 1) {
-            return of(primera);
-          }
-          const restantes = Array.from({ length: paginas - 1 }, (_, indice) =>
-            this.api.get<PaginaApi<MermaApi>>('/mermas', {
-              params: { pagina: indice + 2, por_pagina: 100 },
-            }),
-          );
-          return forkJoin(restantes).pipe(
-            map((respuestas) => ({
-              ...primera,
-              items: [
-                ...primera.items,
-                ...respuestas.flatMap((respuesta) => respuesta.items),
-              ],
-            })),
-          );
-        }),
-      );
   }
 
   private adaptarCausa(causa: CausaApi): CausaMerma {
@@ -308,7 +401,8 @@ export class MermasServicio {
 
     return {
       id: datos.id,
-      folio: referenciaDeFolio(fecha, datos.id),
+      // El documento no define prefijo de folio para merma: no se inventa uno.
+      folio: datos.folio?.trim() || `Registro ${datos.id}`,
       origen: datos.origen,
       procedencia,
       automatica: procedencia !== 'MANUAL' && procedencia !== 'REVERSION',
@@ -352,6 +446,10 @@ export class MermasServicio {
   private procedencia(datos: MermaApi): ProcedenciaMerma {
     if (datos.reversa_de_id !== null) {
       return 'REVERSION';
+    }
+    const declarada = datos.procedencia as ProcedenciaMerma | undefined;
+    if (declarada && declarada !== 'REVERSION' && PROCEDENCIAS.includes(declarada)) {
+      return declarada;
     }
     if (datos.orden_produccion_id !== null) {
       return 'M16';
@@ -589,11 +687,16 @@ export class MermasServicio {
           : `${descripcion || 'Merma registrada'} · Evidencia referida: ${evidencia}`,
     };
 
-    return this.api.post<MermaApi>('/mermas', cuerpo).pipe(
+    return this.api.post<MermaApi | { merma: MermaApi }>('/mermas', cuerpo).pipe(
       map((respuesta) => {
-        const registro = this.adaptarMerma(respuesta, this.esAdministrador());
-        this.lista.update((actuales) => [registro, ...actuales.filter((item) => item.id !== registro.id)]);
-        const mensaje = `${registro.folio} registrado. La existencia se descontó y el movimiento MERMA quedó registrado en el inventario correspondiente.`;
+        const datosRespuesta = 'merma' in respuesta ? respuesta.merma : respuesta;
+        const registro = this.adaptarMerma(datosRespuesta, this.esAdministrador());
+        this.lista.update((actuales) => [
+          registro,
+          ...actuales.filter((item) => item.id !== registro.id),
+        ]);
+        this.total.set(this.lista().length);
+        const mensaje = `${registro.folio} registrado en Flask. El descuento de existencias y el movimiento MERMA los ejecuta el servidor.`;
         return { ok: true as const, folio: registro.folio, mensaje };
       }),
       tap(() => this.recargarIndicadores()),
@@ -620,16 +723,18 @@ export class MermasServicio {
     }
 
     return this.api
-      .post<{ merma: MermaApi; reverso: MermaApi }>(`/mermas/${id}/reversar`, {
-        motivo: motivo.trim(),
-      })
+      .post<MermaApi | { merma?: MermaApi; reverso?: MermaApi; merma_inversa?: MermaApi }>(
+        `/mermas/${id}/reversar`,
+        { motivo: motivo.trim() },
+      )
       .pipe(
         map((respuesta) => {
-          const reverso = this.adaptarMerma(respuesta.reverso, true);
+          const reverso = this.adaptarMerma(extraerReverso(respuesta), true);
           this.lista.update((actuales) => [
             reverso,
             ...actuales.filter((item) => item.id !== reverso.id),
           ]);
+          this.total.set(this.lista().length);
           this.reversados.update((actuales) => new Set([...actuales, id]));
           return {
             ok: true,
@@ -661,6 +766,8 @@ export class MermasServicio {
 
     const periodo = hoyISO().slice(0, 7);
     const detalle = datos.detalle ?? [];
+    const porEtapaApi = datos.por_etapa ?? {};
+    const topCausasApi = datos.top_causas ?? [];
     const metaPct = numero(datos.meta_pct);
     const productoPct = numero(datos.merma_producto_pct);
     const materialPct = numero(datos.merma_material_pct);
@@ -679,16 +786,25 @@ export class MermasServicio {
         filas.reduce((total, fila) => total + (fila.material ? numero(fila.cantidad) : 0), 0),
       );
       const referencia = cantidadPiezas > 0 ? referenciaProducto : referenciaMaterial;
-      const porcentaje =
-        referencia > 0
-          ? redondear2((numero(datos.por_etapa[etapa]?.cantidad ?? 0) / referencia) * 100)
+      // Flask calcula el porcentaje por etapa en v_merma_resumen; solo se deriva
+      // si la respuesta no lo informa, para no redefinir una regla de negocio.
+      const informado = filas.find(
+        (fila) =>
+          fila.porcentaje_etapa !== undefined &&
+          fila.porcentaje_etapa !== null &&
+          fila.porcentaje_etapa !== '',
+      );
+      const porcentaje = informado
+        ? redondear2(numero(informado.porcentaje_etapa))
+        : referencia > 0
+          ? redondear2((numero(porEtapaApi[etapa]?.cantidad ?? 0) / referencia) * 100)
           : 0;
       return {
         clave: etapa,
         etiqueta: ETIQUETAS_ETAPA[etapa],
         cantidad: cantidadPiezas,
         cantidadMaterial: cantidadM2,
-        costoPerdido: numero(datos.por_etapa[etapa]?.costo_perdido),
+        costoPerdido: numero(porEtapaApi[etapa]?.costo_perdido),
         referencia,
         porcentaje,
         base: 'meta' as const,
@@ -699,7 +815,7 @@ export class MermasServicio {
 
     const causas = new Map<string, string>();
     this.listaCausas().forEach((causa) => causas.set(causa.nombre, causa.nombre));
-    datos.top_causas.forEach((causa) => causas.set(causa.causa, causa.causa));
+    topCausasApi.forEach((causa) => causas.set(causa.causa, causa.causa));
 
     const porCausa: FilaIndicador[] = [...new Set(detalle.map((fila) => fila.causa))]
       .map((nombre) => {
@@ -737,7 +853,7 @@ export class MermasServicio {
       'unidad base',
     );
 
-    const causasTop5: FilaIndicador[] = datos.top_causas.map((causa) => {
+    const causasTop5: FilaIndicador[] = topCausasApi.map((causa) => {
       const filas = detalle.filter((fila) => fila.causa === causa.causa);
       return {
         clave: causa.causa,
@@ -828,7 +944,10 @@ export class MermasServicio {
       cantidadMaterial,
       costoPerdido: costo,
       costoPerdidoMes: costoPeriodo,
-      totalRegistros: this.total(),
+      // Los reversos compensan, pero no cuentan como registros analizados.
+      totalRegistros: this.lista().length
+        ? this.lista().filter((merma) => !merma.esReversion).length
+        : this.total(),
       porEtapa,
       porCausa,
       porProducto,

@@ -1,6 +1,8 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
+import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
 import { NavegacionInventario } from '../../componentes/navegacion-inventario/navegacion-inventario';
 import { SemaforoInventario } from '../../componentes/semaforo-inventario/semaforo-inventario';
 import { CATEGORIAS, type CategoriaMaterial, type ExistenciaVista } from '../../modelos/inventario';
@@ -16,7 +18,14 @@ type FiltroCategoria = CategoriaMaterial | 'Todas';
 })
 export class Existencias {
   protected readonly servicio = inject(InventarioServicio);
+  private readonly auth = inject(AuthStateService);
+  private readonly perfilDemo = inject(PerfilDemoServicio);
   protected readonly categorias: FiltroCategoria[] = ['Todas', ...CATEGORIAS];
+
+  /** §10 reserva /compras al Administrador, aunque §3 permita al Operativo requisitar. */
+  protected readonly puedeCapturarRequisicion = computed(() =>
+    this.auth.autenticado() ? this.auth.puede(['ADMIN']) : this.perfilDemo.esAdministrador(),
+  );
 
   protected readonly categoria = signal<FiltroCategoria>('Todas');
   protected readonly busqueda = signal('');
@@ -66,5 +75,9 @@ export class Existencias {
 
   protected etiquetaSemaforo(vista: ExistenciaVista): string {
     return { ROJO: 'Rojo', AMBAR: 'Ámbar', VERDE: 'Verde' }[vista.semaforo];
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
   }
 }

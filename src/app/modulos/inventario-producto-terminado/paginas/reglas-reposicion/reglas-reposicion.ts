@@ -1,7 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
+  FormControl,
+  FormGroup,
   ReactiveFormsModule,
   ValidationErrors,
   ValidatorFn,
@@ -20,6 +22,10 @@ const entero: ValidatorFn = (control: AbstractControl): ValidationErrors | null 
     : { entero: true };
 
 type CampoRegla = 'stockMinimo' | 'cantidadReposicion';
+type GrupoRegla = FormGroup<{
+  stockMinimo: FormControl<number>;
+  cantidadReposicion: FormControl<number>;
+}>;
 
 @Component({
   selector: 'app-reglas-reposicion',
@@ -34,20 +40,59 @@ export class ReglasReposicion {
 
   protected readonly busqueda = signal('');
   protected readonly intento = signal(false);
+  private firmaValores = '';
+  private firmaIdentificadores = '';
 
   protected readonly forma = this.fb.nonNullable.group({
-    reglas: this.fb.nonNullable.array(
-      this.servicio.filas().map((fila) =>
-        this.fb.nonNullable.group({
-          stockMinimo: [fila.stockMinimo, [Validators.required, Validators.min(0), entero]],
-          cantidadReposicion: [
-            fila.cantidadReposicion,
-            [Validators.required, Validators.min(1), entero],
-          ],
-        }),
-      ),
-    ),
+    reglas: this.fb.nonNullable.array<GrupoRegla>([]),
   });
+
+  constructor() {
+    // Las filas llegan de Flask después de construir el componente: se sincroniza el FormArray.
+    effect(() => {
+      const filas = this.servicio.filas();
+      const identificadores = filas.map((fila) => fila.varianteId).join('|');
+      const valores = filas
+        .map((fila) => `${fila.varianteId}:${fila.stockMinimo}:${fila.cantidadReposicion}`)
+        .join('|');
+      if (valores === this.firmaValores) {
+        return;
+      }
+      const conservarEdicion =
+        !this.forma.pristine && identificadores === this.firmaIdentificadores;
+      if (conservarEdicion) {
+        return;
+      }
+      this.firmaIdentificadores = identificadores;
+      this.firmaValores = valores;
+      this.forma.controls.reglas.clear();
+      filas.forEach((fila) =>
+        this.forma.controls.reglas.push(this.crearGrupo(fila.stockMinimo, fila.cantidadReposicion)),
+      );
+      this.forma.markAsPristine();
+      if (!untracked(() => this.servicio.puedeEditarReglas())) {
+        this.forma.controls.reglas.disable({ emitEvent: false });
+      }
+    });
+
+    // Se deshabilita el FormArray completo: evita el atributo `disabled` en la plantilla.
+    effect(() => {
+      const editable = this.servicio.puedeEditarReglas();
+      const reglas = this.forma.controls.reglas;
+      if (editable && reglas.disabled) {
+        reglas.enable({ emitEvent: false });
+      } else if (!editable && reglas.enabled) {
+        reglas.disable({ emitEvent: false });
+      }
+    });
+  }
+
+  private crearGrupo(stockMinimo: number, cantidadReposicion: number): GrupoRegla {
+    return this.fb.nonNullable.group({
+      stockMinimo: [stockMinimo, [Validators.required, Validators.min(0), entero]],
+      cantidadReposicion: [cantidadReposicion, [Validators.required, Validators.min(1), entero]],
+    });
+  }
 
   protected readonly filasConIndice = computed(() => {
     const termino = this.busqueda().trim().toLowerCase();
@@ -73,7 +118,15 @@ export class ReglasReposicion {
     return control ? control.invalid && (control.touched || this.intento()) : false;
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected guardar(): void {
+    if (!this.servicio.puedeEditarReglas()) {
+      this.avisos.mostrar('error', 'Solo el Administrador puede editar reglas de reposición.');
+      return;
+    }
     this.intento.set(true);
     if (this.forma.invalid) {
       this.forma.markAllAsTouched();

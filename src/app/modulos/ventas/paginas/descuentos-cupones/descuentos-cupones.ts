@@ -28,6 +28,10 @@ export class DescuentosCupones {
     this.servicio.recargar().subscribe();
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly filtrados = computed(() => {
     const termino = this.busqueda().trim().toLowerCase();
     const aplicacion = this.aplicacion();

@@ -34,7 +34,15 @@
       </p>
     </div>
 
-    @if (!servicio.puedeVerCostos()) {
+    @if (servicio.errorCarga() || servicio.errorDetalle()) {
+      <div class="estado estado--error" role="alert">
+        <strong>No fue posible cargar el costeo estándar.</strong>
+        <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (!servicio.puedeVerCostos()) {
       <div class="estado" role="status">
         <strong>Información reservada al Administrador.</strong>
         <p>Flask no expone costos ni márgenes al rol Operativo.</p>

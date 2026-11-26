@@ -35,6 +35,8 @@ export interface FilaInventario {
   ventasDiarias30: number;
   /** Días de cobertura calculados por Flask; se respeta cuando viene en la respuesta. */
   diasCoberturaApi?: number | null;
+  /** Semáforo calculado por Flask; si no llega, se deriva de disponible y mínimo. */
+  semaforoApi?: SemaforoInventario;
 }
 
 export interface FilaExistencia extends FilaInventario {

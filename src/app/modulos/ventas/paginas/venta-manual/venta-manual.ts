@@ -136,8 +136,13 @@ export class VentaManual {
 
   constructor() {
     this.servicio.recargar().subscribe();
-    this.servicio.cargarDatosManuales().subscribe();
+    this.servicio.cargarDatosManuales().subscribe(() => this.sincronizarLineas());
     this.sincronizarLineas();
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+    this.servicio.cargarDatosManuales().subscribe(() => this.sincronizarLineas());
   }
 
   protected esInvalido(campo: string): boolean {

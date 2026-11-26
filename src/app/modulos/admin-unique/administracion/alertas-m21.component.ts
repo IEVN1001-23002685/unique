@@ -1,20 +1,43 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { mensajeError } from '../../../core/api/errores';
 import { AlertasService, FiltrosAlerta } from '../services/alertas.service';
 import { AuthSessionService } from '../services/auth-session.service';
 import { AccionAlerta, Alerta, ReglaAlerta } from '../services/ui-admin.models';
 
 type Pestana = 'abiertas' | 'resueltas' | 'reglas';
+type SeveridadTab = 'TODAS' | 'CRITICA' | 'PREVENTIVA' | 'INFORMATIVA';
+
+interface DestinoAlerta {
+  ruta: string;
+  etiqueta: string;
+}
+
+/** Botones «ver origen» del catálogo de M21; las acciones que sí escriben siguen en AlertasService. */
+const DESTINOS: Record<string, DestinoAlerta> = {
+  ORDEN_ROJA: { ruta: '/produccion', etiqueta: 'Ver orden' },
+  OC_RETRASADA: { ruta: '/compras/ordenes', etiqueta: 'Ver orden de compra' },
+  PEDIDO_ESTANCADO: { ruta: '/admin/pedidos', etiqueta: 'Ver pedido' },
+  MERMA_ALTA: { ruta: '/mermas/indicadores', etiqueta: 'Ver indicador' },
+  DIFERENCIA_CONTEO: { ruta: '/operacion/inventario-pt', etiqueta: 'Ver detalle' },
+  ENTREGA_FALLIDA: {
+    ruta: '/panel-admin/entregas/seguimiento',
+    etiqueta: 'Reprogramar o cancelar',
+  },
+  DEVOLUCION_PENDIENTE: { ruta: '/operacion/devoluciones', etiqueta: 'Abrir devolución' },
+  PAGO_PENDIENTE: { ruta: '/ventas', etiqueta: 'Validar pago' },
+  PROVEEDOR_EN_REVISION: { ruta: '/proveedores/evaluacion', etiqueta: 'Ver proveedor' },
+  DISENO_PENDIENTE: { ruta: '/admin/recetas/disenos', etiqueta: 'Abrir diseño' },
+};
 
 @Component({
   selector: 'app-alertas-m21',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './alertas-m21.component.html',
-  styleUrl: '../preparacion/modulos-admin.css',
+  styleUrls: ['../preparacion/modulos-admin.css', './alertas-m21.css'],
 })
 export class AlertasM21Component implements OnInit {
   private readonly servicio = inject(AlertasService);
@@ -23,38 +46,48 @@ export class AlertasM21Component implements OnInit {
   readonly auth = inject(AuthSessionService);
 
   pestana: Pestana = 'abiertas';
-  alertas: Alerta[] = [];
+  severidadTab: SeveridadTab = 'TODAS';
+  alertasAbiertas: Alerta[] = [];
   resueltas: Alerta[] = [];
   reglas: ReglaAlerta[] = [];
   reglasOriginales: ReglaAlerta[] = [];
-  filtros: FiltrosAlerta = { estado: 'ABIERTA', severidad: '', tipo: '' };
+
+  filtros: FiltrosAlerta = { estado: 'ABIERTA', tipo: '' };
   cargando = true;
+  guardando = false;
   error = '';
   aviso = '';
-  pagina = 1;
-  porPagina = 20;
   total = 0;
   detalle: Alerta | null = null;
+  confirmacion: Alerta | null = null;
 
   get esAdmin(): boolean {
     return this.auth.usuario?.rol === 'ADMIN';
   }
 
-  /** `AlertaFiltrosSchema` rechaza paginación; se conserva la primera página del servidor. */
-  get totalPaginas(): number {
-    return 1;
-  }
-
+  /** Los contadores salen de la página cargada; Flask no acepta paginación en /alertas. */
   get criticas(): number {
-    return this.alertas.filter((a) => a.severidad === 'CRITICA').length;
+    return this.alertasAbiertas.filter((alerta) => alerta.severidad === 'CRITICA').length;
   }
 
   get preventivas(): number {
-    return this.alertas.filter((a) => a.severidad === 'PREVENTIVA').length;
+    return this.alertasAbiertas.filter((alerta) => alerta.severidad === 'PREVENTIVA').length;
   }
 
   get informativas(): number {
-    return this.alertas.filter((a) => a.severidad === 'INFORMATIVA').length;
+    return this.alertasAbiertas.filter((alerta) => alerta.severidad === 'INFORMATIVA').length;
+  }
+
+  get alertas(): Alerta[] {
+    return this.alertasAbiertas.filter(
+      (alerta) =>
+        (!this.filtros.tipo || alerta.tipo === this.filtros.tipo) &&
+        (this.severidadTab === 'TODAS' || alerta.severidad === this.severidadTab),
+    );
+  }
+
+  get hayMasRegistros(): boolean {
+    return this.total > this.alertasAbiertas.length;
   }
 
   ngOnInit(): void {
@@ -70,49 +103,47 @@ export class AlertasM21Component implements OnInit {
       this.error = '';
       this.aviso = '';
       this.detalle = null;
+      this.confirmacion = null;
       if (this.pestana === 'abiertas') this.cargar();
       if (this.pestana === 'resueltas') this.cargarResueltas();
       if (this.pestana === 'reglas') this.cargarReglas();
     });
   }
 
+  private visible(alerta: Alerta): boolean {
+    if (this.esAdmin) return true;
+    const destino = (alerta.rol_destino || '').toUpperCase();
+    if (!destino) return true;
+    return (
+      destino.includes('OPERATIVO') || destino.includes('AMBOS') || destino.includes('TODOS')
+    );
+  }
+
   cargar(): void {
     this.cargando = true;
     this.error = '';
-    this.servicio
-      .listar({
-        estado: this.filtros.estado || undefined,
-        tipo: this.filtros.tipo || undefined,
-        severidad: this.filtros.severidad || undefined,
-      })
-      .subscribe({
-        next: (respuesta) => {
-          this.alertas = respuesta.items;
-          this.total = respuesta.total;
-          this.pagina = respuesta.pagina;
-          this.porPagina = respuesta.por_pagina;
-          this.cargando = false;
-        },
-        error: (error: unknown) => {
-          this.error = mensajeError(error, 'No fue posible consultar las alertas.');
-          this.cargando = false;
-        },
-      });
+    this.servicio.listar({ estado: 'ABIERTA' }).subscribe({
+      next: (respuesta) => {
+        this.alertasAbiertas = respuesta.items.filter((alerta) => this.visible(alerta));
+        this.total = respuesta.total;
+        this.cargando = false;
+      },
+      error: (error: unknown) => {
+        this.error = mensajeError(error, 'No fue posible consultar las alertas.');
+        this.cargando = false;
+      },
+    });
   }
 
   cargarResueltas(): void {
     this.cargando = true;
     this.error = '';
     this.servicio
-      .resueltas({
-        tipo: this.filtros.tipo || undefined,
-        severidad: this.filtros.severidad || undefined,
-      })
+      .resueltas({ tipo: this.filtros.tipo || undefined })
       .subscribe({
         next: (respuesta) => {
-          this.resueltas = respuesta.items;
+          this.resueltas = respuesta.items.filter((alerta) => this.visible(alerta));
           this.total = respuesta.total;
-          this.pagina = respuesta.pagina;
           this.cargando = false;
         },
         error: (error: unknown) => {
@@ -124,22 +155,34 @@ export class AlertasM21Component implements OnInit {
 
   cargarReglas(): void {
     if (!this.esAdmin) return;
+    this.cargando = true;
+    this.error = '';
     this.servicio.reglas().subscribe({
       next: (reglas) => {
         this.reglas = reglas;
-        this.reglasOriginales = reglas.map((r) => ({ ...r }));
+        this.reglasOriginales = reglas.map((regla) => ({ ...regla }));
+        this.cargando = false;
       },
       error: (error: unknown) => {
         this.error = mensajeError(error, 'No se pudieron cargar las reglas.');
+        this.cargando = false;
       },
     });
   }
 
+  reintentar(): void {
+    if (this.pestana === 'resueltas') this.cargarResueltas();
+    else if (this.pestana === 'reglas') this.cargarReglas();
+    else this.cargar();
+  }
+
   cambiar(pestana: Pestana): void {
+    if (pestana === 'reglas' && !this.esAdmin) pestana = 'abiertas';
     this.pestana = pestana;
-    this.pagina = 1;
     this.error = '';
     this.aviso = '';
+    this.detalle = null;
+    this.confirmacion = null;
     const secciones: Record<Pestana, string> = {
       abiertas: 'bandeja',
       resueltas: 'resueltas',
@@ -148,12 +191,10 @@ export class AlertasM21Component implements OnInit {
     void this.router.navigate(['/panel-admin/alertas', secciones[pestana]]);
   }
 
-  cambiarPagina(delta: number): void {
-    const destino = this.pagina + delta;
-    if (destino < 1 || destino > this.totalPaginas) return;
-    this.pagina = destino;
-    if (this.pestana === 'abiertas') this.cargar();
-    if (this.pestana === 'resueltas') this.cargarResueltas();
+  cambiarSeveridad(tab: SeveridadTab): void {
+    this.severidadTab = tab;
+    this.detalle = null;
+    this.confirmacion = null;
   }
 
   accion(alerta: Alerta): AccionAlerta {
@@ -170,13 +211,33 @@ export class AlertasM21Component implements OnInit {
     return nombres[this.accion(alerta)];
   }
 
-  ejecutar(alerta: Alerta): void {
+  destino(tipo: string): DestinoAlerta | null {
+    return DESTINOS[tipo] ?? null;
+  }
+
+  etiquetaBoton(alerta: Alerta): string {
+    return this.destino(alerta.tipo)?.etiqueta ?? this.etiquetaAccion(alerta);
+  }
+
+  pedirConfirmacion(alerta: Alerta): void {
+    if (this.destino(alerta.tipo)) return;
+    this.confirmacion = alerta;
+    this.error = '';
+  }
+
+  cancelarAccion(): void {
+    this.confirmacion = null;
+  }
+
+  confirmarAccion(): void {
+    const alerta = this.confirmacion;
+    if (!alerta) return;
     const accion = this.accion(alerta);
-    if (!confirm(`¿Ejecutar "${accion}" sobre la alerta ${alerta.id}?`)) return;
+    this.confirmacion = null;
     this.error = '';
     this.servicio.ejecutarAccion(alerta.id, accion).subscribe({
       next: () => {
-        this.aviso = 'Acción ejecutada. La alerta quedó atendida.';
+        this.aviso = `Acción «${accion}» enviada. Flask marcó la alerta como atendida.`;
         this.detalle = null;
         this.cargar();
       },
@@ -191,32 +252,53 @@ export class AlertasM21Component implements OnInit {
     this.error = '';
   }
 
+  tiempoAbierta(alerta: Alerta): string {
+    if (!alerta.creado_en) return '—';
+    const fecha = new Date(alerta.creado_en);
+    if (Number.isNaN(fecha.getTime())) return '—';
+    const minutos = Math.max(0, Math.floor((Date.now() - fecha.getTime()) / 60_000));
+    if (minutos < 1) return 'hace un momento';
+    if (minutos < 60) return `hace ${minutos} min`;
+    const horas = Math.floor(minutos / 60);
+    const resto = minutos % 60;
+    if (horas < 24) return `hace ${horas} h${resto ? ` ${resto} min` : ''}`;
+    const dias = Math.floor(horas / 24);
+    return `hace ${dias} d ${horas % 24} h`;
+  }
+
+  nombreAtencion(alerta: Alerta): string {
+    return alerta.atendida_por ? `Usuario #${alerta.atendida_por}` : 'Sistema';
+  }
+
   guardarReglas(): void {
-    if (!this.esAdmin) return;
-    const invalida = this.reglas.find((r) => !/^\d+(\.\d+)?$/.test(r.valor ?? ''));
+    if (!this.esAdmin || this.guardando) return;
+    const invalida = this.reglas.find((regla) => !/^\d+(\.\d+)?$/.test(regla.valor ?? ''));
     if (invalida) {
       this.error = `El valor de "${invalida.clave}" debe ser numérico.`;
       return;
     }
-    if (!this.reglas.some((r, i) => r.valor !== this.reglasOriginales[i]?.valor)) {
+    if (!this.reglas.some((regla, i) => regla.valor !== this.reglasOriginales[i]?.valor)) {
       this.aviso = 'No hay cambios en las reglas.';
       return;
     }
     this.error = '';
+    this.guardando = true;
     this.servicio
       .actualizarReglas(
         this.reglas
-          .filter((r, i) => r.valor !== this.reglasOriginales[i]?.valor)
-          .map((r) => ({ clave: r.clave, valor: String(r.valor) })),
+          .filter((regla, i) => regla.valor !== this.reglasOriginales[i]?.valor)
+          .map((regla) => ({ clave: regla.clave, valor: String(regla.valor) })),
       )
       .subscribe({
         next: (reglas) => {
           this.reglas = reglas;
-          this.reglasOriginales = reglas.map((r) => ({ ...r }));
+          this.reglasOriginales = reglas.map((regla) => ({ ...regla }));
           this.aviso = 'Reglas actualizadas.';
+          this.guardando = false;
         },
         error: (error: unknown) => {
           this.error = mensajeError(error, 'No se pudieron guardar las reglas.');
+          this.guardando = false;
         },
       });
   }

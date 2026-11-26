@@ -4,6 +4,7 @@ import { invitadoGuard } from './modulos/acceso-registro/guards/invitado.guard';
 import { PanelAdminComponent } from './modulos/admin-unique/preparacion/panel-admin.component';
 import { authGuard, roleGuard } from './core/auth/auth-session.service';
 import { ADMIN_UNIQUE_ROUTES } from './modulos/admin-unique/admin.routes';
+import { checkoutGuard } from './modulos/carrito/guards/checkout.guard';
 
 const CLIENTE = [authGuard, roleGuard];
 const OPERATIVO = [authGuard, roleGuard];
@@ -21,37 +22,63 @@ export const routes: Routes = [
           import('./modulos/catalogo/catalogo.routes').then((m) => m.CATALOGO_RUTAS),
       },
       {
+        // §10.2: M04 es pública; la sesión se exige al ir a pagar.
         path: 'carrito',
-        canActivate: CLIENTE,
-        data: { roles: ['CLIENTE'] },
+        title: 'Mi carrito · UNIQUE',
         loadComponent: () => import('./modulos/carrito/carrito').then((c) => c.Carrito),
       },
       {
         path: 'pago',
-        canActivate: CLIENTE,
-        data: { roles: ['CLIENTE'] },
+        title: 'Pago · UNIQUE',
+        canActivate: [authGuard, checkoutGuard],
         loadComponent: () => import('./modulos/pago/pago').then((c) => c.Pago),
       },
       {
         path: 'cuenta',
+        title: 'Mi cuenta · UNIQUE',
         canActivate: CLIENTE,
         data: { roles: ['CLIENTE'] },
         loadComponent: () => import('./modulos/micuenta/micuenta').then((c) => c.Micuenta),
       },
       {
+        // §10.2: M06 expone el historial y el seguimiento directo por id.
         path: 'pedidos',
+        title: 'Mis pedidos · UNIQUE',
+        canActivate: CLIENTE,
+        data: { roles: ['CLIENTE'] },
+        loadComponent: () => import('./modulos/mispedidos/mispedidos').then((c) => c.MisPedidos),
+      },
+      {
+        path: 'pedidos/:id',
+        title: 'Seguimiento de pedido · UNIQUE',
         canActivate: CLIENTE,
         data: { roles: ['CLIENTE'] },
         loadComponent: () => import('./modulos/mispedidos/mispedidos').then((c) => c.MisPedidos),
       },
       {
         path: 'devoluciones',
-        canActivate: CLIENTE,
-        data: { roles: ['CLIENTE'] },
-        loadComponent: () =>
-          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
-            (c) => c.CambiosDevoluciones,
-          ),
+        title: 'Cambios y devoluciones · UNIQUE',
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            canActivate: CLIENTE,
+            data: { roles: ['CLIENTE'], ambito: 'cliente', vista: 'solicitar' },
+            loadComponent: () =>
+              import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+                (c) => c.CambiosDevoluciones,
+              ),
+          },
+          {
+            path: 'mis-solicitudes',
+            canActivate: CLIENTE,
+            data: { roles: ['CLIENTE'], ambito: 'cliente', vista: 'mis-solicitudes' },
+            loadComponent: () =>
+              import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+                (c) => c.CambiosDevoluciones,
+              ),
+          },
+        ],
       },
       {
         path: 'login',
@@ -169,19 +196,19 @@ export const routes: Routes = [
   { path: 'dashboard/produccion-merma', redirectTo: 'panel-admin/dashboard/produccion-merma' },
   { path: 'dashboard/abastecimiento', redirectTo: 'panel-admin/dashboard/abastecimiento' },
   { path: 'dashboard/logistica-devoluciones', redirectTo: 'panel-admin/dashboard/logistica-devoluciones' },
-  { path: 'dashboard/:seccion', redirectTo: 'panel-admin/dashboard' },
+  { path: 'dashboard/:seccion', redirectTo: 'panel-admin/dashboard/:seccion' },
   { path: 'dashboard', pathMatch: 'full', redirectTo: 'panel-admin/dashboard' },
   { path: 'alertas/bandeja', redirectTo: 'panel-admin/alertas/bandeja' },
   { path: 'alertas/resueltas', redirectTo: 'panel-admin/alertas/resueltas' },
   { path: 'alertas/reglas', redirectTo: 'panel-admin/alertas/reglas' },
-  { path: 'alertas/:seccion', redirectTo: 'panel-admin/alertas' },
+  { path: 'alertas/:seccion', redirectTo: 'panel-admin/alertas/:seccion' },
   { path: 'alertas', pathMatch: 'full', redirectTo: 'panel-admin/alertas' },
   { path: 'sistema/usuarios', redirectTo: 'panel-admin/sistema/usuarios' },
   { path: 'sistema/clientes', redirectTo: 'panel-admin/sistema/clientes' },
   { path: 'sistema/catalogos', redirectTo: 'panel-admin/sistema/catalogos' },
   { path: 'sistema/configuracion', redirectTo: 'panel-admin/sistema/configuracion' },
   { path: 'sistema/bitacora', redirectTo: 'panel-admin/sistema/bitacora' },
-  { path: 'sistema/:seccion', redirectTo: 'panel-admin/sistema' },
+  { path: 'sistema/:seccion', redirectTo: 'panel-admin/sistema/:seccion' },
   { path: 'sistema', pathMatch: 'full', redirectTo: 'panel-admin/sistema' },
   {
     path: 'proveedores',
@@ -249,8 +276,43 @@ export const routes: Routes = [
     data: { titulo: 'Devoluciones', roles: ['ADMIN', 'OPERATIVO'] },
     children: [
       {
+        path: 'recepcion/:casoId',
+        data: { titulo: 'Devoluciones', ambito: 'operacion', vista: 'recepcion', roles: ['ADMIN', 'OPERATIVO'] },
+        loadComponent: () =>
+          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+            (c) => c.CambiosDevoluciones,
+          ),
+      },
+      {
+        path: 'resolucion/:casoId',
+        data: { titulo: 'Devoluciones', ambito: 'operacion', vista: 'resolucion', roles: ['ADMIN', 'OPERATIVO'] },
+        loadComponent: () =>
+          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+            (c) => c.CambiosDevoluciones,
+          ),
+      },
+      {
+        path: 'recepcion',
+        pathMatch: 'full',
+        data: { titulo: 'Devoluciones', ambito: 'operacion', vista: 'recepcion', roles: ['ADMIN', 'OPERATIVO'] },
+        loadComponent: () =>
+          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+            (c) => c.CambiosDevoluciones,
+          ),
+      },
+      {
+        path: 'resolucion',
+        pathMatch: 'full',
+        data: { titulo: 'Devoluciones', ambito: 'operacion', vista: 'resolucion', roles: ['ADMIN', 'OPERATIVO'] },
+        loadComponent: () =>
+          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+            (c) => c.CambiosDevoluciones,
+          ),
+      },
+      {
         path: '',
         pathMatch: 'full',
+        data: { titulo: 'Devoluciones', ambito: 'operacion', vista: 'bandeja', roles: ['ADMIN', 'OPERATIVO'] },
         loadComponent: () =>
           import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
             (c) => c.CambiosDevoluciones,

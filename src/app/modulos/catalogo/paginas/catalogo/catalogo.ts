@@ -5,7 +5,7 @@ import { mensajeError } from '../../../../core/api/errores';
 import { TarjetaProducto } from '../../../../compartido/componentes/tarjeta-producto/tarjeta-producto';
 import { BusquedaCatalogoServicio } from '../../../../nucleo/servicios/busqueda-catalogo-servicio';
 import { DesplegableCategorias } from '../../componentes/desplegable-categorias/desplegable-categorias';
-import { CatalogoServicio } from '../../servicios/catalogo-servicio';
+import { CatalogoServicio, type OrigenCatalogo } from '../../servicios/catalogo-servicio';
 import {
   COLORES_CATALOGO,
   CodigoColorCatalogo,
@@ -28,10 +28,13 @@ export class Catalogo {
   private readonly busqueda = inject(BusquedaCatalogoServicio);
   private readonly catalogo = inject(CatalogoServicio);
 
+  protected readonly termino = this.busqueda.termino;
+
   protected readonly productos = signal<ProductoCatalogo[]>([]);
   private readonly opciones = signal<ProductoCatalogo[]>([]);
   protected readonly cargando = signal(true);
   protected readonly error = signal('');
+  protected readonly origen = signal<OrigenCatalogo>('servidor');
   private readonly reintento = signal(0);
 
   protected readonly categoriaSeleccionada = signal<string | null>(null);
@@ -80,19 +83,35 @@ export class Catalogo {
     ),
   );
 
+  protected readonly busquedaActiva = computed(() => this.termino().trim());
+
   protected readonly hayFiltros = computed(
     () =>
       this.categoriaSeleccionada() !== null ||
       this.colorSeleccionado() !== null ||
       this.tallaSeleccionada() !== null ||
       this.rangoPrecio() !== 'todos' ||
-      this.soloDisponibles(),
+      this.soloDisponibles() ||
+      this.busquedaActiva() !== '',
   );
 
   /** El backend publica solo productos activos con variantes activas y precio vigente. */
   protected readonly catalogoSinPublicaciones = computed(
     () => !this.cargando() && !this.error() && this.opciones().length === 0,
   );
+
+  protected readonly aviso = computed(() => {
+    if (this.sinConexion()) {
+      return 'Sin conexión: existencias y precios pueden no estar actualizados.';
+    }
+    if (this.origen() === 'cache') {
+      return 'Sin conexión: se muestran los últimos datos consultados. Existencias y precios pueden no estar actualizados.';
+    }
+    if (this.origen() === 'demostracion') {
+      return 'Catálogo de demostración: Flask no respondió. Precios y disponibilidad son ejemplos, no datos confirmados.';
+    }
+    return '';
+  });
 
   protected readonly productosFiltrados = computed(() => {
     const filtrados = this.productos()
@@ -105,9 +124,7 @@ export class Catalogo {
     this.catalogo
       .listar({ categoria: null, color: null, talla: null, soloDisponibles: false, busqueda: '' })
       .subscribe({
-        next: (items) => this.opciones.set(items.filter(productoVisible)),
-        error: (error: unknown) =>
-          this.error.set(mensajeError(error, 'No fue posible cargar los filtros del catálogo.')),
+        next: (respuesta) => this.opciones.set(respuesta.datos.filter(productoVisible)),
       });
 
     combineLatest([
@@ -115,13 +132,13 @@ export class Catalogo {
       toObservable(this.colorSeleccionado),
       toObservable(this.tallaSeleccionada),
       toObservable(this.soloDisponibles),
-      toObservable(this.busqueda.termino),
+      toObservable(this.termino),
       toObservable(this.reintento),
     ])
       .pipe(
         debounceTime(120),
         takeUntilDestroyed(),
-        switchMap(([categoria, color, talla, soloDisponibles, termino, _reintento]) => {
+        switchMap(([categoria, color, talla, soloDisponibles, termino]) => {
           this.cargando.set(true);
           this.error.set('');
           return this.catalogo.listar({
@@ -134,10 +151,10 @@ export class Catalogo {
         }),
       )
       .subscribe({
-        next: (items) => {
-          const visibles = items.filter(productoVisible);
+        next: (respuesta) => {
+          const visibles = respuesta.datos.filter(productoVisible);
           this.productos.set(visibles);
-          this.opciones.set(visibles);
+          this.origen.set(respuesta.origen);
           this.cargando.set(false);
         },
         error: (error: unknown) => {
@@ -175,10 +192,19 @@ export class Catalogo {
       case 'precio-desc':
         return lista.sort((a, b) => b.precio - a.precio);
       case 'novedad':
-        return lista.sort((a, b) => Date.parse(b.creadoEn) - Date.parse(a.creadoEn));
+        return lista.sort((a, b) => this.fechaOrden(b) - this.fechaOrden(a));
       default:
-        return lista;
+        return lista.sort(
+          (a, b) =>
+            Number(b.masBuscado) - Number(a.masBuscado) ||
+            this.fechaOrden(b) - this.fechaOrden(a),
+        );
     }
+  }
+
+  private fechaOrden(producto: ProductoCatalogo): number {
+    const fecha = Date.parse(producto.creadoEn);
+    return Number.isNaN(fecha) ? 0 : fecha;
   }
 
   protected actualizarColor(evento: Event): void {
@@ -203,6 +229,10 @@ export class Catalogo {
     this.soloDisponibles.set((evento.target as HTMLInputElement).checked);
   }
 
+  protected limpiarBusqueda(): void {
+    this.termino.set('');
+  }
+
   protected limpiarFiltros(): void {
     this.categoriaSeleccionada.set(null);
     this.colorSeleccionado.set(null);
@@ -210,7 +240,7 @@ export class Catalogo {
     this.rangoPrecio.set('todos');
     this.soloDisponibles.set(false);
     this.orden.set('relevancia');
-    this.busqueda.termino.set('');
+    this.termino.set('');
   }
 
   @HostListener('window:online')

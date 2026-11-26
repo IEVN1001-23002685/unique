@@ -71,7 +71,15 @@
       </label>
     </div>
 
-    @if (productos().length === 0) {
+    @if (servicio.errorCarga() || servicio.errorDetalle()) {
+      <div class="estado estado--error" role="alert">
+        <strong>No fue posible cargar el catálogo completo.</strong>
+        <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (productos().length === 0) {
       <div class="estado" role="status">
         <strong>Aún no hay productos en el catálogo.</strong>
         <p>Crea el primero desde «Nuevo producto».</p>
@@ -173,12 +181,8 @@
                     <button type="button" class="accion" (click)="verVariantes(producto)">
                       Variantes
                     </button>
-                    @if (estatusDe(producto) === 'ACTIVO') {
-                      <button type="button" class="accion" (click)="activar(producto, false)">
-                        Desactivar
-                      </button>
-                    } @else if (producto.eliminadoEn === null) {
-                      <button type="button" class="accion" (click)="activar(producto, true)">
+                    @if (estatusDe(producto) !== 'ACTIVO') {
+                      <button type="button" class="accion" (click)="activar(producto)">
                         Activar
                       </button>
                     }
@@ -187,7 +191,7 @@
                       class="accion accion--peligro"
                       (click)="pedirEliminacion(producto)"
                     >
-                      {{ producto.tieneHistorial ? 'Dar de baja' : 'Eliminar' }}
+                      {{ etiquetaBaja(producto) }}
                     </button>
                   </div>
                 </td>
@@ -207,9 +211,9 @@
 
   @if (confirmando(); as producto) {
     <app-modal-confirmacion
-      [titulo]="producto.tieneHistorial ? 'Dar de baja producto' : 'Eliminar producto'"
+      [titulo]="producto.tieneHistorial === true ? 'Dar de baja producto' : 'Eliminar producto'"
       [mensaje]="mensajeEliminacion(producto)"
-      [etiquetaConfirmar]="producto.tieneHistorial ? 'Desactivar' : 'Eliminar'"
+      [etiquetaConfirmar]="producto.tieneHistorial === true ? 'Desactivar' : 'Eliminar'"
       (confirmar)="confirmarEliminacion()"
       (cancelar)="confirmando.set(null)"
     />

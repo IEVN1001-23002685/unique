@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   AbstractControl,
@@ -32,14 +32,11 @@ export class AjusteInventario {
   private readonly fb = inject(FormBuilder);
 
   protected readonly filas = this.servicio.filas;
-  protected readonly primeraFila = this.filas().at(0);
+  private readonly inicializado = signal(false);
 
   protected readonly forma = this.fb.nonNullable.group({
-    varianteId: [this.primeraFila?.varianteId ?? 0, [Validators.required]],
-    cantidadContada: [
-      this.primeraFila?.existencia ?? 0,
-      [Validators.required, Validators.min(0), entero],
-    ],
+    varianteId: [0, [Validators.required]],
+    cantidadContada: [0, [Validators.required, Validators.min(0), entero]],
     motivo: ['', [Validators.required, Validators.minLength(4)]],
   });
 
@@ -47,6 +44,22 @@ export class AjusteInventario {
   protected readonly conteo = signal(this.forma.controls.cantidadContada.value);
   protected readonly intento = signal(false);
   protected readonly confirmando = signal(false);
+
+  constructor() {
+    // El sku llega de forma asíncrona: se inicializa una sola vez cuando el servicio responde.
+    effect(() => {
+      const [primera] = this.filas();
+      if (this.inicializado() || !primera) {
+        return;
+      }
+      this.inicializado.set(true);
+      this.forma.controls.varianteId.setValue(primera.varianteId);
+      this.forma.controls.cantidadContada.setValue(primera.existencia);
+      this.varianteId.set(primera.varianteId);
+      this.conteo.set(primera.existencia);
+      this.forma.markAsPristine();
+    });
+  }
 
   protected readonly filaSeleccionada = computed<FilaInventario | undefined>(() =>
     this.filas().find((fila) => fila.varianteId === this.varianteId()),
@@ -117,6 +130,10 @@ export class AjusteInventario {
   protected confirmar(): void {
     this.confirmando.set(false);
     this.registrar();
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
   }
 
   private registrar(): void {

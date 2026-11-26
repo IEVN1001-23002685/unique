@@ -283,6 +283,10 @@
   background-color: var(--color-unique-error);
 }
 
+.medicion[data-nivel='sin-datos'] .medicion__punto {
+  background-color: #b9a8bd;
+}
+
 .accion {
   color: var(--color-unique-ciruela);
   font-family: var(--font-interfaz);
@@ -313,6 +317,20 @@
 
 .estado p {
   margin: 0.35rem 0 0;
+}
+
+.estado--error {
+  border: 1px solid var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+}
+
+.estado--error strong,
+.estado--error p {
+  color: #8e2b39;
+}
+
+.estado--error .boton {
+  margin-top: 0.85rem;
 }
 
 @media (min-width: 768px) {

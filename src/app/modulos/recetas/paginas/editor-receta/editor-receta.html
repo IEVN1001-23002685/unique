@@ -3,7 +3,16 @@
 
   <a routerLink="/admin/recetas" class="volver">← Volver a la biblioteca</a>
 
-  @if (!receta()) {
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta seccion estado estado--error" role="alert">
+      <strong>No fue posible cargar el editor de receta.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+      <a routerLink="/admin/recetas" class="boton boton--primario">Ir a la biblioteca</a>
+    </div>
+  } @else if (!receta()) {
     <div class="tarjeta seccion estado" role="status">
       <strong>Cargando la receta desde Flask…</strong>
       <p>Si no aparece, regresa a la biblioteca para elegir una versión disponible.</p>
@@ -429,6 +438,13 @@
             <strong>{{ alcanza() === null ? '—' : alcanza() + ' prendas' }}</strong>
           </div>
         </div>
+        @if (errorPreview()) {
+          <div class="estado-linea estado-linea--error" role="alert">
+            <strong>La vista previa no está actualizada.</strong>
+            <span>{{ errorPreview() }}</span>
+            <button type="button" class="accion" (click)="actualizarPreview()">Reintentar</button>
+          </div>
+        }
         @if (servicio.puedeVerCostos()) {
           <p class="ayuda">
             Margen objetivo {{ costeo().margenObjetivo }} %. Costos y disponibilidad calculados por
@@ -495,22 +511,21 @@
           </button>
         }
         @if (!esNueva && actual.estado !== 'ARCHIVADA') {
-          <button type="button" class="boton boton--peligro" (click)="pedirArchivado()">
+          <button
+            type="button"
+            class="boton boton--peligro"
+            disabled
+            title="Archivado manual pendiente de contrato: Flask archiva la versión anterior al activar otra."
+          >
             Archivar
           </button>
         }
         <a routerLink="/admin/recetas" class="boton boton--secundario">Cancelar</a>
       </div>
+      <p class="ayuda">
+        El archivado manual está deshabilitado porque Flask aún no define ese endpoint; al activar
+        una versión, Flask archiva la anterior.
+      </p>
     </form>
-  }
-
-  @if (archivando()) {
-    <app-modal-confirmacion
-      titulo="Archivar receta"
-      mensaje="Se archivará esta versión. Si era vigente, M10 dejará de considerarla para activar el producto."
-      etiquetaConfirmar="Archivar"
-      (confirmar)="confirmarArchivado()"
-      (cancelar)="archivando.set(false)"
-    />
   }
 </section>

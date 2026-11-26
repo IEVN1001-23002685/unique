@@ -1,6 +1,20 @@
 <section class="vista">
   <app-navegacion-produccion />
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar el plan sugerido.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando el plan sugerido desde Flask…
+    </div>
+  }
+
   <div class="cabecera">
     <div>
       <p class="eyebrow">Bloque 5 · Producción y merma · M16</p>
@@ -56,7 +70,9 @@
       </p>
     </div>
 
-    @if (filas().length === 0) {
+    @if (servicio.errorCarga()) {
+      <p class="sr-only">El plan no pudo cargarse; usa Reintentar.</p>
+    } @else if (filas().length === 0) {
       <div class="estado" role="status">
         <strong>No hay variantes para mostrar.</strong>
         <p>Prueba con «Todas las variantes» para ver el detalle del plan.</p>
@@ -125,11 +141,14 @@
                     <button
                       type="button"
                       class="accion"
-                      [disabled]="fila.cantidadSugerida <= 0"
+                      [disabled]="!puedeCrear(fila)"
                       (click)="crearDesdePlan(fila)"
                     >
                       Crear orden
                     </button>
+                    @if (fila.ordenAbiertaFolio) {
+                      <span class="celda-secundaria">La demanda se suma a la orden abierta.</span>
+                    }
                   </div>
                 </td>
               </tr>
@@ -146,8 +165,10 @@
   </div>
 
   <p class="nota nota--advertencia">
-    Las existencias se leen de M12/M10 y la demanda de M09 como contratos de solo lectura. No se
-    crea una orden persistente, no se apartan materiales y no se pueden consultar costos desde este
-    rol. La generación de órdenes por pedido y por stock mínimo queda pendiente de integración.
+    Las existencias se leen de M12/M10 y la demanda de M09 como contratos de solo lectura. «Crear
+    orden» envía la sugerencia a Flask; no aparta materiales ni calcula costos desde el navegador.
+    Si ya hay una orden abierta del mismo SKU, la demanda debe sumarse a esa orden en Flask y por
+    eso la acción queda deshabilitada aquí. Las órdenes automáticas por pedido o stock mínimo las
+    genera el servidor.
   </p>
 </section>

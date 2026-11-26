@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   FormArray,
@@ -51,8 +51,27 @@ export class NuevaOrden {
 
   protected readonly enviando = signal(false);
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   constructor() {
     this.agregarLinea();
+    // El catálogo llega por HTTP después del constructor: completa la primera
+    // línea en cuanto las variantes estén disponibles, sin capturar un SKU vacío.
+    effect(() => {
+      const opciones = this.opciones();
+      if (opciones.length === 0) {
+        return;
+      }
+      const primera = opciones[0];
+      for (const grupo of this.lineas.controls) {
+        if (Number(grupo.controls.varianteId.value) <= 0 || grupo.controls.sku.value === '') {
+          grupo.controls.varianteId.setValue(primera.varianteId);
+          grupo.controls.sku.setValue(primera.sku);
+        }
+      }
+    });
   }
 
   protected get lineas(): FormArray<LineaForm> {
@@ -87,6 +106,10 @@ export class NuevaOrden {
   }
 
   protected guardar(): void {
+    if (this.opciones().length === 0 || this.servicio.errorCarga()) {
+      this.avisos.mostrar('error', 'No hay variantes disponibles; reintenta cargar el catálogo.');
+      return;
+    }
     if (this.form.invalid || this.enviando()) {
       this.form.markAllAsTouched();
       this.avisos.mostrar(

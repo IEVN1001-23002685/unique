@@ -95,6 +95,12 @@
   color: #8f2131;
 }
 
+.aviso--consulta {
+  border-left-color: var(--color-unique-info);
+  background-color: var(--color-unique-info-suave);
+  color: #2b5496;
+}
+
 .resumen {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -359,6 +365,20 @@
 .estado p {
   color: var(--color-unique-texto-suave);
   font-size: 0.85rem;
+}
+
+.estado--error {
+  border: 1px solid var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+}
+
+.estado--error strong,
+.estado--error p {
+  color: #8e2b39;
+}
+
+.estado--error .boton {
+  margin: 0.85rem 0.3rem;
 }
 
 .nota {

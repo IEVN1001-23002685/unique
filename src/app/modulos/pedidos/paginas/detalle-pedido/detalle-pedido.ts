@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { ChipEstadoPedido } from '../../componentes/chip-estado-pedido/chip-estado-pedido';
 import { ModalCancelarPedido } from '../../componentes/modal-cancelar-pedido/modal-cancelar-pedido';
@@ -28,12 +29,15 @@ export class DetallePedido {
   private readonly fb = inject(FormBuilder);
   private readonly ruta = inject(ActivatedRoute);
   protected readonly servicio = inject(PedidosServicio);
+  private readonly auth = inject(AuthStateService);
   private readonly avisos = inject(AvisosServicio);
 
   protected readonly folio = this.ruta.snapshot.paramMap.get('folio') ?? '';
   protected readonly pedido = computed(() => this.servicio.obtenerPedido(this.folio));
   protected readonly cancelando = signal(false);
   protected readonly notaIntento = signal(false);
+  /** Operativo consulta el pedido; solo el Administrador ejecuta acciones (§4 M09). */
+  protected readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
 
   protected readonly formaNota = this.fb.nonNullable.group({
     texto: ['', [Validators.required, Validators.minLength(5)]],
@@ -43,7 +47,14 @@ export class DetallePedido {
     this.servicio.cargarDetalle(this.folio).subscribe();
   }
 
+  protected reintentar(): void {
+    this.servicio.cargarDetalle(this.folio).subscribe();
+  }
+
   protected readonly puedeCancelar = computed(() => {
+    if (!this.esAdministrador()) {
+      return false;
+    }
     const estado = this.pedido()?.estado;
     return (
       estado === 'RECIBIDO' ||
@@ -64,6 +75,10 @@ export class DetallePedido {
   }
 
   protected cambiarPrioridad(evento: Event): void {
+    if (!this.esAdministrador()) {
+      this.avisos.mostrar('informacion', 'Solo el Administrador puede cambiar la prioridad.');
+      return;
+    }
     const prioridad = (evento.target as HTMLSelectElement).value as PrioridadPedido;
     this.servicio.cambiarPrioridad(this.folio, prioridad).subscribe((resultado) => {
       this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
@@ -71,6 +86,10 @@ export class DetallePedido {
   }
 
   protected guardarNota(): void {
+    if (!this.esAdministrador()) {
+      this.avisos.mostrar('informacion', 'Solo el Administrador puede agregar notas internas.');
+      return;
+    }
     this.notaIntento.set(true);
     if (this.formaNota.invalid) {
       this.formaNota.markAllAsTouched();
@@ -88,6 +107,10 @@ export class DetallePedido {
 
   protected cancelar(motivo: string): void {
     this.cancelando.set(false);
+    if (!this.esAdministrador()) {
+      this.avisos.mostrar('informacion', 'Solo el Administrador puede cancelar pedidos.');
+      return;
+    }
     this.servicio.cancelarPedido(this.folio, motivo).subscribe((resultado) => {
       this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
     });

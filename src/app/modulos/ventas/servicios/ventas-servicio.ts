@@ -26,6 +26,8 @@ export interface DatosPagoRegistrado {
   monto: number;
   metodo: MetodoPago;
   titular?: string | null;
+  /** Solo últimos 4 dígitos simulados; nunca PAN ni CVV. */
+  ultimos4?: string | null;
   estado: 'APROBADO' | 'PENDIENTE';
 }
 
@@ -319,6 +321,11 @@ export class VentasServicio {
   private readonly listaClientes = signal<ClienteManual[]>([]);
   private readonly listaVariantes = signal<VarianteManual[]>([]);
 
+  /** Errores de carga visibles en la interfaz; nunca se confunden con listados vacíos. */
+  readonly errorCarga = signal('');
+  readonly errorManual = signal('');
+  readonly errorDetalle = signal('');
+
   /** API pública síncrona conservada para módulos externos. */
   ventas(): Venta[] {
     return this.listaVentas();
@@ -375,6 +382,7 @@ export class VentasServicio {
   }
 
   recargar(): Observable<void> {
+    this.errorCarga.set('');
     return forkJoin({
       ventas: this.listarTodo<VentaResumenApi>('/ventas'),
       descuentos: this.listarTodo<DescuentoApi>('/descuentos'),
@@ -386,12 +394,19 @@ export class VentasServicio {
         this.listaTarifas.set(tarifas);
       }),
       map(() => undefined),
-      catchError(() => of(undefined)),
+      catchError((error: unknown) => {
+        this.errorCarga.set(mensajeError(error, 'No fue posible cargar ventas, descuentos ni tarifas.'));
+        this.listaVentas.set([]);
+        this.listaDescuentos.set([]);
+        this.listaTarifas.set([]);
+        return of(undefined);
+      }),
     );
   }
 
   /** Catálogos reales para la pantalla de venta manual; ningún dato se inventa en el cliente. */
   cargarDatosManuales(): Observable<void> {
+    this.errorManual.set('');
     return forkJoin({
       clientes: this.listarTodo<ClienteApi>('/clientes'),
       catalogo: this.api.get<ProductoCatalogoApi[]>('/catalogo'),
@@ -419,6 +434,12 @@ export class VentasServicio {
         );
       }),
       map(() => undefined),
+      catchError((error: unknown) => {
+        this.errorManual.set(mensajeError(error, 'No fue posible cargar clientes y variantes.'));
+        this.listaClientes.set([]);
+        this.listaVariantes.set([]);
+        return of(undefined);
+      }),
     );
   }
 
@@ -466,22 +487,38 @@ export class VentasServicio {
   }
 
   cargarDetalle(folio: string): Observable<Venta | undefined> {
+    this.errorDetalle.set('');
     const porId = Number(folio);
     if (Number.isInteger(porId) && porId > 0) {
-      return this.obtenerDetalle(porId).pipe(catchError(() => of(undefined)));
+      return this.obtenerDetalle(porId).pipe(
+        catchError((error: unknown) => this.fallaDetalle(error)),
+      );
     }
     const conocido = this.idPorFolio(folio);
     if (conocido !== undefined) {
-      return this.obtenerDetalle(conocido).pipe(catchError(() => of(undefined)));
+      return this.obtenerDetalle(conocido).pipe(
+        catchError((error: unknown) => this.fallaDetalle(error)),
+      );
     }
     return this.recargar().pipe(
       switchMap(() => {
+        if (this.errorCarga()) {
+          this.errorDetalle.set(this.errorCarga());
+          return of(undefined);
+        }
         const resuelto = this.idPorFolio(folio);
         return resuelto === undefined
           ? of(undefined)
-          : this.obtenerDetalle(resuelto).pipe(catchError(() => of(undefined)));
+          : this.obtenerDetalle(resuelto).pipe(
+              catchError((error: unknown) => this.fallaDetalle(error)),
+            );
       }),
     );
+  }
+
+  private fallaDetalle(error: unknown): Observable<undefined> {
+    this.errorDetalle.set(mensajeError(error, 'No fue posible cargar el detalle de la venta.'));
+    return of(undefined);
   }
 
   obtenerVenta(folio: string): Venta | undefined {
@@ -649,6 +686,7 @@ export class VentasServicio {
       accion: aprueba ? 'APROBAR' : 'RECHAZAR',
       metodo_pago: datos.metodo,
       titular: datos.titular ?? null,
+      ultimos4: datos.ultimos4 ?? null,
       motivo: aprueba ? null : 'Pago rechazado desde el panel de ventas',
     };
     return this.api.post<VentaDetalleApi>(`/ventas/${id}/pago`, cuerpo).pipe(

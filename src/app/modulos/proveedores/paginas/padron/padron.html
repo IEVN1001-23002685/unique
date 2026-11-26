@@ -62,7 +62,15 @@
       </div>
     </div>
 
-    @if (cargando()) {
+    @if (servicio.errorCarga() || servicio.errorDetalle()) {
+      <div class="estado estado--error" role="alert">
+        <strong>No fue posible cargar el padrón.</strong>
+        <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (cargando()) {
       <p class="estado" role="status">Cargando padrón…</p>
     } @else if (proveedores().length === 0) {
       <div class="estado" role="status">
@@ -123,13 +131,19 @@
                 <td data-etiqueta="% a tiempo">
                   <span class="medicion" [attr.data-nivel]="nivelEntrega(proveedor)">
                     <span class="medicion__punto" aria-hidden="true"></span>
-                    {{
-                      evaluacion(proveedor)?.entregasATiempoPct ?? 0 | number: '1.1-1' : 'es-MX'
-                    }}%
+                    @if (evaluacion(proveedor); as evaluacion) {
+                      {{ evaluacion.entregasATiempoPct | number: '1.1-1' : 'es-MX' }}%
+                    } @else {
+                      —
+                    }
                   </span>
                 </td>
                 <td data-etiqueta="% aceptación">
-                  {{ evaluacion(proveedor)?.aceptacionPct ?? 0 | number: '1.1-1' : 'es-MX' }}%
+                  @if (evaluacion(proveedor); as evaluacion) {
+                    {{ evaluacion.aceptacionPct | number: '1.1-1' : 'es-MX' }}%
+                  } @else {
+                    —
+                  }
                 </td>
                 <td data-etiqueta="Estatus">
                   <app-chip-estatus [estatus]="proveedor.estatus" />

@@ -23,6 +23,9 @@ export class Evaluacion {
   protected readonly busqueda = signal('');
   protected readonly soloRevision = signal(false);
   protected readonly minimoATiempo = 80;
+  protected readonly cargando = this.servicio.cargando;
+  protected readonly errorCarga = this.servicio.errorCarga;
+  protected readonly errorDetalle = this.servicio.errorDetalle;
 
   protected readonly filas = computed<FilaEvaluacion[]>(() => {
     const termino = this.busqueda().trim().toLowerCase();
@@ -55,6 +58,11 @@ export class Evaluacion {
       ),
   );
 
+  /** Flask recalcula la métrica a diario; aquí solo se documenta el desface de estatus. */
+  protected readonly pendientesRevision = computed(() =>
+    this.proveedoresEnRevision().filter((proveedor) => proveedor.estatus !== 'EN_REVISION'),
+  );
+
   protected alBuscar(evento: Event): void {
     const entrada = evento.target as HTMLInputElement;
     this.busqueda.set(entrada.value);
@@ -65,7 +73,14 @@ export class Evaluacion {
     this.soloRevision.set(casilla.checked);
   }
 
-  protected nivel(promedio: number | undefined): 'bueno' | 'alerta' {
-    return (promedio ?? 100) < this.minimoATiempo ? 'alerta' : 'bueno';
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
+  protected nivel(promedio: number | undefined): 'bueno' | 'alerta' | 'sin-datos' {
+    if (promedio === undefined) {
+      return 'sin-datos';
+    }
+    return promedio < this.minimoATiempo ? 'alerta' : 'bueno';
   }
 }

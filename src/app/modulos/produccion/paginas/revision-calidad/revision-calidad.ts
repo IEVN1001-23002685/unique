@@ -186,6 +186,10 @@ export class RevisionCalidad {
     return revision.lineas.reduce((suma, linea) => suma + linea.cantidadMerma, 0);
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected guardar(): void {
     const orden = this.orden();
     if (!orden || !this.puedeGuardar()) {

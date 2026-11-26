@@ -269,6 +269,16 @@
   margin: 0.35rem 0 0;
 }
 
+.estado--error {
+  border: 1px solid var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+  color: #8b1f2d;
+}
+
+.estado--error .boton {
+  margin-top: 1rem;
+}
+
 .nota {
   margin: 1.25rem 0 0;
   padding: 0.75rem 0.9rem;

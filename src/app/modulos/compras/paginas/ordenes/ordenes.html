@@ -13,6 +13,16 @@
     <a routerLink="/compras/cotizaciones" class="boton boton--primario"> Ver cotizaciones </a>
   </div>
 
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar las órdenes de compra.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  }
+
   <div class="indicadores" aria-label="Resumen de órdenes">
     <div class="indicador">
       <span class="indicador__numero">{{ totales().borradores }}</span>
@@ -63,7 +73,11 @@
       </div>
     </div>
 
-    @if (filtradas().length === 0) {
+    @if (!servicio.cargado() && !servicio.errorCarga() && !servicio.errorDetalle()) {
+      <div class="estado" role="status">
+        <strong>Cargando órdenes desde Flask…</strong>
+      </div>
+    } @else if (filtradas().length === 0) {
       <div class="estado" role="status">
         <strong>Sin órdenes para mostrar.</strong>
         <p>Genera una desde el comparador de cotizaciones o ajusta los filtros.</p>
@@ -129,16 +143,29 @@
                       <a class="accion" [routerLink]="['/compras/ordenes', orden.id, 'editar']">
                         Editar
                       </a>
-                      <button type="button" class="accion" (click)="emitir(orden)">Emitir</button>
+                      <button
+                        type="button"
+                        class="accion"
+                        [disabled]="guardando()"
+                        (click)="emitir(orden)"
+                      >
+                        Emitir
+                      </button>
                       <button
                         type="button"
                         class="accion accion--peligro"
+                        [disabled]="guardando()"
                         (click)="porEliminar.set(orden)"
                       >
                         Eliminar
                       </button>
                     } @else {
-                      <button type="button" class="accion" (click)="descargarPdf(orden)">
+                      <button
+                        type="button"
+                        class="accion"
+                        [disabled]="guardando()"
+                        (click)="descargarPdf(orden)"
+                      >
                         Descargar PDF
                       </button>
                       @if (['EMITIDA', 'PARCIAL'].includes(orden.estado)) {
@@ -148,6 +175,7 @@
                         <button
                           type="button"
                           class="accion accion--peligro"
+                          [disabled]="guardando()"
                           (click)="porCancelar.set(orden)"
                         >
                           Cancelar

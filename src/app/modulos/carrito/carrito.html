@@ -1,382 +1,191 @@
-<div
-  style="
-    min-height: 100vh;
-    padding: 24px 16px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #3b2d3e;
-    box-sizing: border-box;
-  "
->
-  <div
-    style="
-      max-width: 920px;
-      margin: 0 auto;
-      background-color: #e6cce8;
-      border-radius: 28px;
-      padding: 28px 32px;
-      box-shadow: 0 12px 30px rgba(66, 33, 75, 0.14);
-      box-sizing: border-box;
-    "
-  >
-    <!-- Encabezado -->
-    <div
-      style="
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-bottom: 20px;
-      "
-    >
-      <div style="display: flex; align-items: center; gap: 14px">
-        <img src="/Logo1.png" alt="UNIQUE" style="height: 48px; width: auto" />
-        <div>
-          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #332736">
-            Carrito de compras
-          </h2>
-          <span style="font-size: 12px; color: #4f2857; font-weight: 600"
-            >Máximo 10 unidades por línea · Precios con IVA incluido</span
+<main class="carrito">
+  <app-aviso-toast />
+
+  <header class="carrito__cabecera">
+    <div>
+      <p class="carrito__ojeada">UNIQUE · Paso previo al pago</p>
+      <h1>Mi carrito</h1>
+      <p class="carrito__subtitulo">
+        Máximo {{ maximo() }} unidades por línea · Precios en MXN con IVA incluido
+      </p>
+    </div>
+    <a class="carrito__volver" routerLink="/catalogo">← Seguir comprando</a>
+  </header>
+
+  @if (aviso()) {
+    <p class="carrito__aviso" role="status">{{ aviso() }}</p>
+  }
+
+  @if (error()) {
+    <div class="carrito__error" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" class="carrito__reintentar" (click)="reintentar()">Reintentar</button>
+    </div>
+  }
+
+  @if (mensaje()) {
+    <p class="carrito__mensaje" role="status">{{ mensaje() }}</p>
+  }
+
+  @if (cargando()) {
+    <div class="carrito__cargando" aria-live="polite" aria-busy="true">
+      <div class="carrito__esqueleto"></div>
+      <div class="carrito__esqueleto"></div>
+      <p>Revisando tu carrito…</p>
+    </div>
+  } @else if (items().length === 0) {
+    <section class="carrito__vacio">
+      <div class="carrito__vacio-icono" aria-hidden="true">◇</div>
+      <h2>Tu carrito está vacío por ahora</h2>
+      <p>Explora el catálogo y agrega las prendas que quieras llevarte.</p>
+      <a class="boton boton--primario" routerLink="/catalogo">Ir al catálogo</a>
+    </section>
+  } @else {
+    <div class="carrito__contenido">
+      <section class="carrito__lineas" aria-label="Productos en tu carrito">
+        @for (item of items(); track item.varianteId) {
+          <article
+            class="linea"
+            [class.linea--invalida]="item.estadoDisponibilidad === 'Agotado' || !!item.cambioDetectado"
           >
-        </div>
-      </div>
+            <div class="linea__imagen">
+              @if (imagenValida(item)) {
+                <img
+                  [src]="item.imagenUrl"
+                  [alt]="item.nombre"
+                  (error)="marcarImagenFallida(item)"
+                />
+              } @else {
+                <span role="img" [attr.aria-label]="'Imagen no disponible de ' + item.nombre">
+                  Imagen no disponible
+                </span>
+              }
+            </div>
 
-      <div style="display: flex; gap: 8px">
-        <button
-          type="button"
-          (click)="irAlCatalogo()"
-          style="
-            padding: 8px 16px;
-            border-radius: 999px;
-            border: 1px solid #4f2857;
-            background-color: #f3ecf4;
-            color: #4f2857;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >
-          ← Seguir comprando
-        </button>
-        <button
-          type="button"
-          (click)="cerrarCarrito()"
-          style="
-            padding: 8px 14px;
-            border-radius: 999px;
-            border: 2px solid #2b212d;
-            background-color: #ffffff;
-            color: #2b212d;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-          "
-        >
-          ✕
-        </button>
-      </div>
-    </div>
+            <div class="linea__detalle">
+              <h2>{{ item.nombre }}</h2>
+              <p class="linea__sku">SKU: {{ item.sku }}</p>
+              <p class="linea__atributos">Color: {{ item.colorNombre }} · Talla: {{ item.talla }}</p>
 
-    <!-- Mensaje de estado o validación -->
-    <div
-      *ngIf="mensajeCarrito"
-      style="
-        margin-bottom: 16px;
-        background-color: #f3ecf4;
-        border-left: 4px solid #4f2857;
-        border-radius: 12px;
-        padding: 10px 14px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #332736;
-      "
-    >
-      {{ mensajeCarrito }}
-    </div>
-
-    <!-- Carrito vacío -->
-    <div
-      *ngIf="items.length === 0"
-      style="background-color: #f3ecf4; border-radius: 22px; padding: 36px 24px; text-align: center"
-    >
-      <p style="margin: 0 0 14px; font-size: 16px; font-weight: 700; color: #332736">
-        Tu carrito está vacío por ahora
-      </p>
-      <p style="margin: 0 0 18px; font-size: 13px; color: #534057">
-        Explora el catálogo y agrega tus prendas favoritas.
-      </p>
-      <button
-        type="button"
-        (click)="irAlCatalogo()"
-        style="
-          padding: 10px 24px;
-          border: none;
-          border-radius: 999px;
-          background-color: #4f2857;
-          color: #ffffff;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-        "
-      >
-        Ir al catálogo
-      </button>
-    </div>
-
-    <!-- Contenido principal cuando hay artículos -->
-    <div
-      *ngIf="items.length > 0"
-      style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-        gap: 20px;
-        align-items: start;
-      "
-    >
-      <!-- Lista de productos (ocupa más espacio en pantallas amplias) -->
-      <div
-        style="grid-column: span 2; display: flex; flex-direction: column; gap: 14px; min-width: 0"
-      >
-        <div
-          *ngFor="let item of items"
-          style="
-            background-color: #f3ecf4;
-            border-radius: 20px;
-            padding: 16px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-            box-sizing: border-box;
-          "
-        >
-          <div style="display: flex; align-items: center; gap: 14px; min-width: 220px; flex: 1">
-            @if (item.imagenUrl) {
-              <img
-                [src]="item.imagenUrl"
-                [alt]="item.nombre"
-                style="
-                  width: 68px;
-                  height: 68px;
-                  object-fit: contain;
-                  background-color: #e6cce8;
-                  border-radius: 14px;
-                  padding: 6px;
-                  box-sizing: border-box;
-                "
-              />
-            } @else {
-              <div
-                role="img"
-                [attr.aria-label]="'Imagen no disponible de ' + item.nombre"
-                style="
-                  width: 68px;
-                  height: 68px;
-                  display: grid;
-                  place-items: center;
-                  padding: 6px;
-                  box-sizing: border-box;
-                  border-radius: 14px;
-                  background-color: #e6cce8;
-                  color: #6b5870;
-                  font-size: 10px;
-                  text-align: center;
-                "
-              >
-                Imagen no disponible
-              </div>
-            }
-            <div style="font-size: 13px; line-height: 1.4">
-              <div style="font-weight: 700; font-size: 15px; color: #332736">{{ item.nombre }}</div>
-              <div style="color: #534057">
-                Color: {{ item.colorNombre }} · Talla: {{ item.talla }} · SKU: {{ item.sku }}
-              </div>
-              <div
-                style="
-                  margin-top: 4px;
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-                  flex-wrap: wrap;
-                "
-              >
-                <span
-                  style="
-                    background-color: #e6cce8;
-                    color: #4f2857;
-                    padding: 2px 9px;
-                    border-radius: 999px;
-                    font-size: 11px;
-                    font-weight: 700;
-                  "
-                >
+              <div class="linea__estado">
+                <span class="estado">
+                  <span
+                    [class]="'estado__punto estado__punto--' + claseEstado(item.estadoDisponibilidad)"
+                    aria-hidden="true"
+                  ></span>
                   {{ item.estadoDisponibilidad }}
                 </span>
-                <span
-                  *ngIf="item.estadoDisponibilidad === 'Bajo pedido' && item.fechaEstimada"
-                  style="font-size: 11px; color: #534057"
-                >
-                  {{ item.fechaEstimada }}
-                </span>
+                @if (item.estadoDisponibilidad === 'Bajo pedido' && fechaEstimada(item)) {
+                  <span class="linea__fecha">Fecha estimada: {{ fechaEstimada(item) }}</span>
+                }
               </div>
+
+              @if (item.cambioDetectado || item.estadoDisponibilidad === 'Agotado') {
+                <p class="linea__alerta">
+                  {{ item.cambioDetectado || 'Producto agotado: no se puede incluir en el pago.' }}
+                </p>
+              }
+            </div>
+
+            <div class="linea__acciones">
               <div
-                *ngIf="item.cambioDetectado || item.estadoDisponibilidad === 'Agotado'"
-                style="margin-top: 6px; font-size: 12px; font-weight: 700; color: #8b1e3f"
+                class="cantidad"
+                role="group"
+                [attr.aria-label]="'Cantidad de ' + item.nombre"
               >
-                {{ item.cambioDetectado || 'Producto agotado: no se puede incluir en el pago.' }}
+                <button
+                  type="button"
+                  class="cantidad__boton"
+                  [disabled]="item.cantidad <= 1 || operando() === item.varianteId"
+                  [attr.aria-label]="'Disminuir cantidad de ' + item.nombre"
+                  (click)="cambiarCantidad(item, -1)"
+                >
+                  −
+                </button>
+                <output class="cantidad__valor">{{ item.cantidad }}</output>
+                <button
+                  type="button"
+                  class="cantidad__boton"
+                  [disabled]="item.cantidad >= maximo() || operando() === item.varianteId"
+                  [attr.aria-label]="'Aumentar cantidad de ' + item.nombre"
+                  (click)="cambiarCantidad(item, 1)"
+                >
+                  +
+                </button>
               </div>
-            </div>
-          </div>
 
-          <!-- Controles de cantidad, subtotal y eliminar -->
-          <div style="display: flex; align-items: center; gap: 12px">
-            <div
-              style="
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                background-color: #ffffff;
-                border-radius: 999px;
-                padding: 4px 8px;
-              "
-            >
+              <strong class="linea__subtotal">
+                {{ item.precioUnitarioConIva * item.cantidad | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+              </strong>
+
               <button
                 type="button"
-                [disabled]="item.estadoDisponibilidad === 'Agotado'"
-                (click)="cambiarCantidad(item, -1)"
-                style="
-                  width: 26px;
-                  height: 26px;
-                  border-radius: 50%;
-                  border: none;
-                  background-color: #e6cce8;
-                  font-weight: 700;
-                  cursor: pointer;
-                "
+                class="linea__quitar"
+                [disabled]="eliminando()"
+                [attr.aria-label]="'Quitar ' + item.nombre + ' del carrito'"
+                (click)="pedirEliminacion(item)"
               >
-                −
-              </button>
-              <span
-                style="min-width: 20px; text-align: center; font-size: 13px; font-weight: 700"
-                >{{ item.cantidad }}</span
-              >
-              <button
-                type="button"
-                [disabled]="item.estadoDisponibilidad === 'Agotado' || item.cantidad >= 10"
-                (click)="cambiarCantidad(item, 1)"
-                style="
-                  width: 26px;
-                  height: 26px;
-                  border-radius: 50%;
-                  border: none;
-                  background-color: #e6cce8;
-                  font-weight: 700;
-                  cursor: pointer;
-                "
-              >
-                +
+                Quitar
               </button>
             </div>
+          </article>
+        }
+      </section>
 
-            <div
-              style="
-                min-width: 78px;
-                text-align: right;
-                font-size: 14px;
-                font-weight: 700;
-                color: #4f2857;
-              "
-            >
-              ${{ item.precioUnitarioConIva * item.cantidad }}
-            </div>
+      <aside class="carrito__resumen" aria-label="Resumen de compra">
+        <h2>Resumen de compra</h2>
 
-            <button
-              type="button"
-              (click)="eliminarItem(item.varianteId)"
-              title="Eliminar producto"
-              style="
-                width: 34px;
-                height: 34px;
-                border-radius: 50%;
-                border: none;
-                background-color: #e6cce8;
-                cursor: pointer;
-                font-size: 14px;
-              "
-            >
-              🗑
-            </button>
+        <dl class="resumen__datos">
+          <div>
+            <dt>Subtotal (IVA incluido)</dt>
+            <dd>{{ resumen().subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd>
           </div>
-        </div>
-      </div>
+          <div>
+            <dt>Artículos</dt>
+            <dd>{{ resumen().totalArticulos }}</dd>
+          </div>
+        </dl>
 
-      <!-- Resumen de compra -->
-      <div
-        style="
-          background-color: #f3ecf4;
-          border-radius: 22px;
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          box-sizing: border-box;
-        "
-      >
-        <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #332736">
-          Resumen de compra
-        </h3>
-
-        <div style="display: flex; justify-content: space-between; font-size: 13px">
-          <span>Subtotal (IVA incluido)</span>
-          <strong>${{ subtotalConIva }}</strong>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; font-size: 13px">
-          <span>Artículos</span>
-          <strong>{{ totalArticulos }}</strong>
-        </div>
-
-        <p style="margin: 0; font-size: 12px; color: #534057">
-          El envío y los descuentos se calculan en el paso de pago con tu código postal.
+        <p class="resumen__nota">
+          El envío y los descuentos se calculan en el paso de pago con tu código postal. Aquí no se
+          aplica ningún descuento ni se reserva existencia.
         </p>
 
-        <hr style="border: none; border-top: 1px solid rgba(79, 40, 87, 0.2); margin: 4px 0" />
+        @if (lineasInvalidas().length > 0) {
+          <p class="resumen__alerta" role="status">
+            {{ lineasInvalidas().length }}
+            {{ lineasInvalidas().length === 1 ? 'línea requiere revisión' : 'líneas requieren revisión' }}.
+          </p>
+        }
 
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            font-size: 16px;
-            font-weight: 700;
-            color: #332736;
-          "
-        >
-          <span>Subtotal</span>
-          <span style="color: #4f2857">${{ subtotalConIva }}</span>
+        <div class="resumen__total">
+          <span>Total a pagar</span>
+          <strong>{{ resumen().subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
         </div>
 
         <button
           type="button"
-          [disabled]="!puedePagar || cargando"
-          (click)="onProcederPago()"
-          [style.opacity]="!puedePagar || cargando ? '0.5' : '1'"
-          [style.cursor]="!puedePagar || cargando ? 'not-allowed' : 'pointer'"
-          style="
-            margin-top: 6px;
-            width: 100%;
-            height: 42px;
-            border: none;
-            border-radius: 999px;
-            background-color: #4f2857;
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: 600;
-          "
+          class="boton boton--primario resumen__pagar"
+          [disabled]="!puedePagar()"
+          (click)="irAPagar()"
         >
-          Proceder al pago
+          Ir a pagar
         </button>
-      </div>
+        <a class="boton boton--secundario resumen__seguir" routerLink="/catalogo">
+          Seguir comprando
+        </a>
+      </aside>
     </div>
-  </div>
-</div>
+  }
+
+  @if (lineaPorEliminar(); as linea) {
+    <app-modal-confirmacion
+      titulo="Quitar del carrito"
+      [mensaje]="'¿Quitar «' + linea.nombre + '» de tu carrito?'"
+      etiquetaConfirmar="Quitar"
+      [disabledConfirmar]="eliminando()"
+      (confirmar)="confirmarEliminacion()"
+      (cancelar)="cancelarEliminacion()"
+    />
+  }
+</main>

@@ -2,24 +2,21 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiService } from '../../../core/api/api.service';
-import { DireccionCliente, MedioPagoSimulado } from '../micuenta';
+import type {
+  CoberturaEnvio,
+  DatosActualizacionPerfil,
+  DireccionCliente,
+  MedioPagoSimulado,
+  PerfilCuenta,
+} from '../modelos/cuenta';
 
-export interface PerfilCuenta {
-  id: number;
-  nombre: string;
-  apellidos: string;
-  correo: string;
-  telefono: string;
-  acepta_promociones: boolean;
-}
-
-export interface CoberturaEnvio {
-  codigo_postal: string;
-  cobertura: boolean;
-  tarifa: Record<string, unknown> | null;
-  costo: string | null;
-  dias_estimados: number | null;
-}
+export type {
+  CoberturaEnvio,
+  DatosActualizacionPerfil,
+  DireccionCliente,
+  MedioPagoSimulado,
+  PerfilCuenta,
+} from '../modelos/cuenta';
 
 interface DireccionApi {
   id: number;
@@ -52,6 +49,10 @@ interface MedioPagoApi {
   saldo_simulado: string | null;
 }
 
+/**
+ * Contratos de M02 contra la API documentada en §9. No hay persistencia local:
+ * las respuestas exitosas solo actualizan la señal de la vista que las invocó.
+ */
 @Injectable({ providedIn: 'root' })
 export class CuentaServicio {
   private readonly api = inject(ApiService);
@@ -60,15 +61,20 @@ export class CuentaServicio {
     return this.api.get<PerfilCuenta>('/cuenta');
   }
 
-  actualizarPerfil(datos: Partial<PerfilCuenta>): Observable<PerfilCuenta> {
+  actualizarPerfil(datos: DatosActualizacionPerfil): Observable<PerfilCuenta> {
     return this.api.patch<PerfilCuenta>('/cuenta', datos);
   }
 
-  cambiarContrasena(contrasenaActual: string, contrasenaNueva: string) {
+  cambiarContrasena(contrasenaActual: string, contrasenaNueva: string): Observable<{ mensaje: string }> {
     return this.api.post<{ mensaje: string }>('/cuenta/contrasena', {
       contrasena_actual: contrasenaActual,
       contrasena_nueva: contrasenaNueva,
     });
+  }
+
+  /** §7 M02: estado INACTIVA sin borrar el historial. Flask aplica la regla autoritativa. */
+  desactivarCuenta(): Observable<PerfilCuenta> {
+    return this.api.patch<PerfilCuenta>('/cuenta', { estado_cuenta: 'INACTIVA' });
   }
 
   listarDirecciones(): Observable<DireccionCliente[]> {
@@ -89,6 +95,7 @@ export class CuentaServicio {
       .pipe(map((item) => this.aDireccion(item)));
   }
 
+  /** El servidor desactiva el registro; las ventas conservan su propia copia. */
   eliminarDireccion(id: number): Observable<void> {
     return this.api.delete<void>(`/cuenta/direcciones/${id}`);
   }
@@ -122,7 +129,7 @@ export class CuentaServicio {
   private aDireccion(item: DireccionApi): DireccionCliente {
     return {
       id: item.id,
-      tipo: item.tipo.toLowerCase() === 'facturacion' ? 'facturacion' : 'envio',
+      tipo: String(item.tipo).toLowerCase() === 'facturacion' ? 'facturacion' : 'envio',
       alias: item.alias,
       destinatario: item.destinatario,
       telefono: item.telefono,
@@ -154,14 +161,14 @@ export class CuentaServicio {
       estado: item.estado,
       codigo_postal: item.cp,
       referencia: item.referencia || null,
-      rfc: item.rfc || null,
-      razon_social: item.razonSocial || null,
+      rfc: item.tipo === 'facturacion' ? item.rfc || null : null,
+      razon_social: item.tipo === 'facturacion' ? item.razonSocial || null : null,
       predeterminada: item.predeterminada,
     };
   }
 
   private aMedioPago(item: MedioPagoApi): MedioPagoSimulado {
-    const esTarjeta = item.tipo.toUpperCase() === 'TARJETA';
+    const esTarjeta = String(item.tipo).toUpperCase() === 'TARJETA';
     return {
       id: item.id,
       tipo: esTarjeta ? 'tarjeta' : 'cuenta',

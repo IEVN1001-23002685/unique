@@ -14,13 +14,28 @@
       <button
         type="button"
         class="boton boton--primario"
-        [disabled]="forma.pristine"
+        [disabled]="forma.pristine || !servicio.puedeEditarReglas()"
+        [title]="
+          servicio.puedeEditarReglas()
+            ? 'Guardar reglas en Flask'
+            : 'Solo el Administrador edita reglas de reposición'
+        "
         (click)="guardar()"
       >
         Guardar cambios
       </button>
     </div>
   </div>
+
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar las reglas.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  }
 
   <div class="tarjeta bloque">
     <div class="barra barra--reglas">
@@ -123,9 +138,9 @@
       en M16 y abrir la alerta. Cambiar el mínimo o la cantidad no crea órdenes por sí mismo.
     </p>
     <p class="nota nota--adv">
-      Permisos del documento: el Administrador edita estas reglas; el Operativo solo consulta. Como
-      no existe autenticación aún, el prototipo permite la edición para demostrar la pantalla y deja
-      el contrato PATCH /inventario/producto/{{ '{variante_id}' }}/reglas listo para Flask.
+      Permisos del documento: el Administrador edita estas reglas; el Operativo solo consulta. Los
+      campos se bloquean según la sesión o el perfil de demostración, sin crear una autorización
+      ficticia: Flask valida el PATCH /inventario/producto/{{ '{variante_id}' }}/reglas.
     </p>
   </div>
 </section>

@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { NavegacionInventarioPt } from '../../componentes/navegacion-inventario-pt/navegacion-inventario-pt';
 import { SemaforoInventario } from '../../componentes/semaforo-inventario/semaforo-inventario';
@@ -9,7 +10,7 @@ type FiltroCategoria = number | 'TODAS';
 
 @Component({
   selector: 'app-existencias-inventario-pt',
-  imports: [RouterLink, NavegacionInventarioPt, SemaforoInventario],
+  imports: [DatePipe, RouterLink, NavegacionInventarioPt, SemaforoInventario],
   templateUrl: './existencias.html',
   styleUrls: ['./existencias.css', '../../estilos-compartidos.css'],
 })
@@ -21,8 +22,13 @@ export class Existencias {
 
   protected readonly filas = this.servicio.existencias;
   protected readonly indicadores = this.servicio.indicadores;
-  protected readonly alertasRecientes = computed(() => this.servicio.alertas().slice(0, 3));
-  protected readonly senalesRecientes = computed(() => this.servicio.senales().slice(0, 3));
+  /** Vista derivada de stock real: no fabrica alertas ni consecutivos locales. */
+  protected readonly reposicion = computed(() =>
+    this.servicio.existencias().filter((fila) => fila.semaforo !== 'VERDE').slice(0, 3),
+  );
+  protected readonly ajustesRecientes = computed(() =>
+    this.servicio.movimientos().filter((movimiento) => movimiento.tipo === 'AJUSTE').slice(0, 3),
+  );
 
   protected readonly filtradas = computed<FilaExistencia[]>(() => {
     const termino = this.busqueda().trim().toLowerCase();
@@ -47,5 +53,9 @@ export class Existencias {
 
   protected cobertura(fila: FilaExistencia): string {
     return fila.diasCobertura === null ? '—' : fila.diasCobertura.toFixed(1);
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
   }
 }

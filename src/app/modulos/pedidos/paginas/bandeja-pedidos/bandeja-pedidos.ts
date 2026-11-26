@@ -55,6 +55,10 @@ export class BandejaPedidos {
     this.servicio.recargar().subscribe();
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly indicadores = this.servicio.indicadores;
 
   protected readonly filtrados = computed(() => {

@@ -74,7 +74,15 @@
       </label>
     </div>
 
-    @if (servicio.recetas().length === 0) {
+    @if (servicio.errorCarga() || servicio.errorDetalle()) {
+      <div class="estado estado--error" role="alert">
+        <strong>No fue posible cargar la biblioteca completa.</strong>
+        <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (servicio.recetas().length === 0) {
       <div class="estado" role="status">
         <strong>Aún no hay recetas.</strong>
         <p>Captura una receta en M11 para el producto y la talla que necesites.</p>
@@ -170,7 +178,8 @@
                       <button
                         type="button"
                         class="accion accion--peligro"
-                        (click)="pedirArchivado(receta)"
+                        disabled
+                        title="Archivado manual pendiente de contrato: Flask archiva la versión anterior al activar otra."
                       >
                         Archivar
                       </button>
@@ -187,26 +196,8 @@
     <p class="nota">
       Activación requiere tela o hilo de tejido, hilo de costura, etiquetas completas y merma menor
       a 100 %. Al activar, la versión anterior pasa a ARCHIVADA y las órdenes ya creadas conservan
-      su receta. Flask omite los importes al Operativo, por eso no se muestran columnas de costo
-      para ese rol.
+      su receta. El archivado manual está deshabilitado: Flask aún no define ese endpoint. Flask
+      omite los importes al Operativo, por eso no se muestran columnas de costo para ese rol.
     </p>
   </div>
-
-  @if (archivando(); as receta) {
-    <app-modal-confirmacion
-      titulo="Archivar receta"
-      [mensaje]="
-        'Se archivará la versión v' +
-        receta.version +
-        ' de ' +
-        servicio.nombreProducto(receta.productoId) +
-        ' ' +
-        receta.talla +
-        '. Si era vigente, M10 dejará de considerarla.'
-      "
-      etiquetaConfirmar="Archivar"
-      (confirmar)="confirmarArchivado()"
-      (cancelar)="archivando.set(null)"
-    />
-  }
 </section>

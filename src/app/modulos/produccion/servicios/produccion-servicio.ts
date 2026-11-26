@@ -1,12 +1,13 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, catchError, forkJoin, map, of, switchMap, tap, throwError } from 'rxjs';
-import { ApiService } from '../../../core/api/api.service';
+import { Observable, catchError, concatMap, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { ApiService, type ValorParametro } from '../../../core/api/api.service';
 import { mensajeError } from '../../../core/api/errores';
 import type { PendienteProduccion } from '../../pedidos/modelos/pedido';
 import type {
   CoberturaCompra,
   DatosNuevaOrden,
   EstadoMaterial,
+  EtapaMerma,
   FilaPlanSugerido,
   FiltroTablero,
   LineaDictamen,
@@ -14,6 +15,7 @@ import type {
   MaterialOrdenVista,
   OpcionVariante,
   OrdenProduccion,
+  LineaRevisionResumen,
   OrdenVista,
   ResultadoAccion,
   ResultadoCrearOrden,
@@ -26,8 +28,13 @@ export function redondear4(valor: number): number {
   return Math.round((valor + Number.EPSILON) * 10000) / 10000;
 }
 
+/** Fecha local de México; toISOString() usaría UTC y podría adelantar/trasar un día. */
 export function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  const hoy = new Date();
+  const anio = hoy.getFullYear();
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoy.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
 }
 
 const TOLERANCIA = 0.0001;
@@ -75,6 +82,43 @@ interface PaginaApi<T> {
   por_pagina: number;
 }
 
+/**
+ * Lectura paginada con tope defensivo. Acepta respuestas paginadas o arreglos
+ * planos para no descartar órdenes si Flask cambia el envelope en una versión.
+ */
+function listarTodo<T>(
+  api: ApiService,
+  ruta: string,
+  params: Record<string, ValorParametro> = {},
+): Observable<T[]> {
+  const porPagina = 100;
+  const maxPaginas = 50;
+  const pedir = (pagina: number, previos: T[], restantes: number): Observable<T[]> =>
+    api
+      .get<PaginaApi<T> | T[]>(ruta, { params: { ...params, pagina, por_pagina: porPagina } })
+      .pipe(
+        concatMap((respuesta) => {
+          const items = Array.isArray(respuesta) ? respuesta : (respuesta.items ?? []);
+          const acumulados = [...previos, ...items];
+          const total = Array.isArray(respuesta)
+            ? acumulados.length
+            : typeof respuesta.total === 'number'
+              ? respuesta.total
+              : acumulados.length;
+          if (
+            items.length === 0 ||
+            items.length < porPagina ||
+            acumulados.length >= total ||
+            restantes <= 1
+          ) {
+            return of(acumulados);
+          }
+          return pedir(pagina + 1, acumulados, restantes - 1);
+        }),
+      );
+  return pedir(1, [], maxPaginas);
+}
+
 interface ResumenOrdenApi {
   id: number;
   folio: string;
@@ -117,6 +161,9 @@ interface MaterialOrdenApi {
   cantidad_consumida: string;
   cantidad_faltante: string;
   estado: EstadoMaterial;
+  /** Opcionales: Flask puede informar el semáforo y la cobertura por material. */
+  semaforo?: TonoSemaforo;
+  cobertura_compra?: CoberturaCompra;
 }
 
 interface PedidoVinculoApi {
@@ -135,6 +182,11 @@ interface RevisionOrdenApi {
   cantidad_reproceso: number;
   cantidad_merma: number;
   observaciones: string | null;
+  medidas_ok?: boolean;
+  costuras_ok?: boolean;
+  bordado_ok?: boolean;
+  etiquetas_ok?: boolean;
+  etapa_merma?: EtapaMerma;
 }
 
 type DetalleOrdenApi = Omit<ResumenOrdenApi, 'materiales'> & {
@@ -182,6 +234,7 @@ interface RequisicionApi {
   id: number;
   folio: string;
   estado: string;
+  lineas?: { inventario_material_id: number }[];
 }
 
 interface SolicitudCompraApi {
@@ -198,38 +251,36 @@ export class ProduccionServicio {
   private readonly planes = signal<FilaPlanSugerido[]>([]);
   private readonly opcionesVariantes = signal<OpcionVariante[]>([]);
   private readonly disponiblesMateriales = signal<Map<number, number>>(new Map());
+  private readonly idsConRequisicion = signal<Set<number>>(new Set());
+  private readonly clavesInicio = new Map<number, string>();
+  private readonly cargandoInterno = signal(false);
+  private readonly errorCargaInterno = signal('');
+  private readonly limitacionRequisicionesInterno = signal('');
 
   readonly cargado = signal(false);
   readonly ordenes = this.lista.asReadonly();
+  readonly cargando = this.cargandoInterno.asReadonly();
+  /** Lista vacía no debe confundirse con un fallo de Flask. */
+  readonly errorCarga = this.errorCargaInterno.asReadonly();
+  /** GET /requisiciones puede no estar autorizado al Operativo; no bloquea M16. */
+  readonly limitacionRequisiciones = this.limitacionRequisicionesInterno.asReadonly();
 
   readonly vistas = computed<OrdenVista[]>(() => this.lista().map((orden) => this.proyectar(orden)));
 
+  /** Historial leído de Flask; solo se proyectan campos que el contrato realmente informa. */
   readonly revisiones = computed(() =>
     this.lista().flatMap((orden) =>
       (orden.revisionesApi ?? []).map((revision) => {
-        const sku =
-          orden.lineas.find((linea) => linea.id === revision.orden_linea_id)?.sku ?? '';
-        const linea: LineaDictamen = {
-          lineaId: revision.orden_linea_id,
-          sku,
-          medidasOk: true,
-          costurasOk: true,
-          bordadoOk: true,
-          etiquetasOk: true,
-          cantidadRevisada: revision.cantidad_revisada,
-          cantidadAprobada: revision.cantidad_aprobada,
-          cantidadReproceso: revision.cantidad_reproceso,
-          cantidadMerma: revision.cantidad_merma,
-          causaMerma: revision.observaciones ?? '',
-          etapaMerma: 'ACABADOS',
+        const linea: LineaRevisionResumen = {
+          sku: orden.lineas.find((item) => item.id === revision.orden_linea_id)?.sku ?? '',
+          cantidadAprobada: numero(revision.cantidad_aprobada),
+          cantidadMerma: numero(revision.cantidad_merma),
         };
         return {
           id: revision.id,
-          folio: `REV-${revision.id}`,
+          referencia: `Registro ${revision.id}`,
           ordenId: orden.id,
           ordenFolio: orden.folio,
-          fecha: revision.fecha ?? '',
-          revisadaPor: 'Registro de calidad',
           lineas: [linea],
         };
       }),
@@ -237,43 +288,58 @@ export class ProduccionServicio {
   );
 
   constructor() {
-    this.recargar().subscribe({ error: () => this.cargado.set(true) });
+    this.recargar().subscribe();
   }
 
+  /** Recarga desde Flask. Nunca reemplaza datos buenos por un arreglo vacío ante un error. */
   recargar(): Observable<void> {
-    const paginaVacia = <T>(): PaginaApi<T> => ({
-      items: [],
-      total: 0,
-      pagina: 1,
-      por_pagina: 100,
-    });
+    this.cargandoInterno.set(true);
+    this.errorCargaInterno.set('');
+    this.limitacionRequisicionesInterno.set('');
+
+    const requisiciones = listarTodo<RequisicionApi>(this.api, '/requisiciones').pipe(
+      catchError((error: unknown) => {
+        this.limitacionRequisicionesInterno.set(
+          `No fue posible consultar requisiciones de M14: ${mensajeError(error)}. ` +
+            'La cobertura mostrada es orientativa; Flask decide el semáforo de cada orden.',
+        );
+        return of([] as RequisicionApi[]);
+      }),
+    );
 
     return forkJoin({
-      ordenes: this.api.get<PaginaApi<ResumenOrdenApi>>('/produccion/ordenes', {
-        params: { por_pagina: 100 },
-      }),
-      planes: this.api
-        .get<PaginaApi<PlanSugeridoApi>>('/produccion/plan-sugerido', {
-          params: { por_pagina: 100 },
-        })
-        .pipe(catchError(() => of(paginaVacia<PlanSugeridoApi>()))),
-      catalogo: this.api.get<CatalogoApi[]>('/catalogo').pipe(catchError(() => of([]))),
-      inventario: this.api
-        .get<PaginaApi<InventarioMaterialApi>>('/inventario/material', {
-          params: { por_pagina: 100 },
-        })
-        .pipe(catchError(() => of(paginaVacia<InventarioMaterialApi>()))),
+      ordenes: listarTodo<ResumenOrdenApi>(this.api, '/produccion/ordenes'),
+      planes: listarTodo<PlanSugeridoApi>(this.api, '/produccion/plan-sugerido').pipe(
+        catchError(() => of([] as PlanSugeridoApi[])),
+      ),
+      catalogo: this.api
+        .get<CatalogoApi[]>('/catalogo')
+        .pipe(catchError(() => of([] as CatalogoApi[]))),
+      inventario: listarTodo<InventarioMaterialApi>(this.api, '/inventario/material').pipe(
+        catchError(() => of([] as InventarioMaterialApi[])),
+      ),
+      requisiciones,
     }).pipe(
-      switchMap(({ ordenes, planes, catalogo, inventario }) => {
-        const detalles$ = ordenes.items.length
-          ? forkJoin(ordenes.items.map((resumen) => this.cargarDetalle(resumen)))
+      switchMap(({ ordenes, planes, catalogo, inventario, requisiciones: reqs }) => {
+        const detalles$ = ordenes.length
+          ? forkJoin(ordenes.map((resumen) => this.cargarDetalle(resumen)))
           : of([] as OrdenInterna[]);
 
         return detalles$.pipe(
           map((detalles) => {
             const disponibles = new Map<number, number>();
-            inventario.items.forEach((fila) => disponibles.set(fila.id, numero(fila.disponible)));
+            inventario.forEach((fila) => disponibles.set(fila.id, numero(fila.disponible)));
             this.disponiblesMateriales.set(disponibles);
+
+            this.idsConRequisicion.set(
+              new Set(
+                reqs
+                  .filter((requisicion) => !['ATENDIDA', 'CANCELADA'].includes(requisicion.estado))
+                  .flatMap((requisicion) =>
+                    (requisicion.lineas ?? []).map((linea) => linea.inventario_material_id),
+                  ),
+              ),
+            );
 
             const opciones: OpcionVariante[] = catalogo.flatMap((producto) =>
               producto.variantes.map((variante) => ({
@@ -290,20 +356,28 @@ export class ProduccionServicio {
             );
 
             this.lista.set(detalles);
-            this.planes.set(this.adaptarPlanes(planes.items, catalogo, detalles));
+            this.planes.set(this.adaptarPlanes(planes, catalogo, detalles));
           }),
         );
       }),
-      tap(() => this.cargado.set(true)),
-      catchError((error: unknown) => {
+      tap(() => {
+        this.cargandoInterno.set(false);
         this.cargado.set(true);
-        return throwError(() => error);
       }),
+      catchError((error: unknown) => {
+        this.errorCargaInterno.set(
+          mensajeError(error, 'No fue posible cargar la producción desde Flask.'),
+        );
+        this.cargandoInterno.set(false);
+        this.cargado.set(true);
+        return of(undefined);
+      }),
+      map(() => undefined),
     );
   }
 
   private recargarSilenciosamente(): void {
-    this.recargar().subscribe({ error: () => undefined });
+    this.recargar().subscribe();
   }
 
   private cargarDetalle(resumen: ResumenOrdenApi): Observable<OrdenInterna> {
@@ -352,6 +426,8 @@ export class ProduccionServicio {
         cantidadRequerida: numero(material.cantidad_requerida),
         cantidadReservada: numero(material.cantidad_reservada),
         cantidadConsumida: numero(material.cantidad_consumida),
+        semaforoApi: material.semaforo,
+        coberturaApi: material.cobertura_compra,
       })),
       pedidosApi: pedidos,
       revisionesApi: revisiones,
@@ -407,9 +483,7 @@ export class ProduccionServicio {
   }
 
   private proyectar(orden: OrdenInterna): OrdenVista {
-    const materiales = orden.materiales.map((material) =>
-      this.proyectarMaterial(material, orden.semaforo),
-    );
+    const materiales = orden.materiales.map((material) => this.proyectarMaterial(material));
     const completos = materiales.filter(
       (material) => material.estadoMaterial === 'COMPLETO',
     ).length;
@@ -462,7 +536,7 @@ export class ProduccionServicio {
     };
   }
 
-  private proyectarMaterial(material: MaterialOrden, semaforoOrden: TonoSemaforo): MaterialOrdenVista {
+  private proyectarMaterial(material: MaterialOrden): MaterialOrdenVista {
     const disponibleM15 = this.disponiblesMateriales().get(material.materialId) ?? 0;
     const faltante = redondear4(
       Math.max(
@@ -480,22 +554,28 @@ export class ProduccionServicio {
           ? 'PARCIAL'
           : 'FALTANTE';
 
-    let cobertura: CoberturaCompra = 'NINGUNA';
-    let etiquetaCobertura = 'No requerida';
-    if (faltante > TOLERANCIA) {
-      cobertura = semaforoOrden === 'AMBAR' ? 'REQUISICION' : 'NINGUNA';
-      etiquetaCobertura =
-        cobertura === 'REQUISICION'
-          ? 'Cobertura de compra vigente'
-          : 'Sin cobertura de compra';
-    }
+    // Flask manda; si no informa cobertura, solo se puede verificar la requisición en M14.
+    const cobertura: CoberturaCompra =
+      material.coberturaApi ??
+      (this.idsConRequisicion().has(material.materialId) ? 'REQUISICION' : 'NINGUNA');
+    const etiquetaCobertura =
+      faltante <= TOLERANCIA
+        ? 'No requerida'
+        : cobertura === 'RETRASADA'
+          ? 'Compra retrasada'
+          : cobertura === 'ORDEN_COMPRA'
+            ? 'Orden de compra vigente'
+            : cobertura === 'REQUISICION'
+              ? 'Requisición abierta en M14'
+              : 'Sin cobertura detectada';
 
     const semaforo: TonoSemaforo =
-      estadoMaterial === 'COMPLETO'
+      material.semaforoApi ??
+      (estadoMaterial === 'COMPLETO'
         ? 'VERDE'
-        : semaforoOrden === 'AMBAR'
+        : cobertura === 'REQUISICION' || cobertura === 'ORDEN_COMPRA'
           ? 'AMBAR'
-          : 'ROJO';
+          : 'ROJO');
 
     return {
       ...material,
@@ -603,7 +683,7 @@ export class ProduccionServicio {
         unidadBase: material.unidadBase,
         faltante: material.faltante,
         tieneRequisicion: material.cobertura === 'REQUISICION',
-        tieneOrdenCompra: false,
+        tieneOrdenCompra: material.cobertura === 'ORDEN_COMPRA',
         ordenRetrasada: material.cobertura === 'RETRASADA',
       }));
   }
@@ -629,6 +709,20 @@ export class ProduccionServicio {
       return of({
         ok: false,
         mensaje: 'Agrega al menos una variante activa con cantidad entera mayor a cero.',
+      });
+    }
+
+    const abiertaDuplicada = this.lista().find(
+      (orden) =>
+        !ESTADOS_CERRADOS.includes(orden.estado) &&
+        orden.lineas.some((linea) => lineasValidas.some((valida) => valida.sku === linea.sku)),
+    );
+    if (abiertaDuplicada) {
+      return of({
+        ok: false,
+        mensaje:
+          `Ya existe la orden abierta ${abiertaDuplicada.folio} con ese SKU. ` +
+          'La demanda debe sumarse a esa orden en Flask; esta vista no crea una duplicada.',
       });
     }
 
@@ -705,13 +799,18 @@ export class ProduccionServicio {
   }
 
   iniciar(id: number): Observable<ResultadoAccion> {
+    // Misma clave mientras la orden no confirme el inicio: un reintento de red
+    // no debe consumir material dos veces.
+    const clave = this.clavesInicio.get(id) ?? this.nuevaClaveIdempotencia();
+    this.clavesInicio.set(id, clave);
     return this.api
       .post<{ orden: DetalleOrdenApi }>(`/produccion/ordenes/${id}/iniciar`, {}, {
-        idempotencyKey: this.nuevaClaveIdempotencia(),
+        idempotencyKey: clave,
       })
       .pipe(
         map((respuesta) => {
           this.actualizarDesdeDetalle(respuesta.orden);
+          this.clavesInicio.delete(id);
           return {
             ok: true,
             mensaje: `Producción iniciada en ${respuesta.orden.folio}; consumo PEPS registrado.`,

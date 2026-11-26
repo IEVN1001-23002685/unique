@@ -11,6 +11,7 @@ import {
   type ValidatorFn,
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
 import { decimalPositivo } from '../../../../compartido/validadores/validadores-negocio';
 import { mensajeError } from '../../../../core/api/errores';
@@ -79,7 +80,8 @@ export class Recepciones {
   private readonly auth = inject(AuthStateService);
   private readonly avisos = inject(AvisosServicio);
   protected readonly servicio = inject(ComprasServicio);
-  protected readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
+  /** Misma resolución de rol que el resto de M14: sesión real o perfil de demostración. */
+  protected readonly esAdministrador = this.servicio.puedeGestionarCompras;
 
   protected readonly ordenesDisponibles = computed(() =>
     this.servicio.ordenes().filter((orden) => ['EMITIDA', 'PARCIAL'].includes(orden.estado)),
@@ -92,6 +94,8 @@ export class Recepciones {
   protected readonly intentoEnvio = signal(false);
   protected readonly resultado = signal<ResultadoRecepcion | null>(null);
   protected readonly confirmarCierre = signal(false);
+  protected readonly guardando = signal(false);
+  protected readonly errorGuardado = signal('');
 
   /** FormArray explícito para conservar el tipado estricto de cada línea. */
   protected readonly lineasForm = new FormArray<LineaRecepcionForma>([]);
@@ -123,8 +127,18 @@ export class Recepciones {
   protected alCambiar(evento: Event): void {
     this.ordenId.set(Number((evento.target as HTMLSelectElement).value));
     this.resultado.set(null);
+    this.errorGuardado.set('');
+    this.servicio.reiniciarIdempotencia();
     const orden = this.orden();
     this.prepararLineas(orden?.lineas ?? []);
+  }
+
+  protected reintentar(): void {
+    this.ordenInicializada = false;
+    this.resultado.set(null);
+    this.errorGuardado.set('');
+    this.servicio.reiniciarIdempotencia();
+    this.servicio.recargar().subscribe();
   }
 
   protected material(linea: LineaOrdenCompra) {
@@ -166,11 +180,28 @@ export class Recepciones {
 
   protected guardar(): void {
     this.intentoEnvio.set(true);
+    this.errorGuardado.set('');
+    if (this.guardando()) {
+      return;
+    }
     if (this.formulario.invalid || !this.orden()) {
       this.formulario.markAllAsTouched();
       this.avisos.mostrar(
         'error',
         'Revisa las medidas: aceptada más rechazada debe igualar la medida.',
+      );
+      return;
+    }
+
+    if (
+      this.hayFaltante() &&
+      this.formulario.controls.cerrarConFaltante.value &&
+      !this.esAdministrador()
+    ) {
+      this.formulario.controls.cerrarConFaltante.setValue(false);
+      this.avisos.mostrar(
+        'error',
+        'Solo el Administrador puede cerrar la orden con faltante; quedará PARCIAL.',
       );
       return;
     }
@@ -189,7 +220,7 @@ export class Recepciones {
 
   private registrar(): void {
     const orden = this.orden();
-    if (!orden) {
+    if (!orden || this.guardando()) {
       return;
     }
 
@@ -212,20 +243,31 @@ export class Recepciones {
       })),
     };
 
-    this.servicio.registrarRecepcion(datos).subscribe({
-      next: (resultado) => {
-        if (!resultado) {
-          this.avisos.mostrar('error', 'La orden ya no admite recepciones en este estado.');
-          return;
-        }
-        this.resultado.set(resultado);
-        this.avisos.mostrar(
-          'exito',
-          `${resultado.recepcion.folio} se registró en Flask; la orden quedó ${resultado.estadoOrden}.`,
-        );
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .registrarRecepcion(datos)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: (resultado) => {
+          if (!resultado) {
+            this.errorGuardado.set('La orden ya no admite recepciones en este estado.');
+            this.avisos.mostrar('error', this.errorGuardado());
+            return;
+          }
+          this.resultado.set(resultado);
+          const referencia =
+            resultado.recepcion.folio || `recepción ${resultado.recepcion.id}`;
+          this.avisos.mostrar(
+            'exito',
+            `${referencia} se registró en Flask; la orden quedó ${resultado.estadoOrden}.`,
+          );
+        },
+        error: (error: unknown) => {
+          const mensaje = mensajeError(error, 'Flask no pudo registrar la recepción.');
+          this.errorGuardado.set(mensaje);
+          this.avisos.mostrar('error', mensaje);
+        },
+      });
   }
 
   private prepararLineas(lineas: LineaOrdenCompra[]): void {

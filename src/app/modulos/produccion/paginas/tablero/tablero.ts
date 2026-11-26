@@ -48,6 +48,10 @@ export class Tablero {
     this.busqueda.set((evento.target as HTMLInputElement).value);
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected materialesTexto(orden: OrdenVista): string {
     const completos = orden.materialesCompletos;
     const total = orden.materiales.length;

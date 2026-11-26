@@ -1,6 +1,20 @@
 <section class="vista">
   <app-navegacion-produccion />
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar la orden.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando detalle de la orden desde Flask…
+    </div>
+  }
+
   @if (orden(); as orden) {
     <div class="cabecera">
       <div>
@@ -220,7 +234,8 @@
       <p class="nota">
         Disponible se lee del inventario de materia prima. Reservar aparta la cantidad posible por
         material y color; el inicio consume por PEPS con el costo real de cada lote dentro de una
-        sola transacción.
+        sola transacción. La cobertura se toma de lo que informa Flask y, si no viene en la
+        respuesta, de las requisiciones abiertas detectadas en M14; es orientativa.
       </p>
     </div>
 
@@ -279,9 +294,11 @@
           <button type="button" class="boton boton--primario" (click)="registrarSolicitud()">
             Preparar solicitud de compra
           </button>
-          <a routerLink="/compras/requisiciones/nueva" class="boton boton--secundario">
-            Capturar requisición en M14 (Administrador)
-          </a>
+          @if (esAdmin()) {
+            <a routerLink="/compras/requisiciones/nueva" class="boton boton--secundario">
+              Capturar requisición en M14
+            </a>
+          }
         </div>
         <p class="nota nota--advertencia">
           Al confirmar se crea la requisición con folio REQ y se reutiliza la vigente si ya existe,
@@ -309,7 +326,7 @@
         (cancelar)="cancelando.set(false)"
       />
     }
-  } @else {
+  } @else if (servicio.cargado() && !servicio.errorCarga()) {
     <div class="cabecera">
       <div>
         <p class="eyebrow">M16 · Producción</p>

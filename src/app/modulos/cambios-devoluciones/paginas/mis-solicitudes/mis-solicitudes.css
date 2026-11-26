@@ -1,0 +1,14 @@
+.cd-listado-lineas {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0;
+  padding-left: 1.125rem;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 30rem) {
+  .cd-filtros {
+    align-items: flex-start;
+  }
+}

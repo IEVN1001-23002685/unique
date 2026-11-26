@@ -1,6 +1,7 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 import { decimalPositivo } from '../../../../compartido/validadores/validadores-negocio';
 import { mensajeError } from '../../../../core/api/errores';
 import { AuthStateService } from '../../../../core/auth/auth-state.service';
@@ -32,6 +33,8 @@ export class FormularioRequisicion {
   protected readonly materiales = this.servicio.materiales;
   protected readonly intentoEnvio = signal(false);
   protected readonly noEncontrado = signal(false);
+  protected readonly guardando = signal(false);
+  protected readonly errorGuardado = signal('');
 
   private readonly parametroId = this.ruta.snapshot.paramMap.get('id');
   protected readonly idEditar =
@@ -92,6 +95,13 @@ export class FormularioRequisicion {
     });
   }
 
+  protected reintentar(): void {
+    this.formularioInicializado = false;
+    this.noEncontrado.set(false);
+    this.errorGuardado.set('');
+    this.servicio.recargar().subscribe();
+  }
+
   protected materialDe(indice: number): MaterialCompra | undefined {
     const id = this.formulario.controls.lineas.at(indice).controls.materialId.value;
     return this.servicio.obtenerMaterial(id);
@@ -140,6 +150,10 @@ export class FormularioRequisicion {
 
   protected guardar(): void {
     this.intentoEnvio.set(true);
+    this.errorGuardado.set('');
+    if (this.guardando()) {
+      return;
+    }
     if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       this.avisos.mostrar('error', 'Revisa los campos marcados antes de continuar.');
@@ -187,13 +201,21 @@ export class FormularioRequisicion {
       })),
     };
 
-    this.servicio.guardarRequisicion(requisicion).subscribe({
-      next: (guardada) => {
-        this.avisos.mostrar('exito', `${guardada.folio} se guardó en Flask.`);
-        void this.router.navigate(['/compras']);
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .guardarRequisicion(requisicion)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: (guardada) => {
+          this.avisos.mostrar('exito', `${guardada.folio} se guardó en Flask.`);
+          void this.router.navigate(['/compras']);
+        },
+        error: (error: unknown) => {
+          const mensaje = mensajeError(error, 'Flask no pudo guardar la requisición.');
+          this.errorGuardado.set(mensaje);
+          this.avisos.mostrar('error', mensaje);
+        },
+      });
   }
 
   private nuevaLinea(linea?: LineaRequisicion) {

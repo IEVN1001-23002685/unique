@@ -92,7 +92,15 @@
       </div>
     </div>
 
-    @if (servicio.ventas().length === 0) {
+    @if (servicio.errorCarga()) {
+      <div class="estado estado--error" role="alert">
+        <strong>No fue posible cargar las ventas.</strong>
+        <p>{{ servicio.errorCarga() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (servicio.ventas().length === 0) {
       <div class="estado" role="status">
         <strong>Aún no hay ventas registradas.</strong>
         <p>Usa «+ Nueva venta manual» para registrar la primera.</p>

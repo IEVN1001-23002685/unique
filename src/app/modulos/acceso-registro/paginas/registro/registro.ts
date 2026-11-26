@@ -102,7 +102,7 @@ export class Registro {
         next: () => {
           this.cargando = false;
           this.modal.cerrar();
-          this.carrito.cargar().subscribe({ error: () => undefined });
+          this.carrito.sincronizarAlIniciarSesion().subscribe({ error: () => undefined });
           void this.router.navigateByUrl(rutaDestinoSegura('CLIENTE', this.returnUrl));
         },
         error: (error: unknown) => {

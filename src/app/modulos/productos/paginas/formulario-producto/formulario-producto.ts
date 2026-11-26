@@ -14,7 +14,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PRENDAS_OFICIALES } from '../../../../nucleo/datos/catalogo-oficial';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionProductos } from '../../componentes/navegacion-productos/navegacion-productos';
-import { IMAGENES_DISPONIBLES } from '../../servicios/imagenes-recursos';
+import { ImagenesServicio } from '../../servicios/imagenes-servicio';
 import type {
   CategoriaMaterialInterfaz,
   CodigoColor,
@@ -92,7 +92,7 @@ export class FormularioProducto {
   protected readonly colores = this.servicio.colores;
   protected readonly tallas = this.servicio.tallas;
   protected readonly materiales = this.servicio.materiales;
-  protected readonly imagenes = IMAGENES_DISPONIBLES;
+  protected readonly imagenes = inject(ImagenesServicio).biblioteca;
   protected readonly tiposMaterial: readonly CategoriaMaterialInterfaz[] = [
     'Tela',
     'Hilo',
@@ -181,6 +181,10 @@ export class FormularioProducto {
     this.forma.controls.categoriaId.valueChanges.pipe(takeUntilDestroyed()).subscribe((id) => {
       this.configurarTallas(Number(id), true);
     });
+    this.servicio.recargar().subscribe(() => this.aplicarDatos());
+  }
+
+  protected reintentar(): void {
     this.servicio.recargar().subscribe(() => this.aplicarDatos());
   }
 

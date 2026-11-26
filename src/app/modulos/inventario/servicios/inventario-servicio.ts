@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, concatMap, forkJoin, from, map, of, tap, toArray } from 'rxjs';
+import { Observable, catchError, concatMap, forkJoin, from, map, of, tap, toArray } from 'rxjs';
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
+import { mensajeError } from '../../../core/api/errores';
 import { ProveedoresServicio } from '../../proveedores/servicios/proveedores-servicio';
 import {
   type CambioPolitica,
@@ -60,6 +61,8 @@ interface InventarioApi {
   punto_reorden: string | null;
   cobertura_dias: string | null;
   semaforo: string;
+  /** Opcional: si Flask no lo envía, la vista no finge que una orden quedó cubierta. */
+  cubre_orden_confirmada?: boolean;
   stock_minimo: string;
   stock_seguridad: string;
   proveedor_principal_id: number | null;
@@ -103,25 +106,41 @@ interface RequisicionApi {
   lineas: { inventario_material_id: number }[];
 }
 
+/** Catálogo M22 leído en solo lectura para resolver la FK al dar de alta materiales. */
+interface CategoriaMaterialApi {
+  id: number;
+  nombre: string;
+  activa?: boolean;
+}
+
 function listarTodo<T>(
   api: ApiService,
   ruta: string,
   params: Record<string, ValorParametro> = {},
 ): Observable<T[]> {
   const porPagina = 100;
-  const pedir = (pagina: number, previos: T[]): Observable<T[]> =>
+  /** Tope defensivo: una API que ignore `pagina` no debe generar un ciclo infinito. */
+  const maxPaginas = 50;
+  const pedir = (pagina: number, previos: T[], restantes: number): Observable<T[]> =>
     api
       .get<Pagina<T>>(ruta, { params: { ...params, pagina, por_pagina: porPagina } })
       .pipe(
         concatMap((respuesta) => {
-          const items = [...previos, ...(respuesta.items ?? [])];
-          if (respuesta.items.length === 0 || items.length >= (respuesta.total ?? 0)) {
-            return of(items);
+          const items = respuesta.items ?? [];
+          const acumulados = [...previos, ...items];
+          const total = typeof respuesta.total === 'number' ? respuesta.total : acumulados.length;
+          if (
+            items.length === 0 ||
+            items.length < porPagina ||
+            acumulados.length >= total ||
+            restantes <= 1
+          ) {
+            return of(acumulados);
           }
-          return pedir(pagina + 1, items);
+          return pedir(pagina + 1, acumulados, restantes - 1);
         }),
       );
-  return pedir(1, []);
+  return pedir(1, [], maxPaginas);
 }
 
 function unidadApi(valor: string): 'M2' | 'M' | 'PZA' {
@@ -155,12 +174,30 @@ export class InventarioServicio {
   private readonly listaLotes = signal<LoteMaterial[]>([]);
   private readonly listaMovimientos = signal<MovimientoMaterial[]>([]);
   private readonly idsConRequisicion = signal<Set<number>>(new Set());
+  private readonly catalogoCategorias = signal<CategoriaMaterialApi[]>([]);
+  private readonly cargandoInterno = signal(false);
+  private readonly errorCargaInterno = signal('');
+  private readonly limitacionRequisicionesInterno = signal('');
+  private readonly limitacionCatalogosInterno = signal('');
 
-  readonly materiales = this.listaMateriales.asReadonly();
+  /** El plazo llega de M13: se proyecta en cada lectura, nunca se guarda como dato de M15. */
+  readonly materiales = computed<Material[]>(() =>
+    this.listaMateriales().map((material) => ({
+      ...material,
+      plazoDias: this.plazoDe(material.id),
+    })),
+  );
   readonly existencias = this.listaExistencias.asReadonly();
   readonly lotes = this.listaLotes.asReadonly();
   readonly movimientos = this.listaMovimientos.asReadonly();
   readonly cargado = signal(false);
+  readonly cargando = this.cargandoInterno.asReadonly();
+  /** Una lista vacía no debe confundirse con un fallo de Flask. */
+  readonly errorCarga = this.errorCargaInterno.asReadonly();
+  /** M14 puede no autorizar GET /requisiciones al Operativo; no bloquea M15. */
+  readonly limitacionRequisiciones = this.limitacionRequisicionesInterno.asReadonly();
+  /** M22 puede no estar disponible; se conservan las FK ya conocidas en M15. */
+  readonly limitacionCatalogos = this.limitacionCatalogosInterno.asReadonly();
 
   readonly vistas = computed<ExistenciaVista[]>(() =>
     this.listaExistencias()
@@ -177,6 +214,32 @@ export class InventarioServicio {
   }
 
   recargar(): Observable<void> {
+    this.cargandoInterno.set(true);
+    this.errorCargaInterno.set('');
+    this.limitacionRequisicionesInterno.set('');
+    this.limitacionCatalogosInterno.set('');
+    const categorias = listarTodo<CategoriaMaterialApi>(
+      this.api,
+      '/catalogos/categoria-material',
+    ).pipe(
+      catchError((error: unknown) => {
+        this.limitacionCatalogosInterno.set(
+          `No fue posible consultar categorías de material de M22: ${mensajeError(error)}. ` +
+            'El alta usará solo las categorías ya presentes en el catálogo de M15.',
+        );
+        return of([] as CategoriaMaterialApi[]);
+      }),
+    );
+    const requisiciones = listarTodo<RequisicionApi>(this.api, '/requisiciones').pipe(
+      catchError((error: unknown) => {
+        this.limitacionRequisicionesInterno.set(
+          `No fue posible consultar requisiciones abiertas de M14: ${mensajeError(error)}. ` +
+            'El indicador «Sin requisición» es orientativo: Flask debe confirmar la existencia ' +
+            'de una requisición antes de generar una automática.',
+        );
+        return of([] as RequisicionApi[]);
+      }),
+    );
     return forkJoin({
       materiales: listarTodo<MaterialApi>(this.api, '/materiales', {
         incluir_inactivos: true,
@@ -184,11 +247,13 @@ export class InventarioServicio {
       inventario: listarTodo<InventarioApi>(this.api, '/inventario/material'),
       lotes: listarTodo<LoteApi>(this.api, '/inventario/material/lotes'),
       movimientos: listarTodo<MovimientoApi>(this.api, '/inventario/material/movimientos'),
-      requisiciones: listarTodo<RequisicionApi>(this.api, '/requisiciones'),
+      requisiciones,
+      categorias,
     }).pipe(
-      tap(({ materiales, inventario, lotes, movimientos, requisiciones }) => {
+      tap(({ materiales, inventario, lotes, movimientos, requisiciones, categorias }) => {
         const materialesVista = materiales.map((fila) => this.adaptarMaterial(fila));
         this.listaMateriales.set(materialesVista);
+        this.catalogoCategorias.set(categorias);
         this.listaExistencias.set(inventario.map((fila) => this.adaptarExistencia(fila)));
         this.listaLotes.set(
           lotes.map((fila) => {
@@ -239,7 +304,22 @@ export class InventarioServicio {
           ),
         );
       }),
-      tap(() => this.cargado.set(true)),
+      catchError((error: unknown) => {
+        this.errorCargaInterno.set(
+          mensajeError(error, 'No fue posible cargar el inventario de materia prima desde Flask.'),
+        );
+        this.listaMateriales.set([]);
+        this.listaExistencias.set([]);
+        this.listaLotes.set([]);
+        this.listaMovimientos.set([]);
+        this.idsConRequisicion.set(new Set());
+        this.catalogoCategorias.set([]);
+        return of(undefined);
+      }),
+      tap(() => {
+        this.cargandoInterno.set(false);
+        this.cargado.set(true);
+      }),
       map(() => undefined),
     );
   }
@@ -256,7 +336,7 @@ export class InventarioServicio {
   }
 
   obtenerMaterial(id: number): Material | undefined {
-    return this.listaMateriales().find((material) => material.id === id);
+    return this.materiales().find((material) => material.id === id);
   }
 
   nombreMaterial(id: number): string {
@@ -269,7 +349,7 @@ export class InventarioServicio {
 
   existeCodigo(codigo: string, exceptoId = 0): boolean {
     const normalizado = codigo.trim().toUpperCase();
-    return this.listaMateriales().some(
+    return this.materiales().some(
       (material) => material.id !== exceptoId && material.codigo.toUpperCase() === normalizado,
     );
   }
@@ -360,7 +440,10 @@ export class InventarioServicio {
     );
   }
 
-  /** DELETE /materiales/{id} aplica baja lógica en Flask cuando hay historial. */
+  /**
+   * DELETE /materiales/{id} aplica baja lógica en Flask cuando hay historial.
+   * La inferencia local solo describe lo esperado; Flask y M11 deciden de forma autoritativa.
+   */
   eliminarMaterial(id: number): Observable<'eliminado' | 'desactivado' | 'no-encontrado'> {
     if (!this.obtenerMaterial(id)) {
       return of('no-encontrado' as const);
@@ -405,6 +488,7 @@ export class InventarioServicio {
       .pipe(
         concatMap(() => this.recargar()),
         map(() => {
+          // Si Flask no devuelve el movimiento en la recarga, no se inventa uno.
           const movimiento: MovimientoMaterial | null =
             this.listaMovimientos().find(
               (item) =>
@@ -414,20 +498,7 @@ export class InventarioServicio {
                 item.motivo.includes(datos.motivo.trim()),
             ) ?? null;
           return {
-            movimiento:
-              movimiento ?? {
-                id: 0,
-                fecha: new Date().toISOString(),
-                materialId: existencia.materialId,
-                color: existencia.color,
-                loteFolio: null,
-                tipo: 'AJUSTE',
-                cantidadBase: diferencia,
-                costoUnitario: 0,
-                documento: 'AJUSTE-Flask',
-                motivo: datos.motivo.trim(),
-                usuario: 'Flask',
-              },
+            movimiento,
             diferencia,
             loteAfectado: movimiento?.loteFolio ?? null,
             merma:
@@ -446,11 +517,13 @@ export class InventarioServicio {
       );
   }
 
+  private plazoDe(materialId: number): number | null {
+    const lineas = this.proveedores.cobertura().get(materialId) ?? [];
+    const plazos = lineas.map((linea) => linea.plazoDias).filter((dias) => dias > 0);
+    return plazos.length > 0 ? Math.min(...plazos) : null;
+  }
+
   private adaptarMaterial(fila: MaterialApi): Material {
-    const plazo = this.proveedores
-      .cobertura()
-      .get(fila.id)
-      ?.reduce((minimo, linea) => Math.min(minimo, linea.plazoDias), Number.POSITIVE_INFINITY);
     return {
       id: fila.id,
       codigo: fila.codigo,
@@ -463,7 +536,7 @@ export class InventarioServicio {
       costoEstandarBase: Number(fila.costo_estandar_base ?? 0),
       mermaEstandarPct: Number(fila.merma_estandar_pct),
       porColor: fila.por_color,
-      plazoDias: Number.isFinite(plazo) ? (plazo as number) : 7,
+      plazoDias: null,
       activo: fila.activo,
       categoriaMaterialId: fila.categoria_material_id,
     };
@@ -480,8 +553,9 @@ export class InventarioServicio {
       stockMinimo: Number(fila.stock_minimo),
       stockSeguridad: Number(fila.stock_seguridad),
       consumoDiarioManual: Number(fila.consumo_diario),
-      cubreOrdenConfirmada: true,
+      cubreOrdenConfirmada: fila.cubre_orden_confirmada,
       activo: fila.activo,
+      plazoDiasApi: fila.plazo_dias,
       consumoDiarioApi: Number(fila.consumo_diario),
       puntoReordenApi: fila.punto_reorden === null ? null : Number(fila.punto_reorden),
       coberturaDiasApi: fila.cobertura_dias === null ? null : Number(fila.cobertura_dias),
@@ -497,9 +571,13 @@ export class InventarioServicio {
     }
     const disponible = redondear4(existencia.fisico - existencia.reservado);
     const consumoDiario = existencia.consumoDiarioApi ?? existencia.consumoDiarioManual;
+    const puntoApi = existencia.puntoReordenApi;
+    // El plazo calculado por Flask para la vista prevalece; M13 es la primera alternativa.
+    const plazo = existencia.plazoDiasApi ?? material.plazoDias;
+    const plazoPendiente = (puntoApi === undefined || puntoApi === null) && plazo === null;
     const puntoReorden =
-      existencia.puntoReordenApi ??
-      redondear4(consumoDiario * material.plazoDias + existencia.stockSeguridad);
+      puntoApi ??
+      (plazo === null ? 0 : redondear4(consumoDiario * plazo + existencia.stockSeguridad));
     const coberturaDias =
       existencia.coberturaDiasApi !== undefined
         ? existencia.coberturaDiasApi
@@ -512,7 +590,7 @@ export class InventarioServicio {
 
     return {
       ...existencia,
-      material,
+      material: { ...material, plazoDias: plazo },
       disponible,
       posicion,
       consumoDiario: redondear4(consumoDiario),
@@ -520,8 +598,9 @@ export class InventarioServicio {
       coberturaDias,
       semaforo,
       motivoSemaforo: this.motivoSemaforo(semaforo, disponible, existencia, puntoReorden),
+      plazoPendiente,
       requisicionAbierta,
-      requiereAtencion: posicion <= puntoReorden && !requisicionAbierta,
+      requiereAtencion: !plazoPendiente && posicion <= puntoReorden && !requisicionAbierta,
     };
   }
 
@@ -530,7 +609,7 @@ export class InventarioServicio {
     existencia: Existencia,
     puntoReorden: number,
   ): TonoSemaforo {
-    if (disponible <= existencia.stockMinimo || !existencia.cubreOrdenConfirmada) {
+    if (disponible <= existencia.stockMinimo || existencia.cubreOrdenConfirmada === false) {
       return 'ROJO';
     }
     return disponible <= puntoReorden ? 'AMBAR' : 'VERDE';
@@ -546,15 +625,26 @@ export class InventarioServicio {
       return 'Cobertura suficiente según Flask.';
     }
     if (semaforo === 'ROJO') {
-      return disponible <= existencia.stockMinimo
-        ? 'Disponible en o por debajo del stock mínimo.'
+      if (disponible <= existencia.stockMinimo) {
+        return 'Disponible en o por debajo del stock mínimo.';
+      }
+      return existencia.cubreOrdenConfirmada === false
+        ? 'Una orden confirmada no queda cubierta por el disponible.'
         : 'Flask marcó la posición en rojo por demanda o fecha.';
     }
     return `Disponible en o por debajo del punto de reorden (${puntoReorden}).`;
   }
 
   private categoriaId(nombre: Material['categoria']): number {
-    return this.listaMateriales().find((material) => material.categoria === nombre)
-      ?.categoriaMaterialId ?? 0;
+    const normalizado = nombre.toLocaleLowerCase('es-MX');
+    const delCatalogo = this.catalogoCategorias().find(
+      (categoria) =>
+        categoria.activa !== false && categoria.nombre.toLocaleLowerCase('es-MX') === normalizado,
+    );
+    return (
+      delCatalogo?.id ??
+      this.listaMateriales().find((material) => material.categoria === nombre)?.categoriaMaterialId ??
+      0
+    );
   }
 }

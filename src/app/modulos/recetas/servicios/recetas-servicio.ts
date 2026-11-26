@@ -15,6 +15,7 @@ import {
 import { AuthStateService } from '../../../core/auth/auth-state.service';
 import { ApiService, type ValorParametro } from '../../../core/api/api.service';
 import { codigoError, mensajeError } from '../../../core/api/errores';
+import { PerfilDemoServicio } from '../../../nucleo/servicios/perfil-demo-servicio';
 import { ProductosServicio } from '../../productos/servicios/productos-servicio';
 import type { CodigoTalla } from '../../productos/modelos/producto-maestro';
 import type {
@@ -39,6 +40,12 @@ interface Pagina<T> {
   total: number;
   pagina: number;
   por_pagina: number;
+}
+
+interface DetalleResuelto {
+  item: RecetaApi;
+  receta?: RecetaApi;
+  error?: unknown;
 }
 
 interface CatalogoApi {
@@ -218,6 +225,7 @@ function texto(valor: string | null | undefined): string {
 export class RecetasServicio {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthStateService);
+  private readonly perfilDemo = inject(PerfilDemoServicio);
   private readonly maestro = inject(ProductosServicio);
 
   private readonly lista = signal<Receta[]>([]);
@@ -225,13 +233,27 @@ export class RecetasServicio {
   private readonly materialesLista = signal<MaterialCatalogo[]>([]);
   private readonly tallasApi = signal<CatalogoApi[]>([]);
   private readonly costeoLista = signal<FilaCosteo[]>([]);
-  private readonly capacidades = signal<Record<number, number>>({});
 
   readonly recetas = this.lista.asReadonly();
   readonly disenos = this.disenosLista.asReadonly();
   readonly materiales = computed(() => this.materialesLista());
   readonly costeoFilas = this.costeoLista.asReadonly();
-  readonly puedeVerCostos = computed(() => this.auth.puede(['ADMIN']));
+
+  /** Fallos de API visibles en la interfaz; nunca se confunden con catálogos vacíos. */
+  private readonly errorCargaInterno = signal('');
+  private readonly errorDetalleInterno = signal('');
+  readonly errorCarga = this.errorCargaInterno.asReadonly();
+  readonly errorDetalle = this.errorDetalleInterno.asReadonly();
+
+  /**
+   * Sin autenticación real, el perfil de demostración permite explorar el panel.
+   * Con sesión, manda el rol del token: Operativo nunca ve costos (§3).
+   */
+  readonly puedeVerCostos = computed(() =>
+    this.auth.autenticado()
+      ? this.auth.puede(['ADMIN'])
+      : this.perfilDemo.puedeVerCostos(),
+  );
 
   readonly productos = computed(() => {
     const productos = this.maestro.productos();
@@ -259,30 +281,22 @@ export class RecetasServicio {
   });
 
   recargar(): Observable<void> {
-    const admin = this.auth.puede(['ADMIN']);
+    const admin = this.puedeVerCostos();
+    this.errorCargaInterno.set('');
+    this.errorDetalleInterno.set('');
     return forkJoin({
       recetas: this.listarPagina<RecetaApi>('/recetas'),
       materiales: this.listarPagina<MaterialApi>('/materiales'),
-      disenos: admin
-        ? this.listarPagina<DisenoApi>('/disenos')
-        : of([] as DisenoApi[]),
-      tallas: admin
-        ? this.listarPagina<CatalogoApi>('/catalogos/talla')
-        : of([] as CatalogoApi[]),
+      disenos: admin ? this.listarPagina<DisenoApi>('/disenos') : of([] as DisenoApi[]),
+      tallas: admin ? this.listarPagina<CatalogoApi>('/catalogos/talla') : of([] as CatalogoApi[]),
       costeo: admin ? this.listarCosteo() : of([] as CosteoFilaApi[]),
-      productos: admin
-        ? this.maestro.recargar().pipe(
-            map(() => true),
-            catchError(() => of(false)),
-          )
-        : of(false),
+      productos: admin ? this.maestro.recargar() : of(undefined),
     }).pipe(
       switchMap(({ recetas, materiales, disenos, tallas, costeo }) => {
         this.materialesLista.set(materiales.filter((item) => item.activo).map(deMaterialApi));
         this.disenosLista.set(disenos.map(deDisenoApi));
         this.tallasApi.set(tallas);
         this.costeoLista.set(costeo.map(deCosteoApi));
-        this.capacidades.set({});
 
         if (recetas.length === 0) {
           this.lista.set([]);
@@ -290,12 +304,43 @@ export class RecetasServicio {
         }
         return forkJoin(
           recetas.map((item) =>
-            this.api.get<RecetaApi>(`/recetas/${item.id}`).pipe(catchError(() => of(item))),
+            this.api
+              .get<RecetaApi>(`/recetas/${item.id}`)
+              .pipe(
+                map((receta): DetalleResuelto => ({ item, receta })),
+                catchError((error: unknown) => of<DetalleResuelto>({ item, error })),
+              ),
           ),
         ).pipe(
-          tap((detalles) => this.lista.set(detalles.map(deRecetaApi))),
+          tap((respuestas) => {
+            const fallos = respuestas.filter((respuesta) => respuesta.error !== undefined);
+            this.lista.set(
+              respuestas
+                .filter((respuesta) => respuesta.receta !== undefined)
+                .map((respuesta) => deRecetaApi(respuesta.receta as RecetaApi)),
+            );
+            if (fallos.length > 0) {
+              this.errorDetalleInterno.set(
+                `No fue posible cargar ${fallos.length} receta(s). ${mensajeError(
+                  fallos[0].error,
+                  'Revisa la conexión con Flask.',
+                )}`,
+              );
+            }
+          }),
           map(() => undefined),
         );
+      }),
+      catchError((error: unknown) => {
+        this.errorCargaInterno.set(
+          mensajeError(error, 'No fue posible cargar recetas, materiales o catálogos desde Flask.'),
+        );
+        this.lista.set([]);
+        this.materialesLista.set([]);
+        this.disenosLista.set([]);
+        this.tallasApi.set([]);
+        this.costeoLista.set([]);
+        return of(undefined);
       }),
     );
   }
@@ -398,8 +443,13 @@ export class RecetasServicio {
     return receta.margenReal === undefined ? null : Math.round(receta.margenReal * 1000) / 10;
   }
 
-  alcanzaPara(receta: Receta): number | null {
-    return this.capacidades()[receta.id] ?? null;
+  /**
+   * La capacidad se calcula en `/recetas/previsualizar` para el borrador que se edita;
+   * el editor consume esa respuesta directamente. No se guarda una capacidad con un
+   * identificador inventado: Flask aún no expone capacidad por receta persistida.
+   */
+  alcanzaPara(_receta: Receta): number | null {
+    return null;
   }
 
   costoEstandarDe(productoId: number): number | null {
@@ -435,9 +485,6 @@ export class RecetasServicio {
             : Math.round(numero(respuesta.margen_real) * 1000) / 10,
         lineas: respuesta.lineas,
       })),
-      tap((resultado) => {
-        this.capacidades.update((valores) => ({ ...valores, [0]: resultado.capacidad }));
-      }),
     );
   }
 
@@ -534,8 +581,9 @@ export class RecetasServicio {
   archivarReceta(_id: number): Observable<ResultadoM11> {
     return of({
       ok: false,
+      pendiente: true,
       mensaje:
-        'El contrato M11 no define archivado manual: Flask archiva la versión anterior al activar otra. Operación no ejecutada.',
+        'Archivado manual pendiente de contrato: Flask archiva la versión anterior al activar otra. No se ejecutó ninguna baja.',
     });
   }
 
@@ -581,18 +629,35 @@ export class RecetasServicio {
     );
   }
 
-  digitalizarDiseno(id: number): Observable<ResultadoM11> {
-    return this.api.patch<DisenoApi>(`/disenos/${id}`, { estado: 'DIGITALIZADO' }).pipe(
-      switchMap((respuesta) =>
-        this.recargar().pipe(
-          map(() => ({
-            ok: true,
-            disenoId: respuesta.id,
-            mensaje: `${respuesta.codigo} marcado como DIGITALIZADO por Flask. Las recetas que lo usan suman el hilo a su costo.`,
-          })),
-        ),
-      ),
-      catchError((error) => this.resultadoError(error, 'No fue posible digitalizar el diseño.')),
+  /**
+   * Digitalizar exige guardar primero los metros capturados por hilo (§7.4, paso 2).
+   * Sin hilos con metros mayores que cero el diseño seguiría consumiendo 0 m.
+   */
+  digitalizarDiseno(id: number, datos: DatosDiseno): Observable<ResultadoM11> {
+    if (!datos.hilos.some((hilo) => hilo.metrosPorAplicacion > 0)) {
+      return of({
+        ok: false,
+        mensaje: 'Captura los metros por aplicación de al menos un hilo antes de digitalizar.',
+      });
+    }
+    return this.guardarDiseno(datos, id).pipe(
+      switchMap((guardado) => {
+        if (!guardado.ok) {
+          return of(guardado);
+        }
+        return this.api.patch<DisenoApi>(`/disenos/${id}`, { estado: 'DIGITALIZADO' }).pipe(
+          switchMap((respuesta) =>
+            this.recargar().pipe(
+              map(() => ({
+                ok: true,
+                disenoId: respuesta.id,
+                mensaje: `${respuesta.codigo} guardado y marcado como DIGITALIZADO por Flask. Las recetas que lo usan suman el hilo a su costo.`,
+              })),
+            ),
+          ),
+          catchError((error) => this.resultadoError(error, 'No fue posible digitalizar el diseño.')),
+        );
+      }),
     );
   }
 
@@ -603,7 +668,7 @@ export class RecetasServicio {
         this.recargar().pipe(
           map(() => ({
             ok: true,
-            mensaje: `${diseno?.codigo ?? 'Diseño'} dado de baja por Flask; se conserva para el historial de recetas.`,
+            mensaje: `${diseno?.codigo ?? 'Diseño'} eliminado por Flask. Consulta la biblioteca para verificar el resultado; las versiones de receta no se alteran.`,
           })),
         ),
       ),

@@ -13,6 +13,20 @@
     <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
   </div>
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar los materiales para el ajuste.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando materiales desde Flask…
+    </div>
+  }
+
   <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
     <div class="form-grid">
       <label class="campo">
@@ -101,7 +115,13 @@
     }
 
     <div class="form-acciones">
-      <button type="submit" class="boton boton--primario">Registrar ajuste</button>
+      <button
+        type="submit"
+        class="boton boton--primario"
+        [disabled]="servicio.errorCarga() !== '' || servicio.cargando()"
+      >
+        Registrar ajuste
+      </button>
       @if (resultado()) {
         <button type="button" class="boton boton--secundario" (click)="nuevoAjuste()">
           Nuevo ajuste
@@ -112,25 +132,36 @@
 
   @if (resultado(); as visto) {
     <section class="tarjeta bloque resultado" aria-live="polite">
-      <h2 class="titulo-section">{{ visto.movimiento.documento }} · vista previa</h2>
-      <dl class="lector">
-        <div>
-          <dt>Tipo de movimiento</dt>
-          <dd>{{ visto.movimiento.tipo }}</dd>
-        </div>
-        <div>
-          <dt>Diferencia</dt>
-          <dd>{{ visto.diferencia | number: '1.0-4' : 'es-MX' }}</dd>
-        </div>
-        <div>
-          <dt>Lote PEPS afectado</dt>
-          <dd>{{ visto.loteAfectado ?? 'Sin lote (sobrante)' }}</dd>
-        </div>
-        <div>
-          <dt>Motivo</dt>
-          <dd>{{ visto.movimiento.motivo }}</dd>
-        </div>
-      </dl>
+      <h2 class="titulo-section">
+        {{ visto.movimiento?.documento ?? 'Ajuste enviado a Flask' }}
+        {{ visto.movimiento ? '· movimiento registrado' : '' }}
+      </h2>
+      @if (visto.movimiento; as movimiento) {
+        <dl class="lector">
+          <div>
+            <dt>Tipo de movimiento</dt>
+            <dd>{{ movimiento.tipo }}</dd>
+          </div>
+          <div>
+            <dt>Diferencia</dt>
+            <dd>{{ visto.diferencia | number: '1.0-4' : 'es-MX' }}</dd>
+          </div>
+          <div>
+            <dt>Lote PEPS afectado</dt>
+            <dd>{{ visto.loteAfectado ?? 'Sin lote (sobrante)' }}</dd>
+          </div>
+          <div>
+            <dt>Motivo</dt>
+            <dd>{{ movimiento.motivo }}</dd>
+          </div>
+        </dl>
+      } @else {
+        <p class="nota nota--advertencia">
+          Flask aceptó el ajuste por {{ visto.diferencia | number: '1.0-4' : 'es-MX' }} unidades
+          base, pero el movimiento todavía no se distingue en el kardex. Consúltalo de nuevo antes de
+          darlo por confirmado; no se muestra un movimiento inventado.
+        </p>
+      }
 
       @if (visto.merma; as merma) {
         <h3>Merma que M17 registraría</h3>

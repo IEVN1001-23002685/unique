@@ -97,6 +97,10 @@ export class RegistroVentas {
     this.servicio.recargar().subscribe();
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly sinFiltros = computed(
     () =>
       this.busqueda().trim() === '' &&

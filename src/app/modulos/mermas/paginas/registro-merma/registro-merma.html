@@ -13,13 +13,31 @@
 
   <app-navegacion-mermas />
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar los catálogos de la captura.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando materiales, lotes, variantes y causas desde Flask…
+    </div>
+  }
+
+  @if (servicio.limitacionAdmin()) {
+    <p class="nota nota--advertencia">{{ servicio.limitacionAdmin() }}</p>
+  }
+
   <div class="dos-columnas">
     <section class="tarjeta bloque" aria-labelledby="titulo-formulario">
 
       @if (ultimoFolio(); as folio) {
         <p class="confirmacion" role="status">
-          <strong>{{ folio }}</strong> quedó registrado. La existencia se descontó y el movimiento
-          MERMA quedó asentado en el inventario correspondiente.
+          <strong>{{ folio }}</strong> quedó registrado en Flask. El descuento de existencias y el
+          movimiento MERMA los ejecuta el servidor.
         </p>
       }
 
@@ -105,7 +123,7 @@
                 }
               </select>
               @if (lotes().length === 0 && forma.controls.materialId.value !== null) {
-                <p class="campo__error">Este material no tiene lotes disponibles en la demo.</p>
+                <p class="campo__error">Este material no tiene lotes disponibles en el inventario.</p>
               } @else if (forma.controls.loteId.touched && forma.controls.loteId.invalid) {
                 <p class="campo__error">Selecciona el lote del material.</p>
               }
@@ -189,8 +207,19 @@
                 <option [ngValue]="causa.id">{{ causa.nombre }}</option>
               }
             </select>
-            @if (forma.controls.causaId.touched && forma.controls.causaId.invalid) {
+            @if (causas().length === 0) {
+              <p class="campo__error">
+                No hay causas disponibles para este origen. Reintenta cargar el catálogo de M22.
+              </p>
+            } @else if (forma.controls.causaId.touched && forma.controls.causaId.invalid) {
               <p class="campo__error">Selecciona una causa vigente para el origen elegido.</p>
+            }
+            @if (!esAdministrador()) {
+              <p class="nota">
+                El catálogo de causas se administra con perfil Administrador (§9). Las opciones se
+                toman de las causas observadas en el historial; si falta la que necesitas, pídela al
+                Administrador.
+              </p>
             }
           </label>
 
@@ -248,7 +277,13 @@
         </div>
 
         <div class="form-acciones">
-          <button type="submit" class="boton boton--primario">Registrar merma</button>
+          <button
+            type="submit"
+            class="boton boton--primario"
+            [disabled]="enviando() || causas().length === 0 || servicio.errorCarga()"
+          >
+            {{ enviando() ? 'Registrando…' : 'Registrar merma' }}
+          </button>
           <button type="button" class="boton boton--secundario" (click)="limpiar()">Limpiar</button>
         </div>
       </form>
@@ -302,9 +337,9 @@
         <li>Un error se corrige con un reverso del Administrador; este registro no se modifica.</li>
       </ul>
       <p class="nota">
-        Al registrar se descuenta la existencia, se genera el movimiento MERMA y se evalúa la alerta
-        MERMA_ALTA. El archivo de evidencia solo se referencia por nombre: este módulo no tiene
-        endpoint de carga de archivos.
+        Flask descuenta la existencia, genera el movimiento MERMA y evalúa la alerta MERMA_ALTA al
+        registrar. El archivo de evidencia solo se referencia por nombre: §9 no define un endpoint
+        de carga de archivos para M17.
       </p>
     </aside>
   </div>

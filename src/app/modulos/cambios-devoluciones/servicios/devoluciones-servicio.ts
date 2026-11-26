@@ -6,61 +6,40 @@ import {
   MisPedidosServicio,
   PedidoCliente,
 } from '../../mispedidos/servicios/mis-pedidos-servicio';
+import {
+  EvidenciaCaso,
+  LineaDevolucionApi,
+  SolicitudCambioDevolucion,
+  VarianteCatalogo,
+} from '../modelos/cambio-devolucion';
 
-export type TipoSolicitudCaso = 'DEVOLUCION' | 'CAMBIO';
-export type EstadoCaso = 'SOLICITADA' | 'APROBADA' | 'RECHAZADA' | 'RECIBIDA' | 'RESUELTA';
-
-export interface LineaDevolucionApi {
-  id: number;
-  venta_linea_id: number;
-  sku: string | null;
-  cantidad: number;
-  variante_cambio_id: number | null;
-  dictamen: string;
-}
-
-export interface SolicitudCambioDevolucion {
-  id: number;
-  folioCaso: string;
-  folioPedido: string;
-  pedidoId: number | null;
-  tipo: TipoSolicitudCaso;
-  prendaResumen: string;
-  motivo: string;
-  descripcion: string;
-  estado: EstadoCaso;
-  dictamen?: string;
-  reembolsoMonto?: string | null;
-  lineas: LineaDevolucionApi[];
-}
-
-export interface LineaPedidoDevolucion {
-  ventaLineaId: number;
-  varianteId: number;
-  productoId: number;
-  sku: string;
-  descripcion: string;
-  cantidad: number;
-  cantidadSolicitada: number;
-  varianteCambioId: number | null;
-  opcionesVariante: Array<{ id: number; sku: string; talla: string; color: string }>;
-}
-
-export interface VarianteCatalogo {
-  id: number;
-  sku: string;
-  talla: string;
-  color: string;
-  disponibilidad: string;
-  bajo_pedido: boolean;
-}
+/** Compatibilidad con importaciones existentes del servicio. */
+export type {
+  DictamenLinea,
+  EstadoCaso,
+  EtapaMerma,
+  EvidenciaCaso,
+  LineaDevolucionApi,
+  LineaPedidoDevolucion,
+  MotivoSolicitud,
+  ResolucionCaso,
+  SolicitudCambioDevolucion,
+  TipoSolicitudCaso,
+  VarianteCatalogo,
+} from '../modelos/cambio-devolucion';
+export {
+  CAUSAS_MERMA,
+  ETAPAS_MERMA,
+  MOTIVOS_SOLICITUD,
+  TIPOS_SOLICITUD,
+} from '../modelos/cambio-devolucion';
 
 interface DevolucionApi {
   id: number;
   folio: string;
   venta_id: number;
   venta_folio: string | null;
-  pedido_id: number | null;
+  pedido_id?: number | null;
   tipo: string;
   motivo: string;
   descripcion: string;
@@ -69,11 +48,13 @@ interface DevolucionApi {
   reembolso_monto: string | null;
   motivo_rechazo: string | null;
   creado_en: string;
+  recibido_en?: string | null;
+  resuelta_en?: string | null;
+  resuelta_por?: string | null;
+  venta_reemplazo_id?: number | null;
+  venta_reemplazo_folio?: string | null;
   lineas: LineaDevolucionApi[];
-}
-
-interface DetalleCatalogoApi {
-  variantes: VarianteCatalogo[];
+  evidencias?: Array<{ id?: number; url: string; nombre?: string }> | null;
 }
 
 interface ListaPaginada<T> {
@@ -83,24 +64,22 @@ interface ListaPaginada<T> {
   por_pagina: number;
 }
 
-export const TIPOS_SOLICITUD = [
-  { valor: 'DEVOLUCION', etiqueta: 'Devolución' },
-  { valor: 'CAMBIO', etiqueta: 'Cambio' },
-] as const;
+interface DetalleCatalogoApi {
+  variantes: VarianteCatalogo[];
+}
 
-export const MOTIVOS_SOLICITUD = [
-  { valor: 'DEFECTO', etiqueta: 'Defecto en la prenda' },
-  { valor: 'AJUSTE', etiqueta: 'Ajuste de talla' },
-  { valor: 'DANO_ENVIO', etiqueta: 'Daño durante el envío' },
-  { valor: 'PRODUCTO_EQUIVOCADO', etiqueta: 'Producto equivocado' },
-  { valor: 'ARREPENTIMIENTO', etiqueta: 'Arrepentimiento' },
-] as const;
+export interface DictamenLineaSolicitud {
+  devolucion_linea_id: number;
+  dictamen: string;
+  causa?: string;
+  etapa?: string;
+}
 
-/** M07: solicitudes del cliente y bandeja operativa/administrativa. */
+/** M07: los seis contratos documentados en §9. Flask ejecuta las transacciones. */
 @Injectable({ providedIn: 'root' })
 export class DevolucionesServicio {
   private readonly api = inject(ApiService);
-  private readonly pedidos = inject(MisPedidosServicio);
+  private readonly pedidosApi = inject(MisPedidosServicio);
 
   listar(): Observable<SolicitudCambioDevolucion[]> {
     return this.api
@@ -109,16 +88,17 @@ export class DevolucionesServicio {
   }
 
   pedidosEntregados(): Observable<PedidoCliente[]> {
-    return this.pedidos.listar('ENTREGADOS');
+    // M06 conserva la propiedad del historial; M07 solo lo consulta.
+    return this.pedidosApi.listar('ENTREGADOS');
   }
 
   detallePedido(pedidoId: number): Observable<PedidoCliente> {
-    return this.pedidos.detalle(pedidoId);
+    return this.pedidosApi.detalle(pedidoId);
   }
 
   variantes(productoId: number): Observable<VarianteCatalogo[]> {
     return this.api
-      .get<DetalleCatalogoApi>(`/catalogo/producto/${productoId}`)
+      .get<DetalleCatalogoApi>(`/catalogo/${productoId}`)
       .pipe(map((producto) => producto.variantes));
   }
 
@@ -156,7 +136,7 @@ export class DevolucionesServicio {
 
   dictaminar(
     id: number,
-    lineas: Array<{ devolucion_linea_id: number; dictamen: 'REINGRESO' | 'MERMA' }>,
+    lineas: DictamenLineaSolicitud[],
     descripcion: string,
   ): Observable<SolicitudCambioDevolucion> {
     return this.api
@@ -174,21 +154,52 @@ export class DevolucionesServicio {
   }
 
   private aCaso(item: DevolucionApi): SolicitudCambioDevolucion {
+    const evidencias: EvidenciaCaso[] = (item.evidencias ?? []).map((evidencia, indice) => ({
+      id: evidencia.id ?? indice + 1,
+      url: evidencia.url,
+      nombre: evidencia.nombre ?? `Evidencia ${indice + 1}`,
+    }));
+
     return {
       id: item.id,
       folioCaso: item.folio,
       folioPedido: item.venta_folio ?? '',
-      pedidoId: item.pedido_id,
-      tipo: item.tipo as TipoSolicitudCaso,
-      prendaResumen: item.lineas
-        .map((linea) => `${linea.sku ?? 'SKU'} x${linea.cantidad}`)
-        .join(', '),
+      pedidoId: item.pedido_id ?? item.venta_id ?? null,
+      tipo: item.tipo === 'CAMBIO' ? 'CAMBIO' : 'DEVOLUCION',
       motivo: item.motivo,
       descripcion: item.descripcion,
-      estado: item.estado as EstadoCaso,
+      estado: this.aEstado(item.estado),
+      resolucion: this.aResolucion(item.resolucion),
       dictamen: item.resolucion ?? item.motivo_rechazo ?? undefined,
       reembolsoMonto: item.reembolso_monto,
-      lineas: item.lineas,
+      ventaReemplazoFolio: item.venta_reemplazo_folio ?? null,
+      motivoRechazo: item.motivo_rechazo,
+      creadoEn: item.creado_en,
+      recibidoEn: item.recibido_en ?? null,
+      resueltaEn: item.resuelta_en ?? null,
+      resueltaPor: item.resuelta_por ?? null,
+      lineas: item.lineas ?? [],
+      evidencias,
     };
+  }
+
+  private aEstado(estado: string): SolicitudCambioDevolucion['estado'] {
+    const permitidos: SolicitudCambioDevolucion['estado'][] = [
+      'SOLICITADA',
+      'APROBADA',
+      'RECHAZADA',
+      'RECIBIDA',
+      'RESUELTA',
+    ];
+    return permitidos.includes(estado as SolicitudCambioDevolucion['estado'])
+      ? (estado as SolicitudCambioDevolucion['estado'])
+      : 'SOLICITADA';
+  }
+
+  private aResolucion(resolucion: string | null): SolicitudCambioDevolucion['resolucion'] {
+    if (resolucion === 'REEMBOLSO' || resolucion === 'CAMBIO' || resolucion === 'RECHAZO') {
+      return resolucion;
+    }
+    return null;
   }
 }

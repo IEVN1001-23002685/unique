@@ -1,7 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionRecetas } from '../../componentes/navegacion-recetas/navegacion-recetas';
 import type { Receta } from '../../modelos/receta';
@@ -11,7 +10,7 @@ type FiltroEstado = 'TODOS' | Receta['estado'];
 
 @Component({
   selector: 'app-biblioteca-recetas',
-  imports: [CurrencyPipe, DatePipe, RouterLink, ModalConfirmacion, NavegacionRecetas],
+  imports: [CurrencyPipe, DatePipe, RouterLink, NavegacionRecetas],
   templateUrl: './biblioteca-recetas.html',
   styleUrl: './biblioteca-recetas.css',
 })
@@ -23,7 +22,6 @@ export class BibliotecaRecetas {
   protected readonly busqueda = signal('');
   protected readonly productoFiltro = signal('TODOS');
   protected readonly estadoFiltro = signal<FiltroEstado>('TODOS');
-  protected readonly archivando = signal<Receta | null>(null);
 
   protected readonly totales = this.servicio.totales;
 
@@ -75,6 +73,10 @@ export class BibliotecaRecetas {
     });
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected copiar(receta: Receta): void {
     this.servicio.copiarReceta(receta.id).subscribe((resultado) => {
       this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
@@ -98,20 +100,5 @@ export class BibliotecaRecetas {
 
   protected razonesActivacion(receta: Receta): string {
     return this.servicio.validarActivacion(receta).join(' ');
-  }
-
-  protected pedirArchivado(receta: Receta): void {
-    this.archivando.set(receta);
-  }
-
-  protected confirmarArchivado(): void {
-    const receta = this.archivando();
-    if (!receta) {
-      return;
-    }
-    this.servicio.archivarReceta(receta.id).subscribe((resultado) => {
-      this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
-    });
-    this.archivando.set(null);
   }
 }

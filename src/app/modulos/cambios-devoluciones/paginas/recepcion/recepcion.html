@@ -1,0 +1,177 @@
+<section class="cd-panel">
+  <header class="cd-cabecera">
+    <div>
+      <p class="cd-ojeada">M07 · Recepción e inspección</p>
+      <h2>Recepción e inspección</h2>
+      <p>
+        Registra la llegada del paquete y dictamina cada prenda. La prenda no vuelve al inventario
+        hasta que exista dictamen: REINGRESO a existencia o MERMA con causa y etapa.
+      </p>
+    </div>
+    <a class="boton boton--secundario" routerLink="/operacion/devoluciones">Volver a la bandeja</a>
+  </header>
+
+  @if (caso(); as casoActual) {
+    <div class="cd-tarjeta cd-panel">
+      <div class="cd-cabecera">
+        <div>
+          <h3>{{ casoActual.folioCaso }}</h3>
+          <p>
+            Pedido {{ casoActual.folioPedido || '—' }} · solicitado
+            {{ formatearFechaHora(casoActual.creadoEn) }} · {{ etiquetaMotivo(casoActual.motivo) }}
+          </p>
+        </div>
+        <span class="cd-chip" [class]="claseEstado(casoActual.estado)">
+          {{ etiquetaEstado(casoActual.estado) }}
+        </span>
+      </div>
+      <p class="cd-nota">{{ casoActual.descripcion }}</p>
+    </div>
+
+    @if (errorLocal()) {
+      <div class="cd-aviso cd-aviso--error" role="alert">{{ errorLocal() }}</div>
+    }
+
+    @if (readonlyMode()) {
+      <div class="cd-aviso cd-aviso--informacion" role="status">
+        Este caso ya tiene una resolución registrada. El dictamen es de solo lectura.
+      </div>
+    }
+
+    @if (casoActual.estado === 'APROBADA' && puedeOperar()) {
+      <div class="cd-aviso cd-aviso--advertencia" role="status">
+        El paquete aún no se registra como recibido. Confirma la llegada antes de dictaminar.
+      </div>
+      <div class="cd-acciones">
+        <button
+          type="button"
+          class="boton boton--primario"
+          [disabled]="procesando()"
+          (click)="registrarRecepcion()"
+        >
+          Registrar recepción
+        </button>
+      </div>
+    }
+
+    <form class="cd-panel" [formGroup]="form" (ngSubmit)="guardarDictamen()">
+      <div class="cd-tarjeta cd-panel">
+        <div class="cd-cabecera">
+          <h3>Dictamen por prenda</h3>
+          @if (lineasForm.length === 0) {
+            <span class="cd-nota">Sin líneas para inspeccionar.</span>
+          }
+        </div>
+
+        @for (linea of lineasForm; track linea.controls.devolucionLineaId.value) {
+          <div class="cd-inspeccion" [formGroup]="linea">
+            <div class="cd-inspeccion__encabezado">
+              <strong>{{ casoActual.lineas[$index]?.sku || 'SKU no disponible' }}</strong>
+              <span>
+                {{ casoActual.lineas[$index]?.cantidad ?? 0 }} pieza(s) ·
+                {{ casoActual.lineas[$index]?.nombre_producto || 'Prenda' }}
+              </span>
+            </div>
+
+            <div class="cd-grid cd-grid--tres">
+              <div class="cd-campo">
+                <label [for]="'cd-dictamen-' + $index">Dictamen</label>
+                <select
+                  [id]="'cd-dictamen-' + $index"
+                  formControlName="dictamen"
+                  [disabled]="readonlyMode() || casoActual.estado !== 'RECIBIDA' || !puedeOperar()"
+                >
+                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="REINGRESO">REINGRESO a existencia</option>
+                  <option value="MERMA">MERMA</option>
+                </select>
+              </div>
+
+              @if (requiereCausaEtapa(linea)) {
+                <div class="cd-campo">
+                  <label [for]="'cd-causa-' + $index">Causa de merma</label>
+                  <select
+                    [id]="'cd-causa-' + $index"
+                    formControlName="causa"
+                    [disabled]="readonlyMode() || !puedeOperar()"
+                  >
+                    <option value="">Selecciona una causa</option>
+                    @for (causa of causas; track causa.valor) {
+                      <option [value]="causa.valor">{{ causa.etiqueta }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="cd-campo">
+                  <label [for]="'cd-etapa-' + $index">Etapa de merma</label>
+                  <select
+                    [id]="'cd-etapa-' + $index"
+                    formControlName="etapa"
+                    [disabled]="readonlyMode() || !puedeOperar()"
+                  >
+                    <option value="">Selecciona una etapa</option>
+                    @for (etapa of etapas; track etapa.valor) {
+                      <option [value]="etapa.valor">{{ etapa.etiqueta }}</option>
+                    }
+                  </select>
+                </div>
+              }
+            </div>
+
+            @if (lineaInvalida(linea)) {
+              <small class="cd-error-campo">
+                MERMA requiere causa y etapa. La prenda no se reingresa automáticamente.
+              </small>
+            }
+            <p class="cd-nota">Estado actual: {{ etiquetaDictamen(linea.controls.dictamen.value) }}</p>
+          </div>
+        } @empty {
+          <p class="cd-nota">El servidor no devolvió líneas para este caso.</p>
+        }
+      </div>
+
+      @if (!readonlyMode() && casoActual.estado === 'RECIBIDA' && puedeOperar()) {
+        <div class="cd-tarjeta cd-panel">
+          <div class="cd-campo">
+            <label for="cd-observaciones-inspeccion">Observaciones de inspección</label>
+            <textarea
+              id="cd-observaciones-inspeccion"
+              formControlName="observaciones"
+              rows="3"
+              maxlength="300"
+              placeholder="Estado de la prenda, evidencia revisada y resultado de la inspección"
+            ></textarea>
+          </div>
+          <div class="cd-acciones">
+            <button type="submit" class="boton boton--primario" [disabled]="procesando()">
+              {{ procesando() ? 'Guardando…' : 'Guardar dictamen' }}
+            </button>
+          </div>
+          <p class="cd-nota">
+            Las causas y etapas mostradas corresponden al catálogo documentado. Flask valida los
+            identificadores definitivos y registra movimientos o mermas según corresponda.
+          </p>
+        </div>
+      }
+    </form>
+
+    @if (casoActual.evidencias.length > 0) {
+      <div class="cd-tarjeta cd-panel">
+        <span class="cd-etiqueta">Evidencias del cliente</span>
+        <div class="cd-evidencias">
+          @for (evidencia of casoActual.evidencias; track evidencia.id) {
+            <figure>
+              <img [src]="evidencia.url" [alt]="evidencia.nombre ?? 'Evidencia de la solicitud'" />
+              <figcaption>{{ evidencia.nombre ?? 'Evidencia' }}</figcaption>
+            </figure>
+          }
+        </div>
+      </div>
+    }
+  } @else {
+    <div class="cd-vacio">
+      <h3>Selecciona una solicitud</h3>
+      <p>Abre un caso aprobado desde la bandeja para registrar su recepción e inspección.</p>
+      <a class="boton boton--primario" routerLink="/operacion/devoluciones">Ir a la bandeja</a>
+    </div>
+  }
+</section>

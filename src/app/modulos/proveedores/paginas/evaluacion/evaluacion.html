@@ -12,21 +12,42 @@
     </div>
   </div>
 
-  @if (proveedoresEnRevision().length > 0) {
-    <div class="alerta" role="status">
-      <span class="alerta__punto" aria-hidden="true"></span>
-      <div>
-        <strong>PROVEEDOR_EN_REVISION</strong>
-        <p>
-          {{ proveedoresEnRevision().length }}
-          {{ proveedoresEnRevision().length === 1 ? 'proveedor tiene' : 'proveedores tienen' }}
-          menos del {{ minimoATiempo }}% de entregas a tiempo. Revisa su desempeño antes de cotizar.
-        </p>
-      </div>
+  @if (errorCarga() || errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar la evaluación.</strong>
+      <p>{{ errorCarga() || errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
     </div>
-  }
+  } @else if (cargando()) {
+    <div class="tarjeta bloque estado" role="status">Cargando evaluación…</div>
+  } @else {
+    @if (proveedoresEnRevision().length > 0) {
+      <div class="alerta" role="status">
+        <span class="alerta__punto" aria-hidden="true"></span>
+        <div>
+          <strong>PROVEEDOR_EN_REVISION</strong>
+          <p>
+            {{ proveedoresEnRevision().length }}
+            {{ proveedoresEnRevision().length === 1 ? 'proveedor tiene' : 'proveedores tienen' }}
+            menos del {{ minimoATiempo }}% de entregas a tiempo. Revisa su desempeño antes de
+            cotizar.
+          </p>
+        </div>
+      </div>
+    }
 
-  <div class="tarjeta bloque">
+    @if (pendientesRevision().length > 0) {
+      <p class="nota">
+        {{ pendientesRevision().length }}
+        {{ pendientesRevision().length === 1 ? 'proveedor conserva' : 'proveedores conservan' }} el
+        estatus actual pese a tener menos del {{ minimoATiempo }}% a tiempo. Flask actualiza el
+        estatus en la evaluación diaria; esta pantalla solo informa, no lo modifica.
+      </p>
+    }
+
+    <div class="tarjeta bloque">
     <div class="barra">
       <label class="buscador">
         <input
@@ -69,7 +90,11 @@
                   ></div>
                 </div>
                 <span class="barra__valor">
-                  {{ fila.evaluacion?.entregasATiempoPct ?? 0 | number: '1.1-1' : 'es-MX' }}%
+                  @if (fila.evaluacion; as evaluacion) {
+                    {{ evaluacion.entregasATiempoPct | number: '1.1-1' : 'es-MX' }}%
+                  } @else {
+                    —
+                  }
                 </span>
               </div>
               <div class="barra">
@@ -81,7 +106,11 @@
                   ></div>
                 </div>
                 <span class="barra__valor">
-                  {{ fila.evaluacion?.aceptacionPct ?? 0 | number: '1.1-1' : 'es-MX' }}%
+                  @if (fila.evaluacion; as evaluacion) {
+                    {{ evaluacion.aceptacionPct | number: '1.1-1' : 'es-MX' }}%
+                  } @else {
+                    —
+                  }
                 </span>
               </div>
             </div>
@@ -120,10 +149,18 @@
                   <span class="celda-secundaria">{{ fila.proveedor.rfc ?? 'Sin RFC' }}</span>
                 </td>
                 <td data-etiqueta="Órdenes recibidas">
-                  {{ fila.evaluacion?.ordenesRecibidas ?? 0 | number: '1.0-0' : 'es-MX' }}
+                  @if (fila.evaluacion; as evaluacion) {
+                    {{ evaluacion.ordenesRecibidas | number: '1.0-0' : 'es-MX' }}
+                  } @else {
+                    —
+                  }
                 </td>
                 <td data-etiqueta="Entregas a tiempo">
-                  {{ fila.evaluacion?.ordenesATiempo ?? 0 | number: '1.0-0' : 'es-MX' }}
+                  @if (fila.evaluacion; as evaluacion) {
+                    {{ evaluacion.ordenesATiempo | number: '1.0-0' : 'es-MX' }}
+                  } @else {
+                    —
+                  }
                 </td>
                 <td data-etiqueta="% a tiempo">
                   <span
@@ -131,17 +168,33 @@
                     [attr.data-nivel]="nivel(fila.evaluacion?.entregasATiempoPct)"
                   >
                     <span class="medicion__punto" aria-hidden="true"></span>
-                    {{ fila.evaluacion?.entregasATiempoPct ?? 0 | number: '1.1-1' : 'es-MX' }}%
+                    @if (fila.evaluacion; as evaluacion) {
+                      {{ evaluacion.entregasATiempoPct | number: '1.1-1' : 'es-MX' }}%
+                    } @else {
+                      —
+                    }
                   </span>
                 </td>
                 <td data-etiqueta="Cantidad recibida">
-                  {{ fila.evaluacion?.cantidadRecibida ?? 0 | number: '1.0-0' : 'es-MX' }}
+                  @if (fila.evaluacion; as evaluacion) {
+                    {{ evaluacion.cantidadRecibida | number: '1.0-0' : 'es-MX' }}
+                  } @else {
+                    —
+                  }
                 </td>
                 <td data-etiqueta="Cantidad aceptada">
-                  {{ fila.evaluacion?.cantidadAceptada ?? 0 | number: '1.0-0' : 'es-MX' }}
+                  @if (fila.evaluacion; as evaluacion) {
+                    {{ evaluacion.cantidadAceptada | number: '1.0-0' : 'es-MX' }}
+                  } @else {
+                    —
+                  }
                 </td>
                 <td data-etiqueta="% aceptación">
-                  {{ fila.evaluacion?.aceptacionPct ?? 0 | number: '1.1-1' : 'es-MX' }}%
+                  @if (fila.evaluacion; as evaluacion) {
+                    {{ evaluacion.aceptacionPct | number: '1.1-1' : 'es-MX' }}%
+                  } @else {
+                    —
+                  }
                 </td>
                 <td data-etiqueta="Estatus">
                   <app-chip-estatus [estatus]="fila.proveedor.estatus" />
@@ -163,10 +216,11 @@
 
       <p class="nota">
         % a tiempo = órdenes recibidas en o antes de la fecha prometida ÷ órdenes recibidas. %
-        aceptación = cantidad aceptada ÷ cantidad recibida. Un proveedor con menos del
-        {{ minimoATiempo }}% a tiempo pasa a EN_REVISION y genera la alerta
-        PROVEEDOR_EN_REVISION. Estas cifras provienen de la evaluación calculada por Flask.
+        aceptación = cantidad aceptada ÷ cantidad recibida. Menos del {{ minimoATiempo }}% a tiempo
+        genera la alerta PROVEEDOR_EN_REVISION; Flask actualiza el estatus en su evaluación diaria.
+        Estas cifras provienen de la evaluación calculada por Flask.
       </p>
     }
-  </div>
+    </div>
+  }
 </section>

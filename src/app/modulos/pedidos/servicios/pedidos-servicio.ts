@@ -1,8 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
-import { aNumero } from '../../../core/api/formato';
 import { mensajeError } from '../../../core/api/errores';
+import { AuthStateService } from '../../../core/auth/auth-state.service';
 import type {
   EstadoPedido,
   EventoPedido,
@@ -82,6 +82,9 @@ interface PedidoDetalleApi {
   fecha: string;
   estado: string;
   estado_desde: string;
+  cancelado_en?: string | null;
+  motivo_cancelacion?: string | null;
+  cancelado_por?: string | null;
   fecha_promesa?: string | null;
   prioridad: string;
   estado_pago: string;
@@ -98,6 +101,9 @@ interface PedidoDetalleApi {
     cantidad: number;
     cant_reservada: number;
     cant_pendiente: number;
+    cant_preparada?: number;
+    orden_produccion_folio?: string | null;
+    fecha_estimada?: string | null;
     precio_unitario: string;
     subtotal: string;
   }>;
@@ -105,6 +111,7 @@ interface PedidoDetalleApi {
     estado: string;
     descripcion: string;
     fecha: string;
+    usuario?: string | null;
     visible_cliente: boolean;
   }>;
   ordenes?: Array<{ folio: string; cantidad: number }>;
@@ -183,9 +190,9 @@ function lineasDeApi(articulos: PedidoDetalleApi['articulos']): LineaPedido[] {
     cantidad: articulo.cantidad,
     cantReservada: articulo.cant_reservada,
     cantPendiente: articulo.cant_pendiente,
-    cantPreparada: 0,
-    ordenProduccionFolio: null,
-    fechaEstimada: null,
+    cantPreparada: articulo.cant_preparada ?? 0,
+    ordenProduccionFolio: articulo.orden_produccion_folio ?? null,
+    fechaEstimada: articulo.fecha_estimada ?? null,
   }));
 }
 
@@ -196,7 +203,7 @@ function eventosDeApi(eventos: PedidoDetalleApi['eventos']): EventoPedido[] {
     descripcion: evento.descripcion,
     estado: evento.estado as EstadoPedido,
     visibleCliente: evento.visible_cliente,
-    usuario: '',
+    usuario: evento.usuario ?? '',
   }));
 }
 
@@ -219,6 +226,11 @@ function deDetalleApi(item: PedidoDetalleApi): Pedido {
     fechaCreacion: item.fecha,
     fechaPromesa: item.fecha_promesa ?? null,
     estadoPago: item.estado_pago as Pedido['estadoPago'],
+    canceladoEn:
+      item.cancelado_en ??
+      (item.estado === 'CANCELADO' ? item.estado_desde : base.canceladoEn),
+    motivoCancelacion: item.motivo_cancelacion ?? base.motivoCancelacion,
+    canceladoPor: item.cancelado_por ?? base.canceladoPor,
     preparacionFolio: null,
     entregaGuia: item.entrega?.folio ?? item.guia ?? null,
     lineas: lineasDeApi(item.articulos),
@@ -238,9 +250,19 @@ function deDetalleApi(item: PedidoDetalleApi): Pedido {
 @Injectable({ providedIn: 'root' })
 export class PedidosServicio {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthStateService);
   private readonly lista = signal<Pedido[]>([]);
   private readonly detalles = signal<Record<number, Pedido>>({});
   private readonly pendientes = signal<PendienteProduccion[]>([]);
+
+  /** Errores de carga visibles en la interfaz; nunca se confunden con listados vacíos. */
+  readonly errorCarga = signal('');
+  readonly errorDetalle = signal('');
+
+  /** Operativo consulta; las mutaciones son exclusivas del Administrador (§4 M09). */
+  private puedeEditar(): boolean {
+    return this.auth.puede(['ADMIN']);
+  }
 
   /** API pública síncrona conservada para módulos externos. */
   pedidos(): Pedido[] {
@@ -289,17 +311,41 @@ export class PedidosServicio {
   }
 
   recargar(): Observable<void> {
+    this.errorCarga.set('');
     return forkJoin({
       pedidos: this.listarTodo<PedidoResumenApi>('/pedidos'),
       pendientes: this.listarTodo<PendienteApi>('/pedidos/pendientes-produccion'),
     }).pipe(
       tap(({ pedidos, pendientes }) => {
-        this.lista.set(pedidos.map(deResumenApi));
+        this.lista.set(pedidos.map((item) => this.fusionarDetalle(item)));
         this.pendientes.set(pendientes.map(dePendienteApi));
       }),
       map(() => undefined),
-      catchError(() => of(undefined)),
+      catchError((error: unknown) => {
+        this.errorCarga.set(
+          mensajeError(error, 'No fue posible cargar pedidos ni demanda de producción.'),
+        );
+        this.lista.set([]);
+        this.pendientes.set([]);
+        return of(undefined);
+      }),
     );
+  }
+
+  /** El resumen no trae motivo ni responsable; se conservan del detalle ya cargado. */
+  private fusionarDetalle(item: PedidoResumenApi): Pedido {
+    const base = deResumenApi(item);
+    const detalle = this.detalles()[item.id];
+    if (!detalle) {
+      return base;
+    }
+    return {
+      ...base,
+      ventaFolio: detalle.ventaFolio || base.ventaFolio,
+      canceladoEn: detalle.canceladoEn ?? base.canceladoEn,
+      motivoCancelacion: detalle.motivoCancelacion ?? base.motivoCancelacion,
+      canceladoPor: detalle.canceladoPor ?? base.canceladoPor,
+    };
   }
 
   /** La ruta Angular usa `folio`; el contrato usa `id` para detalle y mutaciones. */
@@ -329,22 +375,38 @@ export class PedidosServicio {
   }
 
   cargarDetalle(folio: string): Observable<Pedido | undefined> {
+    this.errorDetalle.set('');
     const porId = Number(folio);
     if (Number.isInteger(porId) && porId > 0) {
-      return this.obtenerDetalle(porId).pipe(catchError(() => of(undefined)));
+      return this.obtenerDetalle(porId).pipe(
+        catchError((error: unknown) => this.fallaDetalle(error)),
+      );
     }
     const conocido = this.idPorFolio(folio);
     if (conocido !== undefined) {
-      return this.obtenerDetalle(conocido).pipe(catchError(() => of(undefined)));
+      return this.obtenerDetalle(conocido).pipe(
+        catchError((error: unknown) => this.fallaDetalle(error)),
+      );
     }
     return this.recargar().pipe(
       switchMap(() => {
+        if (this.errorCarga()) {
+          this.errorDetalle.set(this.errorCarga());
+          return of(undefined);
+        }
         const resuelto = this.idPorFolio(folio);
         return resuelto === undefined
           ? of(undefined)
-          : this.obtenerDetalle(resuelto).pipe(catchError(() => of(undefined)));
+          : this.obtenerDetalle(resuelto).pipe(
+              catchError((error: unknown) => this.fallaDetalle(error)),
+            );
       }),
     );
+  }
+
+  private fallaDetalle(error: unknown): Observable<undefined> {
+    this.errorDetalle.set(mensajeError(error, 'No fue posible cargar el detalle del pedido.'));
+    return of(undefined);
   }
 
   obtenerPedido(folio: string): Pedido | undefined {
@@ -430,6 +492,9 @@ export class PedidosServicio {
   }
 
   cambiarPrioridad(folio: string, prioridad: PrioridadPedido): Observable<ResultadoPedido> {
+    if (!this.puedeEditar()) {
+      return of({ ok: false, mensaje: 'Solo el Administrador puede cambiar la prioridad.' });
+    }
     const pedido = this.obtenerPedido(folio);
     if (!pedido || pedido.estado === 'CANCELADO' || pedido.prioridad === prioridad) {
       return of({ ok: false, mensaje: 'No es posible cambiar la prioridad de este pedido.' });
@@ -442,6 +507,9 @@ export class PedidosServicio {
   }
 
   agregarNota(folio: string, texto: string): Observable<ResultadoPedido> {
+    if (!this.puedeEditar()) {
+      return of({ ok: false, mensaje: 'Solo el Administrador puede agregar notas internas.' });
+    }
     const pedido = this.obtenerPedido(folio);
     const limpio = texto.trim();
     if (!pedido || limpio === '') {
@@ -455,6 +523,9 @@ export class PedidosServicio {
   }
 
   cancelarPedido(folio: string, motivo: string): Observable<ResultadoPedido> {
+    if (!this.puedeEditar()) {
+      return of({ ok: false, mensaje: 'Solo el Administrador puede cancelar pedidos.' });
+    }
     const pedido = this.obtenerPedido(folio);
     const cancelables: EstadoPedido[] = [
       'RECIBIDO',

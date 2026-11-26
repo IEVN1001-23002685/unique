@@ -13,6 +13,16 @@
     <a routerLink="/compras" class="boton boton--secundario">Volver a requisiciones</a>
   </div>
 
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar el comparador.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  }
+
   <div class="tarjeta bloque">
     <div class="barra">
       <label class="campo selector">
@@ -31,14 +41,18 @@
       <button
         type="button"
         class="boton boton--primario"
-        [disabled]="!seleccionada()"
+        [disabled]="!seleccionada() || guardando()"
         (click)="generar()"
       >
         Generar cotizaciones
       </button>
     </div>
 
-    @if (!seleccionada()) {
+    @if (!servicio.cargado()) {
+      <div class="estado" role="status">
+        <strong>Cargando cotizaciones desde Flask…</strong>
+      </div>
+    } @else if (!seleccionada()) {
       <div class="estado" role="status">
         <strong>No hay requisiciones cotizables.</strong>
         <p>Crea una requisición o cambia el filtro del listado principal.</p>
@@ -63,7 +77,7 @@
               @for (columna of columnas(); track columna.cotizacion.id) {
                 <th scope="col">
                   <span class="celda-principal">{{ columna.proveedor }}</span>
-                  <span class="celda-secundaria">{{ columna.cotizacion.folio }}</span>
+                  <span class="celda-secundaria">{{ referencia(columna.cotizacion) }}</span>
                   <span class="celda-secundaria">
                     Plazo {{ columna.cotizacion.plazoDias }} días · vigencia
                     {{ columna.cotizacion.vigenciaHasta ?? 'sin límite' }}
@@ -116,7 +130,7 @@
                     <button
                       type="button"
                       class="accion"
-                      [disabled]="columna.cotizacion.estado === 'ELEGIDA'"
+                      [disabled]="columna.cotizacion.estado === 'ELEGIDA' || guardando()"
                       (click)="elegir(columna.cotizacion)"
                     >
                       {{ columna.cotizacion.estado === 'ELEGIDA' ? 'Elegida' : 'Elegir' }}

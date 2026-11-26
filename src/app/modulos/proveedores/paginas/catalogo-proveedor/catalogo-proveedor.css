@@ -232,6 +232,20 @@
   font-size: 0.82rem;
 }
 
+.estado--error {
+  border: 1px solid var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+}
+
+.estado--error strong,
+.estado--error p {
+  color: #8e2b39;
+}
+
+.estado--error .boton {
+  margin-top: 0.85rem;
+}
+
 .error {
   padding: 1.5rem;
 }

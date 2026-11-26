@@ -1,6 +1,20 @@
 <section class="vista">
   <app-navegacion-produccion />
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar la revisión de calidad.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando órdenes y dictámenes desde Flask…
+    </div>
+  }
+
   @if (orden(); as orden) {
     <div class="cabecera">
       <div>
@@ -155,7 +169,7 @@
       reproceso, la orden regresa a EN_PROCESO. Aprobar sube las unidades al inventario de producto
       terminado y las asigna por antigüedad (FIFO); la merma se reporta a M17.
     </p>
-  } @else {
+  } @else if (servicio.cargado() && !servicio.errorCarga()) {
     <div class="cabecera">
       <div>
         <p class="eyebrow">Bloque 5 · Producción y merma · M16</p>
@@ -219,11 +233,11 @@
     </div>
 
     <div class="tarjeta bloque vista__historial">
-      <h2 class="titulo-section">Dictámenes de esta sesión</h2>
+      <h2 class="titulo-section">Historial de dictámenes</h2>
       @if (revisiones().length === 0) {
         <div class="estado" role="status">
-          <strong>Aún no hay dictámenes.</strong>
-          <p>Las revisiones capturadas aquí se listarán mientras la sesión esté abierta.</p>
+          <strong>No hay revisiones registradas.</strong>
+          <p>Las revisiones capturadas las conserva Flask en el historial de calidad.</p>
         </div>
       } @else {
         <div class="tabla-contenedor">
@@ -233,7 +247,7 @@
             </caption>
             <thead>
               <tr>
-                <th scope="col">Folio</th>
+                <th scope="col">Registro</th>
                 <th scope="col">Orden</th>
                 <th scope="col">Líneas</th>
                 <th scope="col">Aprobadas</th>
@@ -243,8 +257,8 @@
             <tbody>
               @for (revision of revisiones(); track revision.id) {
                 <tr>
-                  <td data-etiqueta="Folio">
-                    <span class="celda-principal">{{ revision.folio }}</span>
+                  <td data-etiqueta="Registro">
+                    <span class="celda-principal">{{ revision.referencia }}</span>
                   </td>
                   <td data-etiqueta="Orden">
                     <a class="accion" [routerLink]="['/produccion', revision.ordenId]">{{

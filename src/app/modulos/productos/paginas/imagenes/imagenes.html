@@ -22,6 +22,15 @@
   <div class="rejilla-imagenes">
     <section class="tarjeta seccion">
       <h2 class="seccion__titulo">Biblioteca disponible</h2>
+      @if (productosServicio.errorCarga()) {
+        <div class="estado-linea estado--error" role="alert">
+          <strong>No fue posible cargar los productos para asignar imágenes.</strong>
+          <p>{{ productosServicio.errorCarga() }}</p>
+          <button type="button" class="boton boton--secundario" (click)="reintentar()">
+            Reintentar
+          </button>
+        </div>
+      }
       <div class="filtros">
         <label class="campo">
           Categoría del recurso

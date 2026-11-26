@@ -83,13 +83,16 @@ export class Politicas {
   protected puntoReorden(indice: number): number {
     const vista = this.vistaDe(indice);
     const fila = this.filas.at(indice);
-    if (!vista || !fila) {
+    if (!vista || !fila || vista.plazoPendiente) {
       return 0;
     }
     if (vista.puntoReorden !== undefined && vista.puntoReorden !== null) {
       return vista.puntoReorden;
     }
     // Flask calcula el punto de reorden; este cálculo solo aplica si no vino en la respuesta.
+    if (vista.material.plazoDias === null) {
+      return 0;
+    }
     const consumo = this.servicio.tieneHistoricoConsumo(vista.materialId, vista.color)
       ? vista.consumoDiario
       : fila.controls.consumoDiarioManual.value;
@@ -129,6 +132,10 @@ export class Politicas {
       },
       error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
     });
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
   }
 
   private prepararFilas(vistas: ExistenciaVista[]): void {

@@ -1,6 +1,7 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionCompras } from '../../componentes/navegacion-compras/navegacion-compras';
@@ -19,6 +20,7 @@ export class Cotizaciones {
   private readonly router = inject(Router);
   private readonly ruta = inject(ActivatedRoute);
   private seleccionInicializada = false;
+  protected readonly guardando = signal(false);
 
   constructor() {
     effect(() => {
@@ -60,6 +62,16 @@ export class Cotizaciones {
     this.seleccionId.set(Number((evento.target as HTMLSelectElement).value));
   }
 
+  protected reintentar(): void {
+    this.seleccionInicializada = false;
+    this.servicio.recargar().subscribe();
+  }
+
+  /** El documento no define folio de cotización: se muestra la referencia que entrega Flask. */
+  protected referencia(cotizacion: Cotizacion): string {
+    return cotizacion.folio || `Cotización sin folio · ref. ${cotizacion.id}`;
+  }
+
   protected materialNombre(materialId: number): string {
     const material = this.servicio.obtenerMaterial(materialId);
     return material ? `${material.codigo} · ${material.nombre}` : 'Material no disponible';
@@ -81,38 +93,51 @@ export class Cotizaciones {
     if (!requisicion) {
       return;
     }
-    this.servicio.generarCotizaciones(requisicion.id).subscribe({
-      next: (resultado) => {
-        if (!resultado) {
-          this.avisos.mostrar('error', 'No hay proveedores activos que surtan este material.');
-          return;
-        }
-        this.avisos.mostrar(
-          'exito',
-          resultado.conAlterno
-            ? `${resultado.cantidad} cotizaciones creadas en Flask para comparar.`
-            : `${resultado.cantidad} cotización creada en Flask: no hay proveedor alterno.`,
-        );
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .generarCotizaciones(requisicion.id)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: (resultado) => {
+          if (!resultado) {
+            this.avisos.mostrar('error', 'No hay proveedores activos que surtan este material.');
+            return;
+          }
+          if (!resultado.suficiente) {
+            this.avisos.mostrar(
+              'advertencia',
+              `Solo se generó ${resultado.cantidad} cotización aunque hay alterno; Flask debe revisar la regla de dos proveedores.`,
+            );
+          } else {
+            this.avisos.mostrar(
+              'exito',
+              `${resultado.cantidad} cotizaciones creadas en Flask para comparar.`,
+            );
+          }
+        },
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 
   protected elegir(cotizacion: Cotizacion): void {
-    this.servicio.elegirCotizacion(cotizacion.id).subscribe({
-      next: (orden) => {
-        if (!orden) {
-          this.avisos.mostrar('error', 'No fue posible localizar la orden generada por Flask.');
-          return;
-        }
-        this.avisos.mostrar(
-          'exito',
-          `${orden.folio} se creó en BORRADOR con el precio pactado. Revisa la fecha prometida.`,
-        );
-        void this.router.navigate(['/compras/ordenes', orden.id, 'editar']);
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .elegirCotizacion(cotizacion.id)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: (orden) => {
+          if (!orden) {
+            this.avisos.mostrar('error', 'No fue posible localizar la orden generada por Flask.');
+            return;
+          }
+          this.avisos.mostrar(
+            'exito',
+            `${orden.folio} se creó en BORRADOR con el precio pactado. Revisa la fecha prometida.`,
+          );
+          void this.router.navigate(['/compras/ordenes', orden.id, 'editar']);
+        },
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 
   private inicial(): number {

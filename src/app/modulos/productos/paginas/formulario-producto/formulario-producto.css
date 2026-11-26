@@ -394,6 +394,20 @@
   font-size: 0.85rem;
 }
 
+.estado--error {
+  border-color: var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+}
+
+.estado--error strong,
+.estado--error p {
+  color: #8e2b39;
+}
+
+.estado--error .boton {
+  margin: 0.85rem 0.3rem 0;
+}
+
 @media (min-width: 768px) {
   .seccion {
     padding: 1.5rem;

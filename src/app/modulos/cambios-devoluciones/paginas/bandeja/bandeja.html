@@ -1,0 +1,246 @@
+<section class="cd-panel">
+  <header class="cd-cabecera">
+    <div>
+      <p class="cd-ojeada">M07 · Bandeja</p>
+      <h2>Bandeja de solicitudes</h2>
+      <p>
+        Las solicitudes llegan con evidencia y requieren aprobación o rechazo motivado. La recepción
+        y el dictamen los registra Operativo; la resolución final la ejecuta Administración.
+      </p>
+    </div>
+    <button type="button" class="boton boton--secundario" (click)="recargar.emit()">
+      Actualizar
+    </button>
+  </header>
+
+  @if (error()) {
+    <div class="cd-aviso cd-aviso--error" role="alert">{{ error() }}</div>
+  }
+  @if (errorLocal()) {
+    <div class="cd-aviso cd-aviso--error" role="alert">{{ errorLocal() }}</div>
+  }
+
+  @if (alertas().length > 0) {
+    <div class="cd-aviso cd-aviso--advertencia" role="status">
+      <strong>Alerta preventiva:</strong>
+      {{ alertas().length }} caso(s) superan las {{ umbralAlerta }} horas sin atenderse o están
+      recibidos sin inspeccionar.
+    </div>
+  }
+
+  <div class="cd-tarjeta cd-panel">
+    <div class="cd-filtros" role="group" aria-label="Filtrar bandeja por estado">
+      @for (opcion of filtros; track opcion.valor) {
+        <button
+          type="button"
+          class="cd-filtro"
+          [class.cd-filtro--activo]="filtro() === opcion.valor"
+          [attr.aria-pressed]="filtro() === opcion.valor"
+          (click)="cambiarFiltro(opcion.valor)"
+        >
+          {{ opcion.etiqueta }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="cd-cargando" aria-busy="true" aria-live="polite">
+      <div class="cd-esqueleto"></div>
+      <p>Cargando solicitudes…</p>
+    </div>
+  } @else if (filtradas().length === 0) {
+    <div class="cd-vacio">
+      <h3>No hay solicitudes en este filtro</h3>
+      <p>Las solicitudes nuevas aparecerán aquí cuando un cliente las registre.</p>
+    </div>
+  } @else {
+    <div class="cd-grid">
+      @for (caso of filtradas(); track caso.id) {
+        <article class="cd-tarjeta cd-panel">
+          <div class="cd-cabecera">
+            <div>
+              <h3>{{ caso.folioCaso }}</h3>
+              <p>
+                Pedido {{ caso.folioPedido || '—' }} · {{ formatearFechaHora(caso.creadoEn) }} ·
+                {{ caso.tipo === 'CAMBIO' ? 'Cambio' : 'Devolución' }}
+              </p>
+            </div>
+            <div class="cd-acciones">
+              @if (enAlerta(caso)) {
+                <span class="cd-chip cd-chip--adv" title="Más de 48 horas sin atender">
+                  Sin atender
+                </span>
+              }
+              <span class="cd-chip" [class]="claseEstado(caso.estado)">
+                {{ etiquetaEstado(caso.estado) }}
+              </span>
+            </div>
+          </div>
+
+          <p class="cd-nota"><strong>Motivo:</strong> {{ etiquetaMotivo(caso.motivo) }}</p>
+          <p class="cd-nota">{{ caso.descripcion }}</p>
+
+          <div class="cd-lineas-resumen">
+            @for (linea of caso.lineas; track linea.id) {
+              <div class="cd-linea">
+                <div class="cd-linea__texto">
+                  <strong>{{ linea.sku || 'SKU' }}</strong> · {{ linea.cantidad }} pieza(s)
+                  <small>Evaluación: {{ linea.dictamen === 'PENDIENTE' ? 'sin dictamen' : linea.dictamen }}</small>
+                </div>
+              </div>
+            } @empty {
+              <p class="cd-nota">El servidor no devolvió líneas para este caso.</p>
+            }
+          </div>
+
+          <div class="cd-acciones cd-acciones--borde">
+            <button type="button" class="boton boton--secundario" (click)="verEvidencias(caso)">
+              Evidencias ({{ caso.evidencias.length }})
+            </button>
+
+            @if (puedeAprobar() && caso.estado === 'SOLICITADA') {
+              <button
+                type="button"
+                class="boton boton--primario"
+                [disabled]="procesando() === caso.id"
+                (click)="aprobar(caso)"
+              >
+                Aprobar
+              </button>
+              <button
+                type="button"
+                class="boton boton--peligro"
+                [disabled]="procesando() === caso.id"
+                (click)="abrirRechazo(caso)"
+              >
+                Rechazar
+              </button>
+            }
+
+            @if (puedeOperar() && caso.estado === 'APROBADA') {
+              <button
+                type="button"
+                class="boton boton--primario"
+                [disabled]="procesando() === caso.id"
+                (click)="recibir(caso)"
+              >
+                Registrar recepción
+              </button>
+              <a
+                class="boton boton--secundario"
+                [routerLink]="['/operacion/devoluciones', 'recepcion', caso.id]"
+              >
+                Inspeccionar
+              </a>
+            }
+
+            @if (puedeAprobar() && caso.estado === 'RECIBIDA') {
+              @if (listoParaResolver(caso)) {
+                <a
+                  class="boton boton--primario"
+                  [routerLink]="['/operacion/devoluciones', 'resolucion', caso.id]"
+                >
+                  Resolver
+                </a>
+              } @else {
+                <button type="button" class="boton boton--secundario" disabled>
+                  Resolver
+                </button>
+                <small class="cd-nota">Falta el dictamen de una o más prendas.</small>
+              }
+            }
+
+            @if (caso.estado === 'RESUELTA' || caso.estado === 'RECHAZADA') {
+              <a
+                class="boton boton--enlace"
+                [routerLink]="['/operacion/devoluciones', 'resolucion', caso.id]"
+              >
+                Ver resolución
+              </a>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+@if (casoARechazar(); as caso) {
+  <div class="cd-modal" (keydown)="alPulsarTecla($event)">
+    <div class="cd-modal__telon" (click)="cerrarRechazo()"></div>
+    <div class="cd-modal__panel" role="dialog" aria-modal="true" aria-labelledby="cd-rechazo-titulo">
+      <h3 id="cd-rechazo-titulo">Rechazar {{ caso.folioCaso }}</h3>
+      <p>El rechazo exige un motivo. Se registrará en el caso y será visible para el cliente.</p>
+      <form [formGroup]="rechazoForm" (ngSubmit)="confirmarRechazo()">
+        <div class="cd-campo">
+          <label for="cd-motivo-rechazo">Motivo del rechazo</label>
+          <textarea
+            id="cd-motivo-rechazo"
+            formControlName="motivo"
+            rows="4"
+            maxlength="200"
+            autofocus
+            [attr.aria-invalid]="
+              rechazoForm.controls.motivo.invalid && rechazoForm.controls.motivo.touched
+            "
+          ></textarea>
+          @if (rechazoForm.controls.motivo.invalid && rechazoForm.controls.motivo.touched) {
+            <small class="cd-error-campo">Indica al menos 3 caracteres.</small>
+          }
+        </div>
+        <div class="cd-acciones cd-acciones--borde">
+          <button
+            type="submit"
+            class="boton boton--peligro"
+            [disabled]="procesando() !== null"
+          >
+            Confirmar rechazo
+          </button>
+          <button type="button" class="boton boton--secundario" (click)="cerrarRechazo()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (casoConEvidencias(); as caso) {
+  <div class="cd-modal" (keydown)="alPulsarTecla($event)">
+    <div class="cd-modal__telon" (click)="cerrarEvidencias()"></div>
+    <div
+      class="cd-modal__panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cd-evidencias-titulo"
+    >
+      <h3 id="cd-evidencias-titulo">Evidencias de {{ caso.folioCaso }}</h3>
+      @if (caso.evidencias.length === 0) {
+        <p>El caso no tiene imágenes registradas.</p>
+      } @else {
+        <div class="cd-evidencias cd-evidencias--amplias">
+          @for (evidencia of caso.evidencias; track evidencia.id; let indice = $index) {
+            <figure>
+              @if (imagenesFallidas().includes(indice)) {
+                <div class="cd-evidencias__vacio">Imagen no disponible</div>
+              } @else {
+                <img
+                  [src]="evidencia.url"
+                  [alt]="evidencia.nombre ?? 'Evidencia de la solicitud'"
+                  (error)="marcarImagenFallida(indice)"
+                />
+              }
+              <figcaption>{{ evidencia.nombre ?? 'Evidencia' }}</figcaption>
+            </figure>
+          }
+        </div>
+      }
+      <div class="cd-acciones cd-acciones--borde">
+        <button type="button" class="boton boton--primario" autofocus (click)="cerrarEvidencias()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+}

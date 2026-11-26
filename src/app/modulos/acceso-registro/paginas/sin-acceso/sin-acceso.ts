@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { AuthSessionService } from '../../../core/auth/auth-session.service';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
 
 /** §10.2 · Pantalla pública de 403. Los permisos definitivos se validarán en Flask. */
 @Component({
@@ -10,15 +10,15 @@ import { AuthSessionService } from '../../../core/auth/auth-session.service';
   templateUrl: './sin-acceso.html',
 })
 export class SinAcceso {
-  private readonly sesion = inject(AuthSessionService);
+  private readonly sesion = inject(AuthStateService);
   private readonly router = inject(Router);
 
   get tieneSesion(): boolean {
-    return this.sesion.autenticado;
+    return this.sesion.autenticado();
   }
 
   cerrarSesion(): void {
-    this.sesion.cerrarSesionLocal();
+    this.sesion.limpiar();
     void this.router.navigate(['/login']);
   }
 }

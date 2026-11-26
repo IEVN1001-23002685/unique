@@ -13,6 +13,20 @@
     <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
   </div>
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar los lotes.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando lotes desde Flask…
+    </div>
+  }
+
   <div class="tarjeta bloque">
     <div class="barra barra--lotes">
       <label class="buscador">
@@ -55,7 +69,9 @@
       </div>
     </div>
 
-    @if (filtrados().length === 0) {
+    @if (!servicio.cargado() || servicio.errorCarga()) {
+      <p class="sr-only">Esperando la carga de lotes.</p>
+    } @else if (filtrados().length === 0) {
       <div class="estado" role="status">
         <strong>No hay lotes con estos filtros.</strong>
         <p>Registra una recepción en M14 o cambia el material y el color seleccionados.</p>

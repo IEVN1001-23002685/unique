@@ -2,6 +2,8 @@ import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter, map } from 'rxjs';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
+import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
 
 type SeccionMermas = 'zona' | 'registro' | 'indicadores';
 
@@ -14,6 +16,15 @@ type SeccionMermas = 'zona' | 'registro' | 'indicadores';
 })
 export class NavegacionMermas {
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthStateService);
+  private readonly perfilDemo = inject(PerfilDemoServicio);
+
+  /** Indicadores es exclusivo del Administrador (§3 y §10). */
+  protected readonly esAdministrador = computed(() =>
+    this.auth.autenticado()
+      ? this.auth.puede(['ADMIN'])
+      : this.perfilDemo.esAdministrador(),
+  );
 
   private readonly url = toSignal(
     this.router.events.pipe(

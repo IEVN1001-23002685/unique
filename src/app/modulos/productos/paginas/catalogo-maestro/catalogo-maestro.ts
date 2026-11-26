@@ -35,6 +35,10 @@ export class CatalogoMaestro {
     this.servicio.recargar().subscribe();
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly filtrados = computed(() => {
     const termino = this.busqueda().trim().toLowerCase();
     const categoria = this.categoria();
@@ -97,11 +101,16 @@ export class CatalogoMaestro {
     });
   }
 
-  protected activar(producto: ProductoMaestro, activar: boolean): void {
-    this.servicio.cambiarActivo(producto.id, activar).subscribe({
+  protected activar(producto: ProductoMaestro): void {
+    const razones = this.servicio.validarActivacion(producto);
+    if (razones.length > 0) {
+      this.avisos.mostrar('error', `No se puede activar: ${razones.join(' ')}`);
+      return;
+    }
+    this.servicio.activarProducto(producto.id).subscribe({
       next: (resultado) =>
         this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje),
-      error: () => this.avisos.mostrar('error', 'No fue posible cambiar el estado en Flask.'),
+      error: () => this.avisos.mostrar('error', 'No fue posible activar el producto en Flask.'),
     });
   }
 
@@ -109,10 +118,18 @@ export class CatalogoMaestro {
     this.confirmando.set(producto);
   }
 
+  protected etiquetaBaja(producto: ProductoMaestro): string {
+    return producto.tieneHistorial === true ? 'Dar de baja' : 'Eliminar';
+  }
+
   protected mensajeEliminacion(producto: ProductoMaestro): string {
-    return producto.tieneHistorial
-      ? 'El producto tiene ventas o movimientos. Se desactivará con borrado lógico (eliminado_en) y se conservará su historial.'
-      : 'El producto no tiene ventas ni movimientos. Flask podrá eliminarlo físicamente.';
+    if (producto.tieneHistorial === true) {
+      return 'El producto tiene ventas o movimientos. Se desactivará con borrado lógico (eliminado_en) y se conservará su historial.';
+    }
+    if (producto.tieneHistorial === false) {
+      return 'El producto no tiene ventas ni movimientos. Flask podrá eliminarlo físicamente.';
+    }
+    return 'Flask verificará si hay ventas o movimientos: si los hay, desactivará el producto; si no, podrá eliminarlo.';
   }
 
   protected confirmarEliminacion(): void {

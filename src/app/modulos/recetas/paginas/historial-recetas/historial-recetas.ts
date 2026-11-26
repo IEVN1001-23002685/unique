@@ -46,6 +46,10 @@ export class HistorialRecetas {
     });
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe({ next: () => this.seleccionarUltimas() });
+  }
+
   protected alCambiarProducto(evento: Event): void {
     const id = Number((evento.target as HTMLSelectElement).value);
     this.producto.set(id);

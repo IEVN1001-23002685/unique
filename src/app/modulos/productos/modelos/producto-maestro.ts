@@ -136,8 +136,11 @@ export interface ProductoMaestro {
   /** M11 es dueño del costo y de las recetas; se proyecta desde su servicio. */
   costoEstandar: number | null;
   recetasVigentes: CodigoTalla[];
-  /** Con historial de ventas o movimientos se desactiva; sin él se borra. */
-  tieneHistorial: boolean;
+  /**
+   * Con historial se desactiva; sin él se borra. `null` significa que Flask aún no
+   * informó este dato en la respuesta, por lo que la interfaz no puede afirmar lo contrario.
+   */
+  tieneHistorial: boolean | null;
   bitacora: EntradaBitacora[];
 }
 

@@ -1,6 +1,7 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 import { rfcValido, telefono10 } from '../../../../compartido/validadores/validadores-negocio';
 import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
@@ -27,6 +28,9 @@ export class FormularioProveedor {
   protected readonly esEdicion = this.idEditar > 0;
   protected readonly noEncontrado = signal(false);
   protected readonly intentoEnvio = signal(false);
+  protected readonly guardando = signal(false);
+  protected readonly cargando = this.servicio.cargando;
+  protected readonly errorCarga = this.servicio.errorCarga;
 
   protected readonly condicionesPago = [
     'Contado',
@@ -57,7 +61,11 @@ export class FormularioProveedor {
     }
 
     effect(() => {
-      if (this.formularioInicializado || !this.servicio.cargado()) {
+      if (
+        this.formularioInicializado ||
+        !this.servicio.cargado() ||
+        this.servicio.errorCarga()
+      ) {
         return;
       }
       const proveedor = this.servicio.obtenerPorId(this.idEditar);
@@ -65,6 +73,7 @@ export class FormularioProveedor {
         this.noEncontrado.set(true);
         return;
       }
+      this.noEncontrado.set(false);
       this.formularioInicializado = true;
       this.formulario.patchValue({
         razonSocial: proveedor.razonSocial,
@@ -120,12 +129,21 @@ export class FormularioProveedor {
       materiales: previo?.materiales ?? [],
     };
 
-    this.servicio.guardarProveedor(proveedor).subscribe({
-      next: () => {
-        this.avisos.mostrar('exito', `${proveedor.nombreComercial} se guardó en Flask.`);
-        this.router.navigate(['/proveedores']);
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .guardarProveedor(proveedor)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: () => {
+          this.avisos.mostrar('exito', `${proveedor.nombreComercial} se guardó en Flask.`);
+          this.router.navigate(['/proveedores']);
+        },
+        error: (error: unknown) =>
+          this.avisos.mostrar('error', mensajeError(error, 'No fue posible guardar el proveedor.')),
+      });
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
   }
 }

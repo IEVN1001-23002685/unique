@@ -18,6 +18,10 @@ export class Cancelados {
     this.servicio.recargar().subscribe();
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly cancelados = this.servicio.cancelados;
 
   protected readonly filtrados = computed(() => {

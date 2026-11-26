@@ -13,10 +13,22 @@
     <a routerLink="/compras" class="boton boton--secundario">Volver a requisiciones</a>
   </div>
 
-  @if (noEncontrado()) {
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar los datos de la requisición.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (noEncontrado()) {
     <div class="tarjeta bloque estado" role="alert">
       <strong>No se encontró la requisición solicitada.</strong>
       <p>Regresa al listado para elegir un folio vigente.</p>
+    </div>
+  } @else if (esEdicion && !servicio.cargado()) {
+    <div class="tarjeta bloque estado" role="status">
+      <strong>Cargando la requisición desde Flask…</strong>
     </div>
   } @else {
     <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
@@ -155,9 +167,13 @@
         <textarea class="campo__entrada" formControlName="notas" rows="2"></textarea>
       </label>
 
+      @if (errorGuardado()) {
+        <div class="campo__error" role="alert">{{ errorGuardado() }}</div>
+      }
+
       <div class="form-acciones">
-        <button type="submit" class="boton boton--primario">
-          {{ esEdicion ? 'Guardar cantidades' : 'Crear requisición' }}
+        <button type="submit" class="boton boton--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : esEdicion ? 'Guardar cantidades' : 'Crear requisición' }}
         </button>
         <a routerLink="/compras" class="boton boton--secundario">Cancelar</a>
       </div>
@@ -166,6 +182,7 @@
 
   <p class="nota">
     Editar conserva el origen, el material y la cantidad faltante; únicamente se ajustan la cantidad
-    sugerida, la prioridad y las notas. Ningún cambio se envía a Flask en esta etapa.
+    sugerida, la prioridad y las notas. Los cambios se envían a Flask al guardar; la conversión y el
+    mínimo definitivos los valida el servidor.
   </p>
 </section>

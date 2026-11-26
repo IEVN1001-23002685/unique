@@ -96,6 +96,14 @@ export class CheckoutServicio {
     });
   }
 
+  /**
+   * Paso 7: comprobante digital de la venta recién creada.
+   * Reutiliza el contrato documentado de M06 (§9), sin crear un endpoint nuevo.
+   */
+  descargarComprobante(pedidoId: number): Observable<Blob> {
+    return this.api.getBlob(`/mis-pedidos/${pedidoId}/comprobante`);
+  }
+
   private clavePara(datos: DatosPago): string {
     const huella = JSON.stringify(datos);
     const existente = this.claves.get(huella);

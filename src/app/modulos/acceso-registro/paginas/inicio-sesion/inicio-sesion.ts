@@ -59,8 +59,8 @@ export class InicioSesion {
         this.cargando = false;
         this.enviarLogin.emit(credenciales);
         this.modal.cerrar();
-        // M04 revalida el carrito con la sesión ya activa; la fusión la decide Flask.
-        this.carrito.cargar().subscribe({ error: () => undefined });
+        // M04 fusiona el carrito de invitado con la cuenta; Flask valida las líneas.
+        this.carrito.sincronizarAlIniciarSesion().subscribe({ error: () => undefined });
         void this.router.navigateByUrl(rutaDestinoSegura(respuesta.usuario.rol, this.returnUrl));
       },
       error: (error: unknown) => {

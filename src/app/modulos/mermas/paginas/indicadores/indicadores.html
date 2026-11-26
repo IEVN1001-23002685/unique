@@ -14,11 +14,36 @@
   <app-navegacion-mermas />
 
   @if (esAdministrador()) {
+    @if (servicio.errorCarga()) {
+      <div class="tarjeta bloque estado estado--error" role="alert">
+        <strong>No fue posible cargar los indicadores de merma.</strong>
+        <p>{{ servicio.errorCarga() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (servicio.cargando() && !servicio.cargado()) {
+      <div class="tarjeta bloque estado estado--cargando" role="status">
+        Cargando indicadores desde Flask…
+      </div>
+    }
+
+    @if (servicio.limitacionAdmin()) {
+      <p class="nota nota--advertencia">{{ servicio.limitacionAdmin() }}</p>
+    }
+
     <p class="nota">
       Cifras calculadas por Flask desde los movimientos de inventario y la vista de mermas. Los
       denominadores son acumulados: unidades producidas por M16 y material consumido por M15, no un
       periodo mensual cerrado.
     </p>
+
+    @if (!servicio.cargando() && servicio.cargado() && datos().totalRegistros === 0 && !servicio.errorCarga()) {
+      <p class="nota nota--advertencia" role="status">
+        Aún no hay registros de merma en el periodo; las cifras permanecen en cero hasta que Flask
+        reporte movimientos.
+      </p>
+    }
 
   <div class="indicadores">
     <article class="tarjeta indicador" [attr.data-tono]="tonoMeta(datos().mermaProductoPct)">
@@ -70,8 +95,9 @@
         </div>
       }
       <p class="nota nota--advertencia">
-        La alerta se muestra aquí solo como indicador visual. Su generación y envío a M21 quedan
-        pendientes de Flask.
+        La alerta se muestra aquí solo como indicador visual calculado sobre las cifras de Flask.
+        Su persistencia en la tabla <code>alerta</code> y el envío a M21 dependen del servidor: §9 no
+        define un endpoint de M17 para crearla.
       </p>
     } @else {
       <p class="estado" role="status">

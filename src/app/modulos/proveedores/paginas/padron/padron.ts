@@ -29,8 +29,7 @@ export class Padron {
   protected readonly busqueda = signal('');
   protected readonly estatusFiltro = signal<EstadoProveedor | 'TODOS'>('TODOS');
   protected readonly proveedorAEliminar = signal<Proveedor | null>(null);
-  /** Se conectará al estado de carga real cuando exista el backend. */
-  protected readonly cargando = signal(false);
+  protected readonly cargando = this.servicio.cargando;
 
   protected readonly opcionesEstatus: { valor: EstadoProveedor | 'TODOS'; etiqueta: string }[] = [
     { valor: 'TODOS', etiqueta: 'Todos' },
@@ -73,6 +72,10 @@ export class Padron {
     this.busqueda.set(entrada.value);
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected plazoProveedor(proveedor: Proveedor): number {
     const activos = proveedor.materiales.filter((material) => material.activo);
     return activos.length === 0 ? 0 : Math.min(...activos.map((material) => material.plazoDias));
@@ -87,9 +90,12 @@ export class Padron {
     return this.servicio.obtenerEvaluacion(proveedor.id);
   }
 
-  protected nivelEntrega(proveedor: Proveedor): 'bueno' | 'alerta' {
-    const porcentaje = this.evaluacion(proveedor)?.entregasATiempoPct ?? 0;
-    return porcentaje < 80 ? 'alerta' : 'bueno';
+  protected nivelEntrega(proveedor: Proveedor): 'bueno' | 'alerta' | 'sin-datos' {
+    const evaluacion = this.evaluacion(proveedor);
+    if (!evaluacion || evaluacion.ordenesRecibidas === 0) {
+      return 'sin-datos';
+    }
+    return evaluacion.entregasATiempoPct < 80 ? 'alerta' : 'bueno';
   }
 
   protected confirmarEliminacion(): void {

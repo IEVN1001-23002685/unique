@@ -73,6 +73,12 @@ export const ADMIN_UNIQUE_ROUTES: Routes = [
         data: { titulo: 'Centro de alertas', roles: OPERATIVO_Y_ADMIN },
       },
       {
+        path: 'alertas/reglas',
+        component: AlertasM21Component,
+        canActivate: [rolAdminGuard],
+        data: { titulo: 'Reglas de alertas', roles: SOLO_ADMIN },
+      },
+      {
         path: 'alertas/:seccion',
         component: AlertasM21Component,
         canActivate: [rolAdminGuard],

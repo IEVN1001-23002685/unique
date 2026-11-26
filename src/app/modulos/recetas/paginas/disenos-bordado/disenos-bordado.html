@@ -14,6 +14,16 @@
     <button type="button" class="boton boton--primario" (click)="nuevo()">Nuevo diseño</button>
   </div>
 
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar los diseños.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  }
+
   <div class="diseno-layout">
     <div class="tarjeta bloque lista">
       <h2 class="seccion__titulo">Diseños registrados</h2>

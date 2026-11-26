@@ -2,24 +2,41 @@
   <div>
     <span class="eyebrow">MÓDULO 22 · CONTROL Y ADMINISTRACIÓN</span>
     <h2>Administración del sistema</h2>
-    <p>Usuarios, clientes, catálogos, parámetros y bitácora con endpoints reales de la API.</p>
+    <p>
+      Usuarios, clientes, catálogos, parámetros y bitácora con endpoints reales de la API.
+      Solo Administrador.
+    </p>
   </div>
-  <button class="btn-outline" (click)="cargar()">↻ Actualizar</button>
+  <button type="button" class="btn-outline" (click)="cargar()">↻ Actualizar</button>
 </div>
-<div class="notice error" *ngIf="error">{{ error }}</div>
+
+<div class="notice error" *ngIf="error">
+  <span>{{ error }}</span>
+  <button type="button" class="btn-outline small" (click)="reintentar()">Reintentar</button>
+</div>
 <div class="notice success" *ngIf="aviso">{{ aviso }}</div>
+
 <div class="toolbar">
-  <div class="tabs">
-    <button class="tab" [class.active]="pestana === 'usuarios'" (click)="cambiar('usuarios')">Usuarios y roles</button>
-    <button class="tab" [class.active]="pestana === 'clientes'" (click)="cambiar('clientes')">Clientes</button>
-    <button class="tab" [class.active]="pestana === 'catalogos'" (click)="cambiar('catalogos')">Catálogos</button>
-    <button class="tab" [class.active]="pestana === 'configuracion'" (click)="cambiar('configuracion')">Configuración</button>
-    <button class="tab" [class.active]="pestana === 'bitacora'" (click)="cambiar('bitacora')">Bitácora</button>
+  <div class="tabs" role="tablist" aria-label="Secciones de administración">
+    <button type="button" class="tab" role="tab" [class.active]="pestana === 'usuarios'" (click)="cambiar('usuarios')">Usuarios y roles</button>
+    <button type="button" class="tab" role="tab" [class.active]="pestana === 'clientes'" (click)="cambiar('clientes')">Clientes</button>
+    <button type="button" class="tab" role="tab" [class.active]="pestana === 'catalogos'" (click)="cambiar('catalogos')">Catálogos</button>
+    <button type="button" class="tab" role="tab" [class.active]="pestana === 'configuracion'" (click)="cambiar('configuracion')">Configuración</button>
+    <button type="button" class="tab" role="tab" [class.active]="pestana === 'bitacora'" (click)="cambiar('bitacora')">Bitácora</button>
   </div>
-  <input class="search" *ngIf="pestana === 'usuarios' || pestana === 'clientes' || pestana === 'catalogos'" [(ngModel)]="filtro" (change)="pagina = 1; cargar()" placeholder="Buscar..." />
+  <input
+    class="search"
+    *ngIf="pestana === 'usuarios' || pestana === 'clientes' || pestana === 'catalogos'"
+    [(ngModel)]="filtro"
+    (change)="pagina = 1; cargar()"
+    placeholder="Buscar..."
+    aria-label="Buscar en la sección"
+  />
 </div>
+
 <div class="empty" *ngIf="cargando">Cargando información...</div>
 
+<!-- Usuarios y roles -->
 <div class="panel-card" *ngIf="!cargando && pestana === 'usuarios'">
   <div class="panel-title">
     <h3>Usuarios del sistema</h3>
@@ -30,12 +47,21 @@
     <label>Apellidos<input formControlName="apellidos" placeholder="Apellidos" /><small class="field-error" *ngIf="usuarioForm.controls.apellidos.touched && usuarioForm.controls.apellidos.invalid">Campo obligatorio.</small></label>
     <label>Correo electrónico<input formControlName="correo" type="email" placeholder="usuario@correo.com" /><small class="field-error" *ngIf="usuarioForm.controls.correo.touched && usuarioForm.controls.correo.invalid">Correo válido obligatorio.</small></label>
     <label>Teléfono<input formControlName="telefono" placeholder="10 dígitos" /><small class="field-error" *ngIf="usuarioForm.controls.telefono.touched && usuarioForm.controls.telefono.invalid">Ingresa 10 dígitos.</small></label>
-    <label>Rol<select formControlName="rol">
-      <option value="CLIENTE">Cliente</option>
-      <option value="OPERATIVO">Operativo</option>
-      <option value="ADMIN">Administrador</option>
-    </select></label>
-    <label>Contraseña<input formControlName="password" type="password" placeholder="Mínimo 8 caracteres" /><small *ngIf="editandoUsuario">Se conserva la contraseña actual si se deja vacío.</small><small class="field-error" *ngIf="usuarioForm.controls.password.touched && usuarioForm.controls.password.invalid">Mínimo 8 caracteres.</small></label>
+    <label>
+      Rol
+      <select formControlName="rol">
+        <option value="CLIENTE" [disabled]="!editandoUsuario">Cliente</option>
+        <option value="OPERATIVO">Operativo</option>
+        <option value="ADMIN">Administrador</option>
+      </select>
+      <small *ngIf="!editandoUsuario">M22 da de alta Operativo o Administrador.</small>
+    </label>
+    <label>
+      Contraseña
+      <input formControlName="password" type="password" placeholder="Mínimo 8 caracteres" />
+      <small *ngIf="editandoUsuario">Se conserva la contraseña actual si se deja vacío.</small>
+      <small class="field-error" *ngIf="usuarioForm.controls.password.touched && usuarioForm.controls.password.invalid">Mínimo 8 caracteres.</small>
+    </label>
     <label class="check-label"><input type="checkbox" formControlName="acepta_promociones" /> Acepta promociones</label>
     <button class="btn-primary" type="submit">{{ editandoUsuario ? 'Guardar cambios' : 'Crear usuario' }}</button>
     <button class="btn-outline" type="button" (click)="limpiarUsuario()">Limpiar</button>
@@ -50,8 +76,24 @@
           <td><span class="chip purple">{{ u.rol }}</span></td>
           <td><span class="chip" [class.green]="u.estado_cuenta === 'ACTIVA'" [class.red]="u.estado_cuenta !== 'ACTIVA'">{{ u.estado_cuenta }}</span></td>
           <td class="actions">
-            <button class="icon-btn" (click)="editarUsuario(u)">✎</button>
-            <button class="icon-btn danger-text" (click)="alternarEstado(u)">{{ u.estado_cuenta === 'ACTIVA' ? '⌫' : '↻' }}</button>
+            <button type="button" class="icon-btn" (click)="editarUsuario(u)" title="Editar usuario">✎</button>
+            <button
+              type="button"
+              class="icon-btn"
+              (click)="restablecerContrasena(u)"
+              title="Restablecer contraseña"
+            >
+              ⚿
+            </button>
+            <button
+              type="button"
+              class="icon-btn danger-text"
+              [disabled]="esUltimoAdminVisible(u)"
+              (click)="alternarEstado(u)"
+              [title]="esUltimoAdminVisible(u) ? 'No se puede desactivar al último Administrador' : 'Cambiar estado'"
+            >
+              {{ u.estado_cuenta === 'ACTIVA' ? '⌫' : '↻' }}
+            </button>
           </td>
         </tr>
       </tbody>
@@ -59,13 +101,19 @@
   </div>
   <div class="toolbar">
     <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
-    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
-    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
+    <button type="button" class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
+    <button type="button" class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
   </div>
+  <p class="pendiente">
+    No se puede desactivar al último Administrador: la interfaz lo impide cuando se ha cargado el
+    directorio completo y Flask lo valida de forma autoritativa. Los cambios de rol quedan registrados
+    en la bitácora.
+  </p>
 </div>
 
+<!-- Clientes -->
 <div class="panel-card" *ngIf="!cargando && pestana === 'clientes'">
-  <div class="panel-title"><h3>Directorio de clientes</h3><span class="muted">Detalle de ventas y pedidos</span></div>
+  <div class="panel-title"><h3>Directorio de clientes</h3><span class="muted">Solo lectura de compras</span></div>
   <div class="table-wrap">
     <table>
       <thead><tr><th>CLIENTE</th><th>CORREO</th><th>TELÉFONO</th><th>ESTADO</th><th>ACCIÓN</th></tr></thead>
@@ -74,45 +122,81 @@
           <td>{{ c.nombre }} {{ c.apellidos }}</td>
           <td>{{ c.correo }}</td>
           <td>{{ c.telefono }}</td>
-          <td>{{ c.estado_cuenta }}</td>
-          <td><button class="btn-outline small" (click)="verCliente(c.id)">Ver historial</button></td>
+          <td><span class="chip" [class.green]="c.estado_cuenta === 'ACTIVA'" [class.red]="c.estado_cuenta !== 'ACTIVA'">{{ c.estado_cuenta }}</span></td>
+          <td><button type="button" class="btn-outline small" (click)="verCliente(c.id)">Ver historial</button></td>
         </tr>
       </tbody>
     </table>
   </div>
   <div class="toolbar">
     <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
-    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
-    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
+    <button type="button" class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
+    <button type="button" class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
   </div>
+
   <div class="panel-card" *ngIf="clienteDetalle">
-    <div class="panel-title"><h4>Historial de {{ clienteDetalle.cliente.nombre }}</h4><button class="btn-outline small" (click)="clienteDetalle = null">Cerrar</button></div>
+    <div class="panel-title">
+      <h4>Historial de {{ clienteDetalle.cliente.nombre }}</h4>
+      <button type="button" class="btn-outline small" (click)="clienteDetalle = null">Cerrar</button>
+    </div>
     <div class="stats-grid">
       <article class="stat-card"><small>VENTAS</small><b>{{ clienteDetalle.resumen.ventas }}</b></article>
       <article class="stat-card"><small>PEDIDOS</small><b>{{ clienteDetalle.resumen.pedidos }}</b></article>
-      <article class="stat-card accent-green"><small>IMPORTE TOTAL</small><b>{{ clienteDetalle.resumen.importe_total }}</b></article>
+      <article class="stat-card accent-green"><small>IMPORTE TOTAL</small><b>{{ clienteDetalle.resumen.importe_total | currency: 'MXN' }}</b></article>
+      <article class="stat-card"><small>ESTADO DE CUENTA</small><b>{{ clienteDetalle.cliente.estado_cuenta }}</b></article>
     </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>FOLIO VENTA</th><th>FECHA</th><th>ESTADO</th><th>TOTAL</th></tr></thead>
-        <tbody><tr *ngFor="let v of clienteDetalle.ventas"><td>{{ v.folio }}</td><td>{{ v.fecha | date: 'dd MMM yyyy' }}</td><td>{{ v.estado }}</td><td>{{ v.total }}</td></tr></tbody>
+        <tbody>
+          <tr *ngFor="let v of clienteDetalle.ventas">
+            <td>{{ v.folio }}</td>
+            <td>{{ v.fecha | date: 'dd MMM yyyy' }}</td>
+            <td>{{ v.estado }}</td>
+            <td>{{ v.total | currency: 'MXN' }}</td>
+          </tr>
+        </tbody>
       </table>
     </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>PEDIDO</th><th>VENTA</th><th>ESTADO</th><th>PRIORIDAD</th><th>FECHA PROMESA</th></tr></thead>
-        <tbody><tr *ngFor="let p of clienteDetalle.pedidos"><td>#{{ p.id }}</td><td>{{ p.venta_folio }}</td><td>{{ p.estado }}</td><td>{{ p.prioridad }}</td><td>{{ p.fecha_promesa | date: 'dd MMM yyyy' }}</td></tr></tbody>
+        <tbody>
+          <tr *ngFor="let p of clienteDetalle.pedidos">
+            <td>#{{ p.id }}</td>
+            <td>{{ p.venta_folio }}</td>
+            <td>{{ p.estado }}</td>
+            <td>{{ p.prioridad }}</td>
+            <td>{{ p.fecha_promesa | date: 'dd MMM yyyy' }}</td>
+          </tr>
+        </tbody>
       </table>
     </div>
+    <p class="pendiente">
+      Las devoluciones y el saldo de la cuenta simulada no están incluidos en la respuesta de
+      <code>/clientes/{{ '{' }}id{{ '}' }}</code>. Se mostrarán cuando Flask exponga esos campos; M22 no calcula
+      importes propios.
+    </p>
   </div>
 </div>
 
+<!-- Catálogos -->
 <div class="panel-card" *ngIf="!cargando && pestana === 'catalogos'">
   <div class="panel-title">
     <h3>Catálogos configurables</h3>
-    <select [(ngModel)]="recurso" (change)="cambiarRecurso(recurso)">
+    <select [(ngModel)]="recurso" (change)="cambiarRecurso(recurso)" aria-label="Seleccionar catálogo">
       <option *ngFor="let r of recursos" [ngValue]="r.valor">{{ r.etiqueta }}</option>
     </select>
+  </div>
+  <div class="filters">
+    <label>
+      Estado
+      <select [(ngModel)]="filtroActivo" (change)="pagina = 1; cargar()">
+        <option [ngValue]="null">Todos</option>
+        <option [ngValue]="true">Solo activos</option>
+        <option [ngValue]="false">Solo inactivos</option>
+      </select>
+    </label>
   </div>
   <div class="form-grid">
     <label *ngFor="let campo of campos">
@@ -125,8 +209,8 @@
       <input *ngIf="campo.tipo === 'booleano'" type="checkbox" [(ngModel)]="catalogoDatos[campo.nombre]" [name]="campo.nombre" />
       <small *ngIf="editandoCatalogo && campo.soloCreacion">Código inmutable cuando ya forma parte de un SKU.</small>
     </label>
-    <button class="btn-primary" (click)="guardarCatalogo()">{{ editandoCatalogo ? 'Guardar cambios' : 'Agregar elemento' }}</button>
-    <button class="btn-outline" (click)="nuevoCatalogo()">Limpiar</button>
+    <button type="button" class="btn-primary" (click)="guardarCatalogo()">{{ editandoCatalogo ? 'Guardar cambios' : 'Agregar elemento' }}</button>
+    <button type="button" class="btn-outline" (click)="nuevoCatalogo()">Limpiar</button>
   </div>
   <div class="table-wrap">
     <table>
@@ -135,8 +219,8 @@
         <tr *ngFor="let x of catalogos">
           <td *ngFor="let campo of campos">{{ valorElemento(x, campo.nombre) }}</td>
           <td class="actions">
-            <button class="icon-btn" (click)="editarCatalogo(x)">✎</button>
-            <button class="icon-btn danger-text" (click)="eliminarCatalogo(x)">⌫</button>
+            <button type="button" class="icon-btn" (click)="editarCatalogo(x)" title="Editar elemento">✎</button>
+            <button type="button" class="icon-btn danger-text" (click)="eliminarCatalogo(x)" title="Desactivar o eliminar elemento">⌫</button>
           </td>
         </tr>
       </tbody>
@@ -144,23 +228,38 @@
   </div>
   <div class="toolbar">
     <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
-    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
-    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
+    <button type="button" class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
+    <button type="button" class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
   </div>
-  <p class="footnote">El backend conserva el historial y rechaza la baja de catálogos con registros relacionados.</p>
+  <p class="pendiente" *ngIf="hayMasCatalogos">
+    Flask devuelve {{ catalogos.length }} de {{ total }} registros con su paginación por defecto;
+    la búsqueda y el estado se aplican sobre esa página.
+  </p>
+  <p class="footnote">
+    Un código de color o talla que ya generó SKU no se cambia, solo se desactiva. El backend valida
+    las relaciones antes de permitir la baja.
+  </p>
 </div>
 
+<!-- Configuración -->
 <div class="panel-card" *ngIf="!cargando && pestana === 'configuracion'">
   <div class="panel-title"><h3>Parámetros del sistema</h3><span class="muted">GET/PATCH global; cada cambio queda en bitácora</span></div>
-  <div class="settings-list">
-    <div class="setting-row" *ngFor="let p of configuracion">
-      <div><b>{{ p.clave }}</b><small>{{ p.descripcion || 'Sin descripción' }}</small></div>
-      <input [(ngModel)]="p.valor" />
+  <section class="config-group" *ngFor="let grupo of gruposConfiguracion">
+    <h4>{{ grupo.titulo }}</h4>
+    <p class="group-note">{{ grupo.nota }}</p>
+    <div class="settings-list">
+      <div class="setting-row" *ngFor="let p of grupo.parametros">
+        <div><b>{{ p.clave }}</b><small>{{ p.descripcion || 'Sin descripción' }}</small></div>
+        <input [(ngModel)]="p.valor" [attr.aria-label]="'Valor de ' + p.clave" />
+      </div>
     </div>
+  </section>
+  <div class="modal-actions">
+    <button type="button" class="btn-primary" (click)="guardarConfiguracion()">Guardar cambios</button>
   </div>
-  <button class="btn-primary" (click)="guardarConfiguracion()">Guardar cambios</button>
 </div>
 
+<!-- Bitácora -->
 <div class="panel-card" *ngIf="!cargando && pestana === 'bitacora'">
   <div class="panel-title"><h3>Bitácora de auditoría</h3><span class="muted">Quién hizo qué, cuándo y desde dónde</span></div>
   <div class="filters">
@@ -169,9 +268,11 @@
     <label>Usuario ID<input type="number" [(ngModel)]="filtrosBitacora.usuario_id" /></label>
     <label>Desde<input type="date" [(ngModel)]="filtrosBitacora.desde" /></label>
     <label>Hasta<input type="date" [(ngModel)]="filtrosBitacora.hasta" /></label>
-    <button class="btn-primary" (click)="pagina = 1; cargarBitacora()">Filtrar</button>
+    <button type="button" class="btn-primary" (click)="pagina = 1; cargarBitacora()">Filtrar</button>
+    <button type="button" class="btn-outline" (click)="limpiarFiltrosBitacora()">Limpiar</button>
   </div>
-  <div class="table-wrap">
+  <div class="empty" *ngIf="!bitacora.length">No hay registros para los filtros seleccionados.</div>
+  <div class="table-wrap" *ngIf="bitacora.length">
     <table>
       <thead><tr><th>FECHA Y HORA</th><th>USUARIO</th><th>ACCIÓN</th><th>ENTIDAD</th><th>DETALLE</th><th>ORIGEN</th></tr></thead>
       <tbody>
@@ -186,9 +287,32 @@
       </tbody>
     </table>
   </div>
-  <div class="toolbar">
-    <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
-    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
-    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
+  <p class="pendiente" *ngIf="hayMasBitacora">
+    Flask devuelve {{ bitacora.length }} de {{ total }} registros; el endpoint no acepta paginación
+    desde el frontend, por lo que la navegación se definirá cuando la API la exponga.
+  </p>
+</div>
+
+<!-- Restablecimiento de contraseña: pendiente de endpoint verificado -->
+<div class="modal-backdrop" *ngIf="passwordPendiente">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="titulo-password">
+    <h3 id="titulo-password">Restablecer contraseña</h3>
+    <p>
+      Para <b>{{ passwordPendiente.nombre }} {{ passwordPendiente.apellidos }}</b> se requiere un
+      endpoint de restablecimiento que Flask aún no expone en el contrato verificado.
+    </p>
+    <p class="pendiente">
+      No se envía una contraseña nueva ni se simula el cambio: M22 no puede ejecutar esta acción sin
+      confirmación del servidor. La interfaz queda lista para conectar el servicio cuando el backend
+      defina la ruta y las reglas de vigilancia.
+    </p>
+    <div class="modal-actions">
+      <button type="button" class="btn-primary" (click)="cerrarRestablecimiento()">Entendido</button>
+    </div>
   </div>
 </div>
+
+<p class="footnote">
+  Los cambios de rol, tarifas, parámetros, precios, recetas, ajustes de inventario y cancelaciones son
+  registrados por Flask en la bitácora. M22 presenta esa auditoría pero no altera su contenido.
+</p>

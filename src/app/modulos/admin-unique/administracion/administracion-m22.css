@@ -1,0 +1,99 @@
+/* M22: estilos propios; hereda tokens y tablas de modulos-admin.css */
+.notice.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pendiente,
+.group-note {
+  background: #f9eef8;
+  border-left: 3px solid #bf7ebb;
+  border-radius: 10px;
+  padding: 11px 13px;
+  color: #6b5870;
+  font-size: 11px;
+  line-height: 1.55;
+  margin: 14px 0 0;
+}
+
+code {
+  background: #f2d5ed;
+  color: #542d59;
+  border-radius: 5px;
+  padding: 1px 4px;
+  font-size: 10px;
+}
+
+.config-group {
+  margin-bottom: 18px;
+}
+
+.config-group h4 {
+  color: #542d59;
+  font-size: 14px;
+  margin: 0;
+}
+
+.config-group .group-note {
+  margin: 6px 0 10px;
+}
+
+.actions .icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 18, 38, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  width: min(100%, 460px);
+  box-shadow: 0 18px 45px rgba(31, 18, 38, 0.25);
+}
+
+.modal-card h3 {
+  color: #542d59;
+  font-size: 18px;
+  margin: 0 0 10px;
+}
+
+.modal-card p {
+  color: #6b5870;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+@media (max-width: 650px) {
+  .notice.error {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .modal-actions {
+    justify-content: stretch;
+  }
+
+  .modal-actions button {
+    flex: 1;
+  }
+}
