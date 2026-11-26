@@ -17,8 +17,7 @@ Este paquete en `src/app/modulos/admin-unique/` es la **única implementación a
 
 Las rutas del panel son `/panel-admin/{dashboard|preparacion|entregas|alertas|sistema}`. Cada módulo admite una subruta por sección:
 
-| Módulo | Subrutas |
-|---|---|
+| Módulo | Subrutas | |---|---|
 | M18 | `preparacion`, `preparacion/incidencias` |
 | M19 | `entregas/por-asignar`, `hoja-reparto`, `seguimiento`, `productos-repartidos`, `repartidores` |
 | M20 | `dashboard/resumen`, `ventas-productos`, `produccion-merma`, `abastecimiento`, `logistica-devoluciones` |
