@@ -17,6 +17,16 @@
     </div>
   </div>
 
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar los movimientos.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  }
+
   <div class="tarjeta bloque">
     <div class="barra barra--movimientos">
       <label class="campo filtro">

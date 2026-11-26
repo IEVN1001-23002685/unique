@@ -20,6 +20,16 @@
     </div>
   </div>
 
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar el inventario.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  }
+
   <div class="indicadores">
     <div class="tarjeta indicador">
       <span class="indicador__etiqueta">SKU con existencia</span>
@@ -162,19 +172,24 @@
 
   <div class="panel-doble">
     <div class="tarjeta bloque">
-      <h2 class="panel-titulo">Alertas recientes</h2>
-      @if (alertasRecientes().length === 0) {
-        <p class="panel-vacio">Sin alertas abiertas para las variantes consultadas.</p>
+      <h2 class="panel-titulo">Variantes en reposición</h2>
+      @if (reposicion().length === 0) {
+        <p class="panel-vacio">Todas las variantes están por encima de su mínimo.</p>
       } @else {
         <ul class="lista">
-          @for (alerta of alertasRecientes(); track alerta.id) {
+          @for (fila of reposicion(); track fila.varianteId) {
             <li class="lista__item">
               <span
                 class="lista__marca"
-                [class.lista__marca--preventiva]="alerta.severidad === 'PREVENTIVA'"
+                [class.lista__marca--preventiva]="fila.semaforo === 'AMBAR'"
               ></span>
               <span>
-                <strong>{{ alerta.sku }}</strong> · {{ alerta.mensaje }}
+                <strong>{{ fila.sku }}</strong> · disponible {{ fila.disponible }} de mínimo
+                {{ fila.stockMinimo }}
+                <small>
+                  Reposición configurada: {{ fila.cantidadReposicion }} unidades. Flask genera la
+                  señal STOCK_MINIMO.
+                </small>
               </span>
             </li>
           }
@@ -183,20 +198,21 @@
     </div>
 
     <div class="tarjeta bloque">
-      <h2 class="panel-titulo">Señales de reposición</h2>
-      @if (senalesRecientes().length === 0) {
-        <p class="panel-vacio">
-          Sin señales pendientes. Se generan al dejar disponible en el mínimo o menos.
-        </p>
+      <h2 class="panel-titulo">Ajustes registrados</h2>
+      @if (ajustesRecientes().length === 0) {
+        <p class="panel-vacio">Todavía no hay conteos asentados en el kardex.</p>
       } @else {
         <ul class="lista">
-          @for (senal of senalesRecientes(); track senal.id) {
+          @for (movimiento of ajustesRecientes(); track movimiento.id) {
             <li class="lista__item">
               <span class="lista__marca lista__marca--senal"></span>
               <span>
-                <strong>{{ senal.sku }}</strong> · {{ senal.cantidad }} unidades · origen
-                {{ senal.origen }}
-                <small>Pendiente de crear/sumar orden en M16.</small>
+                <strong>{{ movimiento.sku }}</strong> · {{ movimiento.documentoId }}
+                <small>
+                  {{ movimiento.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }} ·
+                  {{ movimiento.deltaExistencia > 0 ? '+' : '' }}{{ movimiento.deltaExistencia }}
+                  unidades · {{ movimiento.motivo }}
+                </small>
               </span>
             </li>
           }
@@ -206,8 +222,8 @@
   </div>
 
   <p class="nota nota--adv">
-    Permisos del documento: el Operativo edita inventario; el Administrador solo consulta, excepto
-    en reglas de reposición. Como todavía no hay autenticación, esta interfaz documenta el contrato
-    pero no bloquea acciones: los guards y la autoridad real se conectarán con Flask.
+    Permisos del documento: el Operativo captura ajustes; el Administrador también puede hacerlo y
+    es el único que edita reglas de reposición. Las reglas se bloquean en la interfaz según la
+    sesión o el perfil de demostración; la autoridad definitiva la comprueba Flask.
   </p>
 </section>

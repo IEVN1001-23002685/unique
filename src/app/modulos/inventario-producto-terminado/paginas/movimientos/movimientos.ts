@@ -107,6 +107,10 @@ export class Movimientos {
     return this.servicio.filas().find((fila) => fila.sku === sku)?.productoNombre ?? '—';
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected claseTipo(movimiento: MovimientoProducto): string {
     if (movimiento.tipo === 'PRODUCCION' || movimiento.tipo === 'REINGRESO') {
       return 'entrada';

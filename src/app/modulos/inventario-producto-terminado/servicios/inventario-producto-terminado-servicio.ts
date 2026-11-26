@@ -1,6 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, concatMap, forkJoin, from, map, of, tap } from 'rxjs';
+import { Observable, concatMap, forkJoin, from, map, of, tap, catchError } from 'rxjs';
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
+import { mensajeError } from '../../../core/api/errores';
+import { AuthStateService } from '../../../core/auth/auth-state.service';
+import { PerfilDemoServicio } from '../../../nucleo/servicios/perfil-demo-servicio';
 import { ProductosServicio } from '../../productos/servicios/productos-servicio';
 import type {
   AlertaInventarioProducto,
@@ -35,8 +38,10 @@ interface FilaInventarioApi {
   stock_minimo: number;
   cantidad_reposicion: number;
   en_produccion: number;
-  dias_cobertura: string | null;
-  semaforo: string;
+  /** Opcional hasta confirmar el contrato: Flask puede enviar días o ventas diarias. */
+  dias_cobertura?: string | number | null;
+  ventas_diarias_30?: string | number | null;
+  semaforo?: string;
 }
 
 interface MovimientoApi {
@@ -65,6 +70,8 @@ interface AjusteApi {
   alerta_id: number | null;
   orden_produccion_id: number | null;
   orden_produccion_folio: string | null;
+  /** Fecha del movimiento AJUSTE devuelta por Flask; no se inventa en el cliente. */
+  fecha?: string;
 }
 
 function listarTodo<T>(
@@ -73,13 +80,20 @@ function listarTodo<T>(
   params: Record<string, ValorParametro> = {},
 ): Observable<T[]> {
   const porPagina = 100;
+  const maxPaginas = 100;
   const pedir = (pagina: number, previos: T[]): Observable<T[]> =>
     api
       .get<Pagina<T>>(ruta, { params: { ...params, pagina, por_pagina: porPagina } })
       .pipe(
         concatMap((respuesta) => {
-          const items = [...previos, ...(respuesta.items ?? [])];
-          if (respuesta.items.length === 0 || items.length >= (respuesta.total ?? 0)) {
+          const recibidos = respuesta.items ?? [];
+          const items = [...previos, ...recibidos];
+          // Corte defensivo: si Flask ignora la paginación, no se entra en un bucle.
+          if (
+            recibidos.length === 0 ||
+            items.length >= (respuesta.total ?? 0) ||
+            pagina >= maxPaginas
+          ) {
             return of(items);
           }
           return pedir(pagina + 1, items);
@@ -93,18 +107,37 @@ function listarTodo<T>(
 export class InventarioProductoServicio {
   private readonly api = inject(ApiService);
   private readonly catalogo = inject(ProductosServicio);
+  private readonly auth = inject(AuthStateService);
+  private readonly perfilDemo = inject(PerfilDemoServicio);
 
   private readonly filasLista = signal<FilaInventario[]>([]);
   private readonly movimientosLista = signal<MovimientoProducto[]>([]);
   private readonly alertasLista = signal<AlertaInventarioProducto[]>([]);
   private readonly senalesLista = signal<SenalReposicion[]>([]);
-  private correlativoLocal = 1;
+  private readonly errorCargaInterno = signal('');
+  private readonly errorDetalleInterno = signal('');
 
   readonly filas = this.filasLista.asReadonly();
   readonly movimientos = this.movimientosLista.asReadonly();
   readonly alertas = this.alertasLista.asReadonly();
   readonly senales = this.senalesLista.asReadonly();
-  readonly categorias = this.catalogo.categorias().filter((categoria) => categoria.activa);
+  /** Fallos de API visibles: una lista vacía no se confunde con un error de carga. */
+  readonly errorCarga = this.errorCargaInterno.asReadonly();
+  readonly errorDetalle = this.errorDetalleInterno.asReadonly();
+  readonly categorias = computed(() =>
+    this.catalogo.categorias().filter((categoria) => categoria.activa),
+  );
+
+  /**
+   * Sin sesión se usa el perfil de demostración para explorar la pantalla.
+   * Con sesión manda el rol; las reglas de reposición son exclusivas del Administrador (§3 y §9).
+   * La autoridad definitiva la comprueba Flask.
+   */
+  readonly puedeEditarReglas = computed(() =>
+    this.auth.autenticado()
+      ? this.auth.puede(['ADMIN'])
+      : this.perfilDemo.esAdministrador(),
+  );
 
   readonly existencias = computed<FilaExistencia[]>(() =>
     this.filasLista().map((fila) => this.conDetalle(fila)),
@@ -127,17 +160,25 @@ export class InventarioProductoServicio {
     this.recargar().subscribe();
   }
 
-  /** Carga existencias y kardex desde `/inventario/producto`; no inventa datos locales. */
+  /**
+   * Carga inventario, kardex y los catálogos de M10 necesarios para mostrar
+   * SKU, categoría, talla y color. Ningún dato se inventa en el cliente.
+   */
   recargar(): Observable<void> {
+    this.errorCargaInterno.set('');
+    this.errorDetalleInterno.set('');
     return forkJoin({
       inventario: listarTodo<FilaInventarioApi>(this.api, '/inventario/producto'),
       movimientos: listarTodo<MovimientoApi>(this.api, '/inventario/producto/movimientos'),
+      catalogo: this.catalogo.recargar(),
     }).pipe(
       tap(({ inventario, movimientos }) => {
         const variantes = this.catalogo.filasVariantes();
         this.filasLista.set(
           inventario.map((fila) => {
             const variante = variantes.find((item) => item.variante.sku === fila.sku);
+            const ventas = Number(fila.ventas_diarias_30 ?? 0);
+            const dias = fila.dias_cobertura;
             return {
               varianteId: fila.variante_id,
               sku: fila.sku,
@@ -154,8 +195,12 @@ export class InventarioProductoServicio {
               stockMinimo: Number(fila.stock_minimo),
               cantidadReposicion: Number(fila.cantidad_reposicion),
               enProduccion: Number(fila.en_produccion ?? 0),
-              ventasDiarias30: 0,
-              diasCoberturaApi: fila.dias_cobertura === null ? null : Number(fila.dias_cobertura),
+              ventasDiarias30: Number.isFinite(ventas) ? ventas : 0,
+              diasCoberturaApi: dias === null || dias === undefined ? null : Number(dias),
+              semaforoApi:
+                fila.semaforo === 'ROJO' || fila.semaforo === 'AMBAR' || fila.semaforo === 'VERDE'
+                  ? fila.semaforo
+                  : undefined,
             };
           }),
         );
@@ -174,6 +219,25 @@ export class InventarioProductoServicio {
             fecha: movimiento.fecha,
           })),
         );
+        const falloCatalogo = this.catalogo.errorCarga() || this.catalogo.errorDetalle();
+        if (falloCatalogo) {
+          this.errorDetalleInterno.set(
+            `El inventario se cargó, pero faltaron catálogos de M10: ${falloCatalogo}`,
+          );
+        }
+      }),
+      catchError((error: unknown) => {
+        this.errorCargaInterno.set(
+          mensajeError(
+            error,
+            'No fue posible cargar existencias o movimientos desde Flask.',
+          ),
+        );
+        this.filasLista.set([]);
+        this.movimientosLista.set([]);
+        this.alertasLista.set([]);
+        this.senalesLista.set([]);
+        return of(undefined);
       }),
       map(() => undefined),
     );
@@ -203,6 +267,12 @@ export class InventarioProductoServicio {
         mensaje: 'La cantidad contada debe ser un entero mayor o igual a cero.',
       });
     }
+    if (datos.cantidadContada < fila.reservado) {
+      return of({
+        ok: false,
+        mensaje: `La cantidad contada no puede ser menor al reservado (${fila.reservado}); el disponible no puede ser negativo.`,
+      });
+    }
     if (datos.motivo.trim().length < 4) {
       return of({
         ok: false,
@@ -214,7 +284,6 @@ export class InventarioProductoServicio {
       .post<AjusteApi>('/inventario/producto/ajuste', {
         variante_id: datos.varianteId,
         cantidad_contada: datos.cantidadContada,
-        diferencia: datos.cantidadContada - fila.existencia,
         motivo: datos.motivo.trim(),
       })
       .pipe(
@@ -226,8 +295,8 @@ export class InventarioProductoServicio {
             ok: true,
             mensaje: `Ajuste registrado para ${fila.sku}. ${
               respuesta.orden_produccion_folio
-                ? `Orden de reposición ${respuesta.orden_produccion_folio} creada o actualizada por Flask.`
-                : 'Sin orden de reposición pendiente.'
+                ? `Flask informó la orden de reposición ${respuesta.orden_produccion_folio}.`
+                : 'Flask no informó orden de reposición para este ajuste.'
             }`,
             ...(senal ? { senal } : {}),
           };
@@ -271,30 +340,41 @@ export class InventarioProductoServicio {
       ),
       concatMap(() => this.recargar()),
       map(() => ({ ok: true, mensaje: 'Reglas actualizadas en Flask.' })),
+      catchError((error: unknown) =>
+        of({
+          ok: false,
+          mensaje: `No fue posible guardar todas las reglas. Algunas pudieron aplicarse; vuelve a consultar. ${mensajeError(error)}`,
+        }),
+      ),
     );
   }
 
+  /**
+   * Solo proyecta lo que Flask devolvió: los identificadores son los de la
+   * respuesta, nunca un consecutivo inventado en el cliente.
+   */
   private registrarEfectoLocal(respuesta: AjusteApi): void {
     const alertaId = respuesta.alerta_id;
-    if (alertaId !== null) {
+    if (alertaId !== null && alertaId !== undefined) {
       this.alertasLista.update((lista) => [
         {
           id: alertaId,
-          fecha: new Date().toISOString(),
+          fecha: respuesta.fecha ?? '',
           clave: 'PT_STOCK_MINIMO',
           sku: respuesta.sku,
-          mensaje: `Flask abrió la alerta PT_STOCK_MINIMO. Disponible ${respuesta.disponible}, semáforo ${respuesta.semaforo}.`,
+          mensaje: `Flask informó disponible ${respuesta.disponible ?? '—'} y semáforo ${respuesta.semaforo ?? '—'} tras el ajuste.`,
           severidad: 'PREVENTIVA',
         },
         ...lista.filter((alerta) => alerta.id !== alertaId),
       ]);
     }
-    if (respuesta.orden_produccion_id !== null) {
+    const ordenId = respuesta.orden_produccion_id;
+    if (ordenId !== null && ordenId !== undefined) {
       this.senalesLista.update((lista) => [
         ...lista.filter((senal) => senal.sku !== respuesta.sku),
         {
-          id: this.correlativoLocal++,
-          fecha: new Date().toISOString(),
+          id: ordenId,
+          fecha: respuesta.fecha ?? '',
           sku: respuesta.sku,
           cantidad: Math.abs(respuesta.diferencia),
           origen: 'STOCK_MINIMO',
@@ -306,27 +386,25 @@ export class InventarioProductoServicio {
 
   private conDetalle(fila: FilaInventario): FilaExistencia {
     const disponible = Math.max(0, fila.existencia - fila.reservado);
-    const semaforo =
-      fila.diasCoberturaApi !== undefined && fila.diasCoberturaApi !== null
-        ? (this.semaforoDeApi(fila, disponible) as FilaExistencia['semaforo'])
-        : disponible === 0
-          ? 'ROJO'
-          : disponible <= fila.stockMinimo
-            ? 'AMBAR'
-            : 'VERDE';
+    const semaforo = fila.semaforoApi ?? this.semaforoPorDisponible(disponible, fila.stockMinimo);
+    const desdeApi = fila.diasCoberturaApi;
     const diasCobertura =
-      fila.diasCoberturaApi !== undefined
-        ? fila.diasCoberturaApi
+      desdeApi !== null && desdeApi !== undefined && Number.isFinite(desdeApi)
+        ? desdeApi
         : fila.ventasDiarias30 > 0
           ? Math.round((disponible / fila.ventasDiarias30) * 10) / 10
           : null;
     return { ...fila, disponible, semaforo, diasCobertura };
   }
 
-  private semaforoDeApi(fila: FilaInventario, disponible: number): string {
-    if (fila.diasCoberturaApi === null || disponible === 0) {
+  /** Regla del §7: ROJO en 0, ÁMBAR entre 1 y el mínimo, VERDE por encima. */
+  private semaforoPorDisponible(
+    disponible: number,
+    minimo: number,
+  ): FilaExistencia['semaforo'] {
+    if (disponible === 0) {
       return 'ROJO';
     }
-    return disponible <= fila.stockMinimo ? 'AMBAR' : 'VERDE';
+    return disponible <= minimo ? 'AMBAR' : 'VERDE';
   }
 }
