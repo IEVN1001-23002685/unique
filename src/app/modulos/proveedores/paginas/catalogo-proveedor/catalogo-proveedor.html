@@ -3,7 +3,17 @@
 
   <a routerLink="/proveedores" class="volver">← Volver al padrón</a>
 
-  @if (proveedor(); as proveedor) {
+  @if (cargando()) {
+    <div class="tarjeta estado" role="status">Cargando proveedor…</div>
+  } @else if (errorCarga() || errorDetalle()) {
+    <div class="tarjeta estado estado--error" role="alert">
+      <strong>No fue posible cargar el catálogo.</strong>
+      <p>{{ errorCarga() || errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (proveedor(); as proveedor) {
     <div class="cabecera tarjeta">
       <div>
         <p class="eyebrow">M13 · Catálogo del proveedor</p>
@@ -28,6 +38,19 @@
           Cada material requiere un proveedor principal; los materiales críticos (telas, rib y
           estambre) también requieren uno alterno. Indicadores calculados con el padrón guardado.
         </p>
+      </div>
+    }
+
+    @if (!catalogoDisponible()) {
+      <div class="alerta" role="status">
+        <span class="alerta__punto" aria-hidden="true"></span>
+        <div>
+          <strong>Catálogo de materiales no disponible</strong>
+          <p>
+            M15 no devolvió materiales activos. No se pueden evaluar coberturas ni agregar líneas
+            hasta que Flask responda; vuelve a intentar después.
+          </p>
+        </div>
       </div>
     }
 
@@ -173,7 +196,9 @@
         </button>
         <div class="pie-acciones">
           <a routerLink="/proveedores" class="boton boton--enlace">Cancelar</a>
-          <button type="submit" class="boton boton--primario">Guardar catálogo</button>
+          <button type="submit" class="boton boton--primario" [disabled]="guardando() || !catalogoDisponible()">
+            {{ guardando() ? 'Guardando…' : 'Guardar catálogo' }}
+          </button>
         </div>
       </div>
     </form>

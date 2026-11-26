@@ -91,12 +91,30 @@
   gap: 0.75rem;
 }
 
+.estado {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background-color: var(--color-unique-fila);
+  color: var(--color-unique-texto-suave);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
 .error {
   padding: 1.5rem;
 }
 
+.error strong {
+  color: #8e2b39;
+}
+
 .error p {
   color: var(--color-unique-texto-suave);
+}
+
+.error .boton {
+  margin-top: 0.85rem;
 }
 
 @media (min-width: 768px) {

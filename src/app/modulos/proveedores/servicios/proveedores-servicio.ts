@@ -1,14 +1,25 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { Observable, concatMap, forkJoin, from, map, of, tap } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  concatMap,
+  forkJoin,
+  from,
+  map,
+  of,
+  tap,
+  throwError,
+} from 'rxjs';
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
+import { mensajeError } from '../../../core/api/errores';
 import { AuthStateService } from '../../../core/auth/auth-state.service';
 import type { EvaluacionProveedor, MaterialProveedor, Proveedor } from '../modelos/proveedor';
 
 export type ResultadoEliminacion = 'eliminado' | 'desactivado' | 'no-encontrado';
 
 interface Pagina<T> {
-  items: T[];
-  total: number;
+  items?: T[];
+  total?: number;
 }
 
 interface ProveedorApi {
@@ -57,13 +68,20 @@ function listarTodo<T>(
   params: Record<string, ValorParametro> = {},
 ): Observable<T[]> {
   const porPagina = 100;
+  const maxPaginas = 100;
   const pedir = (pagina: number, previos: T[]): Observable<T[]> =>
     api
       .get<Pagina<T>>(ruta, { params: { ...params, pagina, por_pagina: porPagina } })
       .pipe(
         concatMap((respuesta) => {
-          const items = [...previos, ...(respuesta.items ?? [])];
-          if (respuesta.items.length === 0 || items.length >= (respuesta.total ?? 0)) {
+          const recibidos = respuesta.items ?? [];
+          const items = [...previos, ...recibidos];
+          // Corte defensivo si Flask ignora la paginación y devuelve siempre la misma página.
+          if (
+            recibidos.length === 0 ||
+            items.length >= (respuesta.total ?? 0) ||
+            pagina >= maxPaginas
+          ) {
             return of(items);
           }
           return pedir(pagina + 1, items);
@@ -80,10 +98,26 @@ export class ProveedoresServicio {
 
   private readonly lista = signal<Proveedor[]>([]);
   private readonly evaluaciones = signal<EvaluacionProveedor[]>([]);
+  private readonly cargandoInterno = signal(false);
+  private readonly cargadoInterno = signal(false);
+  private readonly errorCargaInterno = signal('');
+  private readonly errorDetalleInterno = signal('');
 
   readonly proveedores = this.lista.asReadonly();
   readonly evaluacionesRegistradas = this.evaluaciones.asReadonly();
-  readonly cargado = signal(false);
+  readonly cargando = this.cargandoInterno.asReadonly();
+  readonly cargado = this.cargadoInterno.asReadonly();
+  /** Un fallo de Flask nunca se confunde con un padrón vacío. */
+  readonly errorCarga = this.errorCargaInterno.asReadonly();
+  readonly errorDetalle = this.errorDetalleInterno.asReadonly();
+
+  /** Las altas, cambios y bajas son exclusivas del Administrador (§3 y §9). */
+  readonly puedeEditar = computed(() => this.auth.puede(['ADMIN']));
+  /**
+   * M14 y M15 consultan proveedores, precios y plazos (§5). Con sesión de
+   * Operativo se intenta la lectura; Flask es quien autoriza de forma definitiva.
+   */
+  readonly puedeConsultar = computed(() => this.auth.puede(['ADMIN', 'OPERATIVO']));
 
   /** Líneas activas de proveedores activos/en revisión, agrupadas por material. */
   readonly cobertura = computed<Map<number, MaterialProveedor[]>>(() => {
@@ -106,69 +140,90 @@ export class ProveedoresServicio {
 
   constructor() {
     effect(() => {
-      if (this.auth.usuario()?.rol === 'ADMIN') {
+      if (this.auth.autenticado() && this.puedeConsultar()) {
         this.recargar().subscribe();
       }
     });
   }
 
   recargar(): Observable<void> {
-    // M13 es de Administrador: un Operativo no debe recibir 403 al abrir M14/M15.
-    if (!this.auth.puede(['ADMIN'])) {
+    this.errorCargaInterno.set('');
+    this.errorDetalleInterno.set('');
+    if (!this.puedeConsultar()) {
       this.lista.set([]);
       this.evaluaciones.set([]);
-      this.cargado.set(true);
+      this.cargandoInterno.set(false);
+      this.cargadoInterno.set(true);
       return of(undefined);
     }
-    return this.api
-      .get<{ items: ProveedorApi[] }>('/proveedores', {
-        params: { incluir_inactivos: true, por_pagina: 100 },
-      })
-      .pipe(
-        concatMap((respuesta) =>
-          forkJoin({
-            proveedores: of(respuesta.items ?? []),
-            evaluacion: this.api.get<{ items: EvaluacionApi[] }>('/proveedores/evaluacion'),
-            materiales: respuesta.items.length === 0
-              ? of([] as MaterialProveedorApi[][])
-              : forkJoin(
-                  respuesta.items.map((proveedor) =>
-                    listarTodo<MaterialProveedorApi>(
-                      this.api,
-                      `/proveedores/${proveedor.id}/materiales`,
-                    ),
-                  ),
+    this.cargandoInterno.set(true);
+    return forkJoin({
+      proveedores: listarTodo<ProveedorApi>(this.api, '/proveedores', {
+        incluir_inactivos: true,
+      }),
+      evaluacion: this.api.get<{ items?: EvaluacionApi[] }>('/proveedores/evaluacion'),
+    }).pipe(
+      concatMap(({ proveedores, evaluacion }) => {
+        const evaluaciones = (evaluacion.items ?? []).map((fila) => this.adaptarEvaluacion(fila));
+        this.evaluaciones.set(evaluaciones);
+        if (proveedores.length === 0) {
+          this.lista.set([]);
+          return of(undefined);
+        }
+        return forkJoin(
+          proveedores.map((proveedor) =>
+            listarTodo<MaterialProveedorApi>(
+              this.api,
+              `/proveedores/${proveedor.id}/materiales`,
+            ).pipe(
+              catchError((error: unknown) => {
+                this.errorDetalleInterno.set(
+                  `No fue posible cargar el catálogo de ${proveedor.nombre_comercial}. ${mensajeError(error)}`,
+                );
+                return of([] as MaterialProveedorApi[]);
+              }),
+            ),
+          ),
+        ).pipe(
+          tap((materiales) => {
+            this.lista.set(
+              proveedores.map((fila, indice) => ({
+                id: fila.id,
+                razonSocial: fila.razon_social,
+                nombreComercial: fila.nombre_comercial,
+                rfc: fila.rfc,
+                contacto: fila.contacto,
+                telefono: fila.telefono,
+                correo: fila.correo,
+                direccion: fila.direccion,
+                condicionesPago: fila.condiciones_pago,
+                estatus: fila.estatus as Proveedor['estatus'],
+                notas: fila.notas,
+                tieneOrdenesCompra:
+                  (evaluaciones.find((item) => item.proveedorId === fila.id)?.ordenesRecibidas ??
+                    0) > 0,
+                materiales: (materiales[indice] ?? []).map((material) =>
+                  this.adaptarMaterial(material),
                 ),
+              })),
+            );
           }),
-        ),
-        tap(({ proveedores, evaluacion, materiales }) => {
-          const evaluaciones = (evaluacion.items ?? []).map((fila) => this.adaptarEvaluacion(fila));
-          this.evaluaciones.set(evaluaciones);
-          this.lista.set(
-            proveedores.map((fila, indice) => ({
-              id: fila.id,
-              razonSocial: fila.razon_social,
-              nombreComercial: fila.nombre_comercial,
-              rfc: fila.rfc,
-              contacto: fila.contacto,
-              telefono: fila.telefono,
-              correo: fila.correo,
-              direccion: fila.direccion,
-              condicionesPago: fila.condiciones_pago,
-              estatus: fila.estatus as Proveedor['estatus'],
-              notas: fila.notas,
-              tieneOrdenesCompra:
-                (evaluaciones.find((item) => item.proveedorId === fila.id)?.ordenesRecibidas ?? 0) >
-                0,
-              materiales: (materiales[indice] ?? []).map((material) =>
-                this.adaptarMaterial(material),
-              ),
-            })),
-          );
-        }),
-        tap(() => this.cargado.set(true)),
-        map(() => undefined),
-      );
+          map(() => undefined),
+        );
+      }),
+      catchError((error: unknown) => {
+        this.errorCargaInterno.set(
+          mensajeError(error, 'No fue posible cargar el padrón desde Flask.'),
+        );
+        this.lista.set([]);
+        this.evaluaciones.set([]);
+        return of(undefined);
+      }),
+      tap(() => {
+        this.cargandoInterno.set(false);
+        this.cargadoInterno.set(true);
+      }),
+    );
   }
 
   obtenerPorId(id: number): Proveedor | undefined {
@@ -180,6 +235,9 @@ export class ProveedoresServicio {
   }
 
   guardarProveedor(datos: Proveedor): Observable<Proveedor> {
+    if (!this.puedeEditar()) {
+      return throwError(() => new Error('Solo el Administrador puede modificar el padrón.'));
+    }
     const cuerpo = {
       razon_social: datos.razonSocial,
       nombre_comercial: datos.nombreComercial,
@@ -189,7 +247,7 @@ export class ProveedoresServicio {
       correo: datos.correo,
       direccion: datos.direccion,
       condiciones_pago: datos.condicionesPago,
-      estatus: datos.estatus === 'INACTIVO' ? 'ACTIVO' : datos.estatus,
+      estatus: datos.estatus,
       notas: datos.notas,
     };
     const peticion =
@@ -198,7 +256,13 @@ export class ProveedoresServicio {
         : this.api.patch<ProveedorApi>(`/proveedores/${datos.id}`, cuerpo);
     return peticion.pipe(
       concatMap((respuesta) => this.recargar().pipe(map(() => respuesta))),
-      map((respuesta) => this.obtenerPorId(respuesta.id) as Proveedor),
+      map((respuesta) => {
+        const guardado = this.obtenerPorId(respuesta.id);
+        if (!guardado) {
+          throw new Error('Flask guardó el proveedor, pero no fue posible volver a leerlo.');
+        }
+        return guardado;
+      }),
     );
   }
 
@@ -207,22 +271,35 @@ export class ProveedoresServicio {
    * desactivación lógica según el historial real de órdenes, cotizaciones y lotes.
    */
   eliminarProveedor(id: number): Observable<ResultadoEliminacion> {
-    const proveedor = this.obtenerPorId(id);
-    if (!proveedor) {
+    if (!this.puedeEditar()) {
+      return throwError(() => new Error('Solo el Administrador puede eliminar proveedores.'));
+    }
+    if (!this.obtenerPorId(id)) {
       return of('no-encontrado' as ResultadoEliminacion);
     }
-    const modo: ResultadoEliminacion = proveedor.tieneOrdenesCompra
-      ? 'desactivado'
-      : 'eliminado';
+    // El desenlace se comprueba contra el estado devuelto por Flask, no se predice.
     return this.api.delete(`/proveedores/${id}`).pipe(
       concatMap(() => this.recargar()),
-      map(() => modo),
+      map(() => {
+        if (this.errorCargaInterno()) {
+          throw new Error(
+            'Flask procesó la baja, pero no fue posible verificar si fue física o lógica.',
+          );
+        }
+        return (this.obtenerPorId(id) ? 'desactivado' : 'eliminado') as ResultadoEliminacion;
+      }),
     );
   }
 
   /** El contrato no tiene reemplazo masivo: aplica altas, cambios y bajas por separado. */
   reemplazarMateriales(proveedorId: number, materiales: MaterialProveedor[]): Observable<void> {
+    if (!this.puedeEditar()) {
+      return throwError(() => new Error('Solo el Administrador puede editar el catálogo.'));
+    }
     const anteriores = this.obtenerPorId(proveedorId)?.materiales ?? [];
+    if (new Set(materiales.map((linea) => linea.materialId)).size !== materiales.length) {
+      return throwError(() => new Error('Un material no puede repetirse en el catálogo.'));
+    }
     const porMaterial = new Map(anteriores.map((linea) => [linea.materialId, linea]));
     const bajas = anteriores.filter(
       (linea) => !materiales.some((nueva) => nueva.materialId === linea.materialId),

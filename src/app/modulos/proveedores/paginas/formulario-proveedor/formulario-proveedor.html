@@ -3,13 +3,25 @@
 
   <a routerLink="/proveedores" class="volver">← Volver al padrón</a>
 
-  @if (noEncontrado()) {
+  @if (esEdicion && errorCarga()) {
+    <div class="tarjeta error" role="alert">
+      <h1 class="titulo">No fue posible cargar el proveedor</h1>
+      <p>{{ errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (noEncontrado()) {
     <div class="tarjeta error" role="alert">
       <h1 class="titulo">Proveedor no encontrado</h1>
       <p>El proveedor solicitado no existe o fue desactivado.</p>
       <a routerLink="/proveedores" class="boton boton--primario">Ir al padrón</a>
     </div>
   } @else {
+    @if (esEdicion && cargando()) {
+      <p class="estado" role="status">Cargando proveedor…</p>
+    }
+
     <div class="cabecera">
       <div>
         <p class="eyebrow">M13 · Proveedores</p>
@@ -173,8 +185,8 @@
 
       <div class="acciones-formulario">
         <a routerLink="/proveedores" class="boton boton--secundario">Cancelar</a>
-        <button type="submit" class="boton boton--primario">
-          {{ esEdicion ? 'Guardar cambios' : 'Dar de alta' }}
+        <button type="submit" class="boton boton--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : esEdicion ? 'Guardar cambios' : 'Dar de alta' }}
         </button>
       </div>
     </form>

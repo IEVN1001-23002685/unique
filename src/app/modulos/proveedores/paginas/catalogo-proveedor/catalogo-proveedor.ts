@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
@@ -72,6 +73,11 @@ export class CatalogoProveedor {
   );
   protected readonly lineaAEliminar = signal<number | null>(null);
   protected readonly intentoEnvio = signal(false);
+  protected readonly guardando = signal(false);
+  protected readonly cargando = this.servicio.cargando;
+  protected readonly errorCarga = this.servicio.errorCarga;
+  protected readonly errorDetalle = this.servicio.errorDetalle;
+  protected readonly catalogoDisponible = computed(() => this.materialesReferencia().length > 0);
 
   protected readonly formulario = this.fb.nonNullable.group({
     lineas: this.fb.array<LineaGrupo>([]),
@@ -107,24 +113,21 @@ export class CatalogoProveedor {
     });
   }
 
-  /** Alertas de cobertura calculadas con el padrón devuelto por Flask. */
-  protected readonly materialesConAlerta = computed(() => {
-    const proveedor = this.proveedor();
-    if (!proveedor) {
-      return [] as { referencia: MaterialReferencia; alerta: string }[];
-    }
-
-    const ids = [...new Set(proveedor.materiales.map((material) => material.materialId))];
-    return ids
-      .map((id) => ({
-        referencia: this.referencia(id),
-        alerta: this.alertaCobertura(id),
+  /**
+   * Cobertura de todo el catálogo activo de M15: principal obligatorio y
+   * alterno en críticos. No se limita al proveedor que se está editando.
+   */
+  protected readonly materialesConAlerta = computed(() =>
+    this.materialesReferencia()
+      .map((referencia) => ({
+        referencia,
+        alerta: this.alertaCobertura(referencia.id),
       }))
       .filter(
         (entrada): entrada is { referencia: MaterialReferencia; alerta: string } =>
-          entrada.referencia !== undefined && entrada.alerta !== null,
-      );
-  });
+          entrada.alerta !== null,
+      ),
+  );
 
   protected referencia(id: number): MaterialReferencia | undefined {
     return this.materialesReferencia().find((material) => material.id === id);
@@ -139,7 +142,9 @@ export class CatalogoProveedor {
     const activas = lineas.filter((linea) => linea.activo);
 
     if (activas.length === 0) {
-      return 'Sin proveedores activos';
+      return this.referencia(materialId)?.critico
+        ? 'Crítico: requiere proveedor principal y alterno'
+        : 'Sin proveedores activos';
     }
     if (!activas.some((linea) => linea.esPrincipal)) {
       return 'Sin proveedor principal';
@@ -212,15 +217,20 @@ export class CatalogoProveedor {
       return;
     }
 
-    let siguienteId =
-      proveedor.materiales.reduce((maximo, linea) => Math.max(maximo, linea.id), 0) + 1;
+    const valores = this.lineas.getRawValue();
+    if (new Set(valores.map((valor) => valor.materialId)).size !== valores.length) {
+      this.avisos.mostrar('error', 'Un material no puede repetirse en el catálogo del proveedor.');
+      return;
+    }
 
-    const materiales: MaterialProveedor[] = this.lineas.getRawValue().map((valor, indice) => {
+    const anteriores = new Map(proveedor.materiales.map((linea) => [linea.materialId, linea]));
+    const materiales: MaterialProveedor[] = valores.map((valor) => {
       const referencia = this.referencia(valor.materialId);
-      const anterior = proveedor.materiales[indice];
+      const anterior = anteriores.get(valor.materialId);
 
       return {
-        id: anterior?.id ?? siguienteId++,
+        // El id definitivo lo asigna Flask; 0 solo marca una línea todavía no persistida.
+        id: anterior?.id ?? 0,
         materialId: valor.materialId,
         material: referencia?.nombre ?? `Material ${valor.materialId}`,
         categoria: referencia?.categoria ?? 'Avío',
@@ -235,9 +245,18 @@ export class CatalogoProveedor {
       };
     });
 
-    this.servicio.reemplazarMateriales(this.id, materiales).subscribe({
-      next: () => this.avisos.mostrar('exito', 'Catálogo del proveedor actualizado en Flask.'),
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .reemplazarMateriales(this.id, materiales)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: () => this.avisos.mostrar('exito', 'Catálogo del proveedor actualizado en Flask.'),
+        error: (error: unknown) =>
+          this.avisos.mostrar('error', mensajeError(error, 'No fue posible guardar el catálogo.')),
+      });
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
   }
 }
