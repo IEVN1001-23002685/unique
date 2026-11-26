@@ -6,6 +6,13 @@
     (seleccionar)="categoriaSeleccionada.set($event)"
   />
 
+  @if (busquedaActiva()) {
+    <div class="busqueda-activa" role="status">
+      <span>Mostrando resultados para «{{ termino() }}»</span>
+      <button type="button" (click)="limpiarBusqueda()">Quitar búsqueda</button>
+    </div>
+  }
+
   <div class="filtros" role="group" aria-label="Filtros del catálogo">
     <label class="filtro">
       <span class="sr-only">Filtrar por color</span>
@@ -70,10 +77,8 @@
     }
   </div>
 
-  @if (sinConexion()) {
-    <p class="aviso-sin-conexion" role="status">
-      Existencias y precios pueden no estar actualizados.
-    </p>
+  @if (aviso()) {
+    <p class="aviso-sin-conexion" role="status">{{ aviso() }}</p>
   }
 
   @if (cargando()) {

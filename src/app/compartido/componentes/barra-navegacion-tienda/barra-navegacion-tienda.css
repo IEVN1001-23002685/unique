@@ -19,10 +19,61 @@
 
 .barra-tienda__acciones {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: flex-end;
   gap: 0.5rem;
+  flex-shrink: 1;
+}
+
+.barra-tienda__busqueda {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 7.5rem;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  border: 2px solid var(--color-unique-orquidea);
+  border-radius: 9999px;
+  background-color: var(--color-unique-blanco);
+  padding: 0 0.6rem;
+  color: var(--color-unique-morado);
+}
+
+.barra-tienda__busqueda svg {
+  width: 1.25rem;
+  height: 1.25rem;
   flex-shrink: 0;
+}
+
+.barra-tienda__busqueda input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--color-unique-texto);
+  font-family: var(--font-texto);
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.barra-tienda__busqueda input::placeholder {
+  color: var(--color-unique-texto-suave);
+}
+
+.barra-tienda__busqueda-limpiar {
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-unique-morado);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.barra-tienda__busqueda:focus-within {
+  border-color: var(--color-unique-morado);
+  box-shadow: 0 0 0 3px rgb(191 126 187 / 0.35);
 }
 
 .icono-barra {
@@ -172,6 +223,7 @@
 .icono-barra:focus-visible,
 .cta-cuenta:focus-visible,
 .enlace-menu:focus-visible,
+.barra-tienda__busqueda-limpiar:focus-visible,
 .barra-tienda__logo:focus-visible {
   outline: 3px solid var(--color-unique-orquidea);
   outline-offset: 2px;
@@ -216,6 +268,10 @@
 @media (min-width: 1024px) {
   .barra-tienda__imagen {
     width: 10.625rem;
+  }
+
+  .barra-tienda__busqueda {
+    flex-basis: 18rem;
   }
 
   .icono-menu,

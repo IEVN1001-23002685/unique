@@ -20,8 +20,34 @@
       }
     </a>
 
-    <!-- Derecha: carrito y accesos de cuenta según el estado de sesión -->
+    <!-- Derecha: búsqueda de M03, carrito y accesos de cuenta según la sesión -->
     <div class="barra-tienda__acciones">
+      <form class="barra-tienda__busqueda" role="search" (submit)="buscar($event)">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <label class="sr-only" for="busqueda-tienda">Buscar productos en el catálogo</label>
+        <input
+          id="busqueda-tienda"
+          type="search"
+          autocomplete="off"
+          placeholder="Buscar prendas"
+          [value]="termino()"
+          (input)="actualizarBusqueda($event)"
+        />
+        @if (termino()) {
+          <button
+            type="button"
+            class="barra-tienda__busqueda-limpiar"
+            aria-label="Limpiar búsqueda"
+            (click)="limpiarBusqueda()"
+          >
+            ×
+          </button>
+        }
+      </form>
+
       <a
         routerLink="/carrito"
         class="icono-barra icono-carrito"

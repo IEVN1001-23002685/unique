@@ -1,8 +1,6 @@
 <main class="detalle">
-  @if (sinConexion()) {
-    <p class="detalle__aviso-sin-conexion" role="status">
-      Existencias y precios pueden no estar actualizados.
-    </p>
+  @if (aviso()) {
+    <p class="detalle__aviso-sin-conexion" role="status">{{ aviso() }}</p>
   }
 
   @if (producto(); as productoActual) {
@@ -21,18 +19,29 @@
         </div>
 
         <div class="detalle__galeria" aria-label="Galería por color">
-          @for (color of colores(); track color) {
+          @for (miniatura of miniaturas(); track miniatura.color) {
             <button
               type="button"
               class="detalle__miniatura"
-              [class.detalle__miniatura--activa]="color === colorSeleccionado()"
-              [style.background-color]="coloresCatalogo[color].hex"
-              [attr.aria-label]="
-                'Ver ' + productoActual.nombre + ' en ' + coloresCatalogo[color].nombre
-              "
-              [attr.aria-pressed]="color === colorSeleccionado()"
-              (click)="seleccionarColor(color)"
-            ></button>
+              [class.detalle__miniatura--activa]="miniatura.color === colorSeleccionado()"
+              [attr.aria-label]="'Ver ' + productoActual.nombre + ' en ' + miniatura.nombre"
+              [attr.aria-pressed]="miniatura.color === colorSeleccionado()"
+              (click)="seleccionarColor(miniatura.color)"
+            >
+              @if (imagenMiniatura(miniatura.color)) {
+                <img
+                  [src]="imagenMiniatura(miniatura.color)"
+                  [alt]="productoActual.nombre + ' en ' + miniatura.nombre"
+                  (error)="marcarMiniaturaSinImagen(miniatura.color)"
+                />
+              } @else {
+                <span
+                  class="detalle__miniatura-color"
+                  [style.background-color]="coloresCatalogo[miniatura.color].hex"
+                  aria-hidden="true"
+                ></span>
+              }
+            </button>
           }
         </div>
       </div>
