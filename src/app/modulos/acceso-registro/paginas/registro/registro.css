@@ -1,0 +1,198 @@
+:host {
+  display: block;
+  min-height: 32rem;
+  padding: 2rem 1rem 3rem;
+  background: var(--color-unique-lila, #f2d5ed);
+}
+
+.acceso {
+  width: min(100%, 30rem);
+  margin: 0 auto;
+}
+
+.acceso__tarjeta {
+  position: relative;
+  border: 1px solid var(--color-unique-orquidea, #bf7ebb);
+  border-radius: 20px;
+  background: var(--color-unique-blanco, #fff);
+  padding: 1.75rem 1.5rem 1.5rem;
+  box-shadow: 0 18px 40px rgb(84 45 89 / 12%);
+}
+
+.acceso__cerrar {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-unique-texto-suave, #6b5870);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.acceso__encabezado {
+  text-align: center;
+}
+
+.acceso__logo {
+  display: block;
+  width: 8rem;
+  height: auto;
+  margin: 0 auto 0.75rem;
+}
+
+.acceso__titulo {
+  margin: 0;
+  color: var(--color-unique-morado, #542d59);
+  font-family: var(--font-titulo, 'Vazirmatn', sans-serif);
+  font-size: 1.6rem;
+}
+
+.acceso__subtitulo,
+.acceso__ayuda {
+  margin: 0.35rem 0 0;
+  color: var(--color-unique-texto-suave, #6b5870);
+  font-size: 0.8125rem;
+}
+
+.acceso__aviso {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  border-radius: 999px;
+  padding: 0.6rem 0.9rem;
+  background: var(--color-unique-info-suave, #dce8fa);
+  color: var(--color-unique-texto, #1f1226);
+  font-size: 0.8125rem;
+}
+
+.acceso__punto {
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-unique-info, #3b6fc9);
+}
+
+.acceso__formulario {
+  margin-top: 1.25rem;
+}
+
+.acceso__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.35rem 0.9rem;
+}
+
+.acceso__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+
+.acceso__campo label,
+.acceso__check {
+  color: var(--color-unique-morado, #542d59);
+  font-family: var(--font-interfaz, 'Akshar', sans-serif);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.acceso__campo input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--color-unique-orquidea, #bf7ebb);
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  background: var(--color-unique-blanco, #fff);
+  color: var(--color-unique-texto, #1f1226);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.acceso__campo input[aria-invalid='true'] {
+  border-color: var(--color-unique-error, #c8374b);
+  background: var(--color-unique-error-suave, #f8dadf);
+}
+
+.acceso__error {
+  color: var(--color-unique-error, #c8374b);
+  font-size: 0.75rem;
+}
+
+.acceso__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  font-weight: 500;
+}
+
+.acceso__check input {
+  margin-top: 0.15rem;
+  accent-color: var(--color-unique-morado, #542d59);
+}
+
+.acceso__ayuda {
+  margin-top: 0.85rem;
+  font-size: 0.7rem;
+}
+
+.acceso__boton {
+  width: 100%;
+  margin-top: 1rem;
+  border: 1px solid var(--color-unique-morado, #542d59);
+  border-radius: 999px;
+  padding: 0.75rem 1.25rem;
+  background: var(--color-unique-morado, #542d59);
+  color: #fff;
+  font-family: var(--font-interfaz, 'Akshar', sans-serif);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.acceso__boton:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.acceso__pie {
+  margin: 1rem 0 0;
+  text-align: center;
+  color: var(--color-unique-texto-suave, #6b5870);
+  font-size: 0.8125rem;
+}
+
+.acceso__enlace {
+  border: 0;
+  background: transparent;
+  color: var(--color-unique-ciruela, #8b548c);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.acceso__cerrar:focus-visible,
+.acceso__enlace:focus-visible,
+.acceso__boton:focus-visible,
+.acceso__check input:focus-visible,
+.acceso__campo input:focus-visible {
+  outline: 3px solid var(--color-unique-orquidea, #bf7ebb);
+  outline-offset: 2px;
+}
+
+@media (max-width: 30rem) {
+  .acceso__tarjeta {
+    padding: 1.5rem 1rem 1.25rem;
+  }
+
+  .acceso__rejilla {
+    grid-template-columns: 1fr;
+  }
+}

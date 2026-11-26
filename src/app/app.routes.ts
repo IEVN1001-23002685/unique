@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { Tienda } from './plantillas/tienda/tienda';
 import { Administracion } from './plantillas/administracion/administracion';
+import { invitadoGuard } from './modulos/acceso-registro/guards/invitado.guard';
 
 export const routes: Routes = [
   {
@@ -13,7 +14,40 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./modulos/catalogo/catalogo.routes').then((m) => m.CATALOGO_RUTAS),
       },
-     
+      {
+        path: 'login',
+        title: 'Iniciar sesión · UNIQUE',
+        canActivate: [invitadoGuard],
+        loadComponent: () =>
+          import('./modulos/acceso-registro/paginas/inicio-sesion/inicio-sesion').then(
+            (c) => c.InicioSesion,
+          ),
+      },
+      {
+        path: 'registro',
+        title: 'Crear cuenta · UNIQUE',
+        canActivate: [invitadoGuard],
+        loadComponent: () =>
+          import('./modulos/acceso-registro/paginas/registro/registro').then((c) => c.Registro),
+      },
+      {
+        path: 'recuperar',
+        title: 'Recuperar contraseña · UNIQUE',
+        canActivate: [invitadoGuard],
+        loadComponent: () =>
+          import('./modulos/acceso-registro/paginas/recuperar-password/recuperar-password').then(
+            (c) => c.RecuperarPassword,
+          ),
+      },
+      {
+        path: 'restablecer/:token',
+        title: 'Restablecer contraseña · UNIQUE',
+        canActivate: [invitadoGuard],
+        loadComponent: () =>
+          import(
+            './modulos/acceso-registro/paginas/restablecer-password/restablecer-password'
+          ).then((c) => c.RestablecerPassword),
+      },
     ],
   },
   {

@@ -3,18 +3,22 @@
     class="mx-auto grid w-full max-w-[1264px] grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-5 sm:px-6 lg:px-[60px] lg:py-7"
     aria-label="Navegación principal"
   >
-    <!-- Izquierda: acceso de cuenta (abre los modales de autenticacion) -->
+    <!-- Izquierda: acceso de cuenta (rutas reales de M01) -->
     <div class="col-start-1 flex items-center gap-6 lg:gap-8">
-      <button type="button" class="enlace-cuenta hidden lg:inline-flex" (click)="abrirRegistro()">
-        Registrarse
-      </button>
-      <button
-        type="button"
+      <a
+        routerLink="/registro"
+        routerLinkActive="enlace-activo"
         class="enlace-cuenta hidden lg:inline-flex"
-        (click)="abrirInicioSesion()"
+      >
+        Registrarse
+      </a>
+      <a
+        routerLink="/login"
+        routerLinkActive="enlace-activo"
+        class="enlace-cuenta hidden lg:inline-flex"
       >
         Iniciar sesión
-      </button>
+      </a>
     </div>
 
     <!-- Centro: logotipo -->
@@ -96,10 +100,8 @@
         <!-- Enlaces del menú para tablet y celular -->
         <a routerLink="/catalogo" class="enlace-menu" (click)="cerrarMenu()">Catálogo</a>
         <a routerLink="/panel" class="enlace-menu" (click)="cerrarMenu()">Panel</a>
-        <button type="button" class="enlace-menu" (click)="abrirInicioSesion()">
-          Iniciar sesión
-        </button>
-        <button type="button" class="enlace-menu" (click)="abrirRegistro()">Registrarse</button>
+        <a routerLink="/login" class="enlace-menu" (click)="cerrarMenu()">Iniciar sesión</a>
+        <a routerLink="/registro" class="enlace-menu" (click)="cerrarMenu()">Registrarse</a>
       </div>
     </div>
   }

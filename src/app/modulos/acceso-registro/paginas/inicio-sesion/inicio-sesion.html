@@ -1,0 +1,74 @@
+<section class="acceso">
+  <div class="acceso__tarjeta">
+    <button
+      type="button"
+      class="acceso__cerrar"
+      aria-label="Cerrar inicio de sesión"
+      (click)="cerrarVista()"
+    >
+      ✕
+    </button>
+
+    <div class="acceso__encabezado">
+      <img src="/Logo1.png" alt="UNIQUE — tan único como tú" class="acceso__logo" />
+      <h1 class="acceso__titulo">Iniciar sesión</h1>
+      <p class="acceso__subtitulo">Bienvenida de nuevo a UNIQUE.</p>
+    </div>
+
+    @if (mensaje()) {
+      <p class="acceso__aviso" role="alert">
+        <span class="acceso__punto" aria-hidden="true"></span>
+        {{ mensaje() }}
+      </p>
+    }
+
+    <form class="acceso__formulario" [formGroup]="formulario" (ngSubmit)="enviar()" novalidate>
+      <div class="acceso__campo">
+        <label for="login-correo">Correo electrónico</label>
+        <input
+          id="login-correo"
+          type="email"
+          autocomplete="email"
+          formControlName="correo"
+          placeholder="tu@correo.com"
+          [attr.aria-invalid]="errorEn('correo')"
+        />
+        @if (errorEn('correo')) {
+          <small class="acceso__error" role="alert">{{ mensajeDe('correo') }}</small>
+        }
+      </div>
+
+      <div class="acceso__campo">
+        <div class="acceso__etiqueta">
+          <label for="login-contrasena">Contraseña</label>
+          <button type="button" class="acceso__enlace" (click)="irARecuperar()">
+            Olvidé mi contraseña
+          </button>
+        </div>
+        <input
+          id="login-contrasena"
+          type="password"
+          autocomplete="current-password"
+          formControlName="contrasena"
+          [attr.aria-invalid]="errorEn('contrasena')"
+        />
+        @if (errorEn('contrasena')) {
+          <small class="acceso__error" role="alert">{{ mensajeDe('contrasena') }}</small>
+        }
+      </div>
+
+      <button type="submit" class="acceso__boton" [disabled]="cargando()">
+        {{ cargando() ? 'Validando…' : 'Entrar' }}
+      </button>
+    </form>
+
+    <p class="acceso__pie">
+      ¿Aún no tienes cuenta?
+      <button type="button" class="acceso__enlace" (click)="irAlRegistro()">Regístrate</button>
+    </p>
+    <p class="acceso__nota">
+      Demostración local: regístrate primero para probar el ingreso. No se envían credenciales a un
+      servidor.
+    </p>
+  </div>
+</section>

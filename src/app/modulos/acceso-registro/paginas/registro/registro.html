@@ -1,0 +1,145 @@
+<section class="acceso">
+  <div class="acceso__tarjeta">
+    <button
+      type="button"
+      class="acceso__cerrar"
+      aria-label="Cerrar registro"
+      (click)="cerrarVista()"
+    >
+      ✕
+    </button>
+
+    <div class="acceso__encabezado">
+      <img src="/Logo1.png" alt="UNIQUE — tan único como tú" class="acceso__logo" />
+      <h1 class="acceso__titulo">Crea tu cuenta</h1>
+      <p class="acceso__subtitulo">Registro público para Clientes.</p>
+    </div>
+
+    @if (mensaje()) {
+      <p class="acceso__aviso" role="alert">
+        <span class="acceso__punto" aria-hidden="true"></span>
+        {{ mensaje() }}
+      </p>
+    }
+
+    <form class="acceso__formulario" [formGroup]="formulario" (ngSubmit)="enviar()" novalidate>
+      <div class="acceso__rejilla">
+        <div class="acceso__campo">
+          <label for="reg-nombre">Nombre</label>
+          <input
+            id="reg-nombre"
+            type="text"
+            autocomplete="given-name"
+            formControlName="nombre"
+            [attr.aria-invalid]="errorEn('nombre')"
+          />
+          @if (errorEn('nombre')) {
+            <small class="acceso__error" role="alert">{{ mensajeDe('nombre') }}</small>
+          }
+        </div>
+
+        <div class="acceso__campo">
+          <label for="reg-apellidos">Apellidos</label>
+          <input
+            id="reg-apellidos"
+            type="text"
+            autocomplete="family-name"
+            formControlName="apellidos"
+            [attr.aria-invalid]="errorEn('apellidos')"
+          />
+          @if (errorEn('apellidos')) {
+            <small class="acceso__error" role="alert">{{ mensajeDe('apellidos') }}</small>
+          }
+        </div>
+
+        <div class="acceso__campo">
+          <label for="reg-telefono">Teléfono</label>
+          <input
+            id="reg-telefono"
+            type="tel"
+            inputmode="numeric"
+            maxlength="10"
+            autocomplete="tel"
+            formControlName="telefono"
+            placeholder="10 dígitos"
+            [attr.aria-invalid]="errorEn('telefono')"
+          />
+          @if (errorEn('telefono')) {
+            <small class="acceso__error" role="alert">{{ mensajeDe('telefono') }}</small>
+          }
+        </div>
+
+        <div class="acceso__campo">
+          <label for="reg-correo">Correo electrónico</label>
+          <input
+            id="reg-correo"
+            type="email"
+            autocomplete="email"
+            formControlName="correo"
+            placeholder="tu@correo.com"
+            [attr.aria-invalid]="errorEn('correo')"
+          />
+          @if (errorEn('correo')) {
+            <small class="acceso__error" role="alert">{{ mensajeDe('correo') }}</small>
+          }
+        </div>
+
+        <div class="acceso__campo">
+          <label for="reg-contrasena">Contraseña</label>
+          <input
+            id="reg-contrasena"
+            type="password"
+            autocomplete="new-password"
+            formControlName="contrasena"
+            [attr.aria-invalid]="errorEn('contrasena')"
+          />
+          @if (errorEn('contrasena')) {
+            <small class="acceso__error" role="alert">{{ mensajeDe('contrasena') }}</small>
+          }
+        </div>
+
+        <div class="acceso__campo">
+          <label for="reg-repetir">Confirmar contraseña</label>
+          <input
+            id="reg-repetir"
+            type="password"
+            autocomplete="new-password"
+            formControlName="repetirContrasena"
+            [attr.aria-invalid]="contrasenasNoCoinciden || errorEn('repetirContrasena')"
+          />
+          @if (contrasenasNoCoinciden) {
+            <small class="acceso__error" role="alert">Las contraseñas no coinciden.</small>
+          } @else if (errorEn('repetirContrasena')) {
+            <small class="acceso__error" role="alert">{{ mensajeDe('repetirContrasena') }}</small>
+          }
+        </div>
+      </div>
+
+      <label class="acceso__check">
+        <input type="checkbox" formControlName="aceptaPrivacidad" />
+        <span>Acepto el aviso de privacidad.</span>
+      </label>
+      @if (errorEn('aceptaPrivacidad')) {
+        <small class="acceso__error" role="alert">{{ mensajeDe('aceptaPrivacidad') }}</small>
+      }
+
+      <label class="acceso__check">
+        <input type="checkbox" formControlName="recibirPromociones" />
+        <span>Quiero recibir promociones (opcional).</span>
+      </label>
+
+      <p class="acceso__ayuda">
+        No pedimos dirección aquí: puedes capturarla en Mi cuenta o durante el pago.
+      </p>
+
+      <button type="submit" class="acceso__boton" [disabled]="cargando()">
+        {{ cargando() ? 'Creando cuenta…' : 'Crear cuenta' }}
+      </button>
+    </form>
+
+    <p class="acceso__pie">
+      ¿Ya tienes cuenta?
+      <button type="button" class="acceso__enlace" (click)="irAlInicio()">Inicia sesión</button>
+    </p>
+  </div>
+</section>
