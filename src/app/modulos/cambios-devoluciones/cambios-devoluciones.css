@@ -1,0 +1,60 @@
+.cd-contenedor {
+  width: min(100%, 78rem);
+  margin: 0 auto;
+  min-width: 0;
+}
+
+.cd-cabecera--modulo h1 {
+  margin: 0;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: 1.5rem;
+}
+
+.cd-cabecera--modulo p:last-child {
+  max-width: 44rem;
+}
+
+.cd-pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--color-unique-rosa-lavanda);
+  padding-bottom: 0.75rem;
+}
+
+.cd-pestana {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  border: 1px solid var(--color-unique-rosa-lavanda);
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-unique-blanco);
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cd-pestana:hover {
+  background-color: var(--color-unique-fila);
+}
+
+.cd-pestana--activo {
+  border-color: var(--color-unique-morado);
+  background-color: var(--color-unique-morado);
+  color: var(--color-unique-blanco);
+}
+
+.cd-pestana--activo:hover {
+  background-color: var(--color-unique-morado);
+}
+
+@media (max-width: 30rem) {
+  .cd-pestanas .cd-pestana {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}

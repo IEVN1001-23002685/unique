@@ -1,0 +1,189 @@
+<section class="cd-panel">
+  <header class="cd-cabecera">
+    <div>
+      <p class="cd-ojeada">M07 · Cliente</p>
+      <h2>Solicitar cambio o devolución</h2>
+      <p>
+        Solo pedidos entregados dentro de la ventana de 15 días. La cantidad no puede exceder lo
+        comprado menos lo ya devuelto; Flask valida la ventana y los importes definitivos.
+      </p>
+    </div>
+    <a class="boton boton--secundario" routerLink="/pedidos">Volver a mis pedidos</a>
+  </header>
+
+  @if (error()) {
+    <div class="cd-aviso cd-aviso--error" role="alert">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="cd-cargando" aria-busy="true" aria-live="polite">
+      <div class="cd-esqueleto"></div>
+      <p>Cargando pedidos entregados…</p>
+    </div>
+  } @else {
+    <form class="cd-panel" [formGroup]="form" (ngSubmit)="enviarSolicitud()">
+      <div class="cd-tarjeta cd-panel">
+        <div class="cd-grid cd-grid--tres">
+          <div class="cd-campo">
+            <label for="cd-pedido">Pedido entregado</label>
+            <select id="cd-pedido" formControlName="pedidoId">
+              <option [ngValue]="0">Selecciona un pedido</option>
+              @for (pedido of pedidos(); track pedido.id) {
+                <option [ngValue]="pedido.id">
+                  {{ pedido.folio }} · {{ formatearFechaHora(pedido.fecha) }}
+                </option>
+              }
+            </select>
+          </div>
+          <div class="cd-campo">
+            <label for="cd-tipo">Tipo de solicitud</label>
+            <select id="cd-tipo" formControlName="tipo" (change)="cambiarTipo()">
+              @for (opcion of tipos; track opcion.valor) {
+                <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+              }
+            </select>
+          </div>
+          <div class="cd-campo">
+            <label for="cd-motivo">Motivo</label>
+            <select id="cd-motivo" formControlName="motivo">
+              @for (opcion of motivos; track opcion.valor) {
+                <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        @if (!pedido()) {
+          <p class="cd-nota">
+            Selecciona un pedido entregado para ver sus prendas y las cantidades disponibles.
+          </p>
+        }
+      </div>
+
+      @if (lineasForm.length > 0) {
+        <div class="cd-tarjeta cd-panel">
+          <div class="cd-cabecera">
+            <h3>Prendas del pedido</h3>
+            @if (cargandoVariantes()) {
+              <span class="cd-chip cd-chip--adv">Cargando variantes…</span>
+            }
+          </div>
+          @for (linea of lineasForm; track linea.controls.ventaLineaId.value) {
+            <div class="cd-linea" [formGroup]="linea">
+              <div class="cd-linea__texto">
+                <strong>{{ linea.controls.descripcion.value }}</strong>
+                <small>
+                  SKU {{ linea.controls.sku.value }} · compradas
+                  {{ linea.controls.cantidadComprada.value }} · disponibles
+                  {{ maximo(linea) }} ·
+                  {{ linea.controls.precioUnitarioConIva.value | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </small>
+              </div>
+              <label class="cd-linea__control">
+                Cantidad
+                <input
+                  type="number"
+                  min="1"
+                  [max]="maximo(linea)"
+                  formControlName="cantidadSolicitada"
+                  [attr.aria-invalid]="cantidadInvalida(linea)"
+                />
+              </label>
+              @if (form.controls.tipo.value === 'CAMBIO') {
+                <label class="cd-linea__control">
+                  Reemplazo
+                  <select formControlName="varianteCambioId">
+                    <option [ngValue]="null">Selecciona variante</option>
+                    @for (variante of opciones(linea); track variante.id) {
+                      <option [ngValue]="variante.id">
+                        {{ variante.sku }} · {{ etiquetaTalla(variante.talla) }} ·
+                        {{ etiquetaColor(variante.color) }}
+                      </option>
+                    }
+                  </select>
+                </label>
+              }
+              @if (cantidadInvalida(linea)) {
+                <small class="cd-error-campo">Cantidad entera entre 1 y {{ maximo(linea) }}.</small>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <div class="cd-tarjeta cd-panel">
+        <div class="cd-grid cd-grid--dos">
+          <div class="cd-campo">
+            <label for="cd-descripcion">Descripción del problema</label>
+            <textarea
+              id="cd-descripcion"
+              formControlName="descripcion"
+              rows="4"
+              maxlength="500"
+              placeholder="Explica el estado de la prenda y el motivo de la solicitud"
+              [attr.aria-invalid]="
+                form.controls.descripcion.invalid &&
+                (form.controls.descripcion.dirty || form.controls.descripcion.touched)
+              "
+            ></textarea>
+            @if (
+              form.controls.descripcion.invalid &&
+              (form.controls.descripcion.dirty || form.controls.descripcion.touched)
+            ) {
+              <small class="cd-error-campo">Indica al menos 3 caracteres.</small>
+            }
+          </div>
+          <div class="cd-campo">
+            <span class="cd-etiqueta">Evidencias (JPG, PNG o WebP, máx. 3 de 2 MB)</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              (change)="onEvidencias($event)"
+            />
+            @if (evidencias().length > 0) {
+              <div class="cd-evidencias">
+                @for (evidencia of evidencias(); track $index) {
+                  <figure>
+                    <img [src]="evidencia.vistaPrevia" [alt]="evidencia.archivo.name" />
+                    <figcaption>
+                      {{ evidencia.archivo.name }}
+                      <button
+                        type="button"
+                        class="boton boton--enlace"
+                        (click)="quitarEvidencia($index)"
+                      >
+                        Quitar
+                      </button>
+                    </figcaption>
+                  </figure>
+                }
+              </div>
+            } @else {
+              <p class="cd-nota">Sin evidencias adjuntas. Puedes agregar hasta tres fotos.</p>
+            }
+          </div>
+        </div>
+
+        <dl class="cd-importes">
+          <div>
+            <dt>Estimación informativa de reembolso</dt>
+            <dd>{{ estimacion() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd>
+          </div>
+        </dl>
+        <p class="cd-nota">
+          Cálculo orientativo: prendas menos descuento proporcional; el envío solo se considera en
+          defecto, daño en envío o producto equivocado. Flask define el importe final y registra el
+          pago o la venta de reemplazo por $0.00.
+        </p>
+      </div>
+
+      <div class="cd-acciones">
+        <button type="submit" class="boton boton--primario" [disabled]="enviando()">
+          {{ enviando() ? 'Enviando…' : 'Enviar solicitud' }}
+        </button>
+        <a class="boton boton--enlace" routerLink="/pedidos">Cancelar</a>
+      </div>
+    </form>
+  }
+</section>

@@ -57,12 +57,28 @@ export const routes: Routes = [
       },
       {
         path: 'devoluciones',
-        canActivate: CLIENTE,
-        data: { roles: ['CLIENTE'] },
-        loadComponent: () =>
-          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
-            (c) => c.CambiosDevoluciones,
-          ),
+        title: 'Cambios y devoluciones · UNIQUE',
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            canActivate: CLIENTE,
+            data: { roles: ['CLIENTE'], ambito: 'cliente', vista: 'solicitar' },
+            loadComponent: () =>
+              import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+                (c) => c.CambiosDevoluciones,
+              ),
+          },
+          {
+            path: 'mis-solicitudes',
+            canActivate: CLIENTE,
+            data: { roles: ['CLIENTE'], ambito: 'cliente', vista: 'mis-solicitudes' },
+            loadComponent: () =>
+              import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+                (c) => c.CambiosDevoluciones,
+              ),
+          },
+        ],
       },
       {
         path: 'login',
@@ -260,8 +276,43 @@ export const routes: Routes = [
     data: { titulo: 'Devoluciones', roles: ['ADMIN', 'OPERATIVO'] },
     children: [
       {
+        path: 'recepcion/:casoId',
+        data: { titulo: 'Devoluciones', ambito: 'operacion', vista: 'recepcion', roles: ['ADMIN', 'OPERATIVO'] },
+        loadComponent: () =>
+          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+            (c) => c.CambiosDevoluciones,
+          ),
+      },
+      {
+        path: 'resolucion/:casoId',
+        data: { titulo: 'Devoluciones', ambito: 'operacion', vista: 'resolucion', roles: ['ADMIN', 'OPERATIVO'] },
+        loadComponent: () =>
+          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+            (c) => c.CambiosDevoluciones,
+          ),
+      },
+      {
+        path: 'recepcion',
+        pathMatch: 'full',
+        data: { titulo: 'Devoluciones', ambito: 'operacion', vista: 'recepcion', roles: ['ADMIN', 'OPERATIVO'] },
+        loadComponent: () =>
+          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+            (c) => c.CambiosDevoluciones,
+          ),
+      },
+      {
+        path: 'resolucion',
+        pathMatch: 'full',
+        data: { titulo: 'Devoluciones', ambito: 'operacion', vista: 'resolucion', roles: ['ADMIN', 'OPERATIVO'] },
+        loadComponent: () =>
+          import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
+            (c) => c.CambiosDevoluciones,
+          ),
+      },
+      {
         path: '',
         pathMatch: 'full',
+        data: { titulo: 'Devoluciones', ambito: 'operacion', vista: 'bandeja', roles: ['ADMIN', 'OPERATIVO'] },
         loadComponent: () =>
           import('./modulos/cambios-devoluciones/cambios-devoluciones').then(
             (c) => c.CambiosDevoluciones,

@@ -1,0 +1,126 @@
+<section class="cd-panel">
+  <header class="cd-cabecera">
+    <div>
+      <p class="cd-ojeada">M07 · Resolución</p>
+      <h2>Resolución de solicitud</h2>
+      <p>
+        Administración registra un reembolso simulado o una venta de reemplazo por $0.00 en el canal
+        CAMBIO. Flask calcula importes y ejecuta la operación definitiva.
+      </p>
+    </div>
+    <a class="boton boton--secundario" routerLink="/operacion/devoluciones">Volver a la bandeja</a>
+  </header>
+
+  @if (caso(); as casoActual) {
+    <div class="cd-tarjeta cd-panel">
+      <div class="cd-cabecera">
+        <div>
+          <h3>{{ casoActual.folioCaso }}</h3>
+          <p>
+            Pedido {{ casoActual.folioPedido || '—' }} · {{ formatearFechaHora(casoActual.creadoEn) }} ·
+            {{ casoActual.tipo === 'CAMBIO' ? 'Cambio' : 'Devolución' }}
+          </p>
+        </div>
+        <span class="cd-chip" [class]="claseEstado(casoActual.estado)">
+          {{ etiquetaEstado(casoActual.estado) }}
+        </span>
+      </div>
+      <p class="cd-nota"><strong>Motivo:</strong> {{ etiquetaMotivo(casoActual.motivo) }}</p>
+      <p class="cd-nota">{{ casoActual.descripcion }}</p>
+      @if (casoActual.motivoRechazo) {
+        <div class="cd-aviso cd-aviso--error">Rechazo: {{ casoActual.motivoRechazo }}</div>
+      }
+    </div>
+
+    <div class="cd-tarjeta cd-panel">
+      <span class="cd-etiqueta">Dictamen de prendas</span>
+      <ul class="cd-listado-dictamen">
+        @for (linea of casoActual.lineas; track linea.id) {
+          <li>
+            <strong>{{ linea.sku || 'SKU' }}</strong> · {{ linea.cantidad }} pieza(s) ·
+            {{ etiquetaDictamen(linea.dictamen) }}
+          </li>
+        } @empty {
+          <li>Sin líneas registradas.</li>
+        }
+      </ul>
+    </div>
+
+    @if (errorLocal()) {
+      <div class="cd-aviso cd-aviso--error" role="alert">{{ errorLocal() }}</div>
+    }
+
+    @if (casoActual.estado === 'RECIBIDA' && !inspeccionCompleta()) {
+      <div class="cd-aviso cd-aviso--advertencia" role="status">
+        No se puede resolver hasta que Operativo dictamine todas las prendas.
+      </div>
+    }
+
+    @if (puedeEjecutar()) {
+      <form class="cd-tarjeta cd-panel" [formGroup]="form" (ngSubmit)="confirmar()">
+        <div class="cd-campo">
+          <span class="cd-etiqueta">Tipo de resolución</span>
+          <label class="cd-opcion">
+            <input type="radio" formControlName="resolucion" value="REEMBOLSO" />
+            Reembolso simulado
+          </label>
+          <label class="cd-opcion">
+            <input type="radio" formControlName="resolucion" value="CAMBIO" />
+            Cambio: venta de reemplazo por $0.00
+          </label>
+        </div>
+        <p class="cd-nota">
+          El reembolso considera prendas menos descuento proporcional y, según el motivo, el envío.
+          La venta de reemplazo se registra en canal CAMBIO por $0.00. Ningún importe se calcula ni
+          se guarda en este frontend.
+        </p>
+        <div class="cd-acciones">
+          <button type="submit" class="boton boton--primario" [disabled]="enviando()">
+            {{ enviando() ? 'Registrando…' : 'Registrar resolución' }}
+          </button>
+        </div>
+      </form>
+    } @else if (casoActual.estado !== 'RECIBIDA') {
+      <div class="cd-aviso cd-aviso--informacion" role="status">
+        Este caso está {{ etiquetaEstado(casoActual.estado).toLowerCase() }}. La resolución es de
+        solo lectura.
+      </div>
+    }
+
+    @if (
+      puedeResolver() &&
+      (casoActual.resolucion || casoActual.reembolsoMonto || casoActual.ventaReemplazoFolio)
+    ) {
+      <dl class="cd-importes cd-importes--resolucion">
+        <div>
+          <dt>Resolución registrada</dt>
+          <dd>{{ etiquetaResolucion(casoActual.resolucion) }}</dd>
+        </div>
+        @if (casoActual.reembolsoMonto) {
+          <div>
+            <dt>Reembolso simulado</dt>
+            <dd>{{ formatearDinero(casoActual.reembolsoMonto) }}</dd>
+          </div>
+        }
+        @if (casoActual.ventaReemplazoFolio) {
+          <div>
+            <dt>Venta de reemplazo</dt>
+            <dd>{{ casoActual.ventaReemplazoFolio }}</dd>
+          </div>
+        }
+        @if (casoActual.resueltaEn) {
+          <div>
+            <dt>Fecha de resolución</dt>
+            <dd>{{ formatearFechaHora(casoActual.resueltaEn) }}</dd>
+          </div>
+        }
+      </dl>
+    }
+  } @else {
+    <div class="cd-vacio">
+      <h3>Selecciona una solicitud</h3>
+      <p>Abre una devolución inspeccionada desde la bandeja para registrar su resolución.</p>
+      <a class="boton boton--primario" routerLink="/operacion/devoluciones">Ir a la bandeja</a>
+    </div>
+  }
+</section>

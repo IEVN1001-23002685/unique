@@ -1,0 +1,118 @@
+<section class="cd-panel">
+  <header class="cd-cabecera">
+    <div>
+      <p class="cd-ojeada">M07 · Cliente</p>
+      <h2>Mis solicitudes</h2>
+      <p>Consulta el folio, el estado y la resolución de cada caso. Los datos provienen de Flask.</p>
+    </div>
+    <div class="cd-acciones">
+      <button type="button" class="boton boton--secundario" (click)="recargar.emit()">
+        Actualizar
+      </button>
+      <a class="boton boton--primario" routerLink="/pedidos">Ver mis pedidos</a>
+    </div>
+  </header>
+
+  <div class="cd-tarjeta cd-panel">
+    <div class="cd-grid cd-grid--dos">
+      <div class="cd-campo">
+        <label for="cd-buscar-caso">Buscar por folio</label>
+        <input
+          id="cd-buscar-caso"
+          type="search"
+          placeholder="Ej. DEV-2026-000045"
+          [formControl]="busqueda"
+        />
+      </div>
+      <div class="cd-filtros" role="group" aria-label="Filtrar solicitudes por estado">
+        @for (opcion of filtros; track opcion.valor) {
+          <button
+            type="button"
+            class="cd-filtro"
+            [class.cd-filtro--activo]="filtro() === opcion.valor"
+            [attr.aria-pressed]="filtro() === opcion.valor"
+            (click)="cambiarFiltro(opcion.valor)"
+          >
+            {{ opcion.etiqueta }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="cd-aviso cd-aviso--error" role="alert">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="cd-cargando" aria-busy="true" aria-live="polite">
+      <div class="cd-esqueleto"></div>
+      <p>Cargando solicitudes…</p>
+    </div>
+  } @else if (filtradas().length === 0) {
+    <div class="cd-vacio">
+      <h3>Sin solicitudes para mostrar</h3>
+      <p>No hay casos con este filtro. Si necesitas iniciar uno, elige un pedido entregado.</p>
+      <a class="boton boton--primario" routerLink="/pedidos">Ir a mis pedidos</a>
+    </div>
+  } @else {
+    <div class="cd-grid">
+      @for (caso of filtradas(); track caso.id) {
+        <article class="cd-tarjeta cd-panel">
+          <div class="cd-cabecera">
+            <div>
+              <h3>{{ caso.folioCaso }}</h3>
+              <p>
+                Pedido {{ caso.folioPedido || '—' }} · {{ formatearFechaHora(caso.creadoEn) }} ·
+                {{ caso.tipo === 'CAMBIO' ? 'Cambio' : 'Devolución' }}
+              </p>
+            </div>
+            <span class="cd-chip" [class]="claseEstado(caso.estado)">
+              {{ etiquetaEstado(caso.estado) }}
+            </span>
+          </div>
+
+          <p class="cd-nota">Motivo: {{ etiquetaMotivo(caso.motivo) }}</p>
+          <p class="cd-nota">{{ caso.descripcion }}</p>
+
+          <ul class="cd-listado-lineas">
+            @for (linea of caso.lineas; track linea.id) {
+              <li>
+                <strong>{{ linea.sku || 'SKU' }}</strong> · {{ linea.cantidad }} pieza(s) ·
+                {{ linea.dictamen === 'PENDIENTE' ? 'Sin dictamen' : linea.dictamen }}
+              </li>
+            } @empty {
+              <li>El servidor no devolvió líneas para este caso.</li>
+            }
+          </ul>
+
+          @if (caso.motivoRechazo) {
+            <div class="cd-aviso cd-aviso--error">
+              Motivo del rechazo: {{ caso.motivoRechazo }}
+            </div>
+          }
+          @if (caso.resolucion || caso.reembolsoMonto || caso.ventaReemplazoFolio) {
+            <dl class="cd-importes">
+              <div>
+                <dt>Resolución</dt>
+                <dd>{{ etiquetaResolucion(caso.resolucion) }}</dd>
+              </div>
+              @if (caso.reembolsoMonto) {
+                <div>
+                  <dt>Reembolso registrado</dt>
+                  <dd>{{ caso.reembolsoMonto | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</dd>
+                </div>
+              }
+              @if (caso.ventaReemplazoFolio) {
+                <div>
+                  <dt>Venta de reemplazo</dt>
+                  <dd>{{ caso.ventaReemplazoFolio }}</dd>
+                </div>
+              }
+            </dl>
+          }
+        </article>
+      }
+    </div>
+  }
+</section>

@@ -1,0 +1,31 @@
+.cd-listado-dictamen {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0.625rem 0 0;
+  padding-left: 1.125rem;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.8125rem;
+}
+
+.cd-opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-unique-rosa-lavanda);
+  border-radius: 12px;
+  color: var(--color-unique-texto);
+  font-family: var(--font-texto);
+  font-size: 0.875rem;
+}
+
+.cd-opcion input {
+  accent-color: var(--color-unique-morado);
+}
+
+.cd-importes--resolucion {
+  border: 1px solid var(--color-unique-rosa-lavanda);
+  border-radius: 16px;
+  background-color: var(--color-unique-blanco);
+  padding: 1rem;
+}

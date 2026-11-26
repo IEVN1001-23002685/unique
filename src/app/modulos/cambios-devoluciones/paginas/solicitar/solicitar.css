@@ -1,0 +1,21 @@
+.cd-panel form.cd-panel {
+  gap: 1rem;
+}
+
+.cd-evidencias figcaption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@media (max-width: 30rem) {
+  .cd-linea__control {
+    width: 100%;
+  }
+
+  .cd-linea__control input,
+  .cd-linea__control select {
+    max-width: none;
+    width: 100%;
+  }
+}
