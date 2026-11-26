@@ -267,10 +267,11 @@ export const REQUISICIONES_SIMULADAS: Requisicion[] = [
   },
 ];
 
+/** El documento no define folio de cotización: se deja vacío para no inventarlo. */
 export const COTIZACIONES_SIMULADAS: Cotizacion[] = [
   {
     id: 1,
-    folio: 'COT-2026-0001',
+    folio: '',
     requisicionId: 1,
     proveedorId: 1,
     fecha: '2026-11-18',
@@ -291,7 +292,7 @@ export const COTIZACIONES_SIMULADAS: Cotizacion[] = [
   },
   {
     id: 2,
-    folio: 'COT-2026-0002',
+    folio: '',
     requisicionId: 1,
     proveedorId: 3,
     fecha: '2026-11-18',

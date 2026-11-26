@@ -1,6 +1,7 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
 import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
@@ -31,6 +32,7 @@ export class Ordenes {
   protected readonly filtro = signal<EstadoOrdenCompra | 'TODOS'>('TODOS');
   protected readonly porCancelar = signal<OrdenCompra | null>(null);
   protected readonly porEliminar = signal<OrdenCompra | null>(null);
+  protected readonly guardando = signal(false);
 
   protected readonly opciones: { valor: EstadoOrdenCompra | 'TODOS'; etiqueta: string }[] = [
     { valor: 'TODOS', etiqueta: 'Todas' },
@@ -73,6 +75,10 @@ export class Ordenes {
     this.busqueda.set((evento.target as HTMLInputElement).value);
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected materiales(orden: OrdenCompra): string {
     return orden.lineas
       .map((linea) => this.servicio.obtenerMaterial(linea.materialId)?.codigo ?? 'Material')
@@ -80,24 +86,33 @@ export class Ordenes {
   }
 
   protected emitir(orden: OrdenCompra): void {
-    this.servicio.emitirOrden(orden.id).subscribe({
-      next: () => this.avisos.mostrar('exito', `${orden.folio} se emitió en Flask.`),
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .emitirOrden(orden.id)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: () => this.avisos.mostrar('exito', `${orden.folio} se emitió en Flask.`),
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 
   protected descargarPdf(orden: OrdenCompra): void {
-    this.servicio.descargarOrdenPdf(orden.id).subscribe({
-      next: (pdf) => {
-        const url = URL.createObjectURL(pdf);
-        const enlace = document.createElement('a');
-        enlace.href = url;
-        enlace.download = `${orden.folio}.pdf`;
-        enlace.click();
-        URL.revokeObjectURL(url);
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .descargarOrdenPdf(orden.id)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: (pdf) => {
+          const url = URL.createObjectURL(pdf);
+          const enlace = document.createElement('a');
+          enlace.href = url;
+          enlace.download = `${orden.folio}.pdf`;
+          enlace.click();
+          // Se libera después de que el navegador inicia la descarga.
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        },
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 
   protected confirmarCancelacion(): void {
@@ -105,13 +120,17 @@ export class Ordenes {
     if (!orden) {
       return;
     }
-    this.servicio.cancelarOrden(orden.id).subscribe({
-      next: () => {
-        this.porCancelar.set(null);
-        this.avisos.mostrar('advertencia', `${orden.folio} se canceló en Flask.`);
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .cancelarOrden(orden.id)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: () => {
+          this.porCancelar.set(null);
+          this.avisos.mostrar('advertencia', `${orden.folio} se canceló en Flask.`);
+        },
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 
   protected confirmarEliminacion(): void {
@@ -119,18 +138,22 @@ export class Ordenes {
     if (!orden) {
       return;
     }
-    this.servicio.eliminarOrden(orden.id).subscribe({
-      next: (resultado) => {
-        this.porEliminar.set(null);
-        this.avisos.mostrar(
-          resultado === 'eliminado' ? 'exito' : 'advertencia',
-          resultado === 'eliminado'
-            ? `${orden.folio} se eliminó en Flask.`
-            : `${orden.folio} tiene historial: Flask no permite eliminarla, usa cancelar.`,
-        );
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .eliminarOrden(orden.id)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: (resultado) => {
+          this.porEliminar.set(null);
+          this.avisos.mostrar(
+            resultado === 'eliminado' ? 'exito' : 'advertencia',
+            resultado === 'eliminado'
+              ? `${orden.folio} se eliminó en Flask.`
+              : `${orden.folio} ya no está en BORRADOR: no se puede eliminar; usa cancelar.`,
+          );
+        },
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 
   protected async abrirRecepcion(orden: OrdenCompra): Promise<void> {

@@ -13,10 +13,22 @@
     <a routerLink="/compras/ordenes" class="boton boton--secundario">Volver a órdenes</a>
   </div>
 
-  @if (noEncontrado()) {
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar la orden de compra.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (noEncontrado()) {
     <div class="tarjeta bloque estado" role="alert">
       <strong>No se encontró la orden solicitada.</strong>
       <p>Regresa al listado para elegir un folio vigente.</p>
+    </div>
+  } @else if (!servicio.cargado()) {
+    <div class="tarjeta bloque estado" role="status">
+      <strong>Cargando la orden desde Flask…</strong>
     </div>
   } @else {
     @if (soloLectura()) {
@@ -125,9 +137,15 @@
         <strong>{{ total() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
       </div>
 
+      @if (errorGuardado()) {
+        <div class="campo__error" role="alert">{{ errorGuardado() }}</div>
+      }
+
       @if (!soloLectura()) {
         <div class="form-acciones">
-          <button type="submit" class="boton boton--primario">Guardar orden</button>
+          <button type="submit" class="boton boton--primario" [disabled]="guardando()">
+            {{ guardando() ? 'Guardando…' : 'Guardar orden' }}
+          </button>
           <a routerLink="/compras/ordenes" class="boton boton--secundario">Cancelar</a>
         </div>
       }
@@ -136,7 +154,7 @@
 
   <p class="nota">
     El precio unitario se expresa por unidad de compra (rollo, cono, paquete o millar). La base se
-    obtiene con el factor de presentación del material. Los cambios no alteran órdenes ya emitidas
-    ni se envían a Flask en esta etapa.
+    obtiene con el factor de presentación del material. Los cambios se envían a Flask al guardar;
+    las órdenes ya emitidas conservan el precio pactado.
   </p>
 </section>

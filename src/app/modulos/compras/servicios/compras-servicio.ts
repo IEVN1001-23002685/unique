@@ -1,7 +1,9 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { Observable, concatMap, forkJoin, from, map, of, tap } from 'rxjs';
+import { Observable, catchError, concatMap, forkJoin, from, map, of, tap, throwError } from 'rxjs';
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
+import { mensajeError } from '../../../core/api/errores';
 import { AuthStateService } from '../../../core/auth/auth-state.service';
+import { PerfilDemoServicio } from '../../../nucleo/servicios/perfil-demo-servicio';
 import { InventarioServicio } from '../../inventario/servicios/inventario-servicio';
 import type { MaterialProveedor } from '../../proveedores/modelos/proveedor';
 import { ProveedoresServicio } from '../../proveedores/servicios/proveedores-servicio';
@@ -27,8 +29,8 @@ export function hoyISO(): string {
 }
 
 interface Pagina<T> {
-  items: T[];
-  total: number;
+  items?: T[];
+  total?: number;
 }
 
 interface RequisicionLineaApi {
@@ -66,6 +68,8 @@ interface CotizacionLineaApi {
 
 interface CotizacionApi {
   id: number;
+  /** El documento no define folio para cotización: solo se muestra si Flask lo entrega. */
+  folio?: string | null;
   requisicion_id: number;
   proveedor_id: number;
   proveedor: string;
@@ -119,6 +123,9 @@ interface RecepcionApi {
   lineas: {
     id: number;
     orden_compra_linea_id: number;
+    peso_kg?: string | null;
+    ancho_cm?: string | null;
+    largo_m?: string | null;
     cantidad_base_medida: string;
     cantidad_base_aceptada: string;
     cantidad_base_rechazada: string;
@@ -127,8 +134,8 @@ interface RecepcionApi {
 }
 
 interface ResultadoRecepcionApi {
-  recepcion: RecepcionApi;
-  orden_compra: { id: number; folio: string; estado: string };
+  recepcion?: RecepcionApi;
+  orden_compra?: { id: number; folio: string; estado: string };
 }
 
 function listarTodo<T>(
@@ -137,13 +144,20 @@ function listarTodo<T>(
   params: Record<string, ValorParametro> = {},
 ): Observable<T[]> {
   const porPagina = 100;
+  const maxPaginas = 100;
   const pedir = (pagina: number, previos: T[]): Observable<T[]> =>
     api
       .get<Pagina<T>>(ruta, { params: { ...params, pagina, por_pagina: porPagina } })
       .pipe(
         concatMap((respuesta) => {
-          const items = [...previos, ...(respuesta.items ?? [])];
-          if (respuesta.items.length === 0 || items.length >= (respuesta.total ?? 0)) {
+          const recibidos = respuesta.items ?? [];
+          const items = [...previos, ...recibidos];
+          // Corte defensivo: si Flask ignora la paginación, no se entra en un bucle.
+          if (
+            recibidos.length === 0 ||
+            items.length >= (respuesta.total ?? 0) ||
+            pagina >= maxPaginas
+          ) {
             return of(items);
           }
           return pedir(pagina + 1, items);
@@ -171,6 +185,7 @@ function codigoColor(color: string | null): string {
 export class ComprasServicio {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthStateService);
+  private readonly perfilDemo = inject(PerfilDemoServicio);
   private readonly proveedores = inject(ProveedoresServicio);
   private readonly inventario = inject(InventarioServicio);
 
@@ -179,6 +194,12 @@ export class ComprasServicio {
   private readonly listaOrdenes = signal<OrdenCompra[]>([]);
   private readonly listaRecepciones = signal<Recepcion[]>([]);
   private readonly listaMateriales = signal<MaterialCompra[]>([]);
+  private readonly cargandoInterno = signal(false);
+  private readonly errorCargaInterno = signal('');
+  private readonly errorDetalleInterno = signal('');
+  private readonly limitacionOrdenesInterno = signal('');
+  /** Una sola clave por intento de recepción: reintentar no debe duplicar el lote. */
+  private claveRecepcion: string | null = null;
 
   readonly requisiciones = this.listaRequisiciones.asReadonly();
   readonly cotizaciones = this.listaCotizaciones.asReadonly();
@@ -189,22 +210,63 @@ export class ComprasServicio {
     this.proveedores.proveedores().filter((proveedor) => proveedor.estatus !== 'INACTIVO'),
   );
   readonly cargado = signal(false);
+  readonly cargando = this.cargandoInterno.asReadonly();
+  /** Una lista vacía no debe confundirse con un fallo de carga. */
+  readonly errorCarga = this.errorCargaInterno.asReadonly();
+  readonly errorDetalle = this.errorDetalleInterno.asReadonly();
+  /**
+   * §9 solo documenta GET /ordenes-compra para Administrador, pero §10 permite
+   * /recepciones a Operativo. Si Flask rechaza la consulta, se conservan las demás
+   * listas y se explica la limitación en pantalla en lugar de fingir que no hay órdenes.
+   */
+  readonly limitacionOrdenes = this.limitacionOrdenesInterno.asReadonly();
+
+  /**
+   * §9 permite requisiciones para Administrador y Operativo, pero §10 reserva
+   * /compras al Administrador. Sin sesión se usa el perfil de demostración para
+   * explorar la pantalla; la autoridad definitiva sigue siendo Flask.
+   */
+  readonly puedeGestionarCompras = computed(() =>
+    this.auth.autenticado()
+      ? this.auth.puede(['ADMIN'])
+      : this.perfilDemo.esAdministrador(),
+  );
+  readonly puedeRecibir = computed(() =>
+    this.auth.autenticado()
+      ? this.auth.puede(['ADMIN', 'OPERATIVO'])
+      : this.perfilDemo.esOperativo(),
+  );
 
   constructor() {
     effect(() => {
-      if (this.auth.usuario()?.rol === 'ADMIN' || this.auth.usuario()?.rol === 'OPERATIVO') {
+      if (this.puedeRecibir()) {
         this.recargar().subscribe();
       }
     });
   }
 
   recargar(): Observable<void> {
-    // Cotizaciones y órdenes son de Administrador: un Operativo solo registra recepciones.
-    const esAdmin = this.auth.puede(['ADMIN']);
+    this.cargandoInterno.set(true);
+    this.errorCargaInterno.set('');
+    this.errorDetalleInterno.set('');
+    this.limitacionOrdenesInterno.set('');
+    // Las cotizaciones son de Administrador. Las órdenes se piden también para
+    // Operativo porque necesita seleccionar una antes de registrar la recepción.
+    const conCompras = this.puedeGestionarCompras();
+    const ordenes = listarTodo<OrdenApi>(this.api, '/ordenes-compra').pipe(
+      catchError((error: unknown) => {
+        this.limitacionOrdenesInterno.set(
+          `${mensajeError(error, 'Flask no autorizó la consulta de órdenes')}. ` +
+            '§9 documenta GET /ordenes-compra solo para Administrador: confirma con Flask ' +
+            'cómo obtiene el Operativo la orden que va a recibir.',
+        );
+        return of([] as OrdenApi[]);
+      }),
+    );
     return forkJoin({
       requisiciones: listarTodo<RequisicionApi>(this.api, '/requisiciones'),
-      cotizaciones: esAdmin ? listarTodo<CotizacionApi>(this.api, '/cotizaciones') : of([]),
-      ordenes: esAdmin ? listarTodo<OrdenApi>(this.api, '/ordenes-compra') : of([]),
+      cotizaciones: conCompras ? listarTodo<CotizacionApi>(this.api, '/cotizaciones') : of([]),
+      ordenes,
     }).pipe(
       tap(({ requisiciones, cotizaciones, ordenes }) => {
         const materiales = this.materialesDeM15();
@@ -212,8 +274,28 @@ export class ComprasServicio {
         this.listaRequisiciones.set(requisiciones.map((fila) => this.adaptarRequisicion(fila)));
         this.listaCotizaciones.set(cotizaciones.map((fila) => this.adaptarCotizacion(fila)));
         this.listaOrdenes.set(ordenes.map((fila) => this.adaptarOrden(fila)));
+        const falloProveedores =
+          this.proveedores.errorCarga() || this.proveedores.errorDetalle();
+        if (falloProveedores) {
+          this.errorDetalleInterno.set(
+            `Los pedidos se cargaron, pero faltaron precios o plazos de M13: ${falloProveedores}`,
+          );
+        }
       }),
-      tap(() => this.cargado.set(true)),
+      catchError((error: unknown) => {
+        this.errorCargaInterno.set(
+          mensajeError(error, 'No fue posible cargar pedidos, cotizaciones u órdenes desde Flask.'),
+        );
+        this.listaRequisiciones.set([]);
+        this.listaCotizaciones.set([]);
+        this.listaOrdenes.set([]);
+        this.listaMateriales.set([]);
+        return of(undefined);
+      }),
+      tap(() => {
+        this.cargandoInterno.set(false);
+        this.cargado.set(true);
+      }),
       map(() => undefined),
     );
   }
@@ -263,13 +345,21 @@ export class ComprasServicio {
   }
 
   guardarRequisicion(datos: Requisicion): Observable<Requisicion> {
+    const idsMaterial = datos.lineas.map((linea) =>
+      this.inventarioMaterialId(linea.materialId, linea.color),
+    );
+    if (idsMaterial.some((id) => id === 0)) {
+      return throwError(
+        () => new Error('Hay líneas sin correspondencia en el inventario de materiales (M15).'),
+      );
+    }
     const cuerpo = {
       origen: datos.origen,
       orden_produccion_id: this.idOrdenDeProduccion(datos.ordenProduccion),
       prioridad: datos.prioridad,
       notas: datos.notas,
-      lineas: datos.lineas.map((linea) => ({
-        inventario_material_id: this.inventarioMaterialId(linea.materialId, linea.color),
+      lineas: datos.lineas.map((linea, indice) => ({
+        inventario_material_id: idsMaterial[indice],
         cantidad_base_faltante: redondear4(linea.cantidadBaseFaltante),
       })),
     };
@@ -277,8 +367,12 @@ export class ComprasServicio {
       datos.id === 0
         ? this.api.post<RequisicionApi>('/requisiciones', cuerpo)
         : this.api.patch<RequisicionApi>(`/requisiciones/${datos.id}`, {
-            prioridad: datos.prioridad,
-            notas: datos.notas,
+            ...cuerpo,
+            lineas: datos.lineas.map((linea, indice) => ({
+              id: linea.id || undefined,
+              inventario_material_id: idsMaterial[indice],
+              cantidad_base_faltante: redondear4(linea.cantidadBaseFaltante),
+            })),
           });
     return peticion.pipe(
       concatMap((respuesta) => this.recargar().pipe(map(() => respuesta))),
@@ -294,7 +388,9 @@ export class ComprasServicio {
   }
 
   /** El contrato crea una cotización por proveedor; la UI mantiene el comparador. */
-  generarCotizaciones(requisicionId: number): Observable<{ cantidad: number; conAlterno: boolean } | null> {
+  generarCotizaciones(
+    requisicionId: number,
+  ): Observable<{ cantidad: number; conAlterno: boolean; suficiente: boolean } | null> {
     const requisicion = this.obtenerRequisicion(requisicionId);
     if (!requisicion || requisicion.lineas.length === 0 || requisicion.estado === 'CANCELADA') {
       return of(null);
@@ -337,7 +433,7 @@ export class ComprasServicio {
             proveedor_id: proveedorId,
             plazo_dias: valor.plazo,
             vigencia_hasta: null,
-            notas: 'Cotización comparativa generada desde el carrito de compras.',
+            notas: 'Cotización comparativa generada desde la requisición.',
             lineas: valor.lineas.map((linea) => ({
               requisicion_linea_id: linea.requisicion_linea_id,
               cantidad_compra: linea.cantidad_compra,
@@ -354,7 +450,10 @@ export class ComprasServicio {
         const cantidad = this.cotizaciones().filter(
           (item) => item.requisicionId === requisicionId,
         ).length;
-        return cantidad > 0 ? { cantidad, conAlterno } : null;
+        // El aviso de "alterno" se confirma con lo que Flask realmente guardó.
+        return cantidad > 0
+          ? { cantidad, conAlterno, suficiente: !conAlterno || cantidad >= 2 }
+          : null;
       }),
     );
   }
@@ -395,14 +494,20 @@ export class ComprasServicio {
     if (lineas.length === 0 || proveedorId === 0) {
       return of(null);
     }
+    const idsMaterial = lineas.map((linea) => this.inventarioMaterialId(linea.materialId, null));
+    if (idsMaterial.some((id) => id === 0)) {
+      return throwError(
+        () => new Error('Hay materiales sin correspondencia en el inventario (M15).'),
+      );
+    }
     return this.api
       .post<OrdenApi>('/ordenes-compra', {
         proveedor_id: proveedorId,
         requisicion_id: requisicion.id,
         condiciones_pago: this.condicionesProveedor(proveedorId),
         notas: 'Orden directa al proveedor principal.',
-        lineas: lineas.map((linea) => ({
-          inventario_material_id: this.inventarioMaterialId(linea.materialId, null),
+        lineas: lineas.map((linea, indice) => ({
+          inventario_material_id: idsMaterial[indice],
           cantidad_compra: linea.cantidadCompra,
           precio_unitario_compra: linea.precioUnitarioCompra,
         })),
@@ -423,13 +528,22 @@ export class ComprasServicio {
   }
 
   guardarOrden(orden: OrdenCompra): Observable<OrdenCompra | null> {
+    const idsMaterial = orden.lineas.map((linea) =>
+      this.inventarioMaterialId(linea.materialId, null),
+    );
+    if (idsMaterial.some((id) => id === 0)) {
+      return throwError(
+        () => new Error('Hay materiales sin correspondencia en el inventario (M15).'),
+      );
+    }
     const cuerpo = {
       proveedor_id: orden.proveedorId,
       requisicion_id: orden.requisicionId,
+      fecha_prometida: orden.fechaPrometida,
       condiciones_pago: orden.condicionesPago,
       notas: orden.notas,
-      lineas: orden.lineas.map((linea) => ({
-        inventario_material_id: this.inventarioMaterialId(linea.materialId, null),
+      lineas: orden.lineas.map((linea, indice) => ({
+        inventario_material_id: idsMaterial[indice],
         cantidad_compra: linea.cantidadCompra,
         precio_unitario_compra: linea.precioUnitarioCompra,
       })),
@@ -439,6 +553,7 @@ export class ComprasServicio {
         ? this.api.post<OrdenApi>('/ordenes-compra', cuerpo)
         : this.api.patch<OrdenApi>(`/ordenes-compra/${orden.id}`, {
             proveedor_id: orden.proveedorId,
+            fecha_prometida: orden.fechaPrometida,
             condiciones_pago: orden.condicionesPago,
             notas: orden.notas,
             lineas: cuerpo.lineas,
@@ -485,7 +600,7 @@ export class ComprasServicio {
     return new Date(`${orden.fechaPrometida}T23:59:59`) < new Date();
   }
 
-  /** POST /recepciones con Idempotency-Key generada aquí; Flask crea lotes y mermas. */
+  /** POST /recepciones con Idempotency-Key estable por intento; Flask crea lotes y mermas. */
   registrarRecepcion(datos: DatosRecepcion): Observable<ResultadoRecepcion | null> {
     const orden = this.obtenerOrden(datos.ordenCompraId);
     if (!orden || ['BORRADOR', 'CANCELADA', 'RECIBIDA'].includes(orden.estado)) {
@@ -496,6 +611,7 @@ export class ComprasServicio {
         '/recepciones',
         {
           orden_compra_id: datos.ordenCompraId,
+          cerrar_con_faltante: datos.cerrarConFaltante,
           documento_proveedor: datos.documentoProveedor.trim() || null,
           notas: datos.notas.trim() || null,
           lineas: datos.lineas.map((linea) => ({
@@ -509,21 +625,36 @@ export class ComprasServicio {
             motivo_rechazo: linea.motivoRechazo,
           })),
         },
-        { idempotencyKey: this.nuevaClaveIdempotencia() },
+        { idempotencyKey: this.claveIdempotenciaRecepcion() },
       )
       .pipe(
         concatMap((respuesta) => this.recargar().pipe(map(() => respuesta))),
         map((respuesta) => {
+          if (!respuesta?.recepcion) {
+            return null;
+          }
+          const recepcion = this.adaptarRecepcion(respuesta.recepcion);
           this.listaRecepciones.update((actuales) => [
-            this.adaptarRecepcion(respuesta.recepcion),
-            ...actuales.filter((item) => item.id !== respuesta.recepcion.id),
+            recepcion,
+            ...actuales.filter((item) => item.id !== recepcion.id),
           ]);
+          this.reiniciarIdempotencia();
           return {
-            recepcion: this.adaptarRecepcion(respuesta.recepcion),
-            estadoOrden: respuesta.orden_compra.estado as ResultadoRecepcion['estadoOrden'],
+            recepcion,
+            estadoOrden: (respuesta.orden_compra?.estado ?? orden.estado) as ResultadoRecepcion['estadoOrden'],
           };
         }),
       );
+  }
+
+  /** Se llama al cambiar de orden: cada orden necesita su propio intento. */
+  reiniciarIdempotencia(): void {
+    this.claveRecepcion = null;
+  }
+
+  private claveIdempotenciaRecepcion(): string {
+    this.claveRecepcion ??= this.nuevaClaveIdempotencia();
+    return this.claveRecepcion;
   }
 
   private nuevaClaveIdempotencia(): string {
@@ -556,7 +687,9 @@ export class ComprasServicio {
       return null;
     }
     const coincidencia = texto.match(/(\d+)\s*$/);
-    return coincidencia ? Number(coincidencia[1]) : null;
+    const id = coincidencia ? Number(coincidencia[1]) : 0;
+    // No fabricar una llave foránea con el 0 que queda al no encontrar coincidencia.
+    return id > 0 ? id : null;
   }
 
   private inventarioMaterialId(materialId: number, color: string | null): number {
@@ -612,7 +745,8 @@ export class ComprasServicio {
   private adaptarCotizacion(fila: CotizacionApi): Cotizacion {
     return {
       id: fila.id,
-      folio: `COT-${fila.fecha ? new Date(fila.fecha).getFullYear() : new Date().getFullYear()}-${String(fila.id).padStart(4, '0')}`,
+      // El documento no define folio de cotización: nunca se inventa en el cliente.
+      folio: fila.folio ?? '',
       requisicionId: fila.requisicion_id,
       proveedorId: fila.proveedor_id,
       fecha: fila.fecha,
@@ -675,9 +809,9 @@ export class ComprasServicio {
       lineas: (fila.lineas ?? []).map((linea) => ({
         id: linea.id,
         ordenCompraLineaId: linea.orden_compra_linea_id,
-        pesoKg: null,
-        anchoCm: null,
-        largoM: null,
+        pesoKg: linea.peso_kg === null || linea.peso_kg === undefined ? null : Number(linea.peso_kg),
+        anchoCm: linea.ancho_cm === null || linea.ancho_cm === undefined ? null : Number(linea.ancho_cm),
+        largoM: linea.largo_m === null || linea.largo_m === undefined ? null : Number(linea.largo_m),
         cantidadBaseMedida: Number(linea.cantidad_base_medida),
         cantidadBaseAceptada: Number(linea.cantidad_base_aceptada),
         cantidadBaseRechazada: Number(linea.cantidad_base_rechazada),

@@ -2,6 +2,7 @@ import { CurrencyPipe } from '@angular/common';
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 import { decimalPositivo } from '../../../../compartido/validadores/validadores-negocio';
 import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
@@ -33,6 +34,8 @@ export class FormularioOrden {
   protected readonly intentoEnvio = signal(false);
   protected readonly noEncontrado = signal(false);
   protected readonly soloLectura = signal(false);
+  protected readonly guardando = signal(false);
+  protected readonly errorGuardado = signal('');
 
   private readonly parametroId = this.ruta.snapshot.paramMap.get('id');
   protected readonly idEditar =
@@ -81,6 +84,13 @@ export class FormularioOrden {
     });
   }
 
+  protected reintentar(): void {
+    this.formularioInicializado = false;
+    this.noEncontrado.set(false);
+    this.errorGuardado.set('');
+    this.servicio.recargar().subscribe();
+  }
+
   protected materialDe(indice: number) {
     const id = this.formulario.controls.lineas.at(indice).controls.materialId.value;
     return this.servicio.obtenerMaterial(id);
@@ -120,6 +130,10 @@ export class FormularioOrden {
 
   protected guardar(): void {
     this.intentoEnvio.set(true);
+    this.errorGuardado.set('');
+    if (this.guardando()) {
+      return;
+    }
     if (this.formulario.invalid || this.soloLectura()) {
       this.formulario.markAllAsTouched();
       this.avisos.mostrar('error', 'Revisa proveedor, fecha prometida y precios antes de guardar.');
@@ -149,20 +163,29 @@ export class FormularioOrden {
       })),
     };
 
-    this.servicio.guardarOrden(orden).subscribe({
-      next: (guardada) => {
-        if (!guardada) {
-          this.avisos.mostrar('error', 'Flask no pudo actualizar la orden.');
-          return;
-        }
-        this.avisos.mostrar(
-          'exito',
-          `${guardada.folio} se actualizó en Flask; emítela cuando el precio y plazo estén listos.`,
-        );
-        void this.router.navigate(['/compras/ordenes']);
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .guardarOrden(orden)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: (guardada) => {
+          if (!guardada) {
+            this.errorGuardado.set('Flask no pudo localizar la orden actualizada.');
+            this.avisos.mostrar('error', this.errorGuardado());
+            return;
+          }
+          this.avisos.mostrar(
+            'exito',
+            `${guardada.folio} se actualizó en Flask; emítela cuando el precio y plazo estén listos.`,
+          );
+          void this.router.navigate(['/compras/ordenes']);
+        },
+        error: (error: unknown) => {
+          const mensaje = mensajeError(error, 'Flask no pudo actualizar la orden.');
+          this.errorGuardado.set(mensaje);
+          this.avisos.mostrar('error', mensaje);
+        },
+      });
   }
 
   private nuevaLinea(linea?: LineaOrdenCompra) {

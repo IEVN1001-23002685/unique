@@ -10,8 +10,30 @@
         rechazado se envía a merma de material en etapa RECEPCIÓN (M17).
       </p>
     </div>
-    <a routerLink="/compras/ordenes" class="boton boton--secundario">Volver a órdenes</a>
+    @if (esAdministrador()) {
+      <a routerLink="/compras/ordenes" class="boton boton--secundario">Volver a órdenes</a>
+    }
   </div>
+
+  @if (servicio.errorCarga() || servicio.errorDetalle()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar las órdenes pendientes de recepción.</strong>
+      <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (servicio.limitacionOrdenes()) {
+    <p class="nota nota--advertencia" role="status">{{ servicio.limitacionOrdenes() }}</p>
+  } @else if (!esAdministrador()) {
+    <p class="nota">
+      El contrato habilita el registro de recepciones para Operativo (§9), pero no detalla cómo se
+      obtiene la orden a recibir. Confirma con Flask la fuente de este listado antes de operar en
+      producción.
+    </p>
+  }
 
   <div class="tarjeta bloque selector-orden">
     <label class="campo selector">
@@ -52,10 +74,21 @@
     }
   </div>
 
-  @if (!orden()) {
+  @if (!servicio.cargado()) {
+    <div class="tarjeta bloque estado" role="status">
+      <strong>Cargando órdenes desde Flask…</strong>
+    </div>
+  } @else if (!orden()) {
     <div class="tarjeta bloque estado" role="status">
       <strong>No hay órdenes listas para recibir.</strong>
-      <p>Emite una orden de compra desde el listado para habilitar esta captura.</p>
+      <p>
+        @if (esAdministrador()) {
+          Emite una orden de compra desde el listado para habilitar esta captura.
+        } @else {
+          Pide al Administrador una orden emitida o en estado PARCIAL para poder capturar la
+          recepción.
+        }
+      </p>
     </div>
   } @else {
     <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
@@ -191,22 +224,34 @@
 
       @if (hayFaltante()) {
         <label class="opcion-cierre">
-          <input type="checkbox" formControlName="cerrarConFaltante" />
+          <input
+            type="checkbox"
+            formControlName="cerrarConFaltante"
+            [disabled]="!esAdministrador() || guardando()"
+          />
           <span>
             Cerrar la orden con faltante (solo el Administrador puede confirmar esta decisión).
           </span>
         </label>
       }
 
+      @if (errorGuardado()) {
+        <div class="campo__error" role="alert">{{ errorGuardado() }}</div>
+      }
+
       <div class="form-acciones">
-        <button type="submit" class="boton boton--primario">Registrar recepción</button>
+        <button type="submit" class="boton boton--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Registrando…' : 'Registrar recepción' }}
+        </button>
       </div>
     </form>
   }
 
   @if (resultado(); as visto) {
     <section class="tarjeta bloque resultado" aria-live="polite">
-      <h2 class="titulo-section">{{ visto.recepcion.folio }} · registrada</h2>
+      <h2 class="titulo-section">
+        {{ visto.recepcion.folio || ('Recepción ' + visto.recepcion.id) }} · registrada
+      </h2>
       <p>
         Flask registró la recepción y la orden quedó
         <app-chip-estado-compra [estado]="visto.estadoOrden" />.
@@ -228,7 +273,8 @@
 
       <p class="nota">
         Los lotes con cantidad aceptada están disponibles en M15 y el material rechazado quedó
-        registrado como merma en M17.
+        registrado como merma en M17. El contrato no expone un listado de recepciones: este detalle
+        corresponde al intento registrado en la sesión; reintentar conserva la misma Idempotency-Key.
       </p>
     </section>
   }

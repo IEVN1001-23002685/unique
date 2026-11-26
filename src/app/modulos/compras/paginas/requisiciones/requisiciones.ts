@@ -1,6 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
 import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
@@ -23,6 +24,7 @@ export class Requisiciones {
   protected readonly busqueda = signal('');
   protected readonly filtro = signal<EstadoRequisicion | 'TODOS'>('TODOS');
   protected readonly porCancelar = signal<Requisicion | null>(null);
+  protected readonly guardando = signal(false);
 
   protected readonly opciones: { valor: EstadoRequisicion | 'TODOS'; etiqueta: string }[] = [
     { valor: 'TODOS', etiqueta: 'Todas' },
@@ -69,6 +71,10 @@ export class Requisiciones {
     this.busqueda.set((evento.target as HTMLInputElement).value);
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected materialNombre(materialId: number): string {
     const material = this.servicio.obtenerMaterial(materialId);
     return material ? `${material.codigo} · ${material.nombre}` : 'Material no disponible';
@@ -79,47 +85,60 @@ export class Requisiciones {
   }
 
   protected cotizar(requisicion: Requisicion): void {
-    this.servicio.generarCotizaciones(requisicion.id).subscribe({
-      next: (resultado) => {
-        if (!resultado) {
-          this.avisos.mostrar(
-            'error',
-            `${requisicion.folio} no tiene líneas cotizables con proveedores activos.`,
-          );
-          return;
-        }
-        this.avisos.mostrar(
-          'exito',
-          resultado.conAlterno
-            ? `Se generaron ${resultado.cantidad} cotizaciones en Flask para comparar.`
-            : `Se generó ${resultado.cantidad} cotización en Flask: el material no tiene alterno.`,
-        );
-        void this.router.navigate(['/compras/cotizaciones'], {
-          queryParams: { req: requisicion.folio },
-        });
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .generarCotizaciones(requisicion.id)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: (resultado) => {
+          if (!resultado) {
+            this.avisos.mostrar(
+              'error',
+              `${requisicion.folio} no tiene líneas cotizables con proveedores activos.`,
+            );
+            return;
+          }
+          if (!resultado.suficiente) {
+            this.avisos.mostrar(
+              'advertencia',
+              `Solo se generó ${resultado.cantidad} cotización aunque hay alterno; Flask debe confirmar la regla de dos proveedores.`,
+            );
+          } else {
+            this.avisos.mostrar(
+              'exito',
+              `Se generaron ${resultado.cantidad} cotizaciones en Flask para comparar.`,
+            );
+          }
+          void this.router.navigate(['/compras/cotizaciones'], {
+            queryParams: { req: requisicion.folio },
+          });
+        },
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 
   protected ordenDirecta(requisicion: Requisicion): void {
-    this.servicio.emitirOrdenDirecta(requisicion.id).subscribe({
-      next: (orden) => {
-        if (!orden) {
+    this.guardando.set(true);
+    this.servicio
+      .emitirOrdenDirecta(requisicion.id)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: (orden) => {
+          if (!orden) {
+            this.avisos.mostrar(
+              'advertencia',
+              'No hay proveedor principal disponible para emitir la orden directa.',
+            );
+            return;
+          }
           this.avisos.mostrar(
-            'advertencia',
-            'No hay proveedor principal disponible para emitir la orden directa.',
+            'exito',
+            `${orden.folio} se creó y emitió en Flask con el precio del proveedor principal.`,
           );
-          return;
-        }
-        this.avisos.mostrar(
-          'exito',
-          `${orden.folio} se creó y emitió en Flask con el precio del proveedor principal.`,
-        );
-        void this.router.navigate(['/compras/ordenes', orden.id, 'editar']);
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+          void this.router.navigate(['/compras/ordenes']);
+        },
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 
   protected confirmarCancelacion(): void {
@@ -127,12 +146,16 @@ export class Requisiciones {
     if (!requisicion) {
       return;
     }
-    this.servicio.cancelarRequisicion(requisicion.id).subscribe({
-      next: () => {
-        this.porCancelar.set(null);
-        this.avisos.mostrar('advertencia', `${requisicion.folio} se canceló en Flask.`);
-      },
-      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
-    });
+    this.guardando.set(true);
+    this.servicio
+      .cancelarRequisicion(requisicion.id)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: () => {
+          this.porCancelar.set(null);
+          this.avisos.mostrar('advertencia', `${requisicion.folio} se canceló en Flask.`);
+        },
+        error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+      });
   }
 }
