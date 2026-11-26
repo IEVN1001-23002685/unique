@@ -41,7 +41,9 @@
       }
     </div>
 
-    <button type="submit" class="autenticacion__boton">Iniciar Sesión</button>
+    <button type="submit" class="autenticacion__boton" [disabled]="cargando">
+      {{ cargando ? 'Validando…' : 'Iniciar Sesión' }}
+    </button>
   </form>
 
   @if (mensaje) {

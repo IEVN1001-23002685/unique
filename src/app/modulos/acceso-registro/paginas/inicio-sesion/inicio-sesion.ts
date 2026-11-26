@@ -1,9 +1,10 @@
 import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ModalAutenticacionServicio } from '../../../../nucleo/servicios/modal-autenticacion-servicio';
 import { mensajeError } from '../../../../core/api/errores';
-import { CredencialesLogin, rutaDestinoPorRol } from '../../modelos/acceso-registro';
+import { CarritoServicio } from '../../../carrito/servicios/carrito-servicio';
+import { CredencialesLogin, rutaDestinoSegura } from '../../modelos/acceso-registro';
 import { AccesoRegistroServicio } from '../../servicios/acceso-registro-servicio';
 
 @Component({
@@ -16,8 +17,12 @@ import { AccesoRegistroServicio } from '../../servicios/acceso-registro-servicio
 export class InicioSesion {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly ruta = inject(ActivatedRoute);
   private readonly modal = inject(ModalAutenticacionServicio);
   private readonly servicio = inject(AccesoRegistroServicio);
+  private readonly carrito = inject(CarritoServicio);
+
+  private readonly returnUrl = this.ruta.snapshot.queryParamMap.get('returnUrl');
 
   @Output() cerrar = new EventEmitter<void>();
   @Output() irARegistro = new EventEmitter<void>();
@@ -54,7 +59,9 @@ export class InicioSesion {
         this.cargando = false;
         this.enviarLogin.emit(credenciales);
         this.modal.cerrar();
-        void this.router.navigateByUrl(rutaDestinoPorRol(respuesta.usuario.rol));
+        // M04 revalida el carrito con la sesión ya activa; la fusión la decide Flask.
+        this.carrito.cargar().subscribe({ error: () => undefined });
+        void this.router.navigateByUrl(rutaDestinoSegura(respuesta.usuario.rol, this.returnUrl));
       },
       error: (error: unknown) => {
         this.cargando = false;
@@ -69,9 +76,10 @@ export class InicioSesion {
   }
 
   onCerrar(): void {
+    // Se captura antes de emitir: el contenedor del modal cierra de forma sincrónica.
+    const estabaEnModal = this.modal.modalActiva() !== null;
     this.cerrar.emit();
-    // Dentro del modal, el contenedor cierra la vista; como página, vuelve al catálogo.
-    if (this.modal.modalActiva() === null) {
+    if (!estabaEnModal) {
       void this.router.navigate(['/catalogo']);
     }
   }

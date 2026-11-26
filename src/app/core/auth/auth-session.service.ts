@@ -13,6 +13,8 @@ export interface DatosRegistroApi {
   correo: string;
   telefono: string;
   password: string;
+  /** Nombre pendiente de confirmar contra Flask; §7 M01 lo exige como obligatorio. */
+  acepta_privacidad: boolean;
   acepta_promociones: boolean;
 }
 

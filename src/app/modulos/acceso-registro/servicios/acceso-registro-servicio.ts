@@ -30,6 +30,7 @@ export class AccesoRegistroServicio {
       correo: datos.correo,
       telefono: datos.telefono,
       password: datos.contrasena,
+      acepta_privacidad: datos.aceptaPrivacidad,
       acepta_promociones: datos.recibirPromociones,
     };
     return this.sesion.registrar(cuerpo);

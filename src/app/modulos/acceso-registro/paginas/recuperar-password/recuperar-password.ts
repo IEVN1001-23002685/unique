@@ -1,13 +1,17 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { mensajeError } from '../../../../core/api/errores';
+import {
+  TOKEN_RECUPERACION_DEMO,
+  VIGENCIA_RECUPERACION_MIN,
+} from '../../modelos/acceso-registro';
 import { AccesoRegistroServicio } from '../../servicios/acceso-registro-servicio';
 
 @Component({
   selector: 'app-recuperar-password',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './recuperar-password.html',
   styleUrl: './recuperar-password.css',
 })
@@ -20,15 +24,20 @@ export class RecuperarPassword {
     correo: ['', [Validators.required, Validators.email]],
   });
 
-  enviado = false;
-  cargando = false;
-  mensajeInvalido = this.servicio.formularioInvalido;
-  mensaje = '';
+  protected enviado = false;
+  protected cargando = false;
+  protected mensajeInvalido = this.servicio.formularioInvalido;
+  protected error = '';
 
   /** Respuesta invariable: nunca revela si el correo existe (§7 de M01). */
-  readonly mensajeFijo = this.servicio.recuperacionPendiente;
+  protected readonly mensajeFijo = this.servicio.recuperacionPendiente;
+  protected readonly vigenciaMinutos = VIGENCIA_RECUPERACION_MIN;
+  protected readonly enlaceDemostracion: string[] = [
+    '/restablecer',
+    TOKEN_RECUPERACION_DEMO,
+  ];
 
-  protected errorEnCorreo(): boolean {
+  errorEnCorreo(): boolean {
     const control = this.formulario.controls.correo;
     return control.invalid && (control.touched || control.dirty);
   }
@@ -40,16 +49,17 @@ export class RecuperarPassword {
     }
 
     this.cargando = true;
-    this.mensaje = '';
+    this.error = '';
+    this.enviado = false;
     this.servicio.recuperar(this.formulario.controls.correo.value).subscribe({
-      next: (respuesta) => {
+      next: () => {
+        // Se ignora el texto del backend: debe ser siempre el mismo para cualquier correo.
         this.cargando = false;
-        this.mensaje = respuesta.mensaje;
         this.enviado = true;
       },
       error: (error: unknown) => {
         this.cargando = false;
-        this.mensaje = mensajeError(error, 'No fue posible procesar la solicitud.');
+        this.error = mensajeError(error, 'No fue posible procesar la solicitud.');
       },
     });
   }

@@ -122,7 +122,9 @@
       </label>
     </div>
 
-    <button type="submit" class="autenticacion__boton">Registrarse</button>
+    <button type="submit" class="autenticacion__boton" [disabled]="cargando">
+      {{ cargando ? 'Creando cuenta…' : 'Registrarse' }}
+    </button>
   </form>
 
   @if (mensaje) {

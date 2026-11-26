@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { Tienda } from './plantillas/tienda/tienda';
 import { PanelAdminComponent } from './modulos/admin-unique/preparacion/panel-admin.component';
 import { authGuard, roleGuard } from './core/auth/auth-session.service';
+import { invitadoGuard } from './modulos/acceso-registro/guards/invitado.guard';
 import { ADMIN_UNIQUE_ROUTES } from './modulos/admin-unique/admin.routes';
 
 const CLIENTE = [authGuard, roleGuard];
@@ -54,6 +55,8 @@ export const routes: Routes = [
       },
       {
         path: 'login',
+        title: 'Iniciar sesión · UNIQUE',
+        canActivate: [invitadoGuard],
         loadComponent: () =>
           import('./modulos/acceso-registro/paginas/inicio-sesion/inicio-sesion').then(
             (c) => c.InicioSesion,
@@ -61,11 +64,15 @@ export const routes: Routes = [
       },
       {
         path: 'registro',
+        title: 'Crear cuenta · UNIQUE',
+        canActivate: [invitadoGuard],
         loadComponent: () =>
           import('./modulos/acceso-registro/paginas/registro/registro').then((c) => c.Registro),
       },
       {
         path: 'recuperar',
+        title: 'Recuperar contraseña · UNIQUE',
+        canActivate: [invitadoGuard],
         loadComponent: () =>
           import('./modulos/acceso-registro/paginas/recuperar-password/recuperar-password').then(
             (c) => c.RecuperarPassword,
@@ -73,6 +80,8 @@ export const routes: Routes = [
       },
       {
         path: 'restablecer/:token',
+        title: 'Restablecer contraseña · UNIQUE',
+        canActivate: [invitadoGuard],
         loadComponent: () =>
           import(
             './modulos/acceso-registro/paginas/restablecer-password/restablecer-password'

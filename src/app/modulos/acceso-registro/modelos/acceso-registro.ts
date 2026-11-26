@@ -50,6 +50,19 @@ export function rutaDestinoPorRol(rol: RolAcceso): string {
   return RUTAS_POR_ROL[rol];
 }
 
+/** Acepta solo rutas internas para no permitir redirecciones externas desde queryParams. */
+export function rutaDestinoSegura(rol: RolAcceso, returnUrl?: string | null): string {
+  if (returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//')) {
+    return returnUrl;
+  }
+  return rutaDestinoPorRol(rol);
+}
+
+/** Token local usado solo para mostrar el enlace simulado de recuperación (§7 M01). */
+export const TOKEN_RECUPERACION_DEMO = 'demo';
+
+export const VIGENCIA_RECUPERACION_MIN = 30;
+
 export const MENSAJES_M01 = {
   registroPendiente: 'Creando tu cuenta…',
   ingresoPendiente: 'Validando tus credenciales…',

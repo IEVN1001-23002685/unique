@@ -1,48 +1,58 @@
-/* Tarjeta del modal de inicio de sesion. Diseno original conservado. */
+/* M01 · Inicio de sesión — identidad Vintage Collegiate de UNIQUE. */
+
+/* Como página de la tienda se centra; dentro del modal conserva su tamaño natural. */
+:host-context(app-tienda) {
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px 48px;
+}
 
 .autenticacion {
   position: relative;
   width: 100%;
   max-width: 480px;
-  border-radius: 28px;
-  background-color: #e6cce8;
-  padding: 28px 36px 24px;
-  box-shadow: 0 12px 30px rgb(66 33 75 / 0.14);
-  color: #3b2d3e;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  border: 1px solid #bf7ebb;
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 28px 32px 24px;
+  box-shadow: 0 14px 36px rgb(84 45 89 / 0.16);
+  color: #1f1226;
+  font-family: Arimo, Arial, sans-serif;
 }
 
 .autenticacion__cerrar {
   position: absolute;
-  top: 18px;
-  left: 18px;
+  top: 16px;
+  left: 16px;
+  display: grid;
+  place-items: center;
   width: 34px;
   height: 34px;
-  border: 2px solid #2b212d;
-  border-radius: 50%;
-  background-color: #ffffff;
-  color: #2b212d;
+  border: 1px solid #bf7ebb;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #542d59;
   font-size: 16px;
-  font-weight: 700;
   cursor: pointer;
 }
 
 .autenticacion__encabezado {
-  margin: 16px 0 18px;
+  margin: 14px 0 20px;
   text-align: center;
 }
 
 .autenticacion__logo {
   display: block;
   width: 100%;
-  max-width: 210px;
+  max-width: 190px;
   height: auto;
-  margin: 0 auto 10px;
+  margin: 0 auto 12px;
 }
 
 .autenticacion__titulo {
   margin: 0;
-  color: #332736;
+  color: #542d59;
+  font-family: Vazirmatn, Arimo, Arial, sans-serif;
   font-size: 26px;
   font-weight: 700;
 }
@@ -61,18 +71,22 @@
 
 .autenticacion__etiqueta {
   padding-left: 4px;
-  color: #2f2432;
-  font-size: 13px;
+  color: #1f1226;
+  font-family: Akshar, Arimo, Arial, sans-serif;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .autenticacion__entrada {
-  height: 42px;
-  border: none;
+  width: 100%;
+  height: 44px;
+  box-sizing: border-box;
+  border: 1px solid #bf7ebb;
   border-radius: 999px;
-  background-color: #f3ecf4;
+  background: #f9eef8;
   padding: 0 16px;
-  color: #2b212d;
+  color: #1f1226;
+  font-family: Arimo, Arial, sans-serif;
   font-size: 14px;
 }
 
@@ -81,22 +95,29 @@
 }
 
 .autenticacion__boton {
-  width: 72%;
-  height: 44px;
-  margin: 12px auto 4px;
-  border: none;
+  width: 100%;
+  height: 46px;
+  margin-top: 6px;
+  border: 0;
   border-radius: 999px;
-  background-color: #4f2857;
+  background: #542d59;
   color: #ffffff;
+  font-family: Akshar, Arimo, Arial, sans-serif;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
 }
 
+.autenticacion__boton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .autenticacion__pie {
-  margin: 14px 0 0;
-  color: #3b2d3e;
-  font-size: 12px;
+  margin: 16px 0 0;
+  color: #6b5870;
+  font-size: 13px;
+  line-height: 1.6;
   text-align: center;
 }
 
@@ -104,38 +125,55 @@
   border: 0;
   background: none;
   padding: 0;
-  color: #4f2857;
+  color: #8b548c;
+  font-family: Akshar, Arimo, Arial, sans-serif;
   font-size: inherit;
   font-weight: 700;
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
-/* Validacion en linea y aviso de limitacion del frontend sin backend. */
 .autenticacion__error {
   margin: 0;
   padding-left: 4px;
   color: #c8374b;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .autenticacion__aviso {
-  margin: 12px 0 0;
-  border-radius: 14px;
-  background-color: #f8dadf;
-  padding: 8px 12px;
+  margin: 14px 0 0;
+  border: 1px solid #c8374b;
+  border-radius: 12px;
+  background: #f8dadf;
+  padding: 10px 12px;
   color: #7e2635;
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .autenticacion__cerrar:focus-visible,
 .autenticacion__boton:focus-visible,
 .autenticacion__enlace:focus-visible {
-  outline: 2px solid #4f2857;
-  outline-offset: 2px;
+  outline: 2px solid #542d59;
+  outline-offset: 3px;
 }
 
 .autenticacion__entrada:focus-visible {
-  box-shadow: 0 0 0 3px rgb(79 40 87 / 0.45);
+  box-shadow: 0 0 0 3px rgb(84 45 89 / 0.35);
+}
+
+@media (max-width: 480px) {
+  .autenticacion {
+    border-radius: 20px;
+    padding: 24px 20px 20px;
+  }
+
+  .autenticacion__titulo {
+    font-size: 22px;
+  }
+
+  .autenticacion__pie {
+    font-size: 12px;
+  }
 }

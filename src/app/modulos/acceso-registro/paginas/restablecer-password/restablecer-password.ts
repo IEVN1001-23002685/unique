@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { mensajeError } from '../../../../core/api/errores';
+import { TOKEN_RECUPERACION_DEMO } from '../../modelos/acceso-registro';
 import { AccesoRegistroServicio } from '../../servicios/acceso-registro-servicio';
 import { coincide, passwordFuerte } from '../../validadores/acceso-registro.validadores';
 
@@ -21,6 +22,9 @@ export class RestablecerPassword {
   readonly token = this.ruta.snapshot.paramMap.get('token') ?? '';
   readonly mensajePendiente = this.servicio.restablecimientoPendiente;
   readonly mensajeInvalido = this.servicio.formularioInvalido;
+
+  protected readonly tokenInvalido = this.token.length === 0;
+  protected readonly esDemostracion = this.token === TOKEN_RECUPERACION_DEMO;
 
   readonly formulario = this.fb.group(
     {
@@ -47,6 +51,11 @@ export class RestablecerPassword {
   }
 
   onSubmit(): void {
+    if (this.tokenInvalido) {
+      this.mensaje = 'El enlace no es válido. Solicita una nueva instrucción de recuperación.';
+      return;
+    }
+
     if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       this.mensaje = this.mensajeInvalido;

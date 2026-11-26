@@ -1,11 +1,13 @@
 import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ModalAutenticacionServicio } from '../../../../nucleo/servicios/modal-autenticacion-servicio';
 import { mensajeError } from '../../../../core/api/errores';
 import {
   AccesoRegistroServicio,
 } from '../../servicios/acceso-registro-servicio';
+import { CarritoServicio } from '../../../carrito/servicios/carrito-servicio';
+import { rutaDestinoSegura } from '../../modelos/acceso-registro';
 import {
   coincide,
   passwordFuerte,
@@ -31,8 +33,12 @@ type CampoRegistro =
 export class Registro {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly ruta = inject(ActivatedRoute);
   private readonly modal = inject(ModalAutenticacionServicio);
   private readonly servicio = inject(AccesoRegistroServicio);
+  private readonly carrito = inject(CarritoServicio);
+
+  private readonly returnUrl = this.ruta.snapshot.queryParamMap.get('returnUrl');
 
   @Output() cerrar = new EventEmitter<void>();
   @Output() irAIniciarSesion = new EventEmitter<void>();
@@ -93,21 +99,23 @@ export class Registro {
         recibirPromociones: !!valores.recibirPromociones,
       })
       .subscribe({
-      next: () => {
-        this.cargando = false;
-        this.modal.cerrar();
-        void this.router.navigate(['/catalogo']);
-      },
-      error: (error: unknown) => {
-        this.cargando = false;
-        this.mensaje = mensajeError(error, 'No fue posible crear la cuenta.');
-      },
-    });
+        next: () => {
+          this.cargando = false;
+          this.modal.cerrar();
+          this.carrito.cargar().subscribe({ error: () => undefined });
+          void this.router.navigateByUrl(rutaDestinoSegura('CLIENTE', this.returnUrl));
+        },
+        error: (error: unknown) => {
+          this.cargando = false;
+          this.mensaje = mensajeError(error, 'No fue posible crear la cuenta.');
+        },
+      });
   }
 
   onCerrar(): void {
+    const estabaEnModal = this.modal.modalActiva() !== null;
     this.cerrar.emit();
-    if (this.modal.modalActiva() === null) {
+    if (!estabaEnModal) {
       void this.router.navigate(['/catalogo']);
     }
   }
