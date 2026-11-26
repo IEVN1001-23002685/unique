@@ -37,10 +37,14 @@ export class EntregasM19Component implements OnInit {
   productos: ProductoRepartido[] = [];
   repartidores: Repartidor[] = [];
   cargando = true;
+  cargandoRepartidores = false;
   error = '';
   aviso = '';
   filtro = '';
   codigoPostal = '';
+  ordenCP: 'CP' | 'PRIORIDAD' | 'FECHA' = 'CP';
+  filtroRepartidor = '';
+  seguimientoFiltro = { estado: '', desde: '', hasta: '' };
   pagina = 1;
   porPagina = 20;
   total = 0;
@@ -135,6 +139,11 @@ export class EntregasM19Component implements OnInit {
     return `${fecha.getFullYear()}-${mes}-${dia}`;
   }
 
+  /** §10: fechaNoPasada para M19; las fechas ISO se comparan como texto. */
+  private esFechaValida(fecha: string): boolean {
+    return !!fecha && fecha >= this.hoy();
+  }
+
   cargar(): void {
     if (this.pestana === 'repartidores') {
       this.cargarRepartidores();
@@ -192,15 +201,19 @@ export class EntregasM19Component implements OnInit {
   }
 
   cargarRepartidores(): void {
+    this.cargandoRepartidores = true;
+    this.error = '';
     this.servicio.listarRepartidores().subscribe({
       next: (respuesta) => {
         this.repartidores = respuesta.items;
         this.total = respuesta.total;
         this.pagina = respuesta.pagina;
         this.porPagina = respuesta.por_pagina;
+        this.cargandoRepartidores = false;
       },
       error: (error: unknown) => {
         this.error = mensajeError(error, 'No se pudo cargar el catálogo de repartidores.');
+        this.cargandoRepartidores = false;
       },
     });
   }
@@ -236,12 +249,58 @@ export class EntregasM19Component implements OnInit {
 
   get filtradas(): FilaEntrega[] {
     const texto = this.filtro.trim().toLowerCase();
-    if (!texto) return this.filas;
-    return this.filas.filter((f) =>
-      `${f.folio} ${f.pedido} ${f.destinatario} ${f.codigo_postal} ${f.repartidor}`
-        .toLowerCase()
-        .includes(texto),
-    );
+    let lista = texto
+      ? this.filas.filter((f) =>
+          `${f.folio} ${f.pedido} ${f.destinatario} ${f.codigo_postal} ${f.repartidor}`
+            .toLowerCase()
+            .includes(texto),
+        )
+      : [...this.filas];
+
+    if (this.pestana === 'asignar') {
+      // §7: ordenar por CP permite agrupar paradas de una misma ruta.
+      if (this.ordenCP === 'CP') {
+        lista.sort(
+          (a, b) =>
+            a.codigo_postal.localeCompare(b.codigo_postal) ||
+            a.fecha_programada.localeCompare(b.fecha_programada),
+        );
+      } else if (this.ordenCP === 'PRIORIDAD') {
+        const peso = (f: FilaEntrega): number => (f.detalle === 'ALTA' ? 0 : 1);
+        lista.sort(
+          (a, b) =>
+            peso(a) - peso(b) ||
+            a.fecha_programada.localeCompare(b.fecha_programada) ||
+            a.codigo_postal.localeCompare(b.codigo_postal),
+        );
+      } else {
+        lista.sort(
+          (a, b) =>
+            a.fecha_programada.localeCompare(b.fecha_programada) ||
+            a.codigo_postal.localeCompare(b.codigo_postal),
+        );
+      }
+      return lista;
+    }
+
+    if (this.pestana === 'seguimiento') {
+      const repartidor = this.filtroRepartidor.trim().toLowerCase();
+      const { estado, desde, hasta } = this.seguimientoFiltro;
+      lista = lista.filter((f) => {
+        if (estado && f.estado !== estado) return false;
+        const fecha = (
+          f.entrega_origen?.salida_en ??
+          f.entrega_origen?.resultado_en ??
+          f.fecha_programada ??
+          ''
+        ).slice(0, 10);
+        if (desde && fecha < desde) return false;
+        if (hasta && fecha > hasta) return false;
+        if (repartidor && !f.repartidor.toLowerCase().includes(repartidor)) return false;
+        return true;
+      });
+    }
+    return lista;
   }
 
   private filaPorAsignar(p: PedidoPorAsignar): FilaEntrega {
@@ -299,6 +358,10 @@ export class EntregasM19Component implements OnInit {
       this.error = 'Indica un repartidor y una fecha programada.';
       return;
     }
+    if (!this.esFechaValida(this.asignacion.fecha_programada)) {
+      this.error = 'La fecha programada debe ser igual o posterior a hoy.';
+      return;
+    }
     this.error = '';
     this.servicio
       .asignar({
@@ -310,7 +373,7 @@ export class EntregasM19Component implements OnInit {
       .subscribe({
         next: (entrega) => {
           this.seguimiento = [entrega, ...this.seguimiento.filter((e) => e.id !== entrega.id)];
-          this.aviso = `Entrega ${entrega.folio} asignada correctamente.`;
+          this.aviso = `Entrega ${entrega.folio} asignada. Esa guía es la que verá el cliente en M06.`;
           this.cargar();
         },
         error: (error: unknown) => (this.error = mensajeError(error, 'No se pudo asignar la entrega.')),
@@ -323,7 +386,7 @@ export class EntregasM19Component implements OnInit {
     this.servicio.salida(e.id).subscribe({
       next: (actualizada) => {
         this.reemplazar(actualizada);
-        this.aviso = `Salida de ${actualizada.folio} confirmada.`;
+        this.aviso = `Salida de ${actualizada.folio} confirmada: el pedido pasa a EN_REPARTO y Flask descuenta la existencia (M12).`;
       },
       error: (error: unknown) => (this.error = mensajeError(error, 'No se pudo confirmar la salida.')),
     });
@@ -360,8 +423,8 @@ export class EntregasM19Component implements OnInit {
           this.reemplazar(actualizada);
           this.resultado.entrega = null;
           this.aviso = this.resultado.entregado
-            ? 'Entrega registrada como entregada.'
-            : 'Fallo registrado; existencias reingresadas.';
+            ? 'Entrega registrada como ENTREGADA: se guarda la hora y se abre la ventana de devolución (M07).'
+            : 'Fallo registrado: las prendas se reingresan conservando su reserva y el pedido vuelve a LISTO_ENVIO para un nuevo intento.';
         },
         error: (error: unknown) => (this.error = mensajeError(error, 'No se pudo registrar el resultado.')),
       });
@@ -376,6 +439,10 @@ export class EntregasM19Component implements OnInit {
     const repartidor = this.repartidorHoja;
     if (!repartidor || !this.hoja.fecha) {
       this.error = 'Indica repartidor y fecha para la hoja de reparto.';
+      return;
+    }
+    if (!this.esFechaValida(this.hoja.fecha)) {
+      this.error = 'La fecha de la hoja debe ser igual o posterior a hoy.';
       return;
     }
     this.error = '';
