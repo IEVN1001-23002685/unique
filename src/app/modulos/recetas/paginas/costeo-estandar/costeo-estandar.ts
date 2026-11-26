@@ -73,6 +73,12 @@ export class CosteoEstandar {
     });
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe({
+      error: () => this.avisos.mostrar('error', 'No fue posible recargar el costeo desde Flask.'),
+    });
+  }
+
   protected alCambiarProducto(evento: Event): void {
     this.productoFiltro.set((evento.target as HTMLSelectElement).value);
   }

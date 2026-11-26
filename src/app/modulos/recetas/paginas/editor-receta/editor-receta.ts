@@ -11,7 +11,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, catchError, debounceTime, map, of, switchMap } from 'rxjs';
-import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionRecetas } from '../../componentes/navegacion-recetas/navegacion-recetas';
 import type { CodigoTalla } from '../../../productos/modelos/producto-maestro';
@@ -62,13 +62,7 @@ interface FormaReceta {
 
 @Component({
   selector: 'app-editor-receta',
-  imports: [
-    CurrencyPipe,
-    ReactiveFormsModule,
-    RouterLink,
-    ModalConfirmacion,
-    NavegacionRecetas,
-  ],
+  imports: [CurrencyPipe, ReactiveFormsModule, RouterLink, NavegacionRecetas],
   templateUrl: './editor-receta.html',
   styleUrl: './editor-receta.css',
 })
@@ -100,7 +94,7 @@ export class EditorReceta {
   protected readonly disenos = this.servicio.disenos;
   protected readonly materialNuevo = signal('HIL-COS');
   protected readonly intento = signal(false);
-  protected readonly archivando = signal(false);
+  protected readonly errorPreview = signal('');
   protected readonly copiarProducto = signal(1);
   protected readonly copiarTalla = signal<CodigoTalla>('CH');
   private readonly vistaPreview = signal<PreviewReceta | null>(null);
@@ -216,7 +210,16 @@ export class EditorReceta {
           if (!this.receta()) {
             return of(null);
           }
-          return this.servicio.previsualizar(this.datosReceta()).pipe(catchError(() => of(null)));
+          this.errorPreview.set('');
+          return this.servicio.previsualizar(this.datosReceta()).pipe(
+            catchError((error: unknown) => {
+              this.vistaPreview.set(null);
+              this.errorPreview.set(
+                mensajeError(error, 'No fue posible previsualizar la receta en Flask.'),
+              );
+              return of(null);
+            }),
+          );
         }),
       )
       .subscribe((vista) => {
@@ -245,6 +248,22 @@ export class EditorReceta {
         this.actualizarPreview();
       },
       error: () => this.avisos.mostrar('error', 'No fue posible cargar la receta desde Flask.'),
+    });
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe({
+      next: () => {
+        const cargada = this.esNueva ? this.recetaVacia() : this.servicio.recetaDe(this.id);
+        if (!cargada) {
+          this.avisos.mostrar('error', 'No encontramos la receta solicitada en Flask.');
+          return;
+        }
+        this.recetaInterna.set(cargada);
+        this.rellenarForma(cargada);
+        this.actualizarPreview();
+      },
+      error: () => this.avisos.mostrar('error', 'No fue posible recargar la receta desde Flask.'),
     });
   }
 
@@ -312,13 +331,22 @@ export class EditorReceta {
     this.valores.set(this.forma.getRawValue());
   }
 
-  private actualizarPreview(): void {
+  protected actualizarPreview(): void {
     if (!this.receta()) {
       return;
     }
+    this.errorPreview.set('');
     this.servicio
       .previsualizar(this.datosReceta())
-      .pipe(catchError(() => of(null)))
+      .pipe(
+        catchError((error: unknown) => {
+          this.vistaPreview.set(null);
+          this.errorPreview.set(
+            mensajeError(error, 'No fue posible previsualizar la receta en Flask.'),
+          );
+          return of(null);
+        }),
+      )
       .subscribe((vista) => {
         if (vista) {
           this.vistaPreview.set(vista);
@@ -504,17 +532,6 @@ export class EditorReceta {
           void this.router.navigate(['/admin/recetas/editar', resultado.recetaId]);
         }
       });
-  }
-
-  protected pedirArchivado(): void {
-    this.archivando.set(true);
-  }
-
-  protected confirmarArchivado(): void {
-    this.servicio.archivarReceta(this.id).subscribe((resultado) => {
-      this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
-      this.archivando.set(false);
-    });
   }
 
   protected tallasDeCopia(): CodigoTalla[] {

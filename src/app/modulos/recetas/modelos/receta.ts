@@ -146,6 +146,8 @@ export interface DatosDiseno {
 export interface ResultadoM11 {
   ok: boolean;
   mensaje: string;
+  /** Acción no ejecutada porque el contrato Flask aún no la define; se avisa, no se finge éxito. */
+  pendiente?: boolean;
   recetaId?: number;
   disenoId?: number;
 }
