@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Arimo:wght@400;500;600;700&family=Akshar:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+/* Las fuentes UNIQUE se cargan desde index.html para no inflar los estilos de componente. */
 :host {
   display: block;
   min-height: 100vh;
