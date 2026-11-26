@@ -4,6 +4,7 @@ import { invitadoGuard } from './modulos/acceso-registro/guards/invitado.guard';
 import { PanelAdminComponent } from './modulos/admin-unique/preparacion/panel-admin.component';
 import { authGuard, roleGuard } from './core/auth/auth-session.service';
 import { ADMIN_UNIQUE_ROUTES } from './modulos/admin-unique/admin.routes';
+import { checkoutGuard } from './modulos/carrito/guards/checkout.guard';
 
 const CLIENTE = [authGuard, roleGuard];
 const OPERATIVO = [authGuard, roleGuard];
@@ -21,15 +22,15 @@ export const routes: Routes = [
           import('./modulos/catalogo/catalogo.routes').then((m) => m.CATALOGO_RUTAS),
       },
       {
+        // §10.2: M04 es pública; la sesión se exige al ir a pagar.
         path: 'carrito',
-        canActivate: CLIENTE,
-        data: { roles: ['CLIENTE'] },
+        title: 'Mi carrito · UNIQUE',
         loadComponent: () => import('./modulos/carrito/carrito').then((c) => c.Carrito),
       },
       {
         path: 'pago',
-        canActivate: CLIENTE,
-        data: { roles: ['CLIENTE'] },
+        title: 'Pago · UNIQUE',
+        canActivate: [authGuard, checkoutGuard],
         loadComponent: () => import('./modulos/pago/pago').then((c) => c.Pago),
       },
       {

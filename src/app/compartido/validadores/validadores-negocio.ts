@@ -164,3 +164,21 @@ export const cvv: ValidatorFn = (control: AbstractControl): ValidationErrors | n
 
   return /^\d{3,4}$/.test(valor.trim()) ? null : { cvv: true };
 };
+
+/**
+ * §10.3b · cantidadEntera: entero entre 1 y el máximo de la línea (10 en M04).
+ * La comprobación pura se reutiliza en el servicio del carrito; Flask valida el valor real.
+ */
+export function esCantidadEnteraValida(cantidad: number, maximo: number): boolean {
+  return Number.isInteger(cantidad) && cantidad >= 1 && cantidad <= maximo;
+}
+
+export const cantidadEntera = (maximo: number): ValidatorFn => {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const valor = control.value;
+    if (typeof valor !== 'number' || !esCantidadEnteraValida(valor, maximo)) {
+      return { cantidadEntera: { maximo } };
+    }
+    return null;
+  };
+};

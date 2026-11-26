@@ -3,6 +3,8 @@ import { Component, computed, HostListener, inject, signal } from '@angular/core
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { mensajeError } from '../../../../core/api/errores';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
+import { MAX_PIEZAS_POR_LINEA } from '../../../carrito/modelos/carrito';
 import { CarritoServicio } from '../../../carrito/servicios/carrito-servicio';
 import { CatalogoServicio, type OrigenCatalogo } from '../../servicios/catalogo-servicio';
 import {
@@ -28,6 +30,7 @@ export class DetalleProducto {
   private readonly router = inject(Router);
   private readonly carrito = inject(CarritoServicio);
   private readonly catalogo = inject(CatalogoServicio);
+  private readonly sesion = inject(AuthStateService);
 
   protected readonly producto = signal<ProductoCatalogo | undefined>(undefined);
   protected readonly imagenNoDisponible = signal(false);
@@ -198,13 +201,13 @@ export class DetalleProducto {
   }
 
   protected aumentarCantidad(): void {
-    this.cantidad.update((cantidad) => Math.min(10, cantidad + 1));
+    this.cantidad.update((cantidad) => Math.min(MAX_PIEZAS_POR_LINEA, cantidad + 1));
   }
 
   protected cambiarCantidad(evento: Event): void {
     const valor = Number((evento.target as HTMLInputElement).value);
     const entero = Number.isFinite(valor) ? Math.trunc(valor) : 1;
-    this.cantidad.set(Math.min(10, Math.max(1, entero)));
+    this.cantidad.set(Math.min(MAX_PIEZAS_POR_LINEA, Math.max(1, entero)));
   }
 
   /** Entrega variante (SKU) y cantidad a M04; no reserva existencias (§5 y §7). */
@@ -221,9 +224,11 @@ export class DetalleProducto {
       return;
     }
 
-    if (this.origen() !== 'servidor') {
+    // Un invitado puede llevar la muestra al carrito de su navegador; una cuenta
+    // con sesión solo puede agregar prendas confirmadas por Flask.
+    if (this.origen() !== 'servidor' && this.sesion.autenticado()) {
       this.mensaje.set(
-        'La variante quedó seleccionada, pero agregar al carrito requiere Flask. No se guardó ningún producto.',
+        'Los datos son de demostración y Flask no respondió. No se guardó ningún producto en tu carrito.',
       );
       return;
     }

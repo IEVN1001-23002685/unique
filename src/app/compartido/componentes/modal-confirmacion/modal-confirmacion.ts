@@ -10,6 +10,7 @@ export class ModalConfirmacion {
   readonly titulo = input('Confirmar acción');
   readonly mensaje = input('¿Deseas continuar?');
   readonly etiquetaConfirmar = input('Confirmar');
+  readonly disabledConfirmar = input(false);
 
   readonly confirmar = output<void>();
   readonly cancelar = output<void>();
