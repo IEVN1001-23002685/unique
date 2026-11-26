@@ -79,3 +79,88 @@ export const mermaPct: ValidatorFn = (control: AbstractControl): ValidationError
   const decimales = texto.includes('.') ? (texto.split('.')[1]?.length ?? 0) : 0;
   return decimales <= 2 ? null : { mermaPct: true };
 };
+
+/** §10.3b · passwordFuerte: mínimo 8 caracteres con mayúscula, minúscula, número y símbolo. */
+export const passwordFuerte: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = control.value;
+  if (typeof valor !== 'string' || valor.length === 0) {
+    return null; // La presencia se valida con required.
+  }
+
+  const faltan: string[] = [];
+  if (valor.length < 8) faltan.push('longitud');
+  if (!/[A-Z]/.test(valor)) faltan.push('mayuscula');
+  if (!/[a-z]/.test(valor)) faltan.push('minuscula');
+  if (!/\d/.test(valor)) faltan.push('numero');
+  if (!/[^A-Za-z0-9]/.test(valor)) faltan.push('simbolo');
+
+  return faltan.length === 0 ? null : { passwordFuerte: faltan };
+};
+
+/** §10.3b · coincide: confirmación igual al campo original dentro de un FormGroup. */
+export const coincide = (campo: string, campoConfirmacion: string): ValidatorFn => {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const original = control.get(campo)?.value;
+    const confirmacion = control.get(campoConfirmacion)?.value;
+    if (confirmacion === null || confirmacion === undefined || confirmacion === '') {
+      return null;
+    }
+    return original === confirmacion ? null : { coincide: true };
+  };
+};
+
+/** §10.3b · tarjetaLuhn: 16 dígitos que pasan el algoritmo de Luhn. */
+export const tarjetaLuhn: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = control.value;
+  if (typeof valor !== 'string' || valor.trim() === '') {
+    return null; // La presencia se valida con required.
+  }
+
+  const digitos = valor.replace(/\D/g, '');
+  if (!/^\d{16}$/.test(digos)) {
+    return { tarjetaLuhn: true };
+  }
+
+  let suma = 0;
+  let duplicar = false;
+  for (let indice = digitos.length - 1; indice >= 0; indice -= 1) {
+    let digito = Number(digos.charAt(indice));
+    if (duplicar) {
+      digito *= 2;
+      if (digito > 9) digito -= 9;
+    }
+    suma += digito;
+    duplicar = !duplicar;
+  }
+
+  return suma % 10 === 0 ? null : { tarjetaLuhn: true };
+};
+
+/** §10.3b · vencimientoFuturo: MM/AA o MM/AAAA vigente. */
+export const vencimientoFuturo: ValidatorFn = (
+  control: AbstractControl,
+): ValidationErrors | null => {
+  const valor = control.value;
+  if (typeof valor !== 'string' || !/^(0[1-9]|1[0-2])\/(\d{2}|\d{4})$/.test(valor.trim())) {
+    return { vencimientoFuturo: true };
+  }
+
+  const partes = valor.trim().split('/');
+  const mes = Number(partes[0]);
+  let anio = Number(partes[1]);
+  if (anio < 100) anio += 2000;
+
+  // El mes capturado todavía es válido; se compara contra el primer día del siguiente mes.
+  const finVencimiento = new Date(anio, mes, 1);
+  return finVencimiento > new Date() ? null : { vencimientoFuturo: true };
+};
+
+/** §10.3b · cvv: 3 o 4 dígitos. Nunca se guarda en el cliente ni se envía para almacenarlo. */
+export const cvv: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = control.value;
+  if (typeof valor !== 'string' || valor.trim() === '') {
+    return null; // La presencia se valida con required.
+  }
+
+  return /^\d{3,4}$/.test(valor.trim()) ? null : { cvv: true };
+};

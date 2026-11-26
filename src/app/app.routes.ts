@@ -34,6 +34,7 @@ export const routes: Routes = [
       },
       {
         path: 'cuenta',
+        title: 'Mi cuenta · UNIQUE',
         canActivate: CLIENTE,
         data: { roles: ['CLIENTE'] },
         loadComponent: () => import('./modulos/micuenta/micuenta').then((c) => c.Micuenta),
