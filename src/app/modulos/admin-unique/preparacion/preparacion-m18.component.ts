@@ -47,6 +47,7 @@ export class PreparacionM18Component implements OnInit {
   aviso = '';
   filtro = '';
   estado = '';
+  skuCaptura = '';
   pagina = 1;
   porPagina = 20;
   total = 0;
@@ -66,6 +67,28 @@ export class PreparacionM18Component implements OnInit {
   get puedeOperar(): boolean {
     const rol = this.auth.usuario?.rol;
     return rol === 'OPERATIVO' || rol === 'ADMIN';
+  }
+
+  /** El picking captura/escanea SKU; las verificaciones pertenecen a la etapa siguiente. */
+  get puedeSurtir(): boolean {
+    const estado = this.seleccionado?.estado;
+    return this.puedeOperar && (estado === 'POR_SURTIR' || estado === 'EN_PICKING');
+  }
+
+  get puedeVerificar(): boolean {
+    return this.puedeOperar && this.seleccionado?.estado === 'EN_VERIFICACION';
+  }
+
+  /** Los cuatro pasos de §7 se derivan del estado que reporta Flask, nunca se fijan en la plantilla. */
+  get pasos(): { etiqueta: string; numeral: number; clase: string }[] {
+    const estado = this.seleccionado?.estado;
+    const actual =
+      estado === 'EN_VERIFICACION' ? 1 : estado === 'EN_EMPAQUE' ? 2 : estado === 'LISTA' ? 3 : 0;
+    return ['Picking', 'Verificación', 'Empaque', 'Lista'].map((etiqueta, indice) => ({
+      etiqueta,
+      numeral: indice + 1,
+      clase: indice < actual ? 'done' : indice === actual ? 'active' : '',
+    }));
   }
 
   /** El filtro estricto de Flask impide enviar paginación en este endpoint. */
@@ -130,10 +153,18 @@ export class PreparacionM18Component implements OnInit {
 
   get filtrados(): VistaPreparacion[] {
     const texto = this.filtro.trim().toLowerCase();
-    if (!texto) return this.pedidos;
-    return this.pedidos.filter((p) =>
-      `${p.folio ?? ''} ${p.cliente} ${p.estado}`.toLowerCase().includes(texto),
-    );
+    const lista = texto
+      ? this.pedidos.filter((p) =>
+          `${p.folio ?? ''} ${p.cliente} ${p.estado}`.toLowerCase().includes(texto),
+        )
+      : [...this.pedidos];
+    // §7: prioridad alta primero y, dentro de la prioridad, fecha prometida más cercana.
+    return lista.sort((a, b) => {
+      if (a.prioridad !== b.prioridad) {
+        return a.prioridad === 'ALTA' ? -1 : b.prioridad === 'ALTA' ? 1 : 0;
+      }
+      return (a.fecha_promesa ?? '9999-12-31').localeCompare(b.fecha_promesa ?? '9999-12-31');
+    });
   }
 
   tomar(p: VistaPreparacion): void {
@@ -162,7 +193,7 @@ export class PreparacionM18Component implements OnInit {
   }
 
   cambiarSurtido(linea: PreparacionLinea, valor: string): void {
-    if (!this.seleccionado || !this.puedeOperar) return;
+    if (!this.puedeSurtir) return;
     const cantidad = Number(valor);
     if (!Number.isInteger(cantidad) || cantidad < 0 || cantidad > linea.cantidad_requerida) {
       this.error = 'La cantidad surtida debe ser un entero entre 0 y la cantidad requerida.';
@@ -175,12 +206,51 @@ export class PreparacionM18Component implements OnInit {
     });
   }
 
+  /** Captura o escaneo de SKU (§7). Un SKU ajeno al pedido se rechaza sin llamar a Flask. */
+  surtirConSku(): void {
+    const hoja = this.seleccionado;
+    if (!hoja || !this.puedeSurtir) return;
+    const sku = this.skuCaptura.trim().toUpperCase();
+    if (!sku) {
+      this.error = 'Captura o escanea un SKU antes de surtir.';
+      return;
+    }
+    const linea = hoja.lineas.find((item) => (item.sku ?? '').toUpperCase() === sku);
+    if (!linea) {
+      this.error = `El SKU ${sku} no está en el pedido ${hoja.folio ?? '#' + hoja.pedido_id}. Escaneo rechazado.`;
+      this.skuCaptura = '';
+      return;
+    }
+    if (linea.cantidad_surtida >= linea.cantidad_requerida) {
+      this.error = `${sku} ya está surtido completo (${linea.cantidad_requerida} unidades).`;
+      this.skuCaptura = '';
+      return;
+    }
+
+    this.error = '';
+    this.aviso = '';
+    const anterior = linea.cantidad_surtida;
+    const cantidad = anterior + 1;
+    linea.cantidad_surtida = cantidad;
+    this.skuCaptura = '';
+    this.actualizarLinea(
+      linea,
+      { cantidad_surtida: cantidad },
+      () => {
+        linea.cantidad_surtida = anterior;
+      },
+      () => {
+        this.aviso = `${sku}: ${cantidad} de ${linea.cantidad_requerida} unidades surtidas.`;
+      },
+    );
+  }
+
   cambiarVerificacion(
     linea: PreparacionLinea,
     campo: 'sku_verificado' | 'diseno_verificado' | 'etiquetas_verificadas',
     valor: boolean,
   ): void {
-    if (!this.seleccionado || !this.puedeOperar) return;
+    if (!this.puedeVerificar) return;
     const anterior = linea[campo];
     linea[campo] = valor;
     this.actualizarLinea(linea, { [campo]: valor }, () => {
@@ -192,6 +262,7 @@ export class PreparacionM18Component implements OnInit {
     linea: PreparacionLinea,
     cambio: Record<string, number | boolean>,
     revertir: () => void,
+    alGuardar?: (respuesta: Preparacion) => void,
   ): void {
     const id = this.seleccionado?.id;
     if (!id) return;
@@ -201,6 +272,7 @@ export class PreparacionM18Component implements OnInit {
       .subscribe({
         next: (respuesta) => {
           this.seleccionado = this.comoVista(respuesta);
+          alGuardar?.(respuesta);
         },
         error: (error: unknown) => {
           revertir();

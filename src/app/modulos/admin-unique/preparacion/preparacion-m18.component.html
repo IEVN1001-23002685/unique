@@ -6,8 +6,8 @@
   </div>
   <button class="btn-outline" (click)="cargar()">↻ Actualizar</button>
 </div>
-<div class="notice error" *ngIf="error">{{ error }}</div>
-<div class="notice success" *ngIf="aviso">{{ aviso }}</div>
+<div class="notice error" role="alert" *ngIf="error">{{ error }}</div>
+<div class="notice success" role="status" *ngIf="aviso">{{ aviso }}</div>
 <div class="toolbar">
   <div class="tabs">
     <button class="tab" [class.active]="pestana === 'cola'" (click)="cambiarPestana('cola')">
@@ -43,7 +43,7 @@
     <h3>Cola de preparación</h3>
     <span class="muted">Ordenada por prioridad y fecha prometida</span>
   </div>
-  <div *ngIf="cargando" class="empty">Cargando pedidos...</div>
+  <div *ngIf="cargando" class="empty" role="status">Cargando pedidos...</div>
   <div *ngIf="!cargando && !filtrados.length" class="empty">No hay pedidos para este filtro.</div>
   <div class="table-wrap" *ngIf="filtrados.length">
     <table>
@@ -61,7 +61,7 @@
         <tr *ngFor="let p of filtrados">
           <td><b>{{ p.folio || 'Sin folio' }}</b></td>
           <td>{{ p.cliente }}</td>
-          <td>{{ p.fecha_prometida | date: 'dd MMM yyyy' }}</td>
+          <td>{{ p.fecha_prometida | date: 'dd MMM yyyy' : '' : 'es-MX' }}</td>
           <td>{{ p.lineas.length }} líneas</td>
           <td><span class="chip blue">{{ p.estado }}</span></td>
           <td class="actions">
@@ -91,21 +91,34 @@
     </div>
     <button class="btn-outline" (click)="cerrar()">← Volver a cola</button>
   </div>
-  <div class="steps">
-    <div class="step done"><i>✓</i><b>Picking</b></div>
-    <div class="step active"><i>2</i><b>Verificación</b></div>
-    <div class="step"><i>3</i><b>Empaque</b></div>
-    <div class="step"><i>4</i><b>Lista</b></div>
+  <div class="steps" [attr.aria-label]="'Avance de la hoja: ' + seleccionado.estado">
+    <div *ngFor="let paso of pasos" class="step" [ngClass]="paso.clase">
+      <i>{{ paso.clase === 'done' ? '✓' : paso.numeral }}</i><b>{{ paso.etiqueta }}</b>
+    </div>
   </div>
+  <section class="subcard captura-sku" *ngIf="puedeSurtir">
+    <h4>Captura o escaneo de SKU · Picking</h4>
+    <div class="captura-sku__fila">
+      <input
+        class="qty"
+        [(ngModel)]="skuCaptura"
+        placeholder="SKU del pedido"
+        aria-label="SKU a surtir"
+        (keyup.enter)="surtirConSku()"
+      />
+      <button class="btn-primary small" (click)="surtirConSku()">Surtir 1 pza</button>
+    </div>
+    <small>Un SKU que no pertenezca al pedido se rechaza. También puedes ajustar la cantidad en la tabla.</small>
+  </section>
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>SKU</th>
+          <th>SKU DEL PEDIDO</th>
           <th>PRODUCTO / VARIANTE</th>
           <th>REQUERIDA</th>
           <th>SURTIDA</th>
-          <th>SKU</th>
+          <th>SKU OK</th>
           <th>DISEÑO</th>
           <th>ETIQUETAS</th>
         </tr>
@@ -117,19 +130,22 @@
           <td>{{ l.cantidad_requerida }} pzas.</td>
           <td>
             <input class="qty" type="number" min="0" [max]="l.cantidad_requerida"
-              [ngModel]="l.cantidad_surtida" [disabled]="!puedeOperar"
+              [ngModel]="l.cantidad_surtida" [disabled]="!puedeSurtir"
               (change)="cambiarSurtido(l, $any($event.target).value)" />
           </td>
           <td>
-            <input type="checkbox" [checked]="l.sku_verificado" [disabled]="!puedeOperar"
+            <input type="checkbox" [checked]="l.sku_verificado" [disabled]="!puedeVerificar"
+              aria-label="Verificar SKU de {{ l.sku }}"
               (change)="cambiarVerificacion(l, 'sku_verificado', $any($event.target).checked)" />
           </td>
           <td>
-            <input type="checkbox" [checked]="l.diseno_verificado" [disabled]="!puedeOperar"
+            <input type="checkbox" [checked]="l.diseno_verificado" [disabled]="!puedeVerificar"
+              aria-label="Verificar diseño de {{ l.sku }}"
               (change)="cambiarVerificacion(l, 'diseno_verificado', $any($event.target).checked)" />
           </td>
           <td>
-            <input type="checkbox" [checked]="l.etiquetas_verificadas" [disabled]="!puedeOperar"
+            <input type="checkbox" [checked]="l.etiquetas_verificadas" [disabled]="!puedeVerificar"
+              aria-label="Verificar etiquetas de {{ l.sku }}"
               (change)="cambiarVerificacion(l, 'etiquetas_verificadas', $any($event.target).checked)" />
           </td>
         </tr>
@@ -143,7 +159,7 @@
       <p>✓ Papel protector por prenda</p>
       <p>✓ Tarjeta con código QR</p>
       <p>✓ Etiqueta de envío por pedido</p>
-      <small>Los materiales se consumen por PEPS al confirmar el empaque.</small>
+      <small>Al confirmar, Flask consumirá los materiales de empaque_regla (M15); esta vista solo genera la lista.</small>
     </section>
     <section class="subcard" *ngIf="puedeOperar">
       <h4>Acciones de preparación</h4>
@@ -179,6 +195,10 @@
       </label>
       <button class="btn-outline" (click)="registrarIncidencia()">Registrar incidencia</button>
     </div>
+    <p class="muted">
+      Una incidencia de calidad sin reposición devuelve la línea a EN_PRODUCCION (M09/M16) y registra la
+      merma (M17); Flask aplica esa regla, esta vista solo la documenta.
+    </p>
   </div>
 </div>
 
@@ -194,7 +214,7 @@
     El backend no expone un listado independiente; esta vista deriva las incidencias de las líneas
     devueltas por <code>/preparacion/cola</code>.
   </p>
-  <div *ngIf="cargando" class="empty">Cargando incidencias...</div>
+  <div *ngIf="cargando" class="empty" role="status">Cargando incidencias...</div>
   <div *ngIf="!cargando && !incidencias.length" class="empty">
     No hay incidencias registradas en la cola actual.
   </div>
