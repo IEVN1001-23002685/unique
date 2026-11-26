@@ -89,6 +89,14 @@ export const routes: Routes = [
             './modulos/acceso-registro/paginas/restablecer-password/restablecer-password'
           ).then((c) => c.RestablecerPassword),
       },
+      {
+        path: 'sin-acceso',
+        title: 'Sin acceso · UNIQUE',
+        loadComponent: () =>
+          import('./modulos/acceso-registro/paginas/sin-acceso/sin-acceso').then(
+            (c) => c.SinAcceso,
+          ),
+      },
     ],
   },
   {

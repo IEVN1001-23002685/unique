@@ -1,0 +1,99 @@
+:host {
+  display: block;
+  min-height: 32rem;
+  padding: 3rem 1rem;
+  background: var(--color-unique-lila, #f2d5ed);
+}
+
+.sin-acceso {
+  width: min(100%, 30rem);
+  margin: 0 auto;
+}
+
+.sin-acceso__tarjeta {
+  border: 1px solid var(--color-unique-orquidea, #bf7ebb);
+  border-radius: 20px;
+  background: var(--color-unique-blanco, #fff);
+  padding: 2rem 1.5rem;
+  box-shadow: 0 18px 40px rgb(84 45 89 / 12%);
+  text-align: center;
+}
+
+.sin-acceso__logo {
+  display: block;
+  width: 8rem;
+  height: auto;
+  margin: 0 auto 1.25rem;
+}
+
+.sin-acceso__chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  background: var(--color-unique-adv-suave, #fbefc9);
+  color: var(--color-unique-texto, #1f1226);
+  font-family: var(--font-interfaz, 'Akshar', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sin-acceso__titulo {
+  margin: 1rem 0 0;
+  color: var(--color-unique-morado, #542d59);
+  font-family: var(--font-titulo, 'Vazirmatn', sans-serif);
+  font-size: 1.5rem;
+}
+
+.sin-acceso__texto {
+  margin: 0.75rem 0 0;
+  color: var(--color-unique-texto-suave, #6b5870);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.sin-acceso__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.sin-acceso__boton {
+  border: 1px solid var(--color-unique-morado, #542d59);
+  border-radius: 999px;
+  padding: 0.7rem 1.25rem;
+  background: var(--color-unique-morado, #542d59);
+  color: #fff;
+  font-family: var(--font-interfaz, 'Akshar', sans-serif);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sin-acceso__boton--suave {
+  background: var(--color-unique-blanco, #fff);
+  color: var(--color-unique-morado, #542d59);
+}
+
+.sin-acceso__nota {
+  margin: 1.25rem 0 0;
+  color: var(--color-unique-texto-suave, #6b5870);
+  font-size: 0.7rem;
+}
+
+.sin-acceso__boton:focus-visible {
+  outline: 3px solid var(--color-unique-orquidea, #bf7ebb);
+  outline-offset: 2px;
+}
+
+@media (max-width: 25rem) {
+  .sin-acceso__tarjeta {
+    padding: 1.5rem 1rem;
+  }
+
+  .sin-acceso__acciones {
+    flex-direction: column;
+  }
+}
