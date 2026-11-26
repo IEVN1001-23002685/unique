@@ -154,8 +154,9 @@ export class PanelAdminComponent {
   }
 
   private actualizarTitulo(): void {
-    const hijo = this.ruta.firstChild;
-    const datos = hijo?.snapshot.data ?? this.ruta.snapshot.data;
+    // `firstChild` es un ActivatedRoute y su `snapshot` puede no existir todavía
+    // mientras el RouterOutlet crea el componente; usar el snapshot evita el error.
+    const datos = this.ruta.snapshot.firstChild?.data ?? this.ruta.snapshot.data;
     this.titulo.set(String(datos['titulo'] ?? 'Panel administrativo'));
   }
 }
