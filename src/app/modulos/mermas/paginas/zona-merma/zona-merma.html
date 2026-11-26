@@ -13,6 +13,24 @@
 
   <app-navegacion-mermas />
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar la zona de merma.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando mermas desde Flask…
+    </div>
+  }
+
+  @if (servicio.limitacionAdmin()) {
+    <p class="nota nota--advertencia">{{ servicio.limitacionAdmin() }}</p>
+  }
+
   <div class="indicadores">
     <article class="tarjeta indicador">
       <span class="indicador__numero">{{ resumen().total }}</span>
@@ -133,7 +151,9 @@
       }
     </p>
 
-    @if (visibles().length > 0) {
+    @if (servicio.errorCarga()) {
+      <p class="sr-only">El historial no pudo cargarse; usa Reintentar.</p>
+    } @else if (visibles().length > 0) {
       <div class="tabla-contenedor tabla-contenedor--ancha">
         <table class="tabla">
           <thead>
@@ -240,9 +260,10 @@
     }
 
     <p class="nota">
-      Los datos son demostrativos. Al integrar Flask, este historial vendrá de
-      <code>GET /mermas</code> y el reverso de <code>POST /mermas/&#123;id&#125;/reversar</code>. El
-      descuento de inventario y el movimiento MERMA no se ejecutan en esta vista.
+      El historial se consulta con <code>GET /mermas</code> y la corrección se envía con
+      <code>POST /mermas/&#123;id&#125;/reversar</code>. El descuento de inventario, el movimiento
+      MERMA y la alerta los ejecuta Flask; esta vista solo proyecta el resultado y no edita
+      registros.
     </p>
   </section>
 </div>

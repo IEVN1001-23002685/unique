@@ -15,13 +15,24 @@ import type {
  */
 
 export function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  const hoy = new Date();
+  const anio = hoy.getFullYear();
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoy.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+}
+
+function isoLocal(fecha: Date): string {
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
 }
 
 function haceDias(dias: number): string {
   const fecha = new Date(`${hoyISO()}T12:00:00`);
   fecha.setDate(fecha.getDate() - dias);
-  return fecha.toISOString().slice(0, 10);
+  return isoLocal(fecha);
 }
 
 export const CAUSAS_SIMULADAS: CausaMerma[] = [
@@ -423,7 +434,7 @@ export const MERMAS_SIMULADAS: Merma[] = FILAS.map((fila, indice) => {
 
   return {
     id: indice + 1,
-    folio: `MER-2026-${String(31 + indice).padStart(4, '0')}`,
+    folio: `Registro ${31 + indice}`,
     origen,
     procedencia,
     automatica: procedencia !== 'MANUAL',

@@ -11,6 +11,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
+import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
 import { decimalPositivo } from '../../../../compartido/validadores/validadores-negocio';
 import { NavegacionMermas } from '../../componentes/navegacion-mermas/navegacion-mermas';
 import { MermasServicio } from '../../servicios/mermas-servicio';
@@ -57,14 +58,16 @@ const cantidadSegunOrigen: ValidatorFn = (control) => {
   styleUrls: ['./registro-merma.css', '../../mermas-compartido.css'],
 })
 export class RegistroMerma {
-  private readonly servicio = inject(MermasServicio);
+  protected readonly servicio = inject(MermasServicio);
   private readonly avisos = inject(AvisosServicio);
   private readonly auth = inject(AuthStateService);
+  private readonly perfilDemo = inject(PerfilDemoServicio);
 
   protected readonly etapas = ETAPAS_MERMA;
   protected readonly etiquetasEtapa = ETIQUETAS_ETAPA;
   protected readonly errorEvidencia = signal<string | null>(null);
   protected readonly ultimoFolio = signal<string | null>(null);
+  protected readonly enviando = signal(false);
 
   protected readonly forma = new FormGroup<FormularioMerma>({
     origen: new FormControl<OrigenMerma>('MATERIAL', { nonNullable: true }),
@@ -131,7 +134,15 @@ export class RegistroMerma {
       this.cantidad(),
     ),
   );
-  protected readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
+  protected readonly esAdministrador = computed(() =>
+    this.auth.autenticado()
+      ? this.auth.puede(['ADMIN'])
+      : this.perfilDemo.esAdministrador(),
+  );
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
 
   protected alCambiarOrigen(evento: Event): void {
     const origen = (evento.target as HTMLSelectElement).value as OrigenMerma;
@@ -235,6 +246,16 @@ export class RegistroMerma {
   }
 
   protected guardar(): void {
+    if (this.enviando()) {
+      return;
+    }
+    if (this.servicio.errorCarga() || this.causas().length === 0) {
+      this.avisos.mostrar(
+        'error',
+        'No hay causas disponibles; reintenta cargar el catálogo antes de registrar.',
+      );
+      return;
+    }
     if (this.errorEvidencia() !== null) {
       this.avisos.mostrar('error', this.errorEvidencia() as string);
       return;
@@ -259,7 +280,9 @@ export class RegistroMerma {
       descripcion: valores.descripcion,
       evidenciaNombre: valores.evidenciaNombre,
     };
+    this.enviando.set(true);
     this.servicio.registrar(datos).subscribe((resultado) => {
+      this.enviando.set(false);
       this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
       if (!resultado.ok) {
         return;

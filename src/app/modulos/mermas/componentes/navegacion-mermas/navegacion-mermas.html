@@ -15,12 +15,15 @@
   >
     Registrar merma
   </a>
-  <a
-    routerLink="/mermas/indicadores"
-    class="pestana"
-    [class.pestana--activa]="activa() === 'indicadores'"
-    [attr.aria-current]="activa() === 'indicadores' ? 'page' : null"
-  >
-    Indicadores <span class="pestana__rol">Admin</span>
-  </a>
+  @if (esAdministrador()) {
+    <a
+      routerLink="/mermas/indicadores"
+      class="pestana"
+      title="Sección del Administrador"
+      [class.pestana--activa]="activa() === 'indicadores'"
+      [attr.aria-current]="activa() === 'indicadores' ? 'page' : null"
+    >
+      Indicadores <span class="pestana__rol" aria-hidden="true">A</span>
+    </a>
+  }
 </nav>

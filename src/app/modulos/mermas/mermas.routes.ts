@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { rolDemoGuard } from '../../nucleo/guards/rol-demo.guard';
 
 /** Rutas de M17 · Mermas, montadas bajo /mermas (§10 del documento). */
 export const MERMAS_RUTAS: Routes = [
@@ -19,7 +20,8 @@ export const MERMAS_RUTAS: Routes = [
   {
     path: 'indicadores',
     title: 'Indicadores de merma · UNIQUE',
-    data: { rol: 'Administrador', soloAdministrador: true, roles: ['Administrador'] },
+    data: { roles: ['Administrador'] },
+    canActivate: [rolDemoGuard],
     loadComponent: () => import('./paginas/indicadores/indicadores').then((c) => c.Indicadores),
   },
   { path: '**', redirectTo: '' },
