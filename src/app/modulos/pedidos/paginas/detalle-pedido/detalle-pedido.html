@@ -10,7 +10,7 @@
         <h1 class="titulo mono">{{ pedido.folio }}</h1>
         <p class="subtitulo">
           {{ pedido.cliente }} · Estado actual desde
-          {{ pedido.fechaCreacion | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }} · Venta
+          {{ pedido.estadoDesde | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }} · Venta
           @if (servicio.tieneVentaRegistrada(pedido.ventaFolio)) {
             <a class="enlace" [routerLink]="['/ventas', pedido.ventaFolio]">{{
               pedido.ventaFolio
@@ -28,6 +28,9 @@
         >
           Prioridad {{ pedido.prioridad === 'ALTA' ? 'alta' : 'normal' }}
         </span>
+        @if (!esAdministrador()) {
+          <span class="etiqueta-prioridad">Solo consulta</span>
+        }
       </div>
     </div>
 
@@ -41,9 +44,17 @@
     @if (pedido.estado === 'CANCELADO') {
       <div class="aviso aviso--error" role="status">
         <strong>Pedido cancelado.</strong>
-        {{ pedido.motivoCancelacion }} · Cancelado por {{ pedido.canceladoPor }} el
+        Motivo: {{ pedido.motivoCancelacion ?? 'No informado por Flask' }} · Cancelado por
+        {{ pedido.canceladoPor ?? 'No informado por Flask' }} el
         {{ pedido.canceladoEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}. La liberación de
-        reservas y el reembolso real quedan pendientes de integración.
+        reservas y el reembolso simulado dependen de la integración con Flask.
+      </div>
+    }
+
+    @if (!esAdministrador()) {
+      <div class="aviso aviso--consulta" role="status">
+        <strong>Modo consulta.</strong> El Operativo puede revisar el pedido, pero no cambiar
+        prioridad, agregar notas ni cancelarlo.
       </div>
     }
 
@@ -85,7 +96,11 @@
               class="campo__entrada"
               [value]="pedido.prioridad"
               (change)="cambiarPrioridad($event)"
-              [disabled]="pedido.estado === 'CANCELADO' || pedido.estado === 'ENTREGADO'"
+              [disabled]="
+                !esAdministrador() ||
+                pedido.estado === 'CANCELADO' ||
+                pedido.estado === 'ENTREGADO'
+              "
             >
               <option value="NORMAL">Normal</option>
               <option value="ALTA">Alta</option>
@@ -112,9 +127,12 @@
             maxlength="240"
             placeholder="Ej. Confirmar talla con la clienta antes del empaque"
             [attr.aria-invalid]="notaInvalida()"
+            [disabled]="!esAdministrador()"
           ></textarea>
         </label>
-        <button type="submit" class="boton boton--secundario">Agregar nota</button>
+        <button type="submit" class="boton boton--secundario" [disabled]="!esAdministrador()">
+          Agregar nota
+        </button>
       </form>
       @if (notaInvalida()) {
         <p class="campo__error" role="alert">Escribe al menos 5 caracteres para la nota.</p>
@@ -268,13 +286,26 @@
 
     <p class="nota">
       M09 es dueño del estado del pedido. Los pagos y cancelaciones se leen de M08; las reservas de
-      M12, las órdenes de M16 y las entregas de M19 solo se consultan. Ninguna acción de esta vista
-      persiste en servidor.
+      M12, las órdenes de M16 y las entregas de M19 solo se consultan. Cambiar prioridad, agregar una
+      nota o cancelar envía la solicitud a Flask; este frontal no ejecuta movimientos de inventario
+      ni reembolsos por sí mismo.
     </p>
   } @else {
-    <div class="tarjeta bloque estado" role="status">
-      <strong>No encontramos el pedido {{ folio }}.</strong>
-      <p>Regresa a la bandeja para elegir un folio disponible.</p>
+    <div
+      class="tarjeta bloque estado"
+      [class.estado--error]="!!servicio.errorDetalle()"
+      [attr.role]="servicio.errorDetalle() ? 'alert' : 'status'"
+    >
+      @if (servicio.errorDetalle()) {
+        <strong>No fue posible cargar el pedido {{ folio }}.</strong>
+        <p>{{ servicio.errorDetalle() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      } @else {
+        <strong>No encontramos el pedido {{ folio }}.</strong>
+        <p>Regresa a la bandeja para elegir un folio disponible.</p>
+      }
       <a routerLink="/admin/pedidos" class="boton boton--primario">Ir a la bandeja</a>
     </div>
   }

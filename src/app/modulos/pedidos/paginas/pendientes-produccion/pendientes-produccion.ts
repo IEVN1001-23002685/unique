@@ -22,6 +22,10 @@ export class PendientesProduccion {
     this.servicio.recargar().subscribe();
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly pendientes = computed(() => this.servicio.pendientesProduccion());
 
   protected readonly filtrados = computed(() => {

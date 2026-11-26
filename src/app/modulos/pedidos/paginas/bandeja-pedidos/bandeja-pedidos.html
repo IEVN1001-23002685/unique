@@ -107,7 +107,15 @@
       </div>
     </div>
 
-    @if (servicio.pedidos().length === 0) {
+    @if (servicio.errorCarga()) {
+      <div class="estado estado--error" role="alert">
+        <strong>No fue posible cargar la bandeja.</strong>
+        <p>{{ servicio.errorCarga() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (servicio.pedidos().length === 0) {
       <div class="estado" role="status">
         <strong>Aún no hay pedidos.</strong>
         <p>Los pedidos se crean al confirmar una venta en M05 y M08.</p>

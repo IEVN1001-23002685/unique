@@ -30,7 +30,15 @@
       </label>
     </div>
 
-    @if (cancelados().length === 0) {
+    @if (servicio.errorCarga()) {
+      <div class="estado estado--error" role="alert">
+        <strong>No fue posible cargar el historial.</strong>
+        <p>{{ servicio.errorCarga() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (cancelados().length === 0) {
       <div class="estado" role="status">
         <strong>Aún no hay pedidos cancelados.</strong>
         <p>Las cancelaciones aparecerán aquí con su motivo y responsable.</p>
@@ -67,12 +75,14 @@
                   <span class="celda-principal">{{ pedido.cliente }}</span>
                   <span class="celda-secundaria">{{ servicio.articulos(pedido) }} artículo(s)</span>
                 </td>
-                <td data-etiqueta="Cancelado por">{{ pedido.canceladoPor ?? '—' }}</td>
+                <td data-etiqueta="Cancelado por">
+                  {{ pedido.canceladoPor ?? 'No informado por Flask' }}
+                </td>
                 <td data-etiqueta="Fecha">
                   {{ pedido.canceladoEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
                 </td>
                 <td data-etiqueta="Motivo" class="motivo">
-                  {{ pedido.motivoCancelacion ?? 'Sin motivo registrado' }}
+                  {{ pedido.motivoCancelacion ?? 'No informado por Flask' }}
                 </td>
                 <td data-etiqueta="Venta">
                   @if (servicio.tieneVentaRegistrada(pedido.ventaFolio)) {

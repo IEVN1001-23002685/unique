@@ -33,7 +33,15 @@
       </label>
     </div>
 
-    @if (pendientes().length === 0) {
+    @if (servicio.errorCarga()) {
+      <div class="estado estado--error" role="alert">
+        <strong>No fue posible cargar la demanda pendiente.</strong>
+        <p>{{ servicio.errorCarga() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (pendientes().length === 0) {
       <div class="estado" role="status">
         <strong>No hay líneas pendientes de producción.</strong>
         <p>Todos los pedidos activos tienen sus unidades reservadas.</p>

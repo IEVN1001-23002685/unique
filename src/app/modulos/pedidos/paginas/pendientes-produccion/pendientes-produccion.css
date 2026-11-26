@@ -177,6 +177,20 @@
   font-size: 0.85rem;
 }
 
+.estado--error {
+  border: 1px solid var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+}
+
+.estado--error strong,
+.estado--error p {
+  color: #8e2b39;
+}
+
+.estado--error .boton {
+  margin-top: 0.85rem;
+}
+
 .nota {
   margin: 1.25rem 0 0;
   padding: 0.85rem 1rem;
