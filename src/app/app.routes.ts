@@ -41,7 +41,16 @@ export const routes: Routes = [
         loadComponent: () => import('./modulos/micuenta/micuenta').then((c) => c.Micuenta),
       },
       {
+        // §10.2: M06 expone el historial y el seguimiento directo por id.
         path: 'pedidos',
+        title: 'Mis pedidos · UNIQUE',
+        canActivate: CLIENTE,
+        data: { roles: ['CLIENTE'] },
+        loadComponent: () => import('./modulos/mispedidos/mispedidos').then((c) => c.MisPedidos),
+      },
+      {
+        path: 'pedidos/:id',
+        title: 'Seguimiento de pedido · UNIQUE',
         canActivate: CLIENTE,
         data: { roles: ['CLIENTE'] },
         loadComponent: () => import('./modulos/mispedidos/mispedidos').then((c) => c.MisPedidos),
