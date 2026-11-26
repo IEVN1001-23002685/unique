@@ -4,6 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
+import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { ChipEstadoProduccion } from '../../componentes/chip-estado-produccion/chip-estado-produccion';
 import { NavegacionProduccion } from '../../componentes/navegacion-produccion/navegacion-produccion';
@@ -32,8 +33,11 @@ import { ProduccionServicio } from '../../servicios/produccion-servicio';
 export class DetalleOrden {
   private readonly ruta = inject(ActivatedRoute);
   private readonly avisos = inject(AvisosServicio);
+  private readonly autenticacion = inject(AuthStateService);
 
   protected readonly servicio = inject(ProduccionServicio);
+  /** La captura manual en M14 es exclusiva del Administrador (§3 y §10). */
+  protected readonly esAdmin = computed(() => this.autenticacion.usuario()?.rol === 'ADMIN');
   protected readonly etiquetasOrigen = ETIQUETAS_ORIGEN;
   protected readonly etiquetasTono = ETIQUETAS_TONO;
   protected readonly etiquetasEstadoMaterial = ETIQUETAS_ESTADO_MATERIAL;
@@ -52,6 +56,10 @@ export class DetalleOrden {
 
   protected readonly mostrarCompra = signal(false);
   protected readonly cancelando = signal(false);
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
 
   protected readonly puedeReservar = computed(() => {
     const orden = this.orden();

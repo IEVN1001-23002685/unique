@@ -1,6 +1,20 @@
 <section class="vista">
   <app-navegacion-produccion />
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar el catálogo de variantes.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando variantes desde Flask…
+    </div>
+  }
+
   <div class="cabecera">
     <div>
       <p class="eyebrow">Bloque 5 · Producción y merma · M16</p>
@@ -15,6 +29,12 @@
 
   <form class="tarjeta bloque" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
     <h2 class="titulo-section">Variantes a fabricar</h2>
+
+    @if (servicio.cargado() && opciones().length === 0 && !servicio.errorCarga()) {
+      <p class="nota nota--advertencia">
+        No hay variantes activas disponibles en el catálogo. Reintenta después de cargar M10.
+      </p>
+    }
 
     @for (grupo of lineas.controls; track grupo; let i = $index) {
       <div class="linea" [formGroup]="grupo">
@@ -83,7 +103,11 @@
     </div>
 
     <div class="form-acciones">
-      <button type="submit" class="boton boton--primario" [disabled]="enviando()">
+      <button
+        type="submit"
+        class="boton boton--primario"
+        [disabled]="enviando() || opciones().length === 0 || servicio.errorCarga()"
+      >
         Crear orden en PLANEADA
       </button>
       <a routerLink="/produccion" class="boton boton--secundario">Cancelar</a>

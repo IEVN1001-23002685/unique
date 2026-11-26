@@ -6,13 +6,31 @@
       <p class="eyebrow">Bloque 5 · Producción y merma · M16</p>
       <h1 class="titulo">Tablero de órdenes de producción</h1>
       <p class="subtitulo">
-        Fabricación en unidades enteras con semáforo de materiales. El semáforo se reevalúa con cada
-        cambio de materiales, reserva, disponibilidad o compra; ninguna operación se guarda en
-        servidor.
+        Fabricación en unidades enteras con semáforo de materiales. Flask reevalúa el semáforo con
+        cada cambio de materiales, reserva, disponibilidad o compra; esta vista consulta y envía las
+        acciones al servidor.
       </p>
     </div>
     <a routerLink="/produccion/nueva" class="boton boton--primario">Nueva orden</a>
   </div>
+
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar el tablero de producción.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando órdenes desde Flask…
+    </div>
+  }
+
+  @if (servicio.limitacionRequisiciones()) {
+    <p class="nota nota--advertencia">{{ servicio.limitacionRequisiciones() }}</p>
+  }
 
   <div class="indicadores" aria-label="Indicadores de producción">
     <div class="indicador" data-tono="info">
@@ -67,7 +85,9 @@
       </div>
     </div>
 
-    @if (filtradas().length === 0) {
+    @if (servicio.errorCarga()) {
+      <p class="sr-only">El tablero no pudo cargarse; usa Reintentar.</p>
+    } @else if (filtradas().length === 0) {
       <div class="estado" role="status">
         <strong>No hay órdenes en esta vista.</strong>
         <p>Prueba con otro filtro o revisa el texto de búsqueda.</p>
@@ -171,8 +191,9 @@
 
   <p class="nota nota--advertencia">
     La visibilidad de estas acciones no sustituye a los guards ni a la validación autoritativa de
-    Flask. La reserva, el consumo PEPS, la requisición, el alta en M12 y la merma en M17 quedan
-    pendientes de integración; el Operativo no ve costos, precios de compra ni utilidades.
+    Flask. La reserva, el consumo PEPS, la requisición, el alta en M12 y la merma en M17 se ejecutan
+    en el servidor mediante los contratos de M14 a M17; esta vista no calcula costos ni confirma
+    operaciones por su cuenta. El Operativo no ve costos, precios de compra ni utilidades.
   </p>
 
   @if (cancelando(); as orden) {

@@ -41,6 +41,9 @@ export interface MaterialOrden {
   cantidadRequerida: number;
   cantidadReservada: number;
   cantidadConsumida: number;
+  /** Valores opcionales devueltos por Flask; si faltan, la vista los marca como orientativos. */
+  semaforoApi?: TonoSemaforo;
+  coberturaApi?: CoberturaCompra;
 }
 
 export interface OrdenProduccion {
@@ -104,15 +107,20 @@ export interface LineaDictamen {
   etapaMerma: EtapaMerma;
 }
 
-/** Vista previa de revision_calidad; el historial definitivo lo conserva Flask. */
+/** Resumen de una línea ya dictaminada; el checklist completo lo conserva Flask. */
+export interface LineaRevisionResumen {
+  sku: string;
+  cantidadAprobada: number;
+  cantidadMerma: number;
+}
+
+/** Historial de revision_calidad devuelto por Flask; no se inventa folio ni checklist. */
 export interface RevisionCalidad {
   id: number;
-  folio: string;
+  referencia: string;
   ordenId: number;
   ordenFolio: string;
-  fecha: string;
-  revisadaPor: string;
-  lineas: LineaDictamen[];
+  lineas: LineaRevisionResumen[];
 }
 
 /** Variante obtenida por contrato de M10, con respaldo de M09 cuando hace falta. */
