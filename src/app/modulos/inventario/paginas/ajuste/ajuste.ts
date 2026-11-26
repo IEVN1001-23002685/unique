@@ -105,10 +105,13 @@ export class Ajuste {
             return;
           }
           this.resultado.set(resultado);
-          this.avisos.mostrar(
-            'exito',
-            `Ajuste registrado en Flask${resultado.merma ? '; la merma quedó registrada' : ''}.`,
-          );
+          const detalle = resultado.movimiento
+            ? 'El movimiento ya aparece en el kardex.'
+            : 'Flask aceptó el ajuste; el movimiento debe confirmarse en el kardex.';
+          const merma = resultado.merma
+            ? ' Solicitud de merma enviada; M17 debe confirmarla.'
+            : '';
+          this.avisos.mostrar('exito', `Ajuste registrado en Flask. ${detalle}${merma}`);
         },
         error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
       });
@@ -118,5 +121,9 @@ export class Ajuste {
     this.resultado.set(null);
     this.intentoEnvio.set(false);
     this.formulario.reset({ existenciaId: 0, cantidadContada: 0, motivo: '', enviarAMerma: false });
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
   }
 }

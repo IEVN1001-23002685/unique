@@ -12,6 +12,24 @@
     </div>
   </div>
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar las existencias.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando existencias desde Flask…
+    </div>
+  }
+
+  @if (servicio.limitacionRequisiciones()) {
+    <p class="nota nota--advertencia" role="status">{{ servicio.limitacionRequisiciones() }}</p>
+  }
+
   <div class="indicadores" aria-label="Resumen de existencias">
     <div class="indicador" data-tono="error">
       <span class="indicador__numero">{{ totales().rojo }}</span>
@@ -61,7 +79,9 @@
       </div>
     </div>
 
-    @if (filtradas().length === 0) {
+    @if (!servicio.cargado() || servicio.errorCarga()) {
+      <p class="sr-only">Esperando la carga de existencias.</p>
+    } @else if (filtradas().length === 0) {
       <div class="estado" role="status">
         <strong>No hay existencias para mostrar.</strong>
         <p>Prueba con otra categoría o revisa el texto de búsqueda.</p>
@@ -129,6 +149,9 @@
                     [tono]="vista.semaforo"
                     [texto]="etiquetaSemaforo(vista)"
                   />
+                  @if (vista.plazoPendiente) {
+                    <span class="etiqueta etiqueta--alerta">Plazo M13 pendiente</span>
+                  }
                   @if (vista.requiereAtencion) {
                     <span class="etiqueta etiqueta--alerta">Sin requisición</span>
                   }
@@ -165,6 +188,9 @@
       Semáforo: rojo si el disponible está en o debajo del mínimo o no cubre una orden confirmada;
       ámbar si está en o debajo del punto de reorden; verde en otro caso. El consumo diario usa el
       promedio de movimientos CONSUMO de 30 días y, sin historial, el valor manual de políticas.
+      «Plazo M13 pendiente» significa que Flask no entregó el punto de reorden ni un plazo en su
+      vista de inventario, y M13 tampoco tiene plazo para ese material; no se inventa un valor para
+      calcularlo.
     </p>
   </div>
 
@@ -202,8 +228,12 @@
         <div>
           <dt>Faltante sugerido</dt>
           <dd>
-            {{ faltanteSugerido(vista) | number: '1.0-4' : 'es-MX' }}
-            {{ vista.material.unidadBase }}
+            @if (vista.plazoPendiente) {
+              Sin cálculo: plazo no disponible
+            } @else {
+              {{ faltanteSugerido(vista) | number: '1.0-4' : 'es-MX' }}
+              {{ vista.material.unidadBase }}
+            }
           </dd>
         </div>
         <div>
@@ -213,10 +243,27 @@
       </dl>
 
       <div class="form-acciones">
-        <a routerLink="/compras/requisiciones/nueva" class="boton boton--primario">
-          Abrir requisición en M14
-        </a>
+        @if (puedeCapturarRequisicion() && !vista.plazoPendiente) {
+          <a routerLink="/compras/requisiciones/nueva" class="boton boton--primario">
+            Abrir requisición en M14
+          </a>
+        } @else {
+          <button type="button" class="boton boton--primario" disabled>
+            {{
+              vista.plazoPendiente
+                ? 'Faltante pendiente de plazo del proveedor'
+                : 'Captura reservada al Administrador'
+            }}
+          </button>
+        }
       </div>
+      @if (vista.plazoPendiente) {
+        <p class="nota nota--advertencia">
+          No se calcula un faltante sugerido: Flask no entregó el punto de reorden ni el plazo de su
+          vista, y M13 tampoco tiene plazo para este material. Captura la cantidad en M14 solo con un
+          criterio confirmado.
+        </p>
+      }
       <p class="nota nota--advertencia">
         El contrato no expone una acción desde M15 para generar la requisición. El botón abre la
         captura de M14; captura allí el material, el color y el faltante mostrados. La ruta de

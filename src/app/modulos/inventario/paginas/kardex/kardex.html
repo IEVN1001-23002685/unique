@@ -13,6 +13,20 @@
     <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
   </div>
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar el kardex.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando movimientos desde Flask…
+    </div>
+  }
+
   <div class="indicadores" aria-label="Resumen del kardex filtrado">
     <div class="indicador" data-tono="info">
       <span class="indicador__numero">{{ totales().movimientos }}</span>
@@ -93,7 +107,9 @@
       </button>
     </div>
 
-    @if (movimientos().length === 0) {
+    @if (!servicio.cargado() || servicio.errorCarga()) {
+      <p class="sr-only">Esperando la carga de movimientos.</p>
+    } @else if (movimientos().length === 0) {
       <div class="estado" role="status">
         <strong>No hay movimientos con estos filtros.</strong>
         <p>Amplía el periodo o selecciona otro material, color, lote o tipo.</p>

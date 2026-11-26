@@ -2,6 +2,7 @@ import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthStateService } from '../../../../core/auth/auth-state.service';
+import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
 import { NavegacionInventario } from '../../componentes/navegacion-inventario/navegacion-inventario';
 import { type FiltrosKardex, type TipoMovimiento } from '../../modelos/inventario';
 import { InventarioServicio } from '../../servicios/inventario-servicio';
@@ -26,7 +27,10 @@ export class Kardex {
   protected readonly servicio = inject(InventarioServicio);
   private readonly ruta = inject(ActivatedRoute);
   private readonly auth = inject(AuthStateService);
-  protected readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
+  private readonly perfilDemo = inject(PerfilDemoServicio);
+  protected readonly esAdministrador = computed(() =>
+    this.auth.autenticado() ? this.auth.puede(['ADMIN']) : this.perfilDemo.esAdministrador(),
+  );
 
   protected readonly tipos = TIPOS;
   protected readonly materiales = computed(() =>
@@ -107,6 +111,10 @@ export class Kardex {
     this.tipo.set('TODOS');
     this.desde.set('');
     this.hasta.set('');
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
   }
 
   protected etiquetaTipo(tipo: TipoMovimiento | 'TODOS'): string {

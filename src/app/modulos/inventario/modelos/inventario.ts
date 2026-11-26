@@ -26,8 +26,8 @@ export interface Material {
   costoEstandarBase: number;
   mermaEstandarPct: number;
   porColor: boolean;
-  /** Plazo del proveedor principal, leído de M13 como referencia. */
-  plazoDias: number;
+  /** Plazo del proveedor principal, leído de M13; null cuando aún no hay cobertura. */
+  plazoDias: number | null;
   activo: boolean;
   /** Id del catálogo M22, necesario para dar de alta un material desde M15. */
   categoriaMaterialId?: number;
@@ -44,10 +44,11 @@ export interface Existencia {
   stockMinimo: number;
   stockSeguridad: number;
   consumoDiarioManual: number;
-  /** Falso cuando una orden confirmada no queda cubierta por el disponible. */
-  cubreOrdenConfirmada: boolean;
+  /** Falso cuando una orden confirmada no queda cubierta; ausente si Flask no lo informa. */
+  cubreOrdenConfirmada?: boolean;
   activo: boolean;
   /** Métricas calculadas por Flask; se prefieren sobre cualquier cálculo local. */
+  plazoDiasApi?: number | null;
   consumoDiarioApi?: number;
   puntoReordenApi?: number | null;
   coberturaDiasApi?: number | null;
@@ -65,6 +66,8 @@ export interface ExistenciaVista extends Existencia {
   coberturaDias: number | null;
   semaforo: TonoSemaforo;
   motivoSemaforo: string;
+  /** Sin punto de reorden de Flask ni plazo de Flask/M13: no se inventa un número. */
+  plazoPendiente: boolean;
   requisicionAbierta: boolean;
   requiereAtencion: boolean;
 }
@@ -124,7 +127,8 @@ export interface MermaAjuste {
 }
 
 export interface ResultadoAjuste {
-  movimiento: MovimientoMaterial;
+  /** null cuando Flask aceptó el ajuste pero el detalle aún no aparece en el kardex. */
+  movimiento: MovimientoMaterial | null;
   diferencia: number;
   loteAfectado: string | null;
   merma: MermaAjuste | null;

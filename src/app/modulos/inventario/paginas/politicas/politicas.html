@@ -13,6 +13,20 @@
     <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
   </div>
 
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta bloque estado estado--error" role="alert">
+      <strong>No fue posible cargar las políticas.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (servicio.cargando() && !servicio.cargado()) {
+    <div class="tarjeta bloque estado estado--cargando" role="status">
+      Cargando políticas desde Flask…
+    </div>
+  }
+
   <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
     <div class="barra">
       <label class="buscador">
@@ -31,7 +45,9 @@
       <span class="etiqueta etiqueta--neutro">{{ vistas().length }} registros visibles</span>
     </div>
 
-    @if (vistas().length === 0) {
+    @if (!servicio.cargado() || servicio.errorCarga()) {
+      <p class="sr-only">Esperando la carga de políticas.</p>
+    } @else if (vistas().length === 0) {
       <div class="estado" role="status">
         <strong>No hay políticas para mostrar.</strong>
         <p>Cambia el texto de búsqueda o da de alta materiales en el catálogo.</p>
@@ -114,7 +130,11 @@
                   </span>
                 </td>
                 <td data-etiqueta="Pto. reorden" class="celda-numero">
-                  {{ puntoReorden(indice) | number: '1.0-4' : 'es-MX' }}
+                  @if (vista.plazoPendiente) {
+                    <span class="etiqueta etiqueta--alerta">Plazo M13 pendiente</span>
+                  } @else {
+                    {{ puntoReorden(indice) | number: '1.0-4' : 'es-MX' }}
+                  }
                 </td>
                 <td data-etiqueta="Disponible" class="celda-numero celda-derecha">
                   {{ vista.disponible | number: '1.0-4' : 'es-MX' }}
@@ -127,13 +147,21 @@
     }
 
     <div class="form-acciones">
-      <button type="submit" class="boton boton--primario">Guardar políticas</button>
+      <button
+        type="submit"
+        class="boton boton--primario"
+        [disabled]="servicio.errorCarga() !== '' || servicio.cargando()"
+      >
+        Guardar políticas
+      </button>
     </div>
 
     <p class="nota nota--advertencia">
       Con historial de CONSUMO en los últimos 30 días, Flask usa el promedio de ese periodo aunque
       el valor manual sea distinto; el manual aplica solo mientras no haya historial. Los cambios se
-      se guardan en Flask con PATCH sobre la política del material.
+      guardan en Flask con PATCH sobre la política del material. El punto de reorden queda marcado
+      como pendiente cuando Flask no lo calcula ni informa plazo y M13 tampoco registra plazo para
+      ese material.
     </p>
   </form>
 </section>

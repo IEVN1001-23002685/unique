@@ -1,4 +1,15 @@
 /* Piezas visuales compartidas por las pantallas de M15 (Vintage Collegiate). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .vista {
   width: 100%;
 }
@@ -230,6 +241,19 @@
 }
 .estado p {
   margin: 0.35rem 0 0;
+}
+.estado--error {
+  background: var(--color-unique-error-suave);
+  color: #8f2637;
+  text-align: left;
+}
+.estado--error .boton {
+  margin-top: 0.9rem;
+}
+.estado--cargando {
+  border: 1px dashed var(--color-unique-orquidea);
+  background: #fff;
+  color: var(--color-unique-ciruela);
 }
 .nota {
   margin: 1.25rem 0 0;

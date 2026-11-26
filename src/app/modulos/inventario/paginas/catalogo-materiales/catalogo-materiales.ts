@@ -11,6 +11,7 @@ import {
 import { mensajeError } from '../../../../core/api/errores';
 import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
+import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
 import { NavegacionInventario } from '../../componentes/navegacion-inventario/navegacion-inventario';
 import {
   CATEGORIAS,
@@ -39,8 +40,11 @@ export class CatalogoMateriales {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStateService);
   private readonly avisos = inject(AvisosServicio);
+  private readonly perfilDemo = inject(PerfilDemoServicio);
   protected readonly servicio = inject(InventarioServicio);
-  protected readonly esAdministrador = computed(() => this.auth.puede(['ADMIN']));
+  protected readonly esAdministrador = computed(() =>
+    this.auth.autenticado() ? this.auth.puede(['ADMIN']) : this.perfilDemo.esAdministrador(),
+  );
 
   protected readonly categorias = CATEGORIAS;
   protected readonly unidades: UnidadBase[] = ['m²', 'm', 'pieza'];
@@ -74,7 +78,6 @@ export class CatalogoMateriales {
     // EMP-ETE tiene costo provisional 0 en el catálogo semilla (§11.2).
     costoEstandarBase: [0, [Validators.required, decimalNoNegativo]],
     mermaEstandarPct: [0, [Validators.required, mermaPct]],
-    plazoDias: [7, [Validators.required, Validators.min(1), Validators.max(365)]],
     porColor: [false],
   });
 
@@ -85,7 +88,7 @@ export class CatalogoMateriales {
       return;
     }
     effect(() => {
-      if (this.formularioInicializado || !this.servicio.cargado()) {
+      if (this.formularioInicializado || !this.servicio.cargado() || this.servicio.errorCarga()) {
         return;
       }
       const material = this.servicio.obtenerMaterial(this.idEditar);
@@ -104,7 +107,6 @@ export class CatalogoMateriales {
         presentacion: material.presentacion,
         costoEstandarBase: material.costoEstandarBase,
         mermaEstandarPct: material.mermaEstandarPct,
-        plazoDias: material.plazoDias,
         porColor: material.porColor,
       });
       // El código identifica al material en recetas y movimientos: no se cambia.
@@ -120,8 +122,7 @@ export class CatalogoMateriales {
       | 'factorCompraBase'
       | 'presentacion'
       | 'costoEstandarBase'
-      | 'mermaEstandarPct'
-      | 'plazoDias',
+      | 'mermaEstandarPct',
   ): boolean {
     const control = this.formulario.controls[campo];
     return control.invalid && (control.touched || this.intentoEnvio());
@@ -148,7 +149,7 @@ export class CatalogoMateriales {
       presentacion: valor.presentacion.trim(),
       costoEstandarBase: valor.costoEstandarBase,
       mermaEstandarPct: valor.mermaEstandarPct,
-      plazoDias: Math.trunc(valor.plazoDias),
+      plazoDias: anterior?.plazoDias ?? null,
       porColor: valor.porColor,
       activo: anterior?.activo ?? true,
     };
@@ -156,7 +157,13 @@ export class CatalogoMateriales {
     this.servicio.guardarMaterial(material).subscribe({
       next: (guardado) => {
         if (!guardado) {
-          this.avisos.mostrar('error', 'No se pudo resolver la categoría del material en Flask.');
+          const detalle = this.servicio.limitacionCatalogos();
+          this.avisos.mostrar(
+            'error',
+            detalle
+              ? `No se pudo resolver la categoría del material. ${detalle}`
+              : 'No se pudo resolver la categoría del material en el catálogo de M22.',
+          );
           return;
         }
         this.avisos.mostrar(
@@ -184,12 +191,18 @@ export class CatalogoMateriales {
     this.servicio.eliminarMaterial(material.id).subscribe({
       next: (resultado) =>
         this.avisos.mostrar(
-          resultado === 'desactivado' ? 'advertencia' : 'exito',
-          resultado === 'desactivado'
-            ? `${material.codigo} tiene historial: Flask lo desactivó.`
-            : `${material.codigo} se eliminó del catálogo en Flask.`,
+          resultado === 'no-encontrado' ? 'error' : 'advertencia',
+          resultado === 'no-encontrado'
+            ? `${material.codigo} ya no está en el catálogo.`
+            : resultado === 'desactivado'
+              ? `Baja enviada para ${material.codigo}: con lotes en esta vista se espera que Flask lo desactive y conserve el historial.`
+              : `Baja enviada para ${material.codigo}. Flask debe confirmar que no hay lotes ni recetas (M11) antes de eliminarlo.`,
         ),
       error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
     });
+  }
+
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
   }
 }
