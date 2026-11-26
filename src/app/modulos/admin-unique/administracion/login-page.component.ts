@@ -22,7 +22,7 @@ import { AuthSessionService } from '../services/auth-session.service';
         ><label
           >Contraseña<input
             type="password"
-            formControlName="contrasena"
+            formControlName="password"
             placeholder="Tu contraseña"
         /></label>
         <div class="error" *ngIf="error">{{ error }}</div>
