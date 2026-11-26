@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 import { Tienda } from './plantillas/tienda/tienda';
+import { Administracion } from './plantillas/administracion/administracion';
+import { invitadoGuard } from './modulos/acceso-registro/guards/invitado.guard';
 import { PanelAdminComponent } from './modulos/admin-unique/preparacion/panel-admin.component';
 import { authGuard, roleGuard } from './core/auth/auth-session.service';
 import { invitadoGuard } from './modulos/acceso-registro/guards/invitado.guard';
@@ -86,6 +88,14 @@ export const routes: Routes = [
           import(
             './modulos/acceso-registro/paginas/restablecer-password/restablecer-password'
           ).then((c) => c.RestablecerPassword),
+      },
+      {
+        path: 'sin-acceso',
+        title: 'Sin acceso · UNIQUE',
+        loadComponent: () =>
+          import('./modulos/acceso-registro/paginas/sin-acceso/sin-acceso').then(
+            (c) => c.SinAcceso,
+          ),
       },
     ],
   },

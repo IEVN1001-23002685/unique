@@ -1,3 +1,10 @@
+import { inject, Injectable } from '@angular/core';
+import { Router } from '@angular/router';
+import type { CanActivateFn } from '@angular/router';
+import { delay, of, tap, throwError } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { AuthStateService } from './auth-state.service';
+import type { RespuestaSesion, RolUsuario, UsuarioSesion } from './auth-state.service';
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';

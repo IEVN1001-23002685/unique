@@ -3,6 +3,30 @@
     class="mx-auto flex w-full max-w-[1264px] items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-[60px] lg:py-6"
     aria-label="Navegación principal"
   >
+    <!-- Izquierda: acceso de cuenta (rutas reales de M01) -->
+    <div class="col-start-1 flex items-center gap-6 lg:gap-8">
+      <a
+        routerLink="/registro"
+        routerLinkActive="enlace-activo"
+        class="enlace-cuenta hidden lg:inline-flex"
+      >
+        Registrarse
+      </a>
+      <a
+        routerLink="/login"
+        routerLinkActive="enlace-activo"
+        class="enlace-cuenta hidden lg:inline-flex"
+      >
+        Iniciar sesión
+      </a>
+    </div>
+
+    <!-- Centro: logotipo -->
+    <a
+      routerLink="/catalogo"
+      class="col-start-2 justify-self-center"
+      aria-label="UNIQUE, ir al catálogo"
+    >
     <!-- Izquierda: el logotipo es el acceso al catálogo -->
     <a routerLink="/catalogo" class="barra-tienda__logo" aria-label="UNIQUE, ir al catálogo">
       @if (logoNoDisponible()) {
@@ -118,6 +142,16 @@
   </nav>
 
   @if (menuAbierto()) {
+    <div
+      id="menu-tienda"
+      class="lg:hidden border-t border-neutral-200 bg-white px-4 py-5 sm:px-6"
+    >
+      <div class="mx-auto flex w-full max-w-[1264px] flex-col items-start gap-4">
+        <!-- Enlaces del menú para tablet y celular -->
+        <a routerLink="/catalogo" class="enlace-menu" (click)="cerrarMenu()">Catálogo</a>
+        <a routerLink="/panel" class="enlace-menu" (click)="cerrarMenu()">Panel</a>
+        <a routerLink="/login" class="enlace-menu" (click)="cerrarMenu()">Iniciar sesión</a>
+        <a routerLink="/registro" class="enlace-menu" (click)="cerrarMenu()">Registrarse</a>
     <div id="menu-tienda" class="menu-movil">
       <div class="menu-movil__contenido">
         @if (autenticado()) {

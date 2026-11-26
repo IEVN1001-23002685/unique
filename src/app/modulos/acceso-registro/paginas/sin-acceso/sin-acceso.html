@@ -1,0 +1,26 @@
+<section class="sin-acceso">
+  <div class="sin-acceso__tarjeta">
+    <img src="/Logo1.png" alt="UNIQUE — tan único como tú" class="sin-acceso__logo" />
+    <span class="sin-acceso__chip">403 · Acceso restringido</span>
+    <h1 class="sin-acceso__titulo">No tienes acceso a esta sección</h1>
+    <p class="sin-acceso__texto">
+      Tu perfil no cuenta con permisos para ver esta pantalla. Puedes volver al catálogo o entrar
+      con la cuenta correspondiente.
+    </p>
+
+    <div class="sin-acceso__acciones">
+      <a routerLink="/catalogo" class="sin-acceso__boton">Volver al catálogo</a>
+      @if (tieneSesion) {
+        <button type="button" class="sin-acceso__boton sin-acceso__boton--suave" (click)="cerrarSesion()">
+          Cerrar sesión
+        </button>
+      } @else {
+        <a routerLink="/login" class="sin-acceso__boton sin-acceso__boton--suave">Iniciar sesión</a>
+      }
+    </div>
+
+    <p class="sin-acceso__nota">
+      La comprobación autoritativa de roles corresponde a Flask; esta vista solo informa.
+    </p>
+  </div>
+</section>
