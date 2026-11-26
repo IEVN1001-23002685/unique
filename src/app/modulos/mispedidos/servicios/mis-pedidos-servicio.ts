@@ -310,12 +310,13 @@ export class MisPedidosServicio {
   }
 }
 
-function etiquetaEstadoPago(estado: string): string {
+function etiquetaEstadoPago(estado: string | null | undefined): string {
   const etiquetas: Record<string, string> = {
     PAGADA: 'Pagada',
     PENDIENTE: 'Pendiente',
     RECHAZADA: 'Rechazada',
     REEMBOLSADA: 'Reembolsada',
   };
-  return etiquetas[estado] ?? estado || 'Estado de pago no disponible';
+  const clave = estado ?? '';
+  return (etiquetas[clave] ?? clave) || 'Estado de pago no disponible';
 }

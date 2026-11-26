@@ -1,11 +1,23 @@
 /* M05 · Pago en siete pasos. Sistema visual UNIQUE (Vintage Collegiate). */
+/* Alias locales de los tokens globales: mismo color, menos peso en el componente. */
+:host {
+  --mo: var(--color-unique-morado); --ci: var(--color-unique-ciruela);
+  --or: var(--color-unique-orquidea); --rl: var(--color-unique-rosa-lavanda);
+  --li: var(--color-unique-lila); --bl: var(--color-unique-blanco); --fi: var(--color-unique-fila);
+  --tx: var(--color-unique-texto); --ts: var(--color-unique-texto-suave);
+  --ex: var(--color-unique-exito); --es: var(--color-unique-exito-suave);
+  --ad: var(--color-unique-adv); --as: var(--color-unique-adv-suave);
+  --er: var(--color-unique-error); --eu: var(--color-unique-error-suave);
+  --in: var(--color-unique-info); --is: var(--color-unique-info-suave);
+  --ui: var(--font-interfaz); --tt: var(--font-titulo); --ft: var(--font-texto);
+}
 
 .pago {
   max-width: 75rem;
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
-  color: var(--color-unique-texto);
-  font-family: var(--font-texto);
+  color: var(--tx);
+  font-family: var(--ft);
 }
 
 .pago__cabecera {
@@ -19,8 +31,8 @@
 
 .pago__ojeada {
   margin: 0 0 0.25rem;
-  color: var(--color-unique-ciruela);
-  font-family: var(--font-interfaz);
+  color: var(--ci);
+  font-family: var(--ui);
   font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -29,8 +41,8 @@
 
 .pago h1 {
   margin: 0;
-  color: var(--color-unique-morado);
-  font-family: var(--font-titulo);
+  color: var(--mo);
+  font-family: var(--tt);
   font-size: clamp(1.75rem, 4vw, 2.5rem);
   line-height: 1.15;
 }
@@ -38,7 +50,7 @@
 .pago__subtitulo {
   max-width: 42rem;
   margin: 0.5rem 0 0;
-  color: var(--color-unique-texto-suave);
+  color: var(--ts);
   font-size: 0.875rem;
   line-height: 1.5;
 }
@@ -48,27 +60,25 @@
   align-items: center;
   min-height: 2.5rem;
   padding: 0.5rem 1rem;
-  border: 1px solid var(--color-unique-orquidea);
+  border: 1px solid var(--or);
   border-radius: 999px;
-  color: var(--color-unique-morado);
-  font-family: var(--font-interfaz);
-  font-size: 0.875rem;
-  font-weight: 600;
+  color: var(--mo);
+  font: 600 0.875rem var(--ui);
   text-decoration: none;
 }
 
 .pago__volver:hover {
-  background-color: var(--color-unique-rosa-lavanda);
+  background-color: var(--rl);
 }
 
 .pago__cargando {
   display: grid;
   gap: 1rem;
   border-radius: 20px;
-  background-color: var(--color-unique-blanco);
+  background-color: var(--bl);
   padding: 2rem 1.5rem;
   text-align: center;
-  color: var(--color-unique-texto-suave);
+  color: var(--ts);
 }
 
 .pago__esqueleto {
@@ -76,9 +86,9 @@
   border-radius: 20px;
   background: linear-gradient(
     90deg,
-    var(--color-unique-fila) 25%,
-    var(--color-unique-rosa-lavanda) 50%,
-    var(--color-unique-fila) 75%
+    var(--fi) 25%,
+    var(--rl) 50%,
+    var(--fi) 75%
   );
   background-size: 200% 100%;
   animation: pago-brillo 1.4s linear infinite;
@@ -116,14 +126,12 @@
   gap: 0.5rem;
   width: 100%;
   min-height: 2.75rem;
-  border: 1px solid var(--color-unique-rosa-lavanda);
+  border: 1px solid var(--rl);
   border-radius: 999px;
-  background-color: var(--color-unique-blanco);
+  background-color: var(--bl);
   padding: 0.375rem 0.875rem;
-  color: var(--color-unique-texto-suave);
-  font-family: var(--font-interfaz);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  color: var(--ts);
+  font: 600 0.8125rem var(--ui);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -134,15 +142,15 @@
 }
 
 .pasos__boton--actual {
-  border-color: var(--color-unique-morado);
-  background-color: var(--color-unique-morado);
-  color: var(--color-unique-blanco);
+  border-color: var(--mo);
+  background-color: var(--mo);
+  color: var(--bl);
 }
 
 .pasos__boton--hecho {
-  border-color: var(--color-unique-orquidea);
-  background-color: var(--color-unique-lila);
-  color: var(--color-unique-morado);
+  border-color: var(--or);
+  background-color: var(--li);
+  color: var(--mo);
 }
 
 .pasos__numero {
@@ -152,13 +160,13 @@
   height: 1.625rem;
   flex-shrink: 0;
   border-radius: 999px;
-  background-color: var(--color-unique-lila);
-  color: var(--color-unique-morado);
+  background-color: var(--li);
+  color: var(--mo);
   font-variant-numeric: tabular-nums;
 }
 
 .pasos__boton--actual .pasos__numero {
-  background-color: var(--color-unique-blanco);
+  background-color: var(--bl);
 }
 
 .pago__error,
@@ -170,16 +178,16 @@
 }
 
 .pago__error {
-  border-left: 4px solid var(--color-unique-error);
-  background-color: var(--color-unique-error-suave);
-  color: var(--color-unique-texto);
+  border-left: 4px solid var(--er);
+  background-color: var(--eu);
+  color: var(--tx);
   font-weight: 700;
 }
 
 .pago__mensaje {
-  border-left: 4px solid var(--color-unique-info);
-  background-color: var(--color-unique-info-suave);
-  color: var(--color-unique-texto);
+  border-left: 4px solid var(--in);
+  background-color: var(--is);
+  color: var(--tx);
 }
 
 .pago__cuadro {
@@ -192,35 +200,49 @@
   min-width: 0;
 }
 
+.seccion,
+.pago__resumen,
+.confirmacion {
+  border-radius: 20px;
+  background-color: var(--bl);
+  box-shadow: 0 10px 28px rgb(84 45 89 / 0.08);
+}
 .seccion {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  border-radius: 20px;
-  background-color: var(--color-unique-blanco);
-  box-shadow: 0 10px 28px rgb(84 45 89 / 0.08);
   padding: 1.5rem;
 }
 
 .seccion h2,
-.pago__resumen h2 {
+.pago__resumen h2,
+.confirmacion h2 {
   margin: 0;
-  color: var(--color-unique-morado);
-  font-family: var(--font-titulo);
+  color: var(--mo);
+  font-family: var(--tt);
+}
+.seccion h2,
+.pago__resumen h2 {
   font-size: 1.25rem;
 }
 
 .seccion__ayuda,
-.seccion__nota {
+.seccion__nota,
+.resumen__entrega,
+.resumen__pendiente,
+.resumen__nota {
   margin: 0;
-  color: var(--color-unique-texto-suave);
-  font-size: 0.875rem;
+  color: var(--ts);
   line-height: 1.5;
+}
+.seccion__ayuda,
+.seccion__nota {
+  font-size: 0.875rem;
 }
 
 .seccion__nota {
   border-radius: 12px;
-  background-color: var(--color-unique-fila);
+  background-color: var(--fi);
   padding: 0.625rem 0.875rem;
 }
 
@@ -243,36 +265,37 @@
   min-width: 0;
 }
 
-.campo label {
-  color: var(--color-unique-texto);
-  font-family: var(--font-interfaz);
-  font-size: 0.875rem;
-  font-weight: 700;
+.campo label,
+.cupon label {
+  color: var(--tx);
+  font: 700 0.875rem var(--ui);
 }
 
+.campo input,
+.cupon__fila input {
+  min-height: 2.75rem;
+  border: 1px solid var(--or);
+  border-radius: 12px;
+  padding: 0.625rem 0.875rem;
+  color: var(--tx);
+  font: 0.9375rem var(--ft);
+}
 .campo input {
   width: 100%;
-  min-height: 2.75rem;
-  border: 1px solid var(--color-unique-orquidea);
-  border-radius: 12px;
-  background-color: var(--color-unique-blanco);
-  padding: 0.625rem 0.875rem;
-  color: var(--color-unique-texto);
-  font-family: var(--font-texto);
-  font-size: 0.9375rem;
+  background-color: var(--bl);
 }
 
 .campo input:disabled {
-  background-color: var(--color-unique-fila);
+  background-color: var(--fi);
 }
 
 .campo__entrada--invalido {
-  border-color: var(--color-unique-error) !important;
-  background-color: var(--color-unique-error-suave) !important;
+  border-color: var(--er) !important;
+  background-color: var(--eu) !important;
 }
 
 .campo__error {
-  color: var(--color-unique-error);
+  color: var(--er);
   font-size: 0.8125rem;
   font-weight: 700;
 }
@@ -281,8 +304,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  color: var(--color-unique-texto);
-  font-family: var(--font-interfaz);
+  color: var(--tx);
+  font-family: var(--ui);
   font-size: 0.9375rem;
   font-weight: 700;
   cursor: pointer;
@@ -300,7 +323,7 @@
   width: 2.75rem;
   height: 1.5rem;
   border-radius: 999px;
-  background-color: var(--color-unique-rosa-lavanda);
+  background-color: var(--rl);
   transition: background-color 0.2s ease;
 }
 
@@ -312,12 +335,12 @@
   width: 1.125rem;
   height: 1.125rem;
   border-radius: 999px;
-  background-color: var(--color-unique-blanco);
+  background-color: var(--bl);
   transition: transform 0.2s ease;
 }
 
 .interruptor input:checked + .interruptor__pista {
-  background-color: var(--color-unique-morado);
+  background-color: var(--mo);
 }
 
 .interruptor input:checked + .interruptor__pista::after {
@@ -325,7 +348,7 @@
 }
 
 .interruptor input:focus-visible + .interruptor__pista {
-  outline: 3px solid var(--color-unique-orquidea);
+  outline: 3px solid var(--or);
   outline-offset: 2px;
 }
 
@@ -340,31 +363,29 @@
 .opciones legend {
   margin-bottom: 0.5rem;
   padding: 0;
-  color: var(--color-unique-morado);
-  font-family: var(--font-interfaz);
-  font-size: 0.9375rem;
-  font-weight: 700;
+  color: var(--mo);
+  font: 700 0.9375rem var(--ui);
 }
 
 .opcion {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  border: 1px solid var(--color-unique-rosa-lavanda);
+  border: 1px solid var(--rl);
   border-radius: 16px;
-  background-color: var(--color-unique-fila);
+  background-color: var(--fi);
   padding: 0.875rem;
   cursor: pointer;
 }
 
 .opcion:has(input:checked) {
-  border-color: var(--color-unique-ciruela);
-  background-color: var(--color-unique-lila);
+  border-color: var(--ci);
+  background-color: var(--li);
 }
 
 .opcion input {
   margin-top: 0.2rem;
-  accent-color: var(--color-unique-morado);
+  accent-color: var(--mo);
 }
 
 .opcion span {
@@ -375,12 +396,12 @@
 }
 
 .opcion strong {
-  color: var(--color-unique-morado);
+  color: var(--mo);
   font-size: 0.9375rem;
 }
 
 .opcion small {
-  color: var(--color-unique-texto-suave);
+  color: var(--ts);
   font-size: 0.8125rem;
   line-height: 1.45;
 }
@@ -388,9 +409,9 @@
 .chip {
   display: inline-block;
   border-radius: 999px;
-  background-color: var(--color-unique-morado);
+  background-color: var(--mo);
   padding: 0.1rem 0.5rem;
-  color: var(--color-unique-blanco);
+  color: var(--bl);
   font-size: 0.6875rem;
   font-weight: 700;
 }
@@ -403,20 +424,23 @@
   list-style: none;
 }
 
-.linea {
+.linea,
+.cupon__aplicado {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 0.75rem;
-  border-left: 4px solid var(--color-unique-orquidea);
   border-radius: 16px;
-  background-color: var(--color-unique-fila);
   padding: 0.875rem;
+}
+.linea {
+  border-left: 4px solid var(--or);
+  background-color: var(--fi);
 }
 
 .linea--invalida {
-  border-left-color: var(--color-unique-error);
-  background-color: var(--color-unique-error-suave);
+  border-left-color: var(--er);
+  background-color: var(--eu);
 }
 
 .linea > div:first-child {
@@ -427,16 +451,16 @@
 }
 
 .linea strong {
-  color: var(--color-unique-morado);
+  color: var(--mo);
 }
 
 .linea small {
-  color: var(--color-unique-texto-suave);
+  color: var(--ts);
   font-size: 0.8125rem;
 }
 
 .linea__alerta {
-  color: var(--color-unique-error) !important;
+  color: var(--er) !important;
   font-weight: 700;
 }
 
@@ -454,11 +478,9 @@
   gap: 0.375rem;
   align-self: flex-start;
   border-radius: 999px;
-  background-color: var(--color-unique-blanco);
+  background-color: var(--bl);
   padding: 0.1875rem 0.625rem;
-  font-family: var(--font-interfaz);
-  font-size: 0.75rem;
-  font-weight: 700;
+  font: 700 0.75rem var(--ui);
 }
 
 .estado__punto {
@@ -468,32 +490,25 @@
 }
 
 .estado__punto--disponible {
-  background-color: var(--color-unique-exito);
+  background-color: var(--ex);
 }
 
 .estado__punto--pocas {
-  background-color: var(--color-unique-adv);
+  background-color: var(--ad);
 }
 
 .estado__punto--pedido {
-  background-color: var(--color-unique-info);
+  background-color: var(--in);
 }
 
 .estado__punto--agotado {
-  background-color: var(--color-unique-error);
+  background-color: var(--er);
 }
 
 .cupon {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-}
-
-.cupon label {
-  color: var(--color-unique-texto);
-  font-family: var(--font-interfaz);
-  font-size: 0.875rem;
-  font-weight: 700;
 }
 
 .cupon__fila {
@@ -504,24 +519,11 @@
 
 .cupon__fila input {
   flex: 1 1 14rem;
-  min-height: 2.75rem;
-  border: 1px solid var(--color-unique-orquidea);
-  border-radius: 12px;
-  padding: 0.625rem 0.875rem;
-  color: var(--color-unique-texto);
-  font-family: var(--font-texto);
-  font-size: 0.9375rem;
 }
 
 .cupon__aplicado {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  border-radius: 16px;
-  background-color: var(--color-unique-exito-suave);
-  padding: 0.875rem;
+  background-color: var(--es);
   font-size: 0.875rem;
 }
 
@@ -529,15 +531,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.875rem;
-  border-radius: 20px;
-  background-color: var(--color-unique-blanco);
-  box-shadow: 0 10px 28px rgb(84 45 89 / 0.08);
   padding: 1.5rem;
 }
 
 .pago__resumen-articulos {
   margin: 0;
-  color: var(--color-unique-texto-suave);
+  color: var(--ts);
   font-size: 0.875rem;
 }
 
@@ -555,7 +554,7 @@
 }
 
 .resumen__datos dt {
-  color: var(--color-unique-texto-suave);
+  color: var(--ts);
 }
 
 .resumen__datos dd {
@@ -568,15 +567,12 @@
 .resumen__entrega,
 .resumen__pendiente,
 .resumen__nota {
-  margin: 0;
-  color: var(--color-unique-texto-suave);
   font-size: 0.8125rem;
-  line-height: 1.5;
 }
 
 .resumen__pendiente {
   border-radius: 12px;
-  background-color: var(--color-unique-adv-suave);
+  background-color: var(--as);
   padding: 0.75rem;
 }
 
@@ -585,10 +581,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border-top: 1px solid var(--color-unique-rosa-lavanda);
+  border-top: 1px solid var(--rl);
   padding-top: 1rem;
-  color: var(--color-unique-morado);
-  font-family: var(--font-titulo);
+  color: var(--mo);
+  font-family: var(--tt);
   font-size: 1.25rem;
 }
 
@@ -609,9 +605,6 @@
   flex-direction: column;
   align-items: center;
   gap: 0.875rem;
-  border-radius: 20px;
-  background-color: var(--color-unique-blanco);
-  box-shadow: 0 10px 28px rgb(84 45 89 / 0.08);
   padding: 2.5rem 1.5rem;
   text-align: center;
 }
@@ -622,27 +615,24 @@
   width: 4rem;
   height: 4rem;
   border-radius: 999px;
-  background-color: var(--color-unique-exito-suave);
-  color: var(--color-unique-exito);
+  background-color: var(--es);
+  color: var(--ex);
   font-size: 2rem;
   font-weight: 700;
 }
 
 .confirmacion h2 {
-  margin: 0;
-  color: var(--color-unique-morado);
-  font-family: var(--font-titulo);
   font-size: 1.5rem;
 }
 
 .confirmacion p {
   margin: 0;
-  color: var(--color-unique-texto-suave);
+  color: var(--ts);
   font-size: 0.9375rem;
 }
 
 .confirmacion__folio strong {
-  color: var(--color-unique-morado);
+  color: var(--mo);
   font-variant-numeric: tabular-nums;
 }
 
@@ -653,7 +643,7 @@
 .confirmacion__resumen {
   width: min(100%, 24rem);
   border-radius: 16px;
-  background-color: var(--color-unique-fila);
+  background-color: var(--fi);
   padding: 1rem;
 }
 

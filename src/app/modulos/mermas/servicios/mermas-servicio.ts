@@ -133,11 +133,16 @@ function extraerReverso(
   if ('id' in respuesta && typeof respuesta.id === 'number') {
     return respuesta;
   }
-  const reverso = respuesta.reverso ?? respuesta.merma_inversa ?? respuesta.merma;
-  if (!reverso) {
-    throw new Error('Flask no devolvió el registro inverso de la corrección.');
+  if ('reverso' in respuesta && respuesta.reverso) {
+    return respuesta.reverso;
   }
-  return reverso;
+  if ('merma_inversa' in respuesta && respuesta.merma_inversa) {
+    return respuesta.merma_inversa;
+  }
+  if ('merma' in respuesta && respuesta.merma) {
+    return respuesta.merma;
+  }
+  throw new Error('Flask no devolvió el registro inverso de la corrección.');
 }
 
 interface MermaApi {

@@ -87,6 +87,12 @@
   gap: 1rem;
   margin-bottom: 1.25rem;
 }
+.buscador,
+.filtro {
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-unique-ciruela);
+}
 .buscador {
   display: flex;
   align-items: center;
@@ -94,9 +100,6 @@
   width: 100%;
   padding: 0.55rem 0.9rem;
   border: 1px solid #d9bfdb;
-  border-radius: 999px;
-  background: #fff;
-  color: var(--color-unique-ciruela);
 }
 .buscador__icono {
   width: 1.15rem;
@@ -120,9 +123,6 @@
 .filtro {
   padding: 0.4rem 0.85rem;
   border: 1px solid var(--color-unique-orquidea);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--color-unique-ciruela);
   font: 0.78rem var(--font-interfaz);
   cursor: pointer;
 }
@@ -250,12 +250,16 @@
 .estado p {
   margin: 0.35rem 0 0;
 }
-.estado--error {
+.estado--error,
+.nota--error {
   background: var(--color-unique-error-suave);
+}
+.estado--error {
   color: #8c2537;
   text-align: left;
 }
-.estado--cargando {
+.estado--cargando,
+.nota {
   background: var(--color-unique-info-suave);
   color: #2b4f8c;
 }
@@ -266,18 +270,15 @@
   margin: 1.25rem 0 0;
   padding: 0.75rem 0.9rem;
   border-radius: 12px;
-  background: var(--color-unique-info-suave);
-  color: #2b4f8c;
   font-size: 0.78rem;
   line-height: 1.5;
+}
+.nota--error {
+  color: #a52b3c;
 }
 .nota--advertencia {
   background: var(--color-unique-adv-suave);
   color: #7d5908;
-}
-.nota--error {
-  background: var(--color-unique-error-suave);
-  color: #a52b3c;
 }
 .form-grid {
   display: grid;
@@ -395,12 +396,15 @@
 .meta__relleno[data-tono='error'] {
   background: var(--color-unique-error);
 }
+.circulo,
+.grafica__etiqueta {
+  font: 0.72rem var(--font-interfaz);
+  color: var(--color-unique-texto-suave);
+}
 .circulo {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font: 0.72rem var(--font-interfaz);
-  color: var(--color-unique-texto-suave);
 }
 .circulo__punto {
   width: 0.6rem;
@@ -457,10 +461,6 @@
 }
 .grafica__barra[data-tono='error'] {
   background: var(--color-unique-error);
-}
-.grafica__etiqueta {
-  font: 0.72rem var(--font-interfaz);
-  color: var(--color-unique-texto-suave);
 }
 .grafica__valor {
   font: 600 0.72rem var(--font-titulo);

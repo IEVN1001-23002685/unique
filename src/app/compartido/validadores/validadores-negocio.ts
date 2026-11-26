@@ -117,14 +117,14 @@ export const tarjetaLuhn: ValidatorFn = (control: AbstractControl): ValidationEr
   }
 
   const digitos = valor.replace(/\D/g, '');
-  if (!/^\d{16}$/.test(digos)) {
+  if (!/^\d{16}$/.test(digitos)) {
     return { tarjetaLuhn: true };
   }
 
   let suma = 0;
   let duplicar = false;
   for (let indice = digitos.length - 1; indice >= 0; indice -= 1) {
-    let digito = Number(digos.charAt(indice));
+    let digito = Number(digitos.charAt(indice));
     if (duplicar) {
       digito *= 2;
       if (digito > 9) digito -= 9;
