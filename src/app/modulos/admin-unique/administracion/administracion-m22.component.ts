@@ -22,12 +22,43 @@ import {
 
 type Pestana = 'usuarios' | 'clientes' | 'catalogos' | 'configuracion' | 'bitacora';
 
+interface GrupoConfiguracion {
+  titulo: string;
+  nota: string;
+  parametros: ConfiguracionParametro[];
+}
+
+/** Claves del §11.5 del documento; la agrupación es solo presentación, no cambia valores. */
+const CLAVES_PROPUESTA = new Set([
+  'dias_devolucion',
+  'max_intentos_entrega',
+  'dias_produccion_estandar',
+  'max_piezas_por_linea',
+  'saldo_inicial_cuenta_simulada',
+  'envio_gratis_desde',
+]);
+const CLAVES_SEGURIDAD = new Set([
+  'intentos_login_max',
+  'bloqueo_login_min',
+  'vigencia_recuperacion_min',
+]);
+const CLAVES_ESTANCAMIENTO = new Set([
+  'horas_max_recibido',
+  'horas_max_confirmado',
+  'dias_max_en_produccion',
+  'horas_max_en_preparacion',
+  'horas_max_listo_envio',
+  'horas_max_en_reparto',
+  'horas_alerta_devolucion',
+  'dias_carrito_abandonado',
+]);
+
 @Component({
   selector: 'app-administracion-m22',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './administracion-m22.component.html',
-  styleUrl: '../preparacion/modulos-admin.css',
+  styleUrls: ['../preparacion/modulos-admin.css', './administracion-m22.css'],
 })
 export class AdministracionM22Component implements OnInit {
   private readonly servicio = inject(AdministracionService);
@@ -51,13 +82,21 @@ export class AdministracionM22Component implements OnInit {
   editandoCatalogo: number | null = null;
   catalogoDatos: Record<string, ValorCatalogo> = {};
   filtro = '';
-  filtrosBitacora = { accion: '', entidad: '', usuario_id: null as number | null, desde: '', hasta: '' };
+  filtroActivo: boolean | null = null;
+  filtrosBitacora = {
+    accion: '',
+    entidad: '',
+    usuario_id: null as number | null,
+    desde: '',
+    hasta: '',
+  };
   pagina = 1;
   porPagina = 20;
   total = 0;
   cargando = true;
   error = '';
   aviso = '';
+  passwordPendiente: UsuarioAdmin | null = null;
 
   usuarioForm = this.fb.group({
     nombre: ['', [Validators.required, Validators.maxLength(80)]],
@@ -81,6 +120,49 @@ export class AdministracionM22Component implements OnInit {
     return CAMPOS_CATALOGO[this.recurso];
   }
 
+  get hayMasCatalogos(): boolean {
+    return this.pestana === 'catalogos' && this.total > this.catalogos.length;
+  }
+
+  get hayMasBitacora(): boolean {
+    return this.pestana === 'bitacora' && this.total > this.bitacora.length;
+  }
+
+  get todosLosUsuariosCargados(): boolean {
+    return this.usuarios.length >= this.total;
+  }
+
+  get gruposConfiguracion(): GrupoConfiguracion[] {
+    const conocidas = new Set([
+      ...CLAVES_PROPUESTA,
+      ...CLAVES_SEGURIDAD,
+      ...CLAVES_ESTANCAMIENTO,
+    ]);
+    const grupos: GrupoConfiguracion[] = [
+      {
+        titulo: 'Negocio y calidad',
+        nota: 'Parámetros definidos en el documento para precios, merma y proveedores.',
+        parametros: this.configuracion.filter((p) => !conocidas.has(p.clave)),
+      },
+      {
+        titulo: 'Estancamiento y alertas',
+        nota: 'Umbrales que M21 usa para detectar pedidos detenidos.',
+        parametros: this.configuracion.filter((p) => CLAVES_ESTANCAMIENTO.has(p.clave)),
+      },
+      {
+        titulo: 'Seguridad',
+        nota: 'Bloqueo por intentos fallidos y vigencia de recuperación.',
+        parametros: this.configuracion.filter((p) => CLAVES_SEGURIDAD.has(p.clave)),
+      },
+      {
+        titulo: 'Propuestas pendientes de confirmación',
+        nota: 'El documento las marca como propuesta: no están definidas y deben confirmarse antes de usarlas como regla.',
+        parametros: this.configuracion.filter((p) => CLAVES_PROPUESTA.has(p.clave)),
+      },
+    ];
+    return grupos.filter((grupo) => grupo.parametros.length > 0);
+  }
+
   ngOnInit(): void {
     const secciones: Record<string, Pestana> = {
       usuarios: 'usuarios',
@@ -93,9 +175,11 @@ export class AdministracionM22Component implements OnInit {
       this.pestana = secciones[params.get('seccion') ?? ''] ?? 'usuarios';
       this.pagina = 1;
       this.filtro = '';
+      this.filtroActivo = null;
       this.error = '';
       this.aviso = '';
       this.clienteDetalle = null;
+      this.passwordPendiente = null;
       this.cargar();
     });
   }
@@ -104,9 +188,11 @@ export class AdministracionM22Component implements OnInit {
     this.pestana = pestana;
     this.pagina = 1;
     this.filtro = '';
+    this.filtroActivo = null;
     this.error = '';
     this.aviso = '';
     this.clienteDetalle = null;
+    this.passwordPendiente = null;
     void this.router.navigate(['/panel-admin/sistema', pestana]);
   }
 
@@ -157,6 +243,7 @@ export class AdministracionM22Component implements OnInit {
     this.servicio
       .listarCatalogo(this.recurso, {
         q: this.filtro || undefined,
+        activa: this.filtroActivo ?? undefined,
       })
       .subscribe({
         next: (respuesta) => {
@@ -213,6 +300,16 @@ export class AdministracionM22Component implements OnInit {
     this.cargar();
   }
 
+  limpiarFiltrosBitacora(): void {
+    this.filtrosBitacora = { accion: '', entidad: '', usuario_id: null, desde: '', hasta: '' };
+    this.pagina = 1;
+    this.cargarBitacora();
+  }
+
+  reintentar(): void {
+    this.cargar();
+  }
+
   get listaUsuarios(): UsuarioAdmin[] {
     return this.filtrar(this.usuarios);
   }
@@ -234,6 +331,10 @@ export class AdministracionM22Component implements OnInit {
     }
     const valores = this.usuarioForm.getRawValue();
     this.error = '';
+    if (valores.rol === 'CLIENTE' && this.editandoUsuario === null) {
+      this.error = 'El alta desde M22 crea cuentas Operativo o Administrador; los clientes se registran solos.';
+      return;
+    }
     if (this.editandoUsuario) {
       const cambios: DatosUsuarioActualizar = {
         nombre: valores.nombre ?? undefined,
@@ -261,7 +362,7 @@ export class AdministracionM22Component implements OnInit {
         correo: valores.correo ?? '',
         telefono: valores.telefono ?? '',
         password: valores.password ?? '',
-        rol: valores.rol ?? 'OPERATIVO',
+        rol: valores.rol === 'ADMIN' ? 'ADMIN' : 'OPERATIVO',
         acepta_promociones: valores.acepta_promociones ?? false,
       })
       .subscribe({
@@ -304,7 +405,19 @@ export class AdministracionM22Component implements OnInit {
     this.usuarioForm.controls.correo.enable();
   }
 
+  esUltimoAdminVisible(usuario: UsuarioAdmin): boolean {
+    if (usuario.rol !== 'ADMIN' || usuario.estado_cuenta !== 'ACTIVA') return false;
+    if (!this.todosLosUsuariosCargados) return false;
+    return (
+      this.usuarios.filter((u) => u.rol === 'ADMIN' && u.estado_cuenta === 'ACTIVA').length <= 1
+    );
+  }
+
   alternarEstado(usuario: UsuarioAdmin): void {
+    if (this.esUltimoAdminVisible(usuario)) {
+      this.error = 'No se puede desactivar al último Administrador. Flask también lo rechaza.';
+      return;
+    }
     const accion = usuario.estado_cuenta === 'ACTIVA' ? 'desactivar' : 'reactivar';
     if (!confirm(`¿${accion} la cuenta de ${usuario.nombre}?`)) return;
     this.error = '';
@@ -321,6 +434,16 @@ export class AdministracionM22Component implements OnInit {
         this.error = mensajeError(error, 'No se pudo cambiar el estado de la cuenta.');
       },
     });
+  }
+
+  /** No existe endpoint de restablecimiento en el contrato verificado: solo se explica al usuario. */
+  restablecerContrasena(usuario: UsuarioAdmin): void {
+    this.passwordPendiente = usuario;
+    this.error = '';
+  }
+
+  cerrarRestablecimiento(): void {
+    this.passwordPendiente = null;
   }
 
   verCliente(id: number): void {
@@ -340,6 +463,7 @@ export class AdministracionM22Component implements OnInit {
     this.editandoCatalogo = null;
     this.catalogoDatos = {};
     this.filtro = '';
+    this.filtroActivo = null;
     this.cargarCatalogo();
   }
 
@@ -422,15 +546,16 @@ export class AdministracionM22Component implements OnInit {
   }
 
   eliminarCatalogo(elemento: ElementoCatalogo): void {
-    if (!confirm(`¿Eliminar "${elemento['nombre']}"? El backend validará las relaciones existentes.`)) return;
+    const nombre = String(elemento['nombre'] ?? ' este elemento');
+    if (!confirm(`¿Desactivar o eliminar "${nombre}"? Flask validará si ya se usó; un código que generó SKU solo puede desactivarse.`)) return;
     this.error = '';
     this.servicio.eliminarCatalogo(this.recurso, elemento.id).subscribe({
       next: () => {
-        this.aviso = 'Elemento eliminado.';
+        this.aviso = 'Elemento desactivado o eliminado según sus relaciones.';
         this.cargarCatalogo();
       },
       error: (error: unknown) => {
-        this.error = mensajeError(error, 'No se pudo eliminar el elemento.');
+        this.error = mensajeError(error, 'No se pudo desactivar el elemento.');
       },
     });
   }

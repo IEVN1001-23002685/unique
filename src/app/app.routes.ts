@@ -208,7 +208,7 @@ export const routes: Routes = [
   { path: 'sistema/catalogos', redirectTo: 'panel-admin/sistema/catalogos' },
   { path: 'sistema/configuracion', redirectTo: 'panel-admin/sistema/configuracion' },
   { path: 'sistema/bitacora', redirectTo: 'panel-admin/sistema/bitacora' },
-  { path: 'sistema/:seccion', redirectTo: 'panel-admin/sistema' },
+  { path: 'sistema/:seccion', redirectTo: 'panel-admin/sistema/:seccion' },
   { path: 'sistema', pathMatch: 'full', redirectTo: 'panel-admin/sistema' },
   {
     path: 'proveedores',
