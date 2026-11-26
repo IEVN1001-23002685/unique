@@ -35,7 +35,7 @@ Se contrastaron las rutas y esquemas del repositorio `unique_api` (`main`) con l
 - Roles: ADMIN hereda OPERATIVO en `roles_requeridos`; `/repartidores`, `/alertas/reglas`, `/dashboard/resumen`, `/dashboard/ventas`, `/dashboard/exportar` y todo M22 son ADMIN-only. La interfaz refleja esa herencia y esas restricciones.
 - **Filtros estrictos:** `/preparacion/cola`, `/entregas/por-asignar`, `/entregas/productos-repartidos`, `/repartidores`, `/alertas`, `/alertas/resueltas` y `/dashboard/*` cargan `request.args` directamente en un esquema Marshmallow, que rechaza campos no declarados. Por eso los servicios NO envían `pagina`/`por_pagina` a esos endpoints; la API responde con su paginación por defecto.
 - `/catalogos/{recurso}` y `/bitacora` eliminan `pagina`/`por_pagina` antes de validar, pero el frontend tampoco los envía para depender solo del filtro declarado. Usuarios y clientes sí aceptan paginación porque esos endpoints la leen directamente.
-- `/dashboard/resumen`, `/dashboard/ventas` y `/dashboard/exportar` son ADMIN-only; la UI oculta esas pestañas/acciones al perfil OPERATIVO.
+- `/dashboard/resumen`, `/dashboard/ventas` y `/dashboard/exportar` son ADMIN-only; la UI oculta esas pestañas/acciones al perfil OPERATIVO. Los filtros de M20 envían solo `desde`/`hasta`; categoría, producto, color, talla y canal se aplican localmente al detalle de SKU/canal devuelto por `/dashboard/ventas`, sin inventar parámetros de API.
 - `/entregas` no expone listado general; “Seguimiento” muestra las entregas asignadas durante la sesión.
 - Las incidencias no tienen endpoint propio; la pestaña M18 deriva la información del campo `lineas[].incidencia`.
 
