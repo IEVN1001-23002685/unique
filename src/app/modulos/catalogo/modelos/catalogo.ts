@@ -74,9 +74,12 @@ export function fechaEstimada(variante: VarianteCatalogo): string | undefined {
 }
 
 export function productoDisponible(producto: ProductoCatalogo): boolean {
-  return producto.variantes.some(
-    (variante) => variante.comprable && estadoDisponibilidad(variante) !== 'Agotado',
-  );
+  // "Solo disponibles" significa existencias reales, igual que el filtro
+  // `disponibles=true` de Flask: excluye también las variantes "Bajo pedido".
+  return producto.variantes.some((variante) => {
+    const estado = estadoDisponibilidad(variante);
+    return estado === 'Disponible' || estado === 'Pocas unidades';
+  });
 }
 
 export function productoVisible(producto: ProductoCatalogo): boolean {

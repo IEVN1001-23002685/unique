@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiService } from '../../../core/api/api.service';
+import { MisPedidosServicio } from '../../mispedidos/servicios/mis-pedidos-servicio';
 
 export type MetodoPago = 'TARJETA' | 'CUENTA';
 
@@ -80,6 +81,7 @@ export interface ResultadoCheckout {
 @Injectable({ providedIn: 'root' })
 export class CheckoutServicio {
   private readonly api = inject(ApiService);
+  private readonly pedidos = inject(MisPedidosServicio);
   private readonly claves = new Map<string, string>();
 
   cotizar(datos: DatosCotizacion): Observable<ResumenCheckout> {
@@ -91,8 +93,12 @@ export class CheckoutServicio {
   }
 
   pagar(datos: DatosPago): Observable<ResultadoCheckout> {
-    return this.api.post<ResultadoCheckout>('/checkout/pagar', datos, {
-      idempotencyKey: this.clavePara(datos),
+    // El contrato de /checkout/pagar toma el CP de `direccion` (o de `direccion_id`):
+    // no acepta el `codigo_postal` que sí usa /checkout/cotizar.
+    const cuerpo: DatosPago = { ...datos };
+    if (cuerpo.direccion) delete cuerpo.codigo_postal;
+    return this.api.post<ResultadoCheckout>('/checkout/pagar', cuerpo, {
+      idempotencyKey: this.clavePara(cuerpo),
     });
   }
 
@@ -101,7 +107,7 @@ export class CheckoutServicio {
    * Reutiliza el contrato documentado de M06 (§9), sin crear un endpoint nuevo.
    */
   descargarComprobante(pedidoId: number): Observable<Blob> {
-    return this.api.getBlob(`/mis-pedidos/${pedidoId}/comprobante`);
+    return this.pedidos.descargarComprobante(pedidoId);
   }
 
   private clavePara(datos: DatosPago): string {

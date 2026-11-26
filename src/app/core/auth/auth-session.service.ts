@@ -22,6 +22,14 @@ export interface MensajeApi {
   mensaje: string;
 }
 
+/** Doble envío CSRF de flask-jwt-extended; se usa solo cuando el backend lo habilita. */
+export function cabeceraCsrf(): Record<string, string> {
+  if (typeof document === 'undefined') return {};
+  const prefijo = 'csrf_refresh_token=';
+  const cookie = document.cookie.split('; ').find((parte) => parte.startsWith(prefijo));
+  return cookie ? { 'X-CSRF-TOKEN': decodeURIComponent(cookie.slice(prefijo.length)) } : {};
+}
+
 /** Servicio de sesión: única puerta para login, registro, refresco y logout. */
 @Injectable({ providedIn: 'root' })
 export class AuthSessionService {
@@ -55,7 +63,10 @@ export class AuthSessionService {
 
   refrescar(): Observable<RespuestaSesion> {
     return this.http
-      .post<RespuestaSesion>(`${this.base}/auth/refrescar`, {}, { withCredentials: true })
+      .post<RespuestaSesion>(`${this.base}/auth/refrescar`, {}, {
+        withCredentials: true,
+        headers: cabeceraCsrf(),
+      })
       .pipe(
         tap((respuesta) => this.estado.guardarSesion(respuesta)),
         catchError((error: unknown) => {
