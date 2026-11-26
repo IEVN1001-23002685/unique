@@ -22,14 +22,16 @@ export interface RespuestaAccionAlerta {
   resultado: unknown;
 }
 
+/**
+ * Solo las alertas cuyo botón del catálogo ejecuta una acción de servicio.
+ * Las demás («Ver orden», «Validar pago», etc.) navegan al módulo de origen
+ * desde el componente; no se les inventa una acción de escritura.
+ */
 const ACCIONES_SUGERIDAS: Record<string, AccionAlerta> = {
   PT_AGOTADO_DEMANDA: 'GENERAR_PRODUCCION',
   PT_STOCK_MINIMO: 'GENERAR_PRODUCCION',
   MP_INSUFICIENTE: 'GENERAR_REQUISICION',
   MP_REORDEN: 'GENERAR_REQUISICION',
-  ORDEN_ROJA: 'GENERAR_REQUISICION',
-  OC_RETRASADA: 'GENERAR_REQUISICION',
-  PROVEEDOR_EN_REVISION: 'EVALUAR_PROVEEDOR',
 };
 
 /** M21: única puerta HTTP de alertas, acciones y reglas. */

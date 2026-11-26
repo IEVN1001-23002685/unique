@@ -1,0 +1,168 @@
+/* M21: estilos propios; hereda tokens y filas de modulos-admin.css */
+.notice.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filtro-tipo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #6b5870;
+}
+
+.filtro-tipo select {
+  min-width: 190px;
+}
+
+.severity-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.pill {
+  border: 1px solid #e8d5e9;
+  background: #fff;
+  color: #6b5870;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: 600 12px Akshar, sans-serif;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pill b {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #f2d5ed;
+  color: #542d59;
+  font: 700 10px Vazirmatn, sans-serif;
+}
+
+.pill.active {
+  background: #542d59;
+  border-color: #542d59;
+  color: #fff;
+}
+
+.pill.active b {
+  background: #fff;
+  color: #542d59;
+}
+
+.pill.red-pill.active {
+  background: #c8374b;
+  border-color: #c8374b;
+  color: #fff;
+}
+
+.pill.amber-pill.active {
+  background: #b9830f;
+  border-color: #b9830f;
+  color: #fff;
+}
+
+.pill.blue-pill.active {
+  background: #3b6fc9;
+  border-color: #3b6fc9;
+  color: #fff;
+}
+
+.alert-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.alert-list .alert-row:last-child {
+  border-bottom: 0;
+}
+
+.filter-note,
+.pendiente {
+  font-size: 11px;
+  color: #6b5870;
+  background: #f9eef8;
+  border-left: 3px solid #bf7ebb;
+  border-radius: 10px;
+  padding: 11px 13px;
+  line-height: 1.55;
+  margin: 14px 0 0;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 18, 38, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  width: min(100%, 460px);
+  box-shadow: 0 18px 45px rgba(31, 18, 38, 0.25);
+}
+
+.modal-card h3 {
+  color: #542d59;
+  font-size: 18px;
+  margin: 0 0 10px;
+}
+
+.modal-card p {
+  color: #6b5870;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.modal-actions .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 650px) {
+  .filtro-tipo {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filtro-tipo select {
+    width: 100%;
+  }
+
+  .notice.error {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .modal-actions {
+    justify-content: stretch;
+  }
+
+  .modal-actions button {
+    flex: 1;
+  }
+}
