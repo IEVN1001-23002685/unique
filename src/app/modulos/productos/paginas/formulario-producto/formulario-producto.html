@@ -14,7 +14,15 @@
     </div>
   </div>
 
-  @if (!esEdicion || producto()) {
+  @if (servicio.errorCarga()) {
+    <div class="tarjeta seccion estado estado--error" role="alert">
+      <strong>No fue posible cargar los catálogos del formulario.</strong>
+      <p>{{ servicio.errorCarga() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (!esEdicion || producto()) {
     <form [formGroup]="forma" (ngSubmit)="guardar()" class="formulario" novalidate>
       <fieldset class="tarjeta seccion">
         <legend class="seccion__titulo">1 · Identidad del producto</legend>
@@ -398,7 +406,7 @@
           Imagen general
           <select class="campo__entrada" formControlName="imagenGeneral">
             <option value="">Sin imagen</option>
-            @for (imagen of imagenes; track imagen.url) {
+            @for (imagen of imagenes(); track imagen.url) {
               <option [value]="imagen.url">{{ imagen.etiqueta }}</option>
             }
           </select>
@@ -409,7 +417,7 @@
               Imagen de {{ servicio.nombreColor(color) }} ({{ color }})
               <select class="campo__entrada" [formControlName]="color">
                 <option value="">Usar la general</option>
-                @for (imagen of imagenes; track imagen.url) {
+                @for (imagen of imagenes(); track imagen.url) {
                   <option [value]="imagen.url">{{ imagen.etiqueta }}</option>
                 }
               </select>
@@ -417,8 +425,9 @@
           }
         </div>
         <p class="ayuda">
-          Solo se pueden elegir recursos que existen en el proyecto. Para ampliar la biblioteca usa
-          la pestaña <a routerLink="/admin/productos/imagenes">Imágenes</a>.
+          Solo se pueden elegir recursos que existen en el proyecto; las rutas seleccionadas se
+          envían al guardar. Para subir un archivo nuevo usa la pestaña
+          <a routerLink="/admin/productos/imagenes">Imágenes</a>.
         </p>
       </fieldset>
 
@@ -481,6 +490,15 @@
         <a routerLink="/admin/productos" class="boton boton--secundario">Cancelar</a>
       </div>
     </form>
+  } @else if (servicio.errorDetalle()) {
+    <div class="tarjeta seccion estado estado--error" role="alert">
+      <strong>No fue posible cargar el producto solicitado.</strong>
+      <p>{{ servicio.errorDetalle() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">
+        Reintentar
+      </button>
+      <a routerLink="/admin/productos" class="boton boton--primario">Ir al catálogo</a>
+    </div>
   } @else {
     <div class="tarjeta seccion estado" role="status">
       <strong>No encontramos el producto solicitado.</strong>

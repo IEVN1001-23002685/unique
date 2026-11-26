@@ -27,6 +27,10 @@ export class Imagenes {
     this.productosServicio.recargar().subscribe();
   }
 
+  protected reintentar(): void {
+    this.productosServicio.recargar().subscribe();
+  }
+
   protected readonly fallidos = signal<ReadonlySet<string>>(new Set<string>());
 
   protected readonly destinos: readonly DestinoImagen[] = [

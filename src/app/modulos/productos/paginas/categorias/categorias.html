@@ -73,7 +73,15 @@
 
     <div class="tarjeta seccion">
       <h2 class="seccion__titulo">Catálogo de categorías</h2>
-      @if (categorias().length === 0) {
+      @if (servicio.errorCarga()) {
+        <div class="estado-linea estado--error" role="alert">
+          <strong>No fue posible cargar las categorías.</strong>
+          <p>{{ servicio.errorCarga() }}</p>
+          <button type="button" class="boton boton--secundario" (click)="reintentar()">
+            Reintentar
+          </button>
+        </div>
+      } @else if (categorias().length === 0) {
         <p class="estado-linea">Aún no hay categorías. Crea la primera con el formulario.</p>
       } @else {
         <div class="tabla-contenedor">

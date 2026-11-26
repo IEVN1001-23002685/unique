@@ -24,6 +24,10 @@ export class Categorias {
     this.servicio.recargar().subscribe();
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected readonly intento = signal(false);
 
   protected readonly forma = this.fb.nonNullable.group({

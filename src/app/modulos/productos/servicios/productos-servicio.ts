@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { ApiService, type ValorParametro } from '../../../core/api/api.service';
+import { mensajeError } from '../../../core/api/errores';
 import type { IProducto } from '../../../nucleo/modelos/producto';
 import { calcularCosteo } from './calculos-producto';
 import type {
@@ -28,6 +29,16 @@ interface Pagina<T> {
   por_pagina: number;
 }
 
+interface DetalleResuelto {
+  item: ProductoListaApi;
+  producto?: ProductoDetalleApi;
+  error?: unknown;
+}
+
+interface RespuestaBaja {
+  modo?: 'eliminado' | 'desactivado';
+}
+
 interface ProductoListaApi {
   id: number;
   codigo_sku: string;
@@ -37,6 +48,7 @@ interface ProductoListaApi {
   activo: boolean;
   eliminado_en: string | null;
   permite_bajo_pedido: boolean;
+  tiene_historial?: boolean | null;
   numero_variantes: number;
   costo_estandar: string | null;
   margen_real: string | null;
@@ -55,6 +67,7 @@ interface ProductoDetalleApi {
   permite_bajo_pedido: boolean;
   activo: boolean;
   eliminado_en: string | null;
+  tiene_historial?: boolean | null;
   variantes: Array<{
     id: number;
     sku: string;
@@ -78,6 +91,7 @@ interface CategoriaApi {
   prefijo_sku: string;
   usa_tallas: boolean;
   activa: boolean;
+  descripcion?: string | null;
 }
 
 interface CodigoCatalogoApi {
@@ -139,6 +153,10 @@ export class ProductosServicio {
   readonly tallas = computed(() => this.listaTallas());
   readonly materiales = computed(() => this.listaMateriales());
 
+  /** Fallos de API visibles en la interfaz; nunca se confunden con catálogos vacíos. */
+  readonly errorCarga = signal('');
+  readonly errorDetalle = signal('');
+
   readonly visibles = computed(() =>
     this.lista().filter((producto) => producto.activo && producto.eliminadoEn === null),
   );
@@ -169,6 +187,8 @@ export class ProductosServicio {
 
   /** Carga autoritativa de productos y catálogos; ningún dato se inventa en el cliente. */
   recargar(): Observable<void> {
+    this.errorCarga.set('');
+    this.errorDetalle.set('');
     return forkJoin({
       resumen: this.listarPagina<ProductoListaApi>('/productos'),
       categorias: this.listarPagina<CategoriaApi>('/catalogos/categoria-producto'),
@@ -184,7 +204,7 @@ export class ProductosServicio {
             prefijo: categoria.prefijo_sku,
             usaTallas: categoria.usa_tallas,
             activa: categoria.activa,
-            descripcion: '',
+            descripcion: categoria.descripcion ?? '',
           })),
         );
         this.listaColores.set(
@@ -218,20 +238,42 @@ export class ProductosServicio {
           resumen.map((item) =>
             this.api
               .get<ProductoDetalleApi>(`/productos/${item.id}`)
-              .pipe(catchError(() => of(null))),
+              .pipe(
+                map((producto): DetalleResuelto => ({ item, producto })),
+                catchError((error: unknown) => of<DetalleResuelto>({ item, error })),
+              ),
           ),
         ).pipe(
-          tap((detalles) =>
+          tap((respuestas) => {
+            const fallos = respuestas.filter((respuesta) => respuesta.error !== undefined);
             this.lista.set(
-              detalles
-                .filter((detalle): detalle is ProductoDetalleApi => detalle !== null)
-                .map(deDetalleApi),
-            ),
-          ),
+              respuestas
+                .filter((respuesta) => respuesta.producto !== undefined)
+                .map((respuesta) => deDetalleApi(respuesta.producto as ProductoDetalleApi)),
+            );
+            if (fallos.length > 0) {
+              this.errorDetalle.set(
+                `No fue posible cargar ${fallos.length} producto(s). ${mensajeError(
+                  fallos[0].error,
+                  'Revisa la conexión con Flask.',
+                )}`,
+              );
+            }
+          }),
           map(() => undefined),
         );
       }),
-      catchError(() => of(undefined)),
+      catchError((error: unknown) => {
+        this.errorCarga.set(
+          mensajeError(error, 'No fue posible cargar el catálogo, los catálogos base o los materiales.'),
+        );
+        this.lista.set([]);
+        this.listaCategorias.set([]);
+        this.listaColores.set([]);
+        this.listaTallas.set([]);
+        this.listaMateriales.set([]);
+        return of(undefined);
+      }),
     );
   }
 
@@ -325,6 +367,9 @@ export class ProductosServicio {
 
   guardarProducto(datos: DatosProducto, id?: number): Observable<ResultadoProducto> {
     const precio = datos.precioVenta ?? calcularCosteo(datos.costeo).precioConIva;
+    const imagenesPorColor = Object.fromEntries(
+      Object.entries(datos.imagenesPorColor).filter(([, url]) => url !== ''),
+    );
     const comun = {
       nombre: datos.nombre.trim(),
       descripcion: datos.descripcion.trim(),
@@ -334,46 +379,49 @@ export class ProductosServicio {
       permite_bajo_pedido: datos.permiteBajoPedido,
       colores: datos.colores,
       tallas: datos.tallas,
+      imagen_general: datos.imagenGeneral,
+      imagenes_por_color: imagenesPorColor,
+    };
+    const catalogo = {
+      categoria_id: datos.categoriaId,
+      stock_minimo: datos.stockMinimo,
+      cantidad_reposicion: datos.cantidadReposicion,
     };
     const peticion =
       id === undefined
-        ? this.api.post<ProductoDetalleApi>('/productos', {
-            ...comun,
-            categoria_id: datos.categoriaId,
-            stock_minimo: datos.stockMinimo,
-            cantidad_reposicion: datos.cantidadReposicion,
-          })
-        : this.api.patch<ProductoDetalleApi>(`/productos/${id}`, comun);
+        ? this.api.post<ProductoDetalleApi>('/productos', { ...comun, ...catalogo })
+        : this.api.patch<ProductoDetalleApi>(`/productos/${id}`, { ...comun, ...catalogo });
 
     return peticion.pipe(
       switchMap((respuesta) =>
         this.recargar().pipe(
-          map(() => ({
-            ok: true,
-            productoId: respuesta.id,
-            mensaje:
+          map(() => {
+            const base =
               id === undefined
                 ? `Producto ${respuesta.nombre} creado con ${respuesta.variantes.length} variante(s); SKU generado por Flask.`
-                : `Producto ${respuesta.nombre} actualizado; precio y disponibilidad recalculados por Flask.`,
-          })),
+                : `Producto ${respuesta.nombre} actualizado; precio y disponibilidad recalculados por Flask.`;
+            const recarga = this.errorCarga() || this.errorDetalle();
+            return {
+              ok: true,
+              productoId: respuesta.id,
+              mensaje: recarga
+                ? `${base} La operación se envió, pero la recarga mostró un aviso; usa «Reintentar».`
+                : base,
+            };
+          }),
         ),
       ),
     );
   }
 
-  /** Activar usa su endpoint dedicado; desactivar se resuelve con borrado lógico/físico de M10. */
-  cambiarActivo(id: number, activar: boolean): Observable<ResultadoProducto> {
-    const peticion: Observable<unknown> = activar
-      ? this.api.post<ProductoDetalleApi>(`/productos/${id}/activar`, {})
-      : this.api.delete<void>(`/productos/${id}`);
-    return peticion.pipe(
+  /** Activar usa su endpoint dedicado; la baja se gestiona con `eliminarProducto`. */
+  activarProducto(id: number): Observable<ResultadoProducto> {
+    return this.api.post<ProductoDetalleApi>(`/productos/${id}/activar`, {}).pipe(
       switchMap(() =>
         this.recargar().pipe(
           map(() => ({
             ok: true,
-            mensaje: activar
-              ? 'Producto activado. M03 lo publicará con las variantes vigentes.'
-              : 'Producto dado de baja según la regla de historial de Flask.',
+            mensaje: 'Producto activado. M03 lo publicará con las variantes vigentes.',
           })),
         ),
       ),
@@ -403,14 +451,25 @@ export class ProductosServicio {
 
   eliminarProducto(id: number): Observable<ResultadoProducto> {
     const producto = this.obtenerProducto(id);
-    return this.api.delete<void>(`/productos/${id}`).pipe(
-      switchMap(() =>
+    return this.api.delete<RespuestaBaja>(`/productos/${id}`).pipe(
+      switchMap((respuesta) =>
         this.recargar().pipe(
-          map(() => ({
-            ok: true,
-            modo: producto?.tieneHistorial ? ('desactivado' as const) : ('eliminado' as const),
-            mensaje: 'Producto dado de baja por Flask; el historial se conserva cuando existe.',
-          })),
+          map(() => {
+            const modo =
+              respuesta?.modo ??
+              (producto?.tieneHistorial === true
+                ? ('desactivado' as const)
+                : producto?.tieneHistorial === false
+                  ? ('eliminado' as const)
+                  : undefined);
+            const mensaje =
+              modo === 'desactivado'
+                ? 'Producto desactivado con borrado lógico; su historial se conserva.'
+                : modo === 'eliminado'
+                  ? 'Producto eliminado por Flask al no tener ventas ni movimientos.'
+                  : 'Flask procesó la baja; consulta el estatus resultante en el catálogo.';
+            return { ok: true, modo, mensaje };
+          }),
         ),
       ),
     );
@@ -459,9 +518,13 @@ export class ProductosServicio {
       return of({ ok: false, mensaje: 'Ya existe una categoría con ese nombre o prefijo.' });
     }
 
-    const cuerpo = id === undefined
-      ? { nombre, prefijo_sku: prefijo, usa_tallas: datos.usaTallas, activa: datos.activa }
-      : { nombre, usa_tallas: datos.usaTallas, activa: datos.activa };
+    const cuerpo = {
+      nombre,
+      usa_tallas: datos.usaTallas,
+      activa: datos.activa,
+      descripcion: datos.descripcion.trim(),
+      ...(id === undefined ? { prefijo_sku: prefijo } : {}),
+    };
     const peticion =
       id === undefined
         ? this.api.post<CategoriaApi>('/catalogos/categoria-producto', cuerpo)
@@ -566,7 +629,7 @@ function deDetalleApi(item: ProductoDetalleApi): ProductoMaestro {
     recetasVigentes: item.recetas
       .filter((receta) => receta.estado === 'VIGENTE')
       .map((receta) => receta.talla as CodigoTalla),
-    tieneHistorial: false,
+    tieneHistorial: item.tiene_historial ?? null,
     bitacora: [],
   };
 }

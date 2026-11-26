@@ -61,7 +61,15 @@
       </label>
     </div>
 
-    @if (filas().length === 0) {
+    @if (servicio.errorCarga() || servicio.errorDetalle()) {
+      <div class="estado estado--error" role="alert">
+        <strong>No fue posible cargar las variantes.</strong>
+        <p>{{ servicio.errorCarga() || servicio.errorDetalle() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (filas().length === 0) {
       <div class="estado" role="status">
         <strong>Aún no hay variantes.</strong>
         <p>Crea un producto desde el catálogo maestro para generar sus SKU.</p>

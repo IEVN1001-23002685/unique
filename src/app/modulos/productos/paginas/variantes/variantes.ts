@@ -57,6 +57,10 @@ export class Variantes {
     this.servicio.recargar().subscribe();
   }
 
+  protected reintentar(): void {
+    this.servicio.recargar().subscribe();
+  }
+
   protected alBuscar(evento: Event): void {
     this.busqueda.set((evento.target as HTMLInputElement).value);
   }
