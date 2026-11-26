@@ -1,0 +1,45 @@
+.pagina-estado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 1.5rem;
+  background-color: var(--color-unique-lila, #f2d5ed);
+}
+
+.pagina-estado__tarjeta {
+  width: 100%;
+  max-width: 34rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.titulo {
+  margin: 0 0 0.75rem;
+  color: var(--color-unique-morado, #542d59);
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.subtitulo {
+  margin: 0;
+  color: var(--color-unique-texto-suave, #6b5870);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.pagina-estado__codigo {
+  margin: 0;
+  color: var(--color-unique-ciruela, #8b548c);
+  font-variant-numeric: tabular-nums;
+  font-size: 3rem;
+  font-weight: 700;
+}
+
+.pagina-estado__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}

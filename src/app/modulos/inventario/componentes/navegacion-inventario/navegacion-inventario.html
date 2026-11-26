@@ -1,0 +1,52 @@
+<nav class="pestanas" aria-label="Pantallas de inventario de materia prima">
+  <a
+    routerLink="/inventario-mp"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'existencias'"
+    [attr.aria-current]="activa() === 'existencias' ? 'page' : null"
+  >
+    Existencias
+  </a>
+  <a
+    routerLink="/inventario-mp/lotes"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'lotes'"
+    [attr.aria-current]="activa() === 'lotes' ? 'page' : null"
+  >
+    Lotes
+  </a>
+  <a
+    routerLink="/inventario-mp/kardex"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'kardex'"
+    [attr.aria-current]="activa() === 'kardex' ? 'page' : null"
+  >
+    Kardex
+  </a>
+  <a
+    routerLink="/inventario-mp/ajuste"
+    class="pestana"
+    [class.pestana--activa]="activa() === 'ajuste'"
+    [attr.aria-current]="activa() === 'ajuste' ? 'page' : null"
+  >
+    Ajuste / conteo
+  </a>
+  <a
+    routerLink="/inventario-mp/catalogo"
+    class="pestana"
+    title="Sección del Administrador"
+    [class.pestana--activa]="activa() === 'catalogo'"
+    [attr.aria-current]="activa() === 'catalogo' ? 'page' : null"
+  >
+    Catálogo <span class="pestana__rol" aria-hidden="true">A</span>
+  </a>
+  <a
+    routerLink="/inventario-mp/politicas"
+    class="pestana"
+    title="Sección del Administrador"
+    [class.pestana--activa]="activa() === 'politicas'"
+    [attr.aria-current]="activa() === 'politicas' ? 'page' : null"
+  >
+    Políticas <span class="pestana__rol" aria-hidden="true">A</span>
+  </a>
+</nav>

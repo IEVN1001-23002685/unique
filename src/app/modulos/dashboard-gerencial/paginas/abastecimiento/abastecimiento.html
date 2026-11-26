@@ -1,0 +1,152 @@
+<div class="bloque__titulo">
+  <h2>Abastecimiento</h2>
+  <span>Lectura de M14, M15 y proveedores · compras y materiales son de demostración</span>
+</div>
+
+<div class="metricas" aria-label="Indicadores de abastecimiento">
+  @for (metrica of servicio.metricasAbastecimiento(); track metrica.etiqueta) {
+    <app-tarjeta-metrica [metrica]="metrica" />
+  }
+</div>
+
+<div class="tarjeta bloque">
+  <div class="bloque__titulo">
+    <h2>Materiales en rojo y ámbar</h2>
+    <span>v_inventario_material · mínimos de demostración</span>
+  </div>
+  <div class="tabla-contenedor">
+    <table class="tabla tabla--corta">
+      <caption class="sr-only">
+        Materiales con disponibilidad en riesgo
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Material</th>
+          <th scope="col">SKU</th>
+          <th scope="col">Disponible</th>
+          <th scope="col">Mínimo</th>
+          <th scope="col">Semáforo</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (material of servicio.materiales(); track material.sku) {
+          <tr>
+            <td data-etiqueta="Material">{{ material.material }}</td>
+            <td data-etiqueta="SKU">
+              <span class="mono">{{ material.sku }}</span>
+            </td>
+            <td data-etiqueta="Disponible">{{ numero(material.disponible) }}</td>
+            <td data-etiqueta="Mínimo">{{ numero(material.minimo) }}</td>
+            <td data-etiqueta="Semáforo"><app-chip-semaforo [tono]="material.tono" /></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="tarjeta bloque">
+  <div class="bloque__titulo">
+    <h2>Compras pendientes y retrasadas</h2>
+    <span>Las acciones de compra pertenecen a M14</span>
+  </div>
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <caption class="sr-only">
+        Órdenes de compra de demostración
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Orden</th>
+          <th scope="col">Proveedor</th>
+          <th scope="col">Material</th>
+          <th scope="col">Cantidad</th>
+          <th scope="col">Compromiso</th>
+          <th scope="col">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (compra of servicio.compras(); track compra.folio) {
+          <tr>
+            <td data-etiqueta="Orden">
+              <span class="mono">{{ compra.folio }}</span>
+            </td>
+            <td data-etiqueta="Proveedor">{{ compra.proveedor }}</td>
+            <td data-etiqueta="Material">{{ compra.material }}</td>
+            <td data-etiqueta="Cantidad">{{ numero(compra.cantidad) }}</td>
+            <td data-etiqueta="Compromiso">
+              {{ compra.compromiso | date: 'dd/MM/yyyy' : '' : 'es-MX' }}
+            </td>
+            <td data-etiqueta="Estado">
+              <app-chip-semaforo
+                [tono]="
+                  compra.estado === 'RETRASADA'
+                    ? 'ROJO'
+                    : compra.estado === 'PENDIENTE'
+                      ? 'AMBAR'
+                      : 'VERDE'
+                "
+                [etiqueta]="
+                  compra.estado === 'RETRASADA'
+                    ? 'Retrasada'
+                    : compra.estado === 'PENDIENTE'
+                      ? 'Pendiente'
+                      : 'Recibida'
+                "
+              />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="tarjeta bloque">
+  <div class="bloque__titulo">
+    <h2>Desempeño de proveedores</h2>
+    <span>Entregas a tiempo y aceptación de materiales</span>
+  </div>
+  <div class="tabla-contenedor">
+    <table class="tabla tabla--proveedores">
+      <caption class="sr-only">
+        Indicadores por proveedor
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Proveedor</th>
+          <th scope="col">Entregas</th>
+          <th scope="col">A tiempo</th>
+          <th scope="col">Aceptación</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (proveedor of servicio.proveedores(); track proveedor.proveedor) {
+          <tr>
+            <td data-etiqueta="Proveedor">{{ proveedor.proveedor }}</td>
+            <td data-etiqueta="Entregas">{{ numero(proveedor.entregas) }}</td>
+            <td data-etiqueta="A tiempo">
+              <span>{{ porcentaje(proveedor.aTiempo) }}</span>
+              <span class="medidor" aria-hidden="true">
+                <span class="medidor__barra" [style.width.%]="proveedor.aTiempo"></span>
+              </span>
+            </td>
+            <td data-etiqueta="Aceptación">
+              <span>{{ porcentaje(proveedor.aceptacion) }}</span>
+              <span class="medidor" aria-hidden="true">
+                <span class="medidor__barra" [style.width.%]="proveedor.aceptacion"></span>
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="filtros__acciones">
+    <a class="boton boton--secundario" routerLink="/proveedores">Abrir catálogo de proveedores</a>
+  </p>
+  <p class="nota">
+    La recepción real, la aceptación de materiales y las órdenes de compra se registrarán en M14 y
+    M15. M20 solo muestra el indicador.
+  </p>
+</div>

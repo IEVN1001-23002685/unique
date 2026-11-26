@@ -1,0 +1,94 @@
+<div class="bloque__titulo">
+  <h2>Indicadores del periodo</h2>
+  <span>Actualizado con los datos locales de demostración</span>
+</div>
+
+<div class="metricas" aria-label="Indicadores del resumen">
+  @for (metrica of servicio.metricasResumen(); track metrica.etiqueta) {
+    <app-tarjeta-metrica [metrica]="metrica" />
+  }
+</div>
+
+@if (servicio.esAdmin()) {
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Ventas del periodo contra el anterior</h2>
+      <span>Suma de ventas activas con pago aprobado</span>
+    </div>
+    @if (servicio.ventasPorMes().length === 0) {
+      <p class="vacio">No hay ventas que coincidan con los filtros seleccionados.</p>
+    } @else {
+      <div class="grafica">
+        @for (mes of servicio.ventasPorMes(); track mes.etiqueta) {
+          <div class="grafica__fila">
+            <span class="grafica__etiqueta">{{ mes.etiqueta }}</span>
+            <div
+              class="grafica__pista"
+              role="img"
+              [attr.aria-label]="mes.etiqueta + ': ' + mxn(mes.valor)"
+            >
+              <div class="grafica__barra" [style.width.%]="anchura(mes.valor)"></div>
+            </div>
+            <span class="grafica__valor">{{ mxn(mes.valor) }}</span>
+          </div>
+        }
+      </div>
+    }
+    <p class="nota">
+      Conversión, mermas y órdenes rojas provienen de vistas que aún no existen en este frontend; se
+      muestran como demostración hasta conectar Flask.
+    </p>
+  </div>
+}
+
+<div class="tarjeta bloque">
+  <div class="bloque__titulo">
+    <h2>Semáforos de inventario</h2>
+    <span>Lectura de M12 · no se modifican existencias desde M20</span>
+  </div>
+  <div class="tabla-contenedor">
+    <table class="tabla tabla--corta">
+      <caption class="sr-only">
+        Distribución de variantes por semáforo
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Semáforo</th>
+          <th scope="col">Variantes</th>
+          <th scope="col">Lectura</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-etiqueta="Semáforo"><app-chip-semaforo tono="ROJO" /></td>
+          <td data-etiqueta="Variantes">{{ servicio.semaforosInventario().rojo }}</td>
+          <td data-etiqueta="Lectura">Sin disponible o por debajo del mínimo</td>
+        </tr>
+        <tr>
+          <td data-etiqueta="Semáforo"><app-chip-semaforo tono="AMBAR" /></td>
+          <td data-etiqueta="Variantes">{{ servicio.semaforosInventario().ambar }}</td>
+          <td data-etiqueta="Lectura">Cobertura reducida</td>
+        </tr>
+        <tr>
+          <td data-etiqueta="Semáforo"><app-chip-semaforo tono="VERDE" /></td>
+          <td data-etiqueta="Variantes">{{ servicio.semaforosInventario().verde }}</td>
+          <td data-etiqueta="Lectura">Cobertura saludable</td>
+        </tr>
+        <tr>
+          <td data-etiqueta="Semáforo"><app-chip-semaforo tono="INFO" etiqueta="Señales" /></td>
+          <td data-etiqueta="Variantes">{{ servicio.semaforosInventario().senales }}</td>
+          <td data-etiqueta="Lectura">Reposiciones pendientes de M16</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="filtros__acciones">
+    <a class="boton boton--secundario" routerLink="/operacion/inventario-pt">Abrir inventario PT</a>
+    <a class="boton boton--secundario" routerLink="/admin/pedidos">Revisar pedidos</a>
+  </p>
+</div>
+
+<p class="nota nota--adv">
+  Este tablero solo lee señales locales. Las alertas críticas y sus acciones definitivas
+  corresponderán a M21 y a los módulos dueños de cada dato.
+</p>

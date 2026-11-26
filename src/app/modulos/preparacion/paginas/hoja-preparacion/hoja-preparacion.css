@@ -1,0 +1,128 @@
+.pasos-bloque {
+  padding: 1rem;
+}
+.pasos-nota {
+  margin: 0.9rem 0 0;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.8rem;
+}
+.aviso {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.aviso--adv {
+  background-color: var(--color-unique-adv-suave);
+  color: #7a5606;
+}
+.tabla-lineas {
+  min-width: 76rem;
+}
+.tabla-empaque {
+  min-width: 34rem;
+}
+.tabla input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--color-unique-morado);
+}
+.dato-alerta {
+  color: #a52b3c;
+  font-weight: 700;
+}
+.pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+  margin: 1.25rem 0 0.5rem;
+}
+.pick .campo {
+  flex: 1 1 16rem;
+}
+.acciones--hoja {
+  margin-top: 1rem;
+}
+.etiqueta {
+  max-width: 32rem;
+  padding: 1.1rem;
+  border: 2px solid var(--color-unique-morado);
+  border-radius: 16px;
+  background-color: #fff;
+}
+.etiqueta__marca {
+  margin: 0 0 0.8rem;
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.etiqueta__marca small {
+  display: block;
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-texto);
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+.etiqueta dl {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+.etiqueta dl div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.7rem;
+  font-size: 0.82rem;
+}
+.etiqueta dt {
+  flex: 0 0 6.5rem;
+  color: var(--color-unique-texto-suave);
+  font-family: var(--font-interfaz);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.etiqueta dd {
+  margin: 0;
+  flex: 1 1 12rem;
+}
+.etiqueta__qr {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 1rem;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.72rem;
+}
+.incidencias {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.incidencias li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.8rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #eadcea;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+.incidencias .celda-principal {
+  flex: 1 1 16rem;
+  font-weight: 400;
+}
+.vacio {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-fila);
+  color: var(--color-unique-texto-suave);
+  font-size: 0.85rem;
+  text-align: center;
+}

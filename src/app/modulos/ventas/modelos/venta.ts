@@ -71,9 +71,10 @@ export interface Venta {
   canal: CanalVenta;
   estado: EstadoVenta;
   estadoPago: EstadoPago;
-  estadoPedido: EstadoPedido;
+  estadoPedido: EstadoPedido | null;
   pedidoFolio: string;
-  subtotal: number;
+  /** El listado M08 no expone subtotal; sólo está disponible al cargar el detalle. */
+  subtotal: number | null;
   descuentoId: number | null;
   descuentoNombre: string | null;
   descuentoMonto: number;
@@ -123,6 +124,7 @@ export interface VarianteVenta {
 export interface ClienteVenta {
   id: number;
   nombre: string;
+  apellidos: string;
   correo: string;
   telefono: string;
   esNuevoSinAcceso: boolean;

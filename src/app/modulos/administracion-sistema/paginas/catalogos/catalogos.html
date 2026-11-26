@@ -1,0 +1,271 @@
+<section class="pagina">
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Catálogos del sistema</h2>
+      <span>{{ entradas().length }} entradas · {{ etiquetasTipo[tipoSeleccionado()] }}</span>
+    </div>
+    <label class="campo selector">
+      Tipo de catálogo
+      <select class="campo__entrada" [formControl]="formulario.controls.tipo">
+        @for (tipo of tipos; track tipo) {
+          <option [value]="tipo">{{ etiquetasTipo[tipo] }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()">
+    <div class="bloque__titulo">
+      <h2>{{ editando() === null ? 'Nueva entrada' : 'Editar entrada' }}</h2>
+      <span>Código único por catálogo</span>
+    </div>
+
+    <div class="formulario">
+      <label class="campo">
+        Código
+        <input
+          class="campo__entrada"
+          formControlName="codigo"
+          [attr.readonly]="codigoBloqueado() ? '' : null"
+        />
+        @if (errorEn('codigo')) {
+          <span class="campo__error">El código es obligatorio.</span>
+        }
+        @if (codigoBloqueado()) {
+          <span class="campo__error"
+            >Código usado en SKU: no se puede cambiar, solo desactivar.</span
+          >
+        }
+      </label>
+      <label class="campo">
+        Nombre
+        <input class="campo__entrada" formControlName="nombre" />
+        @if (errorEn('nombre')) {
+          <span class="campo__error">El nombre es obligatorio.</span>
+        }
+      </label>
+      <label class="campo campo--amplio">
+        Descripción
+        <input class="campo__entrada" formControlName="descripcion" />
+      </label>
+
+      @switch (tipoSeleccionado()) {
+        @case ('COLOR') {
+          <label class="campo">
+            Color hexadecimal
+            <input class="campo__entrada" type="text" formControlName="hex" />
+            @if (errorEn('hex')) {
+              <span class="campo__error">Usa el formato #RRGGBB.</span>
+            }
+          </label>
+        }
+        @case ('TALLA') {
+          <label class="campo">
+            Orden de despliegue
+            <input class="campo__entrada" type="number" min="1" formControlName="orden" />
+            @if (errorEn('orden')) {
+              <span class="campo__error">Debe ser un entero mayor a cero.</span>
+            }
+          </label>
+        }
+        @case ('CATEGORIA_PRODUCTO') {
+          <label class="campo">
+            Prefijo del SKU (2 letras)
+            <input class="campo__entrada" formControlName="prefijo" />
+            @if (errorEn('prefijo')) {
+              <span class="campo__error">Debe tener exactamente dos letras.</span>
+            }
+          </label>
+          <label class="campo campo--check">
+            <input type="checkbox" formControlName="usaTallas" />
+            La categoría usa tallas
+          </label>
+        }
+        @case ('CAUSA_MERMA') {
+          <label class="campo">
+            Aplica a
+            <select class="campo__entrada" formControlName="aplicaA">
+              <option value="">Selecciona una opción</option>
+              <option value="MATERIAL">{{ etiquetasAplica.MATERIAL }}</option>
+              <option value="PRODUCTO">{{ etiquetasAplica.PRODUCTO }}</option>
+              <option value="AMBOS">{{ etiquetasAplica.AMBOS }}</option>
+            </select>
+          </label>
+          <label class="campo">
+            Etapa sugerida
+            <input
+              class="campo__entrada"
+              formControlName="etapaSugerida"
+              placeholder="Ej. Recepción"
+            />
+          </label>
+        }
+        @case ('TARIFA_ENVIO') {
+          <label class="campo">
+            CP inicial
+            <input
+              class="campo__entrada"
+              inputmode="numeric"
+              formControlName="cpInicio"
+              placeholder="37000"
+            />
+            @if (errorEn('cpInicio')) {
+              <span class="campo__error">Cinco dígitos.</span>
+            }
+          </label>
+          <label class="campo">
+            CP final
+            <input
+              class="campo__entrada"
+              inputmode="numeric"
+              formControlName="cpFin"
+              placeholder="37999"
+            />
+            @if (errorEn('cpFin')) {
+              <span class="campo__error">Cinco dígitos.</span>
+            }
+          </label>
+          <label class="campo">
+            Costo de envío (MXN)
+            <input
+              class="campo__entrada"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="costo"
+            />
+            @if (errorEn('costo')) {
+              <span class="campo__error">No puede ser negativo.</span>
+            }
+          </label>
+          <label class="campo">
+            Días estimados
+            <input class="campo__entrada" type="number" min="1" formControlName="diasEstimados" />
+            @if (errorEn('diasEstimados')) {
+              <span class="campo__error">Debe ser al menos 1.</span>
+            }
+          </label>
+        }
+      }
+
+      <label class="campo campo--check">
+        <input type="checkbox" formControlName="activo" />
+        Entrada activa
+      </label>
+    </div>
+
+    @if (errorFormulario(); as error) {
+      <p class="nota nota--adv error-servicio">{{ error }}</p>
+    }
+    <div class="acciones acciones--form">
+      <button type="submit" class="boton boton--primario">
+        {{ editando() === null ? 'Agregar entrada' : 'Guardar cambios' }}
+      </button>
+      @if (editando() !== null) {
+        <button type="button" class="boton boton--secundario" (click)="cancelar()">Cancelar</button>
+      }
+    </div>
+  </form>
+
+  <div class="tarjeta tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th scope="col">Código</th>
+          <th scope="col">Nombre</th>
+          <th scope="col">Detalle</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entrada of entradas(); track entrada.id) {
+          <tr>
+            <td data-etiqueta="Código">
+              <span class="mono">{{ entrada.codigo }}</span>
+            </td>
+            <td data-etiqueta="Nombre">
+              <span class="celda-principal">{{ entrada.nombre }}</span>
+              <span class="celda-secundaria">{{ entrada.descripcion }}</span>
+            </td>
+            <td data-etiqueta="Detalle">
+              @switch (entrada.tipo) {
+                @case ('COLOR') {
+                  <span class="muestra-color" [style.background-color]="entrada.hex"></span>
+                  <span class="mono">{{ entrada.hex }}</span>
+                }
+                @case ('TALLA') {
+                  Orden {{ entrada.orden }}
+                }
+                @case ('CATEGORIA_PRODUCTO') {
+                  Prefijo {{ entrada.prefijo }} ·
+                  {{ entrada.usaTallas ? 'con tallas' : 'talla única' }}
+                }
+                @case ('CATEGORIA_MATERIAL') {
+                  Categoría de insumo
+                }
+                @case ('CAUSA_MERMA') {
+                  {{ etiquetasAplica[entrada.aplicaA ?? 'AMBOS'] }} · {{ entrada.etapaSugerida }}
+                }
+                @case ('TARIFA_ENVIO') {
+                  CP {{ entrada.cpInicio }}–{{ entrada.cpFin }} ·
+                  {{ formatoMXN(entrada.costo ?? 0) }} · {{ entrada.diasEstimados }} d
+                }
+              }
+            </td>
+            <td data-etiqueta="Estado">
+              <span
+                class="chip"
+                [class.chip--activa]="entrada.activo"
+                [class.chip--inactiva]="!entrada.activo"
+              >
+                <span class="chip__punto" aria-hidden="true"></span>
+                {{ entrada.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td data-etiqueta="Acciones">
+              <div class="acciones">
+                <button type="button" class="boton boton--enlace" (click)="editar(entrada)">
+                  Editar
+                </button>
+                @if (entrada.activo) {
+                  <button
+                    type="button"
+                    class="boton boton--enlace"
+                    (click)="pedirDesactivacion(entrada)"
+                  >
+                    Desactivar
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5"><p class="vacio">Este catálogo no tiene entradas.</p></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class="nota nota-final">
+    Los códigos de color, talla y categoría de producto que ya generaron SKU no se pueden cambiar;
+    solo se desactivan. Las tarifas con rangos de CP no se empalman. Flask debe validar la clave
+    única y conservar los registros históricos.
+  </p>
+
+  @if (pendiente(); as entrada) {
+    <app-modal-confirmacion
+      titulo="Desactivar entrada del catálogo"
+      [mensaje]="
+        'Desactivar ' +
+        entrada.nombre +
+        '. Los SKU y movimientos históricos se conservan; solo deja de estar disponible para nuevas capturas.'
+      "
+      etiquetaConfirmar="Desactivar"
+      (confirmar)="confirmarDesactivacion()"
+      (cancelar)="cancelarDesactivacion()"
+    />
+  }
+</section>

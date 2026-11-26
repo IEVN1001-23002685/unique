@@ -1,0 +1,232 @@
+<section class="vista">
+  <app-navegacion-inventario />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 5 · Producción y merma · M15</p>
+      <h1 class="titulo">Existencias de materia prima</h1>
+      <p class="subtitulo">
+        Físico, reservado y disponible por material y color en unidades base: m² para telas, m para
+        hilos y piezas para avíos, etiquetas y empaque. Disponible = físico − reservado.
+      </p>
+    </div>
+  </div>
+
+  <div class="indicadores" aria-label="Resumen de existencias">
+    <div class="indicador" data-tono="error">
+      <span class="indicador__numero">{{ totales().rojo }}</span>
+      <span class="indicador__etiqueta">En rojo</span>
+    </div>
+    <div class="indicador" data-tono="adv">
+      <span class="indicador__numero">{{ totales().ambar }}</span>
+      <span class="indicador__etiqueta">En ámbar</span>
+    </div>
+    <div class="indicador" data-tono="exito">
+      <span class="indicador__numero">{{ totales().verde }}</span>
+      <span class="indicador__etiqueta">En verde</span>
+    </div>
+    <div class="indicador" data-tono="info">
+      <span class="indicador__numero">{{ totales().atencion }}</span>
+      <span class="indicador__etiqueta">Requieren compra</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por código, material o color"
+          aria-label="Buscar existencias"
+        />
+      </label>
+      <div class="filtros" role="group" aria-label="Filtrar por categoría">
+        @for (opcion of categorias; track opcion) {
+          <button
+            type="button"
+            class="filtro"
+            [class.filtro--activo]="categoria() === opcion"
+            [attr.aria-pressed]="categoria() === opcion"
+            (click)="categoria.set(opcion)"
+          >
+            {{ opcion }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (filtradas().length === 0) {
+      <div class="estado" role="status">
+        <strong>No hay existencias para mostrar.</strong>
+        <p>Prueba con otra categoría o revisa el texto de búsqueda.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor tabla-contenedor--ancha">
+        <table class="tabla">
+          <caption class="sr-only">
+            Existencias de materiales por categoría
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Material</th>
+              <th scope="col">Color</th>
+              <th scope="col">Unidad</th>
+              <th scope="col" class="celda-derecha">Físico</th>
+              <th scope="col" class="celda-derecha">Reservado</th>
+              <th scope="col" class="celda-derecha">Disponible</th>
+              <th scope="col" class="celda-derecha">En compra</th>
+              <th scope="col" class="celda-derecha">Mínimo</th>
+              <th scope="col" class="celda-derecha">Pto. reorden</th>
+              <th scope="col" class="celda-derecha">Cobertura</th>
+              <th scope="col">Semáforo</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (vista of filtradas(); track vista.id) {
+              <tr>
+                <td data-etiqueta="Material">
+                  <span class="celda-principal">{{ vista.material.nombre }}</span>
+                  <span class="celda-secundaria"
+                    >{{ vista.material.codigo }} · {{ vista.material.categoria }}</span
+                  >
+                </td>
+                <td data-etiqueta="Color">{{ vista.color }}</td>
+                <td data-etiqueta="Unidad">{{ vista.material.unidadBase }}</td>
+                <td data-etiqueta="Físico" class="celda-numero celda-derecha">
+                  {{ vista.fisico | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Reservado" class="celda-numero celda-derecha">
+                  {{ vista.reservado | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Disponible" class="celda-numero celda-derecha">
+                  <strong>{{ vista.disponible | number: '1.0-4' : 'es-MX' }}</strong>
+                </td>
+                <td data-etiqueta="En compra" class="celda-numero celda-derecha">
+                  {{ vista.enCompra | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Mínimo" class="celda-numero celda-derecha">
+                  {{ vista.stockMinimo | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Pto. reorden" class="celda-numero celda-derecha">
+                  {{ vista.puntoReorden | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Cobertura" class="celda-numero celda-derecha">
+                  {{
+                    vista.coberturaDias === null
+                      ? 'Sin consumo'
+                      : (vista.coberturaDias | number: '1.0-1' : 'es-MX') + ' días'
+                  }}
+                </td>
+                <td data-etiqueta="Semáforo">
+                  <app-semaforo-inventario
+                    [tono]="vista.semaforo"
+                    [texto]="etiquetaSemaforo(vista)"
+                  />
+                  @if (vista.requiereAtencion) {
+                    <span class="etiqueta etiqueta--alerta">Sin requisición</span>
+                  }
+                </td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    <button type="button" class="accion" (click)="abrirSolicitud(vista)">
+                      Solicitar compra
+                    </button>
+                    <a
+                      class="accion"
+                      routerLink="/inventario-mp/lotes"
+                      [queryParams]="{ material: vista.materialId, color: vista.color }"
+                    >
+                      Lotes
+                    </a>
+                    <a
+                      class="accion"
+                      routerLink="/inventario-mp/kardex"
+                      [queryParams]="{ material: vista.materialId, color: vista.color }"
+                    >
+                      Kardex
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Semáforo: rojo si el disponible está en o debajo del mínimo o no cubre una orden confirmada;
+      ámbar si está en o debajo del punto de reorden; verde en otro caso. El consumo diario usa el
+      promedio de movimientos CONSUMO de 30 días y, sin historial, el valor manual de políticas.
+    </p>
+  </div>
+
+  @if (solicitud(); as vista) {
+    <section class="tarjeta bloque panel-solicitud" aria-live="polite">
+      <div class="panel-solicitud__cabecera">
+        <div>
+          <p class="eyebrow">Conexión con M14 · Compras</p>
+          <h2 class="titulo-section">Solicitud de compra sugerida</h2>
+        </div>
+        <button type="button" class="accion" (click)="solicitud.set(null)">Cerrar</button>
+      </div>
+
+      <dl class="lector">
+        <div>
+          <dt>Material y color</dt>
+          <dd>{{ vista.material.nombre }} · {{ vista.color }}</dd>
+        </div>
+        <div>
+          <dt>Disponible</dt>
+          <dd>
+            {{ vista.disponible | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}
+          </dd>
+        </div>
+        <div>
+          <dt>Posición (disponible + compras)</dt>
+          <dd>{{ vista.posicion | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}</dd>
+        </div>
+        <div>
+          <dt>Punto de reorden</dt>
+          <dd>
+            {{ vista.puntoReorden | number: '1.0-4' : 'es-MX' }} {{ vista.material.unidadBase }}
+          </dd>
+        </div>
+        <div>
+          <dt>Faltante sugerido</dt>
+          <dd>
+            {{ faltanteSugerido(vista) | number: '1.0-4' : 'es-MX' }}
+            {{ vista.material.unidadBase }}
+          </dd>
+        </div>
+        <div>
+          <dt>Requisición abierta</dt>
+          <dd>{{ vista.requisicionAbierta ? 'Sí, ya existe en M14' : 'No detectada' }}</dd>
+        </div>
+      </dl>
+
+      <div class="form-acciones">
+        <a routerLink="/compras/requisiciones/nueva" class="boton boton--primario">
+          Abrir requisición en M14
+        </a>
+      </div>
+      <p class="nota nota--advertencia">
+        El contrato no expone una acción desde M15 para generar la requisición. El botón abre la
+        captura de M14; captura allí el material, el color y el faltante mostrados.
+      </p>
+    </section>
+  }
+
+  <p class="nota">
+    El catálogo de materiales y las políticas los administra el Administrador. Las existencias, los
+    lotes, el kardex y los ajustes son de operación; la visibilidad mostrada no sustituye a los
+    guards ni a la validación autoritativa de Flask.
+  </p>
+</section>

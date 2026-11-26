@@ -45,30 +45,30 @@ export class FormularioDescuento {
   });
 
   constructor() {
-    if (!this.esEdicion) {
-      return;
-    }
-
-    const descuento = this.servicio.obtenerDescuento(this.idEditar);
-    if (!descuento) {
-      this.noEncontrado.set(true);
-      return;
-    }
-
-    this.formulario.patchValue({
-      nombre: descuento.nombre,
-      codigo: descuento.codigo ?? '',
-      tipo: descuento.tipo,
-      valor: descuento.valor,
-      aplicacion: descuento.aplicacion,
-      soloPrimeraCompra: descuento.soloPrimeraCompra,
-      montoMinimo: descuento.montoMinimo,
-      minArticulos: descuento.minArticulos,
-      vigenteDesde: descuento.vigenteDesde,
-      vigenteHasta: descuento.vigenteHasta,
-      usosMaximos: descuento.usosMaximos,
-      usosPorCliente: descuento.usosPorCliente,
-      activo: descuento.activo,
+    this.servicio.recargar().subscribe(() => {
+      if (!this.esEdicion) {
+        return;
+      }
+      const descuento = this.servicio.obtenerDescuento(this.idEditar);
+      if (!descuento) {
+        this.noEncontrado.set(true);
+        return;
+      }
+      this.formulario.patchValue({
+        nombre: descuento.nombre,
+        codigo: descuento.codigo ?? '',
+        tipo: descuento.tipo,
+        valor: descuento.valor,
+        aplicacion: descuento.aplicacion,
+        soloPrimeraCompra: descuento.soloPrimeraCompra,
+        montoMinimo: descuento.montoMinimo,
+        minArticulos: descuento.minArticulos,
+        vigenteDesde: descuento.vigenteDesde,
+        vigenteHasta: descuento.vigenteHasta,
+        usosMaximos: descuento.usosMaximos,
+        usosPorCliente: descuento.usosPorCliente,
+        activo: descuento.activo,
+      });
     });
   }
 
@@ -99,7 +99,7 @@ export class FormularioDescuento {
       this.avisos.mostrar(
         'error',
         `El límite no puede ser menor a los ${previo.usosActuales} usos ya registrados.`,
-        );
+      );
       return;
     }
 
@@ -124,11 +124,11 @@ export class FormularioDescuento {
       activo: valor.activo,
     };
 
-    this.servicio.guardarDescuento(descuento);
-    this.avisos.mostrar(
-      'exito',
-      `${descuento.nombre} se guardó solo en memoria (demostración). Persistencia pendiente de Flask.`,
-    );
-    this.router.navigate(['/ventas/descuentos']);
+    this.servicio.guardarDescuento(descuento).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+      if (resultado.ok) {
+        this.router.navigate(['/ventas/descuentos']);
+      }
+    });
   }
 }

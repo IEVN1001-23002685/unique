@@ -1,0 +1,1280 @@
+<div
+  style="
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #3b2d3e;
+    box-sizing: border-box;
+  "
+>
+  <div
+    style="
+      max-width: 820px;
+      margin: 0 auto;
+      background-color: #e6cce8;
+      border-radius: 28px;
+      padding: 28px 32px;
+      box-shadow: 0 12px 30px rgba(66, 33, 75, 0.14);
+      box-sizing: border-box;
+    "
+  >
+    <!-- Encabezado -->
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 14px">
+        <img src="/Logo1.png" alt="UNIQUE" style="height: 48px; width: auto" />
+        <div>
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #332736">Mi cuenta</h2>
+          <span style="font-size: 12px; color: #4f2857; font-weight: 600">Rol: Cliente</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="cerrarCuenta()"
+        style="
+          padding: 8px 16px;
+          border-radius: 999px;
+          border: 2px solid #2b212d;
+          background-color: #ffffff;
+          color: #2b212d;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+        "
+      >
+        ✕ Cerrar
+      </button>
+    </div>
+
+    <!-- Navegación de pestañas -->
+    <div
+      style="
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(79, 40, 87, 0.2);
+        padding-bottom: 12px;
+      "
+    >
+      <button
+        type="button"
+        (click)="cambiarPestana('datos')"
+        [style.backgroundColor]="pestanaActiva === 'datos' ? '#4f2857' : '#f3ecf4'"
+        [style.color]="pestanaActiva === 'datos' ? '#ffffff' : '#332736'"
+        style="
+          padding: 9px 18px;
+          border: none;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        "
+      >
+        Mis datos
+      </button>
+      <button
+        type="button"
+        (click)="cambiarPestana('direcciones')"
+        [style.backgroundColor]="pestanaActiva === 'direcciones' ? '#4f2857' : '#f3ecf4'"
+        [style.color]="pestanaActiva === 'direcciones' ? '#ffffff' : '#332736'"
+        style="
+          padding: 9px 18px;
+          border: none;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        "
+      >
+        Direcciones
+      </button>
+      <button
+        type="button"
+        (click)="cambiarPestana('pagos')"
+        [style.backgroundColor]="pestanaActiva === 'pagos' ? '#4f2857' : '#f3ecf4'"
+        [style.color]="pestanaActiva === 'pagos' ? '#ffffff' : '#332736'"
+        style="
+          padding: 9px 18px;
+          border: none;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        "
+      >
+        Medios de pago
+      </button>
+      <button
+        type="button"
+        (click)="cambiarPestana('seguridad')"
+        [style.backgroundColor]="pestanaActiva === 'seguridad' ? '#4f2857' : '#f3ecf4'"
+        [style.color]="pestanaActiva === 'seguridad' ? '#ffffff' : '#332736'"
+        style="
+          padding: 9px 18px;
+          border: none;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        "
+      >
+        Seguridad
+      </button>
+    </div>
+
+    <!-- Mensaje informativo -->
+    <div
+      *ngIf="mensajeAviso"
+      style="
+        margin-bottom: 16px;
+        background-color: #f3ecf4;
+        border-left: 4px solid #4f2857;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #332736;
+      "
+    >
+      {{ mensajeAviso }}
+    </div>
+
+    <!-- ==================== PESTAÑA 1: MIS DATOS ==================== -->
+    <form
+      *ngIf="pestanaActiva === 'datos'"
+      (ngSubmit)="guardarDatos()"
+      style="display: flex; flex-direction: column; gap: 14px"
+    >
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 14px;
+        "
+      >
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label style="font-size: 13px; font-weight: 600; padding-left: 4px">Nombre:</label>
+          <input
+            name="nombre"
+            [(ngModel)]="datosPersonales.nombre"
+            required
+            style="
+              height: 40px;
+              border: none;
+              border-radius: 999px;
+              background-color: #f3ecf4;
+              padding: 0 16px;
+              font-size: 14px;
+              box-sizing: border-box;
+            "
+          />
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label style="font-size: 13px; font-weight: 600; padding-left: 4px">Apellidos:</label>
+          <input
+            name="apellidos"
+            [(ngModel)]="datosPersonales.apellidos"
+            required
+            style="
+              height: 40px;
+              border: none;
+              border-radius: 999px;
+              background-color: #f3ecf4;
+              padding: 0 16px;
+              font-size: 14px;
+              box-sizing: border-box;
+            "
+          />
+        </div>
+      </div>
+
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 14px;
+        "
+      >
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label style="font-size: 13px; font-weight: 600; padding-left: 4px"
+            >Teléfono (10 dígitos):</label
+          >
+          <input
+            name="telefono"
+            maxlength="10"
+            [(ngModel)]="datosPersonales.telefono"
+            required
+            style="
+              height: 40px;
+              border: none;
+              border-radius: 999px;
+              background-color: #f3ecf4;
+              padding: 0 16px;
+              font-size: 14px;
+              box-sizing: border-box;
+            "
+          />
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label style="font-size: 13px; font-weight: 600; padding-left: 4px"
+            >Correo electrónico:</label
+          >
+          <input
+            name="correo"
+            type="email"
+            [(ngModel)]="datosPersonales.correo"
+            required
+            style="
+              height: 40px;
+              border: none;
+              border-radius: 999px;
+              background-color: #f3ecf4;
+              padding: 0 16px;
+              font-size: 14px;
+              box-sizing: border-box;
+            "
+          />
+        </div>
+      </div>
+
+      <div
+        *ngIf="datosPersonales.correo !== datosPersonales.correoOriginal"
+        style="display: flex; flex-direction: column; gap: 6px"
+      >
+        <label style="font-size: 13px; font-weight: 600; color: #4f2857; padding-left: 4px">
+          Contraseña actual (requerida para cambiar el correo):
+        </label>
+        <input
+          name="passConfirm"
+          type="password"
+          [(ngModel)]="datosPersonales.contrasenaConfirmacion"
+          required
+          style="
+            height: 40px;
+            border: none;
+            border-radius: 999px;
+            background-color: #f3ecf4;
+            padding: 0 16px;
+            font-size: 14px;
+            box-sizing: border-box;
+          "
+        />
+      </div>
+
+      <button
+        type="submit"
+        style="
+          margin-top: 8px;
+          align-self: flex-start;
+          padding: 11px 28px;
+          border: none;
+          border-radius: 999px;
+          background-color: #4f2857;
+          color: #ffffff;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+        "
+      >
+        Guardar cambios
+      </button>
+    </form>
+
+    <!-- ==================== PESTAÑA 2: DIRECCIONES ==================== -->
+    <div
+      *ngIf="pestanaActiva === 'direcciones'"
+      style="display: flex; flex-direction: column; gap: 14px"
+    >
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <h3 style="margin: 0; font-size: 17px">Mis direcciones guardadas</h3>
+        <button
+          type="button"
+          (click)="abrirNuevaDireccion()"
+          style="
+            padding: 8px 18px;
+            border: none;
+            border-radius: 999px;
+            background-color: #4f2857;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+          "
+        >
+          + Agregar dirección
+        </button>
+      </div>
+
+      <!-- Lista de direcciones -->
+      <div
+        *ngFor="let dir of direcciones"
+        style="
+          background-color: #f3ecf4;
+          border-radius: 18px;
+          padding: 14px 18px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+        "
+      >
+        <div style="font-size: 13px; line-height: 1.45">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px">
+            <strong>{{ dir.alias }}</strong>
+            <span
+              style="
+                background-color: #e6cce8;
+                color: #4f2857;
+                padding: 2px 8px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+              "
+            >
+              {{ dir.tipo === 'envio' ? 'Envío' : 'Facturación' }}
+            </span>
+            <span
+              *ngIf="dir.predeterminada"
+              style="
+                background-color: #4f2857;
+                color: #ffffff;
+                padding: 2px 8px;
+                border-radius: 999px;
+                font-size: 11px;
+              "
+            >
+              Predeterminada
+            </span>
+          </div>
+          <div>{{ dir.destinatario }} · Tel: {{ dir.telefono }}</div>
+          <div>
+            {{ dir.calle }} #{{ dir.numExt }} {{ dir.numInt ? 'Int. ' + dir.numInt : '' }}, Col.
+            {{ dir.colonia }}
+          </div>
+          <div>{{ dir.municipio }}, {{ dir.estado }} · CP {{ dir.cp }}</div>
+          <div *ngIf="dir.tipo === 'facturacion'" style="color: #4f2857; font-weight: 600">
+            RFC: {{ dir.rfc }} · {{ dir.razonSocial }}
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px">
+          <button
+            type="button"
+            (click)="editarDireccion(dir)"
+            title="Editar"
+            style="
+              width: 34px;
+              height: 34px;
+              border-radius: 50%;
+              border: none;
+              background-color: #e6cce8;
+              cursor: pointer;
+              font-size: 14px;
+            "
+          >
+            ✏
+          </button>
+          <button
+            type="button"
+            (click)="eliminarDireccion(dir.id)"
+            title="Eliminar"
+            style="
+              width: 34px;
+              height: 34px;
+              border-radius: 50%;
+              border: none;
+              background-color: #e6cce8;
+              cursor: pointer;
+              font-size: 14px;
+            "
+          >
+            🗑
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulario de dirección -->
+      <form
+        *ngIf="mostrandoFormDireccion"
+        (ngSubmit)="guardarDireccion()"
+        style="
+          background-color: #f3ecf4;
+          border-radius: 20px;
+          padding: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        "
+      >
+        <h4 style="margin: 0; font-size: 15px; color: #4f2857">
+          {{ editandoDireccionId !== null ? 'Editar dirección' : 'Nueva dirección' }}
+        </h4>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+          "
+        >
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Tipo:</label>
+            <select
+              name="tipoDir"
+              [(ngModel)]="formDireccion.tipo"
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+              "
+            >
+              <option value="envio">Envío</option>
+              <option value="facturacion">Facturación</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Alias (ej. Casa, Oficina):</label>
+            <input
+              name="aliasDir"
+              [(ngModel)]="formDireccion.alias"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Destinatario:</label>
+            <input
+              name="destDir"
+              [(ngModel)]="formDireccion.destinatario"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Teléfono:</label>
+            <input
+              name="telDir"
+              maxlength="10"
+              [(ngModel)]="formDireccion.telefono"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px">
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Calle:</label>
+            <input
+              name="calleDir"
+              [(ngModel)]="formDireccion.calle"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">No. Ext:</label>
+            <input
+              name="numExtDir"
+              [(ngModel)]="formDireccion.numExt"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">No. Int:</label>
+            <input
+              name="numIntDir"
+              [(ngModel)]="formDireccion.numInt"
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+        </div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+          "
+        >
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Colonia:</label>
+            <input
+              name="colDir"
+              [(ngModel)]="formDireccion.colonia"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Municipio:</label>
+            <input
+              name="munDir"
+              [(ngModel)]="formDireccion.municipio"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Estado:</label>
+            <input
+              name="estDir"
+              [(ngModel)]="formDireccion.estado"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Código Postal (5 dígitos):</label>
+            <input
+              name="cpDir"
+              maxlength="5"
+              [(ngModel)]="formDireccion.cp"
+              (ngModelChange)="validarCobertura()"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+            <span
+              *ngIf="formDireccion.cp.length === 5"
+              style="font-size: 11px; color: #2e7d32; font-weight: 600"
+            >
+              {{ coberturaCp === null ? 'Validando…' : coberturaCp ? '✓ Cobertura disponible' : 'Sin cobertura' }}
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 600">Referencia:</label>
+          <input
+            name="refDir"
+            [(ngModel)]="formDireccion.referencia"
+            style="
+              width: 100%;
+              height: 38px;
+              border: none;
+              border-radius: 999px;
+              background-color: #ffffff;
+              padding: 0 12px;
+              font-size: 13px;
+              box-sizing: border-box;
+            "
+          />
+        </div>
+
+        <!-- Campos extra si es Facturación -->
+        <div
+          *ngIf="formDireccion.tipo === 'facturacion'"
+          style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px"
+        >
+          <div>
+            <label style="font-size: 12px; font-weight: 600">RFC (12 o 13 caracteres):</label>
+            <input
+              name="rfcDir"
+              maxlength="13"
+              [(ngModel)]="formDireccion.rfc"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Razón social:</label>
+            <input
+              name="razonDir"
+              [(ngModel)]="formDireccion.razonSocial"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+        </div>
+
+        <label
+          style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer"
+        >
+          <input type="checkbox" name="predetDir" [(ngModel)]="formDireccion.predeterminada" />
+          Establecer como dirección predeterminada para
+          {{ formDireccion.tipo === 'envio' ? 'envío' : 'facturación' }}
+        </label>
+
+        <div style="display: flex; gap: 10px">
+          <button
+            type="submit"
+            style="
+              padding: 9px 22px;
+              border: none;
+              border-radius: 999px;
+              background-color: #4f2857;
+              color: #ffffff;
+              font-size: 13px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+          >
+            Guardar dirección
+          </button>
+          <button
+            type="button"
+            (click)="mostrandoFormDireccion = false"
+            style="
+              padding: 9px 18px;
+              border: 1px solid #4f2857;
+              border-radius: 999px;
+              background-color: transparent;
+              color: #4f2857;
+              font-size: 13px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ==================== PESTAÑA 3: MEDIOS DE PAGO ==================== -->
+    <div *ngIf="pestanaActiva === 'pagos'" style="display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <h3 style="margin: 0; font-size: 17px">Medios de pago simulados</h3>
+        <button
+          type="button"
+          (click)="mostrandoFormPago = !mostrandoFormPago"
+          style="
+            padding: 8px 18px;
+            border: none;
+            border-radius: 999px;
+            background-color: #4f2857;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+          "
+        >
+          + Agregar medio de pago
+        </button>
+      </div>
+
+      <!-- Lista de medios de pago -->
+      <div
+        *ngFor="let pago of mediosPago"
+        style="
+          background-color: #f3ecf4;
+          border-radius: 18px;
+          padding: 14px 18px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        "
+      >
+        <div style="font-size: 13px">
+          <strong>{{ pago.alias }}</strong>
+          <span
+            style="
+              margin-left: 8px;
+              background-color: #e6cce8;
+              color: #4f2857;
+              padding: 2px 8px;
+              border-radius: 999px;
+              font-size: 11px;
+              font-weight: 700;
+            "
+          >
+            {{
+              pago.tipo === 'tarjeta' ? pago.marca + ' •••• ' + pago.ultimos4 : 'Cuenta simulada'
+            }}
+          </span>
+          <div style="margin-top: 4px; color: #534057">
+            Titular: {{ pago.titular }}
+            <span *ngIf="pago.tipo === 'tarjeta'"> · Vence: {{ pago.vencimiento }}</span>
+            <span *ngIf="pago.tipo === 'cuenta'"> · Saldo disponible: ${{ pago.saldo }}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px">
+          <button
+            type="button"
+            (click)="editarAliasPago(pago)"
+            title="Editar alias"
+            style="
+              width: 34px;
+              height: 34px;
+              border-radius: 50%;
+              border: none;
+              background-color: #e6cce8;
+              cursor: pointer;
+              font-size: 14px;
+            "
+          >
+            ✏
+          </button>
+          <button
+            type="button"
+            (click)="eliminarMedioPago(pago.id)"
+            title="Eliminar"
+            style="
+              width: 34px;
+              height: 34px;
+              border-radius: 50%;
+              border: none;
+              background-color: #e6cce8;
+              cursor: pointer;
+              font-size: 14px;
+            "
+          >
+            🗑
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulario agregar medio de pago -->
+      <form
+        *ngIf="mostrandoFormPago"
+        (ngSubmit)="agregarMedioPago()"
+        style="
+          background-color: #f3ecf4;
+          border-radius: 20px;
+          padding: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        "
+      >
+        <div style="display: flex; gap: 10px">
+          <button
+            type="button"
+            (click)="tipoNuevoPago = 'tarjeta'"
+            [style.backgroundColor]="tipoNuevoPago === 'tarjeta' ? '#4f2857' : '#ffffff'"
+            [style.color]="tipoNuevoPago === 'tarjeta' ? '#ffffff' : '#332736'"
+            style="
+              padding: 7px 16px;
+              border: none;
+              border-radius: 999px;
+              font-size: 12px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+          >
+            Tarjeta (simulada)
+          </button>
+          <button
+            type="button"
+            (click)="tipoNuevoPago = 'cuenta'"
+            [style.backgroundColor]="tipoNuevoPago === 'cuenta' ? '#4f2857' : '#ffffff'"
+            [style.color]="tipoNuevoPago === 'cuenta' ? '#ffffff' : '#332736'"
+            style="
+              padding: 7px 16px;
+              border: none;
+              border-radius: 999px;
+              font-size: 12px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+          >
+            Cuenta simulada
+          </button>
+        </div>
+
+        <div
+          *ngIf="tipoNuevoPago === 'tarjeta'"
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 10px;
+          "
+        >
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Alias:</label>
+            <input
+              name="aliasTarj"
+              [(ngModel)]="formTarjeta.alias"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Número (16 dígitos):</label>
+            <input
+              name="numTarj"
+              maxlength="16"
+              [(ngModel)]="formTarjeta.numero"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Titular:</label>
+            <input
+              name="titTarj"
+              [(ngModel)]="formTarjeta.titular"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Vencimiento (MM/AA):</label>
+            <input
+              name="venTarj"
+              placeholder="08/29"
+              maxlength="5"
+              [(ngModel)]="formTarjeta.vencimiento"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">CVV:</label>
+            <input
+              name="cvvTarj"
+              type="password"
+              maxlength="4"
+              [(ngModel)]="formTarjeta.cvv"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+        </div>
+
+        <div
+          *ngIf="tipoNuevoPago === 'cuenta'"
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+          "
+        >
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Alias de la cuenta:</label>
+            <input
+              name="aliasCta"
+              [(ngModel)]="formCuenta.alias"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Titular:</label>
+            <input
+              name="titCta"
+              [(ngModel)]="formCuenta.titular"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Saldo inicial simulado:</label>
+            <input
+              name="saldoCta"
+              type="number"
+              [(ngModel)]="formCuenta.saldoInicial"
+              readonly
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #e6cce8;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px">
+          <button
+            type="submit"
+            style="
+              padding: 9px 22px;
+              border: none;
+              border-radius: 999px;
+              background-color: #4f2857;
+              color: #ffffff;
+              font-size: 13px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+          >
+            Guardar medio de pago
+          </button>
+          <button
+            type="button"
+            (click)="mostrandoFormPago = false"
+            style="
+              padding: 9px 18px;
+              border: 1px solid #4f2857;
+              border-radius: 999px;
+              background-color: transparent;
+              color: #4f2857;
+              font-size: 13px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ==================== PESTAÑA 4: SEGURIDAD ==================== -->
+    <div
+      *ngIf="pestanaActiva === 'seguridad'"
+      style="display: flex; flex-direction: column; gap: 18px"
+    >
+      <form
+        (ngSubmit)="actualizarContrasena()"
+        style="
+          background-color: #f3ecf4;
+          border-radius: 20px;
+          padding: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        "
+      >
+        <h3 style="margin: 0; font-size: 16px">Cambiar contraseña</h3>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+          "
+        >
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Contraseña actual:</label>
+            <input
+              name="passAct"
+              type="password"
+              [(ngModel)]="seguridad.contrasenaActual"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Nueva contraseña:</label>
+            <input
+              name="passNue"
+              type="password"
+              [(ngModel)]="seguridad.nuevaContrasena"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600">Confirmar nueva:</label>
+            <input
+              name="passConf"
+              type="password"
+              [(ngModel)]="seguridad.confirmarContrasena"
+              required
+              style="
+                width: 100%;
+                height: 38px;
+                border: none;
+                border-radius: 999px;
+                background-color: #ffffff;
+                padding: 0 12px;
+                font-size: 13px;
+                box-sizing: border-box;
+              "
+            />
+          </div>
+        </div>
+        <button
+          type="submit"
+          style="
+            align-self: flex-start;
+            padding: 9px 22px;
+            border: none;
+            border-radius: 999px;
+            background-color: #4f2857;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+          "
+        >
+          Actualizar contraseña
+        </button>
+      </form>
+
+      <div
+        style="
+          background-color: #f3ecf4;
+          border-radius: 20px;
+          padding: 18px;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        "
+      >
+        <div>
+          <strong style="font-size: 14px">Sesiones activas</strong>
+          <p style="margin: 4px 0 0; font-size: 12px; color: #534057">
+            Cierra tu sesión en todos los navegadores y dispositivos.
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="onCerrarSesiones()"
+          style="
+            padding: 9px 18px;
+            border: 1px solid #4f2857;
+            border-radius: 999px;
+            background-color: #ffffff;
+            color: #4f2857;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+          "
+        >
+          Cerrar sesión en todos los dispositivos
+        </button>
+      </div>
+
+      <div
+        style="
+          background-color: #f3ecf4;
+          border-radius: 20px;
+          padding: 18px;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        "
+      >
+        <div>
+          <strong style="font-size: 14px; color: #8b1e3f">Desactivar cuenta</strong>
+          <p style="margin: 4px 0 0; font-size: 12px; color: #534057">
+            Tu cuenta pasará a estado INACTIVA, pero se conservará tu historial de compras.
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="onDesactivarCuenta()"
+          style="
+            padding: 9px 18px;
+            border: none;
+            border-radius: 999px;
+            background-color: #8b1e3f;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+          "
+        >
+          Desactivar mi cuenta
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

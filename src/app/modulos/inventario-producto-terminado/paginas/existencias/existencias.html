@@ -6,13 +6,17 @@
       <p class="eyebrow">M12 · Inventario de producto terminado</p>
       <h1 class="titulo">Existencias por SKU</h1>
       <p class="subtitulo">
-        Unidades por variante, categoría, reserva y cobertura. Todo se cuenta en prendas: las unidades
-        en proceso o en revisión de M16 no aparecen como existencia.
+        Unidades por variante, categoría, reserva y cobertura. Todo se cuenta en prendas: las
+        unidades en proceso o en revisión de M16 no aparecen como existencia.
       </p>
     </div>
     <div class="cabecera__acciones">
-      <a routerLink="/operacion/inventario-pt/ajuste" class="boton boton--primario">Registrar conteo</a>
-      <a routerLink="/operacion/inventario-pt/movimientos" class="boton boton--secundario">Ver movimientos</a>
+      <a routerLink="/operacion/inventario-pt/ajuste" class="boton boton--primario"
+        >Registrar conteo</a
+      >
+      <a routerLink="/operacion/inventario-pt/movimientos" class="boton boton--secundario"
+        >Ver movimientos</a
+      >
     </div>
   </div>
 
@@ -80,7 +84,9 @@
     @if (filas().length === 0) {
       <div class="estado" role="status">
         <strong>Aún no hay variantes con stock.</strong>
-        <p>Crea variantes en M10 · Productos y variantes para que M12 genere su registro de stock.</p>
+        <p>
+          Crea variantes en M10 · Productos y variantes para que M12 genere su registro de stock.
+        </p>
       </div>
     } @else if (filtradas().length === 0) {
       <div class="estado" role="status">
@@ -90,7 +96,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Existencias de producto terminado por variante</caption>
+          <caption class="sr-only">
+            Existencias de producto terminado por variante
+          </caption>
           <thead>
             <tr>
               <th scope="col">SKU</th>
@@ -109,20 +117,32 @@
           <tbody>
             @for (fila of filtradas(); track fila.varianteId) {
               <tr>
-                <td data-etiqueta="SKU"><span class="celda-principal">{{ fila.sku }}</span></td>
+                <td data-etiqueta="SKU">
+                  <span class="celda-principal">{{ fila.sku }}</span>
+                </td>
                 <td data-etiqueta="Producto">{{ fila.productoNombre }}</td>
                 <td data-etiqueta="Talla">{{ servicio.nombreTalla(fila.talla) }}</td>
                 <td data-etiqueta="Color">{{ servicio.nombreColor(fila.color) }}</td>
                 <td data-etiqueta="Existencia" class="tabla__numero">{{ fila.existencia }}</td>
                 <td data-etiqueta="Reservado" class="tabla__numero">{{ fila.reservado }}</td>
-                <td data-etiqueta="Disponible" class="tabla__numero"><strong>{{ fila.disponible }}</strong></td>
+                <td data-etiqueta="Disponible" class="tabla__numero">
+                  <strong>{{ fila.disponible }}</strong>
+                </td>
                 <td data-etiqueta="Mínimo" class="tabla__numero">{{ fila.stockMinimo }}</td>
                 <td data-etiqueta="En producción" class="tabla__numero">{{ fila.enProduccion }}</td>
-                <td data-etiqueta="Días cobertura" class="tabla__numero" [title]="fila.diasCobertura === null ? 'Sin salidas en los últimos 30 días' : 'Disponible ÷ ventas diarias de 30 días'">
+                <td
+                  data-etiqueta="Días cobertura"
+                  class="tabla__numero"
+                  [title]="
+                    fila.diasCobertura === null
+                      ? 'Sin salidas en los últimos 30 días'
+                      : 'Disponible ÷ ventas diarias de 30 días'
+                  "
+                >
                   {{ cobertura(fila) }}
                 </td>
                 <td data-etiqueta="Semáforo">
-                  <app-semaforo-inventario [estado]="fila.semaforo" />
+                  <app-semaforo-inventario-pt [estado]="fila.semaforo" />
                 </td>
               </tr>
             }
@@ -132,10 +152,11 @@
     }
 
     <p class="nota">
-      Disponible = existencia − reservado y nunca puede ser negativo. Semáforo: ROJO en 0, ÁMBAR entre
-      1 y el mínimo, VERDE por encima del mínimo. «En producción» son unidades de órdenes abiertas de
-      M16; las unidades en revisión no cuentan aquí. La existencia solo cambia por producción aprobada,
-      salida por envío, reingreso aprobado o ajuste/merma; nunca se edita en esta tabla.
+      Disponible = existencia − reservado y nunca puede ser negativo. Semáforo: ROJO en 0, ÁMBAR
+      entre 1 y el mínimo, VERDE por encima del mínimo. «En producción» son unidades de órdenes
+      abiertas de M16; las unidades en revisión no cuentan aquí. La existencia solo cambia por
+      producción aprobada, salida por envío, reingreso aprobado o ajuste/merma; nunca se edita en
+      esta tabla.
     </p>
   </div>
 
@@ -143,12 +164,15 @@
     <div class="tarjeta bloque">
       <h2 class="panel-titulo">Alertas recientes</h2>
       @if (alertasRecientes().length === 0) {
-        <p class="panel-vacio">Sin alertas abiertas en la demostración.</p>
+        <p class="panel-vacio">Sin alertas abiertas para las variantes consultadas.</p>
       } @else {
         <ul class="lista">
           @for (alerta of alertasRecientes(); track alerta.id) {
             <li class="lista__item">
-              <span class="lista__marca" [class.lista__marca--preventiva]="alerta.severidad === 'PREVENTIVA'"></span>
+              <span
+                class="lista__marca"
+                [class.lista__marca--preventiva]="alerta.severidad === 'PREVENTIVA'"
+              ></span>
               <span>
                 <strong>{{ alerta.sku }}</strong> · {{ alerta.mensaje }}
               </span>
@@ -161,14 +185,17 @@
     <div class="tarjeta bloque">
       <h2 class="panel-titulo">Señales de reposición</h2>
       @if (senalesRecientes().length === 0) {
-        <p class="panel-vacio">Sin señales pendientes. Se generan al dejar disponible en el mínimo o menos.</p>
+        <p class="panel-vacio">
+          Sin señales pendientes. Se generan al dejar disponible en el mínimo o menos.
+        </p>
       } @else {
         <ul class="lista">
           @for (senal of senalesRecientes(); track senal.id) {
             <li class="lista__item">
               <span class="lista__marca lista__marca--senal"></span>
               <span>
-                <strong>{{ senal.sku }}</strong> · {{ senal.cantidad }} unidades · origen {{ senal.origen }}
+                <strong>{{ senal.sku }}</strong> · {{ senal.cantidad }} unidades · origen
+                {{ senal.origen }}
                 <small>Pendiente de crear/sumar orden en M16.</small>
               </span>
             </li>
@@ -179,8 +206,8 @@
   </div>
 
   <p class="nota nota--adv">
-    Permisos del documento: el Operativo edita inventario; el Administrador solo consulta, excepto en
-    reglas de reposición. Como todavía no hay autenticación, esta interfaz documenta el contrato pero no
-    bloquea acciones: los guards y la autoridad real se conectarán con Flask.
+    Permisos del documento: el Operativo edita inventario; el Administrador solo consulta, excepto
+    en reglas de reposición. Como todavía no hay autenticación, esta interfaz documenta el contrato
+    pero no bloquea acciones: los guards y la autoridad real se conectarán con Flask.
   </p>
 </section>

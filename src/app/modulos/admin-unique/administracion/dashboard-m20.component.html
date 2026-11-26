@@ -1,0 +1,158 @@
+<div class="module-head">
+  <div>
+    <span class="eyebrow">MÓDULO 20 · CONTROL Y ADMINISTRACIÓN</span>
+    <h2>Dashboard gerencial</h2>
+    <p>Indicadores reales de ventas, producción, abastecimiento y logística.</p>
+  </div>
+  <button class="btn-primary" *ngIf="esAdmin" (click)="exportar()">⇩ Exportar CSV</button>
+</div>
+<div class="notice error" *ngIf="error">{{ error }}</div>
+<div class="critical-banner" *ngIf="(resumen?.alertas_abiertas || 0) > 0">
+  <b>⚠ {{ resumen?.alertas_abiertas }} alertas abiertas</b>
+  <a routerLink="/panel-admin/alertas">Revisar en Centro de alertas →</a>
+</div>
+<div class="filters">
+  <label>Desde<input type="date" [(ngModel)]="desde" (change)="filtros()" /></label>
+  <label>Hasta<input type="date" [(ngModel)]="hasta" (change)="filtros()" /></label>
+  <button class="btn-outline" (click)="desde = ''; hasta = ''; filtros()">Sin filtro de fecha</button>
+</div>
+<div class="tabs dashboard-tabs">
+  <button class="tab" *ngIf="esAdmin" [class.active]="pestana === 'resumen'" (click)="cambiar('resumen')">Resumen</button>
+  <button class="tab" *ngIf="esAdmin" [class.active]="pestana === 'ventas'" (click)="cambiar('ventas')">Ventas y productos</button>
+  <button class="tab" [class.active]="pestana === 'produccion'" (click)="cambiar('produccion')">Producción</button>
+  <button class="tab" [class.active]="pestana === 'abasto'" (click)="cambiar('abasto')">Abastecimiento</button>
+  <button class="tab" [class.active]="pestana === 'logistica'" (click)="cambiar('logistica')">Logística</button>
+</div>
+<div class="empty" *ngIf="cargando">Consultando indicadores...</div>
+
+<ng-container *ngIf="!cargando && (pestana === 'resumen' || pestana === 'ventas') && resumen">
+  <div class="stats-grid">
+    <article class="stat-card accent-green">
+      <small>VENTAS ACTIVAS</small><b>{{ resumen.ventas_activas }}</b><span>Ventas con pago aprobado</span>
+    </article>
+    <article class="stat-card accent-purple">
+      <small>INGRESOS DEL PERIODO</small><b>{{ num(resumen.ingresos) | currency: 'MXN' }}</b><span>{{ resumen.periodo.desde || 'Inicio' }} al {{ resumen.periodo.hasta || 'hoy' }}</span>
+    </article>
+    <article class="stat-card accent-blue">
+      <small>UNIDADES VENDIDAS</small><b>{{ resumen.unidades_vendidas }}</b><span>Pedidos activos</span>
+    </article>
+    <article class="stat-card accent-amber">
+      <small>TICKET PROMEDIO</small><b>{{ num(resumen.ticket_promedio) | currency: 'MXN' }}</b><span>Por venta activa</span>
+    </article>
+  </div>
+  <div class="stats-grid">
+    <article class="stat-card">
+      <small>PEDIDOS ACTIVOS</small><b>{{ resumen.pedidos_activos }}</b><span>Sin entregar ni cancelar</span>
+    </article>
+    <article class="stat-card">
+      <small>PEDIDOS ENTREGADOS</small><b>{{ resumen.pedidos_entregados }}</b><span>Cumplimiento total</span>
+    </article>
+    <article class="stat-card accent-amber">
+      <small>ÓRDENES DE PRODUCCIÓN</small><b>{{ resumen.ordenes_produccion_activas }}</b><span>Abiertas</span>
+    </article>
+    <article class="stat-card accent-red">
+      <small>VARIANTES BAJO MÍNIMO</small><b>{{ resumen.variantes_bajo_minimo }}</b><span>Reposición sugerida</span>
+    </article>
+  </div>
+  <div class="stats-grid" *ngIf="pestana === 'resumen'">
+    <article class="stat-card accent-green"><small>VENTAS HOY</small><b>{{ num(resumen.ventas_hoy) | currency: 'MXN' }}</b></article>
+    <article class="stat-card accent-red"><small>MERMAS</small><b>{{ resumen.mermas }}</b></article>
+    <article class="stat-card accent-red"><small>COSTO DE MERMAS</small><b>{{ num(resumen.costo_mermas) | currency: 'MXN' }}</b></article>
+    <article class="stat-card"><small>ALERTAS ABIERTAS</small><b>{{ resumen.alertas_abiertas }}</b></article>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="!cargando && pestana === 'ventas' && ventas">
+  <div class="chart-grid">
+    <section class="panel-card">
+      <div class="panel-title"><h3>Ingresos por canal</h3><span class="muted">MXN</span></div>
+      <div class="bar-chart">
+        <div class="bar-col" *ngFor="let c of ventas.por_canal">
+          <b>{{ num(c.ingresos) | number: '1.0-0' }}</b>
+          <div class="bar" [style.height.%]="(num(c.ingresos) / maxVenta) * 100"></div>
+          <small>{{ c.canal }}</small>
+        </div>
+      </div>
+      <div class="empty" *ngIf="!ventas.por_canal.length">Sin ventas en el periodo.</div>
+    </section>
+    <section class="panel-card">
+      <div class="panel-title"><h3>Top SKU</h3><span class="muted">v_ventas_sku</span></div>
+      <div class="rank-list">
+        <div *ngFor="let s of ventas.top_sku">
+          <span>{{ s.nombre_producto }} <small>{{ s.sku }} · {{ s.talla }} · {{ s.color }}</small></span>
+          <b>{{ num(s.ingresos) | currency: 'MXN' }} <small>{{ s.unidades }} pzas.</small></b>
+        </div>
+      </div>
+      <div class="empty" *ngIf="!ventas.top_sku.length">Sin productos vendidos en el periodo.</div>
+    </section>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="!cargando && pestana === 'produccion' && produccion">
+  <div class="stats-grid">
+    <article class="stat-card"><small>UNIDADES PLANEADAS</small><b>{{ produccion.unidades_planeadas }}</b></article>
+    <article class="stat-card accent-green"><small>APROBADAS</small><b>{{ produccion.unidades_aprobadas }}</b></article>
+    <article class="stat-card accent-amber"><small>REPROCESO</small><b>{{ produccion.unidades_reproceso }}</b></article>
+    <article class="stat-card accent-red"><small>ÓRDENES VENCIDAS</small><b>{{ produccion.ordenes_vencidas }}</b></article>
+  </div>
+  <div class="chart-grid">
+    <section class="panel-card">
+      <div class="panel-title"><h3>Semáforo de órdenes</h3></div>
+      <div class="traffic">
+        <div><i class="dot green-dot"></i><b>{{ produccion.por_semaforo['VERDE'] || 0 }}</b><small>Verde</small></div>
+        <div><i class="dot amber-dot"></i><b>{{ produccion.por_semaforo['AMBAR'] || 0 }}</b><small>Ámbar</small></div>
+        <div><i class="dot red-dot"></i><b>{{ produccion.por_semaforo['ROJO'] || 0 }}</b><small>Rojo</small></div>
+      </div>
+    </section>
+    <section class="panel-card">
+      <div class="panel-title"><h3>Órdenes por estado</h3></div>
+      <div class="rank-list">
+        <div *ngFor="let e of entradas(produccion.por_estado)"><span>{{ e.clave }}</span><b>{{ e.total }}</b></div>
+      </div>
+    </section>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="!cargando && pestana === 'abasto' && abastecimiento">
+  <div class="stats-grid">
+    <article class="stat-card"><small>MATERIALES ACTIVOS</small><b>{{ abastecimiento.materiales_activos }}</b></article>
+    <article class="stat-card accent-amber"><small>BAJO MÍNIMO</small><b>{{ abastecimiento.bajo_minimo }}</b></article>
+    <article class="stat-card accent-red"><small>AGOTADOS</small><b>{{ abastecimiento.agotados }}</b></article>
+    <article class="stat-card"><small>EN COMPRA</small><b>{{ abastecimiento.en_compra }}</b></article>
+  </div>
+  <div class="stats-grid">
+    <article class="stat-card"><small>RECEPCIONES</small><b>{{ abastecimiento.recepciones }}</b></article>
+    <article class="stat-card"><small>DÍAS DE PRODUCCIÓN</small><b>{{ abastecimiento.dias_abastecimiento }}</b></article>
+    <article class="stat-card"><small>ÓRDENES DE COMPRA</small><b>{{ abastecimiento.ordenes_compra['EMITIDA'] || 0 }}</b><span>Emitidas</span></article>
+    <article class="stat-card accent-amber"><small>COMPRAS PENDIENTES</small><b>{{ abastecimiento.ordenes_compra['PENDIENTE'] || 0 }}</b></article>
+  </div>
+  <div class="panel-card">
+    <div class="panel-title"><h3>Estado de órdenes de compra</h3></div>
+    <div class="rank-list">
+      <div *ngFor="let e of entradas(abastecimiento.ordenes_compra)"><span>{{ e.clave }}</span><b>{{ e.total }}</b></div>
+    </div>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="!cargando && pestana === 'logistica' && logistica">
+  <div class="stats-grid">
+    <article class="stat-card"><small>PEDIDOS LISTO ENVÍO</small><b>{{ logistica.pedidos_listo_envio }}</b></article>
+    <article class="stat-card"><small>PROGRAMADAS HOY</small><b>{{ logistica.entregas_programadas_hoy }}</b></article>
+    <article class="stat-card"><small>REPARTIDORES ACTIVOS</small><b>{{ logistica.repartidores_activos }}</b></article>
+    <article class="stat-card accent-amber"><small>INTENTOS MÁXIMOS</small><b>{{ logistica.intentos_maximos }}</b></article>
+  </div>
+  <div class="chart-grid">
+    <section class="panel-card">
+      <div class="panel-title"><h3>Preparación por estado</h3></div>
+      <div class="rank-list">
+        <div *ngFor="let e of entradas(logistica.preparacion)"><span>{{ e.clave }}</span><b>{{ e.total }}</b></div>
+      </div>
+    </section>
+    <section class="panel-card">
+      <div class="panel-title"><h3>Entregas por estado</h3></div>
+      <div class="rank-list">
+        <div *ngFor="let e of entradas(logistica.entregas)"><span>{{ e.clave }}</span><b>{{ e.total }}</b></div>
+      </div>
+    </section>
+  </div>
+</ng-container>

@@ -15,7 +15,7 @@ export class Cancelados {
   protected readonly busqueda = signal('');
 
   constructor() {
-    this.servicio.sincronizarDesdeVentas();
+    this.servicio.recargar().subscribe();
   }
 
   protected readonly cancelados = this.servicio.cancelados;

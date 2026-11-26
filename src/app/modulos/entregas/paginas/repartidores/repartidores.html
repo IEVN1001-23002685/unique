@@ -1,0 +1,158 @@
+<section class="vista">
+  <app-navegacion-entregas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M19 · Catálogo</p>
+      <h1 class="titulo">Repartidores</h1>
+      <p class="subtitulo">
+        Alta, edición y baja de repartidores. Con entregas registradas, la baja desactiva al
+        repartidor y conserva su historial.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <button type="button" class="boton boton--primario" (click)="abrirAlta()">
+        Nuevo repartidor
+      </button>
+      <a routerLink="/entregas/hoja-reparto" class="boton boton--secundario">Hoja de reparto</a>
+    </div>
+  </div>
+
+  <div class="indicadores indicadores--catalogo" aria-label="Indicadores de repartidores">
+    <div class="indicador">
+      <span class="indicador__valor">{{ servicio.repartidores().length }}</span>
+      <span class="indicador__etiqueta">Registrados</span>
+    </div>
+    <div class="indicador indicador--activo">
+      <span class="indicador__valor">{{ activos() }}</span>
+      <span class="indicador__etiqueta">Activos</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Catálogo de repartidores</h2>
+      <span>El Administrador mantiene este catálogo; Flask validará el rol</span>
+    </div>
+
+    <div class="barra barra--catalogo">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Nombre, teléfono o vehículo"
+          aria-label="Buscar repartidores"
+        />
+      </label>
+    </div>
+
+    @if (servicio.repartidores().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay repartidores.</strong>
+        <p>Usa «Nuevo repartidor» para dar de alta al primero.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Ajusta la búsqueda por nombre, teléfono o vehículo.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--repartidores">
+          <caption class="sr-only">
+            Repartidores registrados
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Nombre</th>
+              <th scope="col">Teléfono</th>
+              <th scope="col">Vehículo</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Entregas</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (repartidor of filtrados(); track repartidor.id) {
+              <tr>
+                <td data-etiqueta="Nombre">
+                  <span class="celda-principal">{{ repartidor.nombre }}</span>
+                  @if (repartidor.eliminadoEn) {
+                    <span class="celda-secundaria">Dado de baja</span>
+                  }
+                </td>
+                <td data-etiqueta="Teléfono">{{ repartidor.telefono }}</td>
+                <td data-etiqueta="Vehículo">{{ repartidor.vehiculo ?? 'Sin vehículo' }}</td>
+                <td data-etiqueta="Estado">
+                  <span
+                    class="chip"
+                    [class.chip--exito]="repartidor.activo"
+                    [class.chip--neutro]="!repartidor.activo"
+                  >
+                    <span class="chip__punto" aria-hidden="true"></span>
+                    {{ repartidor.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td data-etiqueta="Entregas">{{ entregasDe(repartidor.id) }}</td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    <button
+                      type="button"
+                      class="boton boton--enlace"
+                      (click)="abrirEdicion(repartidor)"
+                    >
+                      Editar
+                    </button>
+                    @if (repartidor.activo && repartidor.eliminadoEn === null) {
+                      <button
+                        type="button"
+                        class="boton boton--enlace"
+                        (click)="eliminando.set(repartidor)"
+                      >
+                        Dar de baja
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Un repartidor activo no puede tener dos entregas EN_RUTA del mismo pedido. Las bajas y los
+      cambios reales se validan en Flask (GET, POST, PATCH y DELETE /repartidores).
+    </p>
+  </div>
+
+  @if (editando(); as repartidor) {
+    <app-modal-repartidor
+      [repartidor]="repartidor"
+      (guardar)="guardar($event)"
+      (cancelar)="cerrarFormulario()"
+    />
+  } @else if (creando()) {
+    <app-modal-repartidor
+      [repartidor]="null"
+      (guardar)="guardar($event)"
+      (cancelar)="cerrarFormulario()"
+    />
+  }
+
+  @if (eliminando(); as repartidor) {
+    <app-modal-confirmacion
+      titulo="Dar de baja a repartidor"
+      [mensaje]="mensajeBaja(repartidor)"
+      etiquetaConfirmar="Confirmar baja"
+      (confirmar)="confirmarEliminar()"
+      (cancelar)="eliminando.set(null)"
+    />
+  }
+</section>

@@ -1,0 +1,153 @@
+<section class="vista">
+  <app-navegacion-produccion />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 5 · Producción y merma · M16</p>
+      <h1 class="titulo">Plan sugerido de producción</h1>
+      <p class="subtitulo">
+        Demanda de pedidos (M09) y reposición de stock mínimo (M12) convertidas en una sugerencia
+        por SKU. Cantidad sugerida = mayor entre lo pendiente no cubierto y la reposición cuando el
+        disponible está en el mínimo o menos.
+      </p>
+    </div>
+    <a routerLink="/produccion" class="boton boton--secundario">Volver al tablero</a>
+  </div>
+
+  <div class="indicadores" aria-label="Indicadores del plan sugerido">
+    <div class="indicador" data-tono="info">
+      <span class="indicador__numero">{{ filas().length }}</span>
+      <span class="indicador__etiqueta">Variantes evaluadas</span>
+    </div>
+    <div class="indicador" data-tono="adv">
+      <span class="indicador__numero">{{ conSugerencia() }}</span>
+      <span class="indicador__etiqueta">Con cantidad sugerida</span>
+    </div>
+    <div class="indicador" data-tono="exito">
+      <span class="indicador__numero">{{ totalSugerido() | number: '1.0-0' : 'es-MX' }}</span>
+      <span class="indicador__etiqueta">Unidades sugeridas</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra barra--plan">
+      <div class="filtros" role="group" aria-label="Filtrar plan sugerido">
+        <button
+          type="button"
+          class="filtro"
+          [class.filtro--activo]="!soloSugeridas()"
+          [attr.aria-pressed]="!soloSugeridas()"
+          (click)="soloSugeridas.set(false)"
+        >
+          Todas las variantes
+        </button>
+        <button
+          type="button"
+          class="filtro"
+          [class.filtro--activo]="soloSugeridas()"
+          [attr.aria-pressed]="soloSugeridas()"
+          (click)="soloSugeridas.set(true)"
+        >
+          Solo con sugerencia
+        </button>
+      </div>
+      <p class="barra__texto">
+        Sugerencias calculadas por Flask en unidades enteras; no se muestran costos.
+      </p>
+    </div>
+
+    @if (filas().length === 0) {
+      <div class="estado" role="status">
+        <strong>No hay variantes para mostrar.</strong>
+        <p>Prueba con «Todas las variantes» para ver el detalle del plan.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor tabla-contenedor--ancha">
+        <table class="tabla tabla--plan">
+          <caption class="sr-only">
+            Sugerencias de producción por SKU
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">SKU y producto</th>
+              <th scope="col" class="celda-derecha">Disponible</th>
+              <th scope="col" class="celda-derecha">Mínimo</th>
+              <th scope="col" class="celda-derecha">Pedidos</th>
+              <th scope="col" class="celda-derecha">En curso</th>
+              <th scope="col" class="celda-derecha">No cubierto</th>
+              <th scope="col" class="celda-derecha">Reposición</th>
+              <th scope="col" class="celda-derecha">Sugerida</th>
+              <th scope="col">Orden abierta</th>
+              <th scope="col">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (fila of filas(); track fila.sku) {
+              <tr>
+                <td data-etiqueta="SKU y producto" class="celda-sku">
+                  <span class="celda-principal">{{ fila.sku }}</span>
+                  <span class="celda-secundaria"
+                    >{{ fila.nombreProducto }} · {{ fila.talla }} / {{ fila.color }}</span
+                  >
+                </td>
+                <td data-etiqueta="Disponible" class="celda-numero celda-derecha">
+                  {{ fila.disponible | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Mínimo" class="celda-numero celda-derecha">
+                  {{ fila.minimo | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Pedidos" class="celda-numero celda-derecha">
+                  {{ fila.pendientePedidos | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="En curso" class="celda-numero celda-derecha">
+                  {{ fila.produccionEnCurso | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="No cubierto" class="celda-numero celda-derecha">
+                  {{ fila.pendienteNoCubierto | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Reposición" class="celda-numero celda-derecha">
+                  {{ fila.cantidadReposicion | number: '1.0-0' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Sugerida" class="celda-numero celda-derecha">
+                  <strong [class.sugerida]="fila.cantidadSugerida > 0">
+                    {{ fila.cantidadSugerida | number: '1.0-0' : 'es-MX' }}
+                  </strong>
+                </td>
+                <td data-etiqueta="Orden abierta">
+                  @if (fila.ordenAbiertaFolio) {
+                    <span class="etiqueta etiqueta--info">{{ fila.ordenAbiertaFolio }}</span>
+                  } @else {
+                    <span class="etiqueta etiqueta--neutro">Sin orden</span>
+                  }
+                </td>
+                <td data-etiqueta="Acción">
+                  <div class="acciones">
+                    <button
+                      type="button"
+                      class="accion"
+                      [disabled]="fila.cantidadSugerida <= 0"
+                      (click)="crearDesdePlan(fila)"
+                    >
+                      Crear orden
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      «En curso» descuenta lo pendiente de órdenes abiertas del mismo SKU para no duplicar demanda.
+      Las existencias y los pedidos se consultan en el servidor al recargar la pantalla.
+    </p>
+  </div>
+
+  <p class="nota nota--advertencia">
+    Las existencias se leen de M12/M10 y la demanda de M09 como contratos de solo lectura. No se
+    crea una orden persistente, no se apartan materiales y no se pueden consultar costos desde este
+    rol. La generación de órdenes por pedido y por stock mínimo queda pendiente de integración.
+  </p>
+</section>

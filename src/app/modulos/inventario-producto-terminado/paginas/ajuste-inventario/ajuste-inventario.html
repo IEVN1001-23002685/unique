@@ -6,12 +6,14 @@
       <p class="eyebrow">M12 · Inventario de producto terminado</p>
       <h1 class="titulo">Ajuste de inventario</h1>
       <p class="subtitulo">
-        Conteo físico por SKU. Se compara lo contado contra el sistema; la diferencia queda registrada
-        como un movimiento AJUSTE y abre una alerta informativa cuando existe desvío.
+        Conteo físico por SKU. Se compara lo contado contra el sistema; la diferencia queda
+        registrada como un movimiento AJUSTE y abre una alerta informativa cuando existe desvío.
       </p>
     </div>
     <div class="cabecera__acciones">
-      <a routerLink="/operacion/inventario-pt/movimientos" class="boton boton--secundario">Ver movimientos</a>
+      <a routerLink="/operacion/inventario-pt/movimientos" class="boton boton--secundario"
+        >Ver movimientos</a
+      >
     </div>
   </div>
 
@@ -27,7 +29,11 @@
       } @else {
         <div class="campo">
           SKU
-          <select class="campo__entrada" formControlName="varianteId" (change)="alCambiarVariante($event)">
+          <select
+            class="campo__entrada"
+            formControlName="varianteId"
+            (change)="alCambiarVariante($event)"
+          >
             @for (fila of filas(); track fila.varianteId) {
               <option [value]="fila.varianteId">
                 {{ fila.sku }} · {{ fila.productoNombre }} · {{ servicio.nombreTalla(fila.talla) }}
@@ -104,17 +110,23 @@
 
         <div class="lectura__diferencia">
           <span>Diferencia</span>
-          <strong [class.diferencia--positiva]="diferencia() > 0"
+          <strong
+            [class.diferencia--positiva]="diferencia() > 0"
             [class.diferencia--negativa]="diferencia() < 0"
-            [class.diferencia--cero]="diferencia() === 0">
+            [class.diferencia--cero]="diferencia() === 0"
+          >
             {{ textoDiferencia() }}
           </strong>
         </div>
 
         @if (diferencia() < 0) {
-          <p class="lectura__aviso">Una diferencia negativa representa merma o pérdida: pedirá confirmación.</p>
+          <p class="lectura__aviso">
+            Una diferencia negativa representa merma o pérdida: pedirá confirmación.
+          </p>
         } @else if (diferencia() > 0) {
-          <p class="lectura__aviso lectura__aviso--info">La alerta informativa se abrirá por el desvío registrado.</p>
+          <p class="lectura__aviso lectura__aviso--info">
+            La alerta informativa se abrirá por el desvío registrado.
+          </p>
         } @else {
           <p class="lectura__aviso">Sin diferencia: se dejará constancia del conteo sin alerta.</p>
         }
@@ -125,21 +137,26 @@
   </div>
 
   <p class="nota">
-    Solo existen cuatro formas de cambiar existencias: alta por producción aprobada (M16), salida por
-    envío (M19), reingreso aprobado (M07) y ajuste o merma. Este formulario implementa la última sin
-    editar la tabla a mano. El movimiento y el cambio quedan en memoria de demostración; Flask será la
-    fuente autoritativa.
+    Solo existen cuatro formas de cambiar existencias: alta por producción aprobada (M16), salida
+    por envío (M19), reingreso aprobado (M07) y ajuste o merma. Este formulario implementa la última
+    sin editar la tabla a mano. Flask valida el ajuste, persiste el cambio y asienta el movimiento
+    AJUSTE; el historial nunca se modifica.
   </p>
   <p class="nota nota--adv">
-    Permisos del documento: el Operativo captura ajustes y el Administrador solo consulta. Sin
-    autenticación real la interfaz no bloquea la acción; el guard y la validación autoritativa se
-    conectarán con Flask.
+    Permisos del documento: el Operativo captura ajustes y el Administrador solo consulta. La
+    autorización se comprueba en el servidor para cada petición.
   </p>
 
   @if (confirmando()) {
     <app-modal-confirmacion
       titulo="Confirmar ajuste negativo"
-      [mensaje]="'El SKU ' + (filaSeleccionada()?.sku ?? '') + ' bajará ' + textoDiferencia() + '. Se registrará un movimiento AJUSTE y una alerta informativa; no se puede deshacer en la demostración.'"
+      [mensaje]="
+        'El SKU ' +
+        (filaSeleccionada()?.sku ?? '') +
+        ' bajará ' +
+        textoDiferencia() +
+        '. Se registrará un movimiento AJUSTE inmutable; para corregirlo se requiere un movimiento inverso.'
+      "
       etiquetaConfirmar="Confirmar ajuste"
       (confirmar)="confirmar()"
       (cancelar)="confirmando.set(false)"

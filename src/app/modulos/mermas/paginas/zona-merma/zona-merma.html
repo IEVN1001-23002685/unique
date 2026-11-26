@@ -1,0 +1,260 @@
+<div class="vista">
+  <header class="cabecera">
+    <div>
+      <p class="eyebrow">M17 · Mermas · Historial</p>
+      <h1 class="titulo">Zona de merma</h1>
+      <p class="subtitulo">
+        Consulta las salidas por daño o defecto, su origen y su causa. Los registros son inmutables:
+        las correcciones se hacen con un asiento inverso del Administrador.
+      </p>
+    </div>
+    <a routerLink="/mermas/registro" class="boton boton--primario">Registrar merma</a>
+  </header>
+
+  <app-navegacion-mermas />
+
+  <div class="indicadores">
+    <article class="tarjeta indicador">
+      <span class="indicador__numero">{{ resumen().total }}</span>
+      <span class="indicador__etiqueta">Registros vigentes</span>
+      <span class="indicador__detalle">Incluye capturas y llegadas automáticas</span>
+    </article>
+    <article class="tarjeta indicador" data-tono="info">
+      <span class="indicador__numero">{{ resumen().automaticas }}</span>
+      <span class="indicador__etiqueta">Generadas por otros módulos</span>
+      <span class="indicador__detalle">M14, M16, M07, M15 y M12</span>
+    </article>
+    <article class="tarjeta indicador" data-tono="adv">
+      <span class="indicador__numero">{{ resumen().manuales }}</span>
+      <span class="indicador__etiqueta">Capturas manuales</span>
+      <span class="indicador__detalle">Registradas por Operativo</span>
+    </article>
+    <article class="tarjeta indicador" data-tono="exito">
+      <span class="indicador__numero">{{ resumen().corregidas }}</span>
+      <span class="indicador__etiqueta">Corregidas con reverso</span>
+      <span class="indicador__detalle">El original se conserva</span>
+    </article>
+  </div>
+
+  <section class="tarjeta bloque" aria-labelledby="titulo-historial">
+
+    <h2 class="titulo-section" id="titulo-historial">Historial de mermas</h2>
+
+    <div class="barra">
+      <label class="buscador">
+        <svg
+          class="buscador__icono"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m16.5 16.5 4 4" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="filtroTexto()"
+          (input)="alCambiarTexto($event)"
+          placeholder="Buscar folio, SKU, causa u orden"
+          aria-label="Buscar en el historial de mermas"
+        />
+      </label>
+      <div class="filtros" role="group" aria-label="Filtrar por origen">
+        @for (opcion of origenes; track opcion.clave) {
+          <button
+            type="button"
+            class="filtro"
+            [class.filtro--activo]="filtroOrigen() === opcion.clave"
+            (click)="alCambiarOrigen(opcion.clave)"
+          >
+            {{ opcion.etiqueta }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="form-grid form-grid--tres filtros-secundarios">
+      <label class="campo">
+        Periodo
+        <select
+          class="campo__entrada"
+          [value]="filtroPeriodo()"
+          (change)="alCambiarPeriodo($event)"
+        >
+          @for (periodo of periodos(); track periodo.clave) {
+            <option [value]="periodo.clave">{{ periodo.etiqueta }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Etapa
+        <select class="campo__entrada" [value]="filtroEtapa()" (change)="alCambiarEtapa($event)">
+          <option value="TODAS">Todas las etapas</option>
+          @for (etapa of etapas; track etapa) {
+            <option [value]="etapa">{{ etiquetasEtapa[etapa] }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Causa
+        <select class="campo__entrada" [value]="filtroCausa()" (change)="alCambiarCausa($event)">
+          <option value="TODAS">Todas las causas</option>
+          @for (causa of causas(); track causa.id) {
+            <option [value]="causa.id">{{ causa.nombre }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <label class="campo filtro-producto">
+      Producto, material o código
+      <input
+        class="campo__entrada"
+        type="search"
+        [value]="filtroProducto()"
+        (input)="alCambiarProducto($event)"
+        placeholder="Ej. SD-CH-NG o TEL-FEL"
+      />
+    </label>
+
+    <p class="resultados">
+      {{ registros().length }} {{ registros().length === 1 ? 'resultado' : 'resultados' }}
+      @if (
+        filtroTexto() !== '' ||
+        filtroPeriodo() !== 'TODOS' ||
+        filtroEtapa() !== 'TODAS' ||
+        filtroCausa() !== 'TODAS' ||
+        filtroOrigen() !== 'TODOS' ||
+        filtroProducto() !== ''
+      ) {
+        <button type="button" class="accion" (click)="limpiarFiltros()">Limpiar filtros</button>
+      }
+    </p>
+
+    @if (visibles().length > 0) {
+      <div class="tabla-contenedor tabla-contenedor--ancha">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th scope="col">Folio / fecha</th>
+              <th scope="col">Ítem</th>
+              <th scope="col">Origen</th>
+              <th scope="col">Etapa y causa</th>
+              <th scope="col" class="celda-derecha">Cantidad</th>
+              @if (esAdministrador()) {
+                <th scope="col" class="celda-derecha">Costo perdido</th>
+              }
+              <th scope="col">Estado</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (merma of visibles(); track merma.id) {
+              <tr>
+                <td data-etiqueta="Folio">
+                  <span class="celda-principal">{{ merma.folio }}</span>
+                  <span class="celda-secundario"
+                    >{{ merma.fecha | date: 'dd/MM/yyyy' : '' : 'es-MX' }} ·
+                    {{ merma.etiquetaProcedencia }}</span
+                  >
+                </td>
+                <td data-etiqueta="Ítem">
+                  <span class="celda-principal">{{ merma.etiquetaItem }}</span>
+                  @if (merma.ordenFolio) {
+                    <span class="celda-secundario">Orden {{ merma.ordenFolio }}</span>
+                  }
+                </td>
+                <td data-etiqueta="Origen">
+                  <span class="etiqueta" [class.etiqueta--info]="merma.origen === 'MATERIAL'">
+                    {{ merma.origen === 'MATERIAL' ? 'Material' : 'Producto' }}
+                  </span>
+                </td>
+                <td data-etiqueta="Etapa">
+                  <span class="celda-principal">{{ etiquetasEtapa[merma.etapa] }}</span>
+                  <span class="celda-secundario">{{ merma.causaNombre }}</span>
+                </td>
+                <td data-etiqueta="Cantidad" class="celda-numero celda-derecha">
+                  {{ merma.cantidad | number: '1.0-4' : 'es-MX' }} {{ merma.unidadBase }}
+                </td>
+                @if (esAdministrador()) {
+                  <td data-etiqueta="Costo" class="celda-numero celda-derecha">
+                    {{ merma.costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                  </td>
+                }
+                <td data-etiqueta="Estado">
+                  <span class="etiqueta" [ngClass]="claseEstado(merma)">{{
+                    etiquetaEstado(merma)
+                  }}</span>
+                </td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    <button type="button" class="accion" (click)="verDetalle(merma)">
+                      Ver detalle
+                    </button>
+                    @if (esAdministrador() && !merma.reversada && !merma.esReversion) {
+                      <button
+                        type="button"
+                        class="accion accion--peligro"
+                        (click)="solicitarReverso(merma)"
+                      >
+                        Reversar
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="paginacion" aria-label="Paginación del historial">
+        <button
+          type="button"
+          class="boton boton--secundario"
+          [disabled]="paginaSegura() === 1"
+          (click)="irAPagina(paginaSegura() - 1)"
+        >
+          Anterior
+        </button>
+        <span>Página {{ paginaSegura() }} de {{ totalPaginas() }}</span>
+        <button
+          type="button"
+          class="boton boton--secundario"
+          [disabled]="paginaSegura() === totalPaginas()"
+          (click)="irAPagina(paginaSegura() + 1)"
+        >
+          Siguiente
+        </button>
+      </nav>
+    } @else {
+      <div class="estado" role="status">
+        <strong>No hay mermas con estos filtros.</strong>
+        <p>Prueba con otro periodo, etapa o término de búsqueda.</p>
+        <button type="button" class="boton boton--enlace" (click)="limpiarFiltros()">
+          Limpiar filtros
+        </button>
+      </div>
+    }
+
+    <p class="nota">
+      Los datos son demostrativos. Al integrar Flask, este historial vendrá de
+      <code>GET /mermas</code> y el reverso de <code>POST /mermas/&#123;id&#125;/reversar</code>. El
+      descuento de inventario y el movimiento MERMA no se ejecutan en esta vista.
+    </p>
+  </section>
+</div>
+
+@if (detalle(); as merma) {
+  <app-detalle-merma [merma]="merma" (cerrar)="cerrarDetalle()" />
+}
+
+@if (reversar(); as merma) {
+  <app-modal-reversar-merma
+    [merma]="merma"
+    (confirmar)="confirmarReverso($event)"
+    (cancelar)="cancelarReverso()"
+  />
+}

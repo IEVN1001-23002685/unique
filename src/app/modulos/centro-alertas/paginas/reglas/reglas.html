@@ -1,0 +1,99 @@
+<section class="pagina">
+  @if (!servicio.esAdmin()) {
+    <p class="nota nota--adv">
+      Las reglas y umbrales son exclusivos del Administrador. Cambia la vista previa de rol en la
+      cabecera o consulta la
+      <a routerLink="/alertas/bandeja">bandeja de alertas</a>.
+    </p>
+  } @else {
+    <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()">
+      <div class="bloque__titulo">
+        <h2>Umbrales que disparan alertas</h2>
+        <span>Parámetros del §11.5 · edición local</span>
+      </div>
+
+      <div class="umbrales">
+        @for (regla of servicio.reglas(); track regla.clave; let i = $index) {
+          <div class="umbral" [class.umbral--error]="errorEn(i)">
+            <label class="campo" [attr.for]="'regla-' + regla.clave">
+              {{ regla.etiqueta }}
+              <span class="umbral__descripcion">{{ regla.descripcion }}</span>
+            </label>
+            <div class="umbral__control">
+              <input
+                class="campo__entrada"
+                type="number"
+                inputmode="numeric"
+                [id]="'regla-' + regla.clave"
+                [attr.min]="regla.min"
+                [attr.max]="regla.max"
+                step="1"
+                [formControl]="formulario.controls.umbrales.at(i)"
+              />
+              <span class="umbral__unidad">{{ regla.unidad }}</span>
+              @if (regla.propuesta) {
+                <span class="umbral__propuesta">Propuesta · confirmar</span>
+              }
+            </div>
+            @if (errorEn(i)) {
+              <span class="umbral__error">
+                Entero entre {{ regla.min }} y {{ regla.max }} {{ regla.unidad }}.
+              </span>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="reglas__acciones">
+        <button type="submit" class="boton boton--primario">Guardar umbrales</button>
+        <button type="button" class="boton boton--secundario" (click)="restablecer()">
+          Restablecer valores del documento
+        </button>
+      </div>
+      <p class="nota nota--adv nota-final">
+        Los cambios no persisten: Flask recibirá el PATCH y recalculará las alertas abiertas. Los
+        parámetros marcados como propuesta requieren confirmación antes de usarse como regla.
+      </p>
+    </form>
+
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Catálogo de alertas</h2>
+        <span>{{ servicio.tipos.length }} tipos documentados</span>
+      </div>
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th scope="col">Tipo</th>
+              <th scope="col">Severidad base</th>
+              <th scope="col">Condición</th>
+              <th scope="col">Para quién</th>
+              <th scope="col">Botón de acción</th>
+              <th scope="col">Origen</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (tipo of servicio.tipos; track tipo.tipo) {
+              <tr>
+                <td data-etiqueta="Tipo">
+                  <span class="mono">{{ tipo.tipo }}</span>
+                  @if (tipo.nota) {
+                    <span class="celda-secundaria">{{ tipo.nota }}</span>
+                  }
+                </td>
+                <td data-etiqueta="Severidad base">
+                  <app-chip-severidad [severidad]="tipo.severidadBase" />
+                </td>
+                <td data-etiqueta="Condición">{{ tipo.condicion }}</td>
+                <td data-etiqueta="Para quién">{{ roles[tipo.paraQuien] }}</td>
+                <td data-etiqueta="Botón de acción">{{ tipo.accion }}</td>
+                <td data-etiqueta="Origen">{{ tipo.origen }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</section>

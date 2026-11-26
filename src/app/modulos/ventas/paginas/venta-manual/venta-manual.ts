@@ -8,8 +8,6 @@ import {
   telefono10,
 } from '../../../../compartido/validadores/validadores-negocio';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
-import { CLIENTES_SIMULADOS } from '../../datos-simulados/clientes';
-import { VARIANTES_SIMULADAS } from '../../datos-simulados/variantes';
 import { NavegacionVentas } from '../../componentes/navegacion-ventas/navegacion-ventas';
 import { VentasServicio } from '../../servicios/ventas-servicio';
 import type {
@@ -42,8 +40,8 @@ export class VentaManual {
   private readonly avisos = inject(AvisosServicio);
   protected readonly servicio = inject(VentasServicio);
 
-  protected readonly clientes = CLIENTES_SIMULADOS;
-  protected readonly variantes = VARIANTES_SIMULADAS;
+  protected readonly clientes = computed(() => this.servicio.clientes());
+  protected readonly variantes = computed(() => this.servicio.variantes());
   protected readonly metodosPago: { valor: MetodoPago; etiqueta: string }[] = [
     { valor: 'TRANSFERENCIA', etiqueta: 'Transferencia' },
     { valor: 'EFECTIVO', etiqueta: 'Efectivo' },
@@ -67,6 +65,7 @@ export class VentaManual {
     clienteTipo: ['EXISTENTE'],
     clienteId: [0],
     nombreNuevo: [''],
+    apellidosNuevo: [''],
     correoNuevo: [''],
     telefonoNuevo: [''],
     destinatario: [''],
@@ -97,11 +96,11 @@ export class VentaManual {
     this.lineasCarrito().reduce((suma, linea) => suma + linea.cantidad, 0),
   );
 
-  protected readonly tarifa = computed(() =>
-    this.servicio.tarifaPorCodigoPostal(this.codigoPostal()),
-  );
+  private readonly cobertura = signal<{ costo: number; dias: number } | null>(null);
 
-  protected readonly costoEnvio = computed(() => this.tarifa()?.costo ?? 0);
+  protected readonly tarifa = computed(() => this.cobertura());
+
+  protected readonly costoEnvio = computed(() => this.cobertura()?.costo ?? 0);
 
   protected readonly descuentoMonto = computed(() => {
     const descuento = this.descuentoAplicado();
@@ -136,6 +135,8 @@ export class VentaManual {
   });
 
   constructor() {
+    this.servicio.recargar().subscribe();
+    this.servicio.cargarDatosManuales().subscribe();
     this.sincronizarLineas();
   }
 
@@ -155,7 +156,9 @@ export class VentaManual {
   }
 
   protected alCambiarCp(evento: Event): void {
-    this.codigoPostal.set((evento.target as HTMLInputElement).value);
+    const codigo = (evento.target as HTMLInputElement).value.trim();
+    this.codigoPostal.set(codigo);
+    this.servicio.consultarCobertura(codigo).subscribe((cobertura) => this.cobertura.set(cobertura));
   }
 
   protected alCambiarCheckbox(evento: Event, destino: WritableSignal<boolean>): void {
@@ -196,7 +199,10 @@ export class VentaManual {
     }
 
     this.descuentoAplicado.set(descuento);
-    this.avisos.mostrar('exito', `Cupón «${descuento.nombre}» aplicado. Solo se permite uno por venta.`);
+    this.avisos.mostrar(
+      'exito',
+      `Cupón «${descuento.nombre}» aplicado. Solo se permite uno por venta.`,
+    );
   }
 
   protected aplicarAutomatico(): void {
@@ -249,7 +255,7 @@ export class VentaManual {
     const valor = this.formulario.getRawValue();
     const existente =
       valor.clienteTipo === 'EXISTENTE'
-        ? CLIENTES_SIMULADOS.find((cliente) => cliente.id === valor.clienteId)
+        ? this.clientes().find((cliente) => cliente.id === valor.clienteId)
         : undefined;
 
     if (valor.clienteTipo === 'EXISTENTE' && !existente) {
@@ -257,13 +263,16 @@ export class VentaManual {
       return;
     }
 
-    const cliente: ClienteVenta = existente ?? {
-      id: 0,
-      nombre: valor.nombreNuevo.trim(),
-      correo: valor.correoNuevo.trim(),
-      telefono: valor.telefonoNuevo.trim(),
-      esNuevoSinAcceso: true,
-    };
+    const cliente: ClienteVenta = existente
+      ? { ...existente, esNuevoSinAcceso: false }
+      : {
+          id: 0,
+          nombre: valor.nombreNuevo.trim(),
+          apellidos: valor.apellidosNuevo.trim(),
+          correo: valor.correoNuevo.trim(),
+          telefono: valor.telefonoNuevo.trim(),
+          esNuevoSinAcceso: true,
+        };
 
     const envio: DireccionVenta = {
       tipo: 'ENVIO',
@@ -288,37 +297,28 @@ export class VentaManual {
       razonSocial: this.requiereFactura() ? valor.razonSocial.trim() : null,
     };
 
-    const ultimos4 =
-      valor.metodoPago === 'TARJETA' && valor.ultimos4.trim() !== ''
-        ? valor.ultimos4.trim()
-        : null;
-
-    const venta = this.servicio.crearVentaManual({
-      cliente,
-      lineas: this.lineas.getRawValue().map((linea) => ({
-        sku: linea.sku,
-        cantidad: linea.cantidad,
-      })),
-      direccionEnvio: envio,
-      direccionFacturacion: facturacion,
-      descuentoId: this.descuentoAplicado()?.id ?? null,
-      metodoPago: valor.metodoPago,
-      estadoPago: valor.estadoPago,
-      ultimos4,
-      titular: cliente.nombre,
-      costoEnvio: this.costoEnvio(),
-    });
-
-    const avisoReserva =
-      venta.estadoPago === 'PENDIENTE'
-        ? ' La reserva de existencias y la alerta de pago pendiente dependen de M12 y M21.'
-        : '';
-
-    this.avisos.mostrar(
-      'exito',
-      `Venta ${venta.folio} registrada solo en memoria.${avisoReserva} Persistencia pendiente de Flask.`,
-    );
-    this.router.navigate(['/ventas', venta.folio]);
+    this.servicio
+      .crearVentaManual({
+        cliente,
+        lineas: this.lineas.getRawValue().map((linea) => ({
+          sku: linea.sku,
+          cantidad: linea.cantidad,
+        })),
+        direccionEnvio: envio,
+        direccionFacturacion: facturacion,
+        descuentoId: this.descuentoAplicado()?.id ?? null,
+        metodoPago: valor.metodoPago,
+        estadoPago: valor.estadoPago,
+        ultimos4: null,
+        titular: null,
+        costoEnvio: this.costoEnvio(),
+      })
+      .subscribe((resultado) => {
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+        if (resultado.ok && resultado.venta) {
+          this.router.navigate(['/ventas', resultado.venta.folio]);
+        }
+      });
   }
 
   private contexto(): ContextoDescuento {
@@ -332,7 +332,7 @@ export class VentaManual {
   protected sincronizarLineas(): void {
     this.lineasCarrito.set(
       this.lineas.getRawValue().map(({ sku, cantidad }) => {
-        const variante = VARIANTES_SIMULADAS.find((item) => item.sku === sku);
+        const variante = this.variantes().find((item) => item.sku === sku);
         return {
           sku,
           cantidad,
@@ -356,6 +356,7 @@ export class VentaManual {
       const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor.correoNuevo.trim());
       return (
         valor.nombreNuevo.trim() !== '' &&
+        valor.apellidosNuevo.trim() !== '' &&
         correoValido &&
         valor.telefonoNuevo.trim() !== '' &&
         telefono10(this.formulario.controls.telefonoNuevo) === null
@@ -383,14 +384,23 @@ export class VentaManual {
         return false;
       }
 
-      return !this.requiereFactura() ||
+      return (
+        !this.requiereFactura() ||
         (valor.razonSocial.trim() !== '' &&
           valor.rfc.trim() !== '' &&
-          rfcValido(this.formulario.controls.rfc) === null);
+          rfcValido(this.formulario.controls.rfc) === null)
+      );
     }
 
-    if (valor.metodoPago === 'TARJETA' && valor.ultimos4.trim() !== '') {
-      return /^\d{4}$/.test(valor.ultimos4.trim());
+    if (
+      valor.estadoPago === 'PAGADA' &&
+      (valor.metodoPago === 'TARJETA' || valor.metodoPago === 'CUENTA')
+    ) {
+      this.avisos.mostrar(
+        'error',
+        'Para cobrar con tarjeta o cuenta se requiere un medio de pago guardado; no se captura PAN ni CVV.',
+      );
+      return false;
     }
     return true;
   }

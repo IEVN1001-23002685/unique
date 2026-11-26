@@ -1,14 +1,17 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { coincide, passwordFuerte } from '../../validadores/acceso-registro.validadores';
+import { ActivatedRoute, Router } from '@angular/router';
+import { mensajeError } from '../../../../core/api/errores';
+import { TOKEN_RECUPERACION_DEMO } from '../../modelos/acceso-registro';
 import { AccesoRegistroServicio } from '../../servicios/acceso-registro-servicio';
+import { coincide, passwordFuerte } from '../../validadores/acceso-registro.validadores';
 
 @Component({
   selector: 'app-restablecer-password',
-  imports: [ReactiveFormsModule, RouterLink],
-  styleUrl: './restablecer-password.css',
+  standalone: true,
+  imports: [ReactiveFormsModule],
   templateUrl: './restablecer-password.html',
+  styleUrl: './restablecer-password.css',
 })
 export class RestablecerPassword {
   private readonly fb = inject(FormBuilder);
@@ -17,11 +20,13 @@ export class RestablecerPassword {
   private readonly servicio = inject(AccesoRegistroServicio);
 
   readonly token = this.ruta.snapshot.paramMap.get('token') ?? '';
-  readonly tokenInvalido = this.token.length === 0;
   readonly mensajePendiente = this.servicio.restablecimientoPendiente;
   readonly mensajeInvalido = this.servicio.formularioInvalido;
 
-  readonly formulario = this.fb.nonNullable.group(
+  protected readonly tokenInvalido = this.token.length === 0;
+  protected readonly esDemostracion = this.token === TOKEN_RECUPERACION_DEMO;
+
+  readonly formulario = this.fb.group(
     {
       contrasena: ['', [Validators.required, passwordFuerte]],
       repetirContrasena: ['', [Validators.required]],
@@ -29,63 +34,15 @@ export class RestablecerPassword {
     { validators: coincide('contrasena', 'repetirContrasena') },
   );
 
-  readonly cargando = signal(false);
-  readonly mensaje = signal('');
-  readonly restablecido = signal(false);
+  protected mensaje = '';
+  protected cargando = false;
 
-  enviar(): void {
-    if (this.tokenInvalido) {
-      this.mensaje.set('El enlace no es válido. Solicita una nueva instrucción de recuperación.');
-      return;
-    }
-
-    if (this.formulario.invalid) {
-      this.formulario.markAllAsTouched();
-      this.mensaje.set(this.mensajeInvalido);
-      return;
-    }
-
-    this.cargando.set(true);
-    this.mensaje.set(this.mensajePendiente);
-    const contrasena = this.formulario.controls.contrasena.value;
-
-    this.servicio.restablecer(this.token, contrasena).subscribe({
-      next: (respuesta) => {
-        this.cargando.set(false);
-        this.restablecido.set(true);
-        this.mensaje.set(respuesta.mensaje);
-        this.formulario.reset({ contrasena: '', repetirContrasena: '' });
-      },
-      error: (error: unknown) => {
-        this.cargando.set(false);
-        this.mensaje.set(this.textoError(error, 'No fue posible actualizar la contraseña.'));
-      },
-    });
-  }
-
-  volverAlLogin(): void {
-    void this.router.navigate(['/login']);
-  }
-
-  cerrarVista(): void {
-    void this.router.navigate(['/catalogo']);
-  }
-
-  errorEn(campo: 'contrasena' | 'repetirContrasena'): boolean {
+  protected errorEn(campo: 'contrasena' | 'repetirContrasena'): boolean {
     const control = this.formulario.controls[campo];
     return control.invalid && (control.touched || control.dirty);
   }
 
-  mensajeDe(campo: 'contrasena' | 'repetirContrasena'): string {
-    const control = this.formulario.controls[campo];
-    if (control.hasError('required')) return 'Este campo es obligatorio.';
-    if (control.hasError('passwordFuerte')) {
-      return 'Mínimo 8 caracteres con mayúscula, minúscula, número y símbolo.';
-    }
-    return '';
-  }
-
-  get contrasenasNoCoinciden(): boolean {
+  protected get contrasenasNoCoinciden(): boolean {
     return (
       this.formulario.hasError('coincide') &&
       (this.formulario.controls.repetirContrasena.touched ||
@@ -93,7 +50,39 @@ export class RestablecerPassword {
     );
   }
 
-  private textoError(error: unknown, alternativa: string): string {
-    return error instanceof Error && error.message.trim() !== '' ? error.message : alternativa;
+  onSubmit(): void {
+    if (this.tokenInvalido) {
+      this.mensaje = 'El enlace no es válido. Solicita una nueva instrucción de recuperación.';
+      return;
+    }
+
+    if (this.formulario.invalid) {
+      this.formulario.markAllAsTouched();
+      this.mensaje = this.mensajeInvalido;
+      return;
+    }
+
+    this.mensaje = this.mensajePendiente;
+    this.cargando = true;
+    this.servicio
+      .restablecer(this.token, this.formulario.controls.contrasena.value ?? '')
+      .subscribe({
+        next: (respuesta) => {
+          this.cargando = false;
+          this.mensaje = respuesta.mensaje;
+        },
+        error: (error: unknown) => {
+          this.cargando = false;
+          this.mensaje = mensajeError(error, 'No fue posible actualizar la contraseña.');
+        },
+      });
+  }
+
+  onVolverALogin(): void {
+    void this.router.navigate(['/login']);
+  }
+
+  onCerrar(): void {
+    void this.router.navigate(['/catalogo']);
   }
 }

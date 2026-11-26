@@ -1,15 +1,18 @@
 import { inject, Injectable } from '@angular/core';
-import type { Observable } from 'rxjs';
-import { AuthSessionService } from '../../../core/auth/auth-session.service';
-import type {
+import { Observable } from 'rxjs';
+import {
+  AuthSessionService,
   DatosRegistroApi,
   MensajeApi,
   RespuestaSesion,
 } from '../../../core/auth/auth-session.service';
-import type { CredencialesLogin, DatosRegistroCliente } from '../modelos/acceso-registro';
-import { MENSAJES_M01 } from '../modelos/acceso-registro';
+import {
+  CredencialesLogin,
+  DatosRegistroCliente,
+  MENSAJES_M01,
+} from '../modelos/acceso-registro';
 
-/** Servicio de M01: los componentes solo invocan estos métodos. */
+/** Servicio de M01. Los componentes solo invocan estos métodos. */
 @Injectable({ providedIn: 'root' })
 export class AccesoRegistroServicio {
   private readonly sesion = inject(AuthSessionService);

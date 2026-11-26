@@ -1,0 +1,80 @@
+<div class="modal" (keydown)="alPulsarTecla($event)">
+  <div class="modal__telon" (click)="cancelar.emit()" aria-hidden="true"></div>
+
+  <section class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="titulo-incidencia">
+    <h2 class="modal__titulo" id="titulo-incidencia">Registrar incidencia</h2>
+    <p class="modal__mensaje">
+      Se anota en la hoja; el movimiento de merma o de material real se deja para Flask.
+    </p>
+
+    <form [formGroup]="forma" (ngSubmit)="enviar()" class="modal__cuerpo">
+      <label class="campo">
+        SKU del pedido
+        <select
+          class="campo__entrada"
+          formControlName="sku"
+          autofocus
+          [attr.aria-invalid]="esInvalido('sku')"
+        >
+          @for (sku of skus(); track sku) {
+            <option [value]="sku">{{ sku }}</option>
+          }
+        </select>
+      </label>
+      @if (esInvalido('sku')) {
+        <p class="campo__error" role="alert">Selecciona un SKU del pedido.</p>
+      }
+
+      <label class="campo">
+        Tipo de incidencia
+        <select class="campo__entrada" formControlName="tipo">
+          @for (tipo of tipos; track tipo.valor) {
+            <option [value]="tipo.valor">{{ tipo.etiqueta }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="campo">
+        Cantidad afectada
+        <input
+          class="campo__entrada"
+          type="number"
+          min="1"
+          step="1"
+          formControlName="cantidad"
+          [attr.aria-invalid]="esInvalido('cantidad')"
+        />
+      </label>
+      @if (esInvalido('cantidad')) {
+        <p class="campo__error" role="alert">Captura un entero mayor a cero.</p>
+      }
+
+      <label class="campo">
+        Descripción
+        <textarea
+          class="campo__entrada"
+          formControlName="descripcion"
+          rows="3"
+          maxlength="240"
+          placeholder="Ej. Falta una unidad en la reserva de PL-CH-GR"
+          [attr.aria-invalid]="esInvalido('descripcion')"
+        ></textarea>
+      </label>
+      @if (esInvalido('descripcion')) {
+        <p class="campo__error" role="alert">Describe la incidencia con al menos 6 caracteres.</p>
+      }
+
+      <p class="modal__nota">
+        Si es un problema de calidad sin reposición, la línea quedará pendiente y el pedido
+        regresará a EN_PRODUCCION al resolverla.
+      </p>
+
+      <div class="modal__acciones">
+        <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">
+          Cancelar
+        </button>
+        <button type="submit" class="boton boton--primario">Registrar incidencia</button>
+      </div>
+    </form>
+  </section>
+</div>

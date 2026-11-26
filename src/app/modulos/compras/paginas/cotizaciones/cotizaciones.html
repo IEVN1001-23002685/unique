@@ -1,0 +1,142 @@
+<section class="vista">
+  <app-navegacion-compras />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 4 · Abastecimiento · M14</p>
+      <h1 class="titulo">Cotizaciones</h1>
+      <p class="subtitulo">
+        Comparador con una columna por proveedor: precio por presentación, plazo, vigencia y total.
+        Al elegir se genera una orden de compra en BORRADOR con el precio pactado.
+      </p>
+    </div>
+    <a routerLink="/compras" class="boton boton--secundario">Volver a requisiciones</a>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="campo selector">
+        Requisición a comparar
+        <select class="campo__entrada" [value]="seleccionId()" (change)="alCambiar($event)">
+          @if (seleccionId() === 0) {
+            <option value="0">Selecciona una requisición</option>
+          }
+          @for (requisicion of candidatas(); track requisicion.id) {
+            <option [value]="requisicion.id">
+              {{ requisicion.folio }} · {{ requisicion.prioridad }}
+            </option>
+          }
+        </select>
+      </label>
+      <button
+        type="button"
+        class="boton boton--primario"
+        [disabled]="!seleccionada()"
+        (click)="generar()"
+      >
+        Generar cotizaciones
+      </button>
+    </div>
+
+    @if (!seleccionada()) {
+      <div class="estado" role="status">
+        <strong>No hay requisiciones cotizables.</strong>
+        <p>Crea una requisición o cambia el filtro del listado principal.</p>
+      </div>
+    } @else if (cotizaciones().length === 0) {
+      <div class="estado" role="status">
+        <strong>{{ seleccionada()?.folio }} aún no tiene cotizaciones.</strong>
+        <p>Usa «Generar cotizaciones» para consultar precios y plazos del padrón de M13.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="comparador">
+          <caption class="sr-only">
+            Comparativo de cotizaciones para
+            {{
+              seleccionada()?.folio
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Material · presentación</th>
+              @for (columna of columnas(); track columna.cotizacion.id) {
+                <th scope="col">
+                  <span class="celda-principal">{{ columna.proveedor }}</span>
+                  <span class="celda-secundaria">{{ columna.cotizacion.folio }}</span>
+                  <span class="celda-secundaria">
+                    Plazo {{ columna.cotizacion.plazoDias }} días · vigencia
+                    {{ columna.cotizacion.vigenciaHasta ?? 'sin límite' }}
+                  </span>
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (linea of lineas(); track linea.id) {
+              <tr>
+                <th scope="row">
+                  {{ materialNombre(linea.materialId) }}
+                  <span class="celda-secundaria">
+                    Faltan {{ linea.cantidadBaseFaltante }} · sugeridas
+                    {{ linea.cantidadCompraSugerida }} {{ unidad(linea.materialId) }}(s)
+                  </span>
+                </th>
+                @for (columna of columnas(); track columna.cotizacion.id) {
+                  <td>
+                    @if (lineaDe(columna.cotizacion, linea.id); as oferta) {
+                      <span class="celda-numero">
+                        {{ oferta.cantidadCompra }} {{ unidad(linea.materialId) }}(s) ×
+                        {{
+                          oferta.precioUnitarioCompra
+                            | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+                        }}
+                      </span>
+                      <span class="celda-secundaria">
+                        Subtotal
+                        {{ oferta.subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                      </span>
+                    } @else {
+                      <span class="celda-secundaria">No surte este material</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>Total de la cotización</td>
+              @for (columna of columnas(); track columna.cotizacion.id) {
+                <td>
+                  <span class="comparador__total">
+                    {{ columna.cotizacion.total | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                  </span>
+                  <div class="acciones">
+                    <button
+                      type="button"
+                      class="accion"
+                      [disabled]="columna.cotizacion.estado === 'ELEGIDA'"
+                      (click)="elegir(columna.cotizacion)"
+                    >
+                      {{ columna.cotizacion.estado === 'ELEGIDA' ? 'Elegida' : 'Elegir' }}
+                    </button>
+                  </div>
+                  @if (columna.cotizacion.notas) {
+                    <span class="celda-secundaria">{{ columna.cotizacion.notas }}</span>
+                  }
+                </td>
+              }
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Compra normal: al menos dos proveedores cuando el material tiene alterno. Compra urgente:
+      orden directa al proveedor principal desde Requisiciones. Cambiar un precio en M13 no altera
+      las órdenes ya emitidas. Precios y plazos se reciben de Flask.
+    </p>
+  </div>
+</section>

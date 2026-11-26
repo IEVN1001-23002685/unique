@@ -1,9 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-/**
- * Estado visual compartido entre la barra de navegación de la tienda
- * y las páginas del catálogo. No hay llamadas a backend: es un filtro en memoria.
- */
+/** Estado compartido entre la barra de navegación y el catálogo; M03 lo envía como filtro `q`. */
 @Injectable({
   providedIn: 'root',
 })

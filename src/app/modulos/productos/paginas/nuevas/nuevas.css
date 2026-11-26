@@ -1,0 +1,103 @@
+.tarjetas {
+  display: grid;
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.prenda {
+  display: grid;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.prenda__visual {
+  display: grid;
+  place-items: center;
+  min-height: 190px;
+  background-color: var(--color-unique-lila);
+}
+
+.prenda__visual img {
+  width: 100%;
+  height: 190px;
+  object-fit: contain;
+}
+
+.prenda__sin-imagen {
+  color: var(--color-unique-texto-suave);
+  font-family: var(--font-interfaz);
+  font-size: 0.9rem;
+}
+
+.prenda__cuerpo {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.prenda__categoria {
+  margin: 0;
+  color: var(--color-unique-ciruela);
+  font-family: var(--font-interfaz);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.prenda__nombre {
+  margin: 0;
+  font-family: var(--font-titulo);
+  font-size: 1.25rem;
+}
+
+.prenda__descripcion {
+  margin: 0;
+  color: var(--color-unique-texto-suave);
+  font-size: 0.9rem;
+}
+
+.prenda__etiquetas,
+.prenda__costo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.prenda__etiquetas span {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background-color: var(--color-unique-rosa-lavanda);
+}
+
+.variables {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chips .chip {
+  font-size: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .tarjetas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .tarjetas {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .variables {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

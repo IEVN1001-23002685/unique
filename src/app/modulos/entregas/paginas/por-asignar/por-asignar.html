@@ -1,0 +1,155 @@
+<section class="vista">
+  <app-navegacion-entregas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M19 · Logística</p>
+      <h1 class="titulo">Por asignar</h1>
+      <p class="subtitulo">
+        Pedidos LISTO_ENVIO recibidos de M18. Ordena por CP para agrupar rutas, elige repartidor y
+        fecha programada; la guía se genera al confirmar la salida.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <a routerLink="/entregas/hoja-reparto" class="boton boton--secundario">Hoja de reparto</a>
+      <a routerLink="/entregas/seguimiento" class="boton boton--secundario">Seguimiento</a>
+    </div>
+  </div>
+
+  <div class="indicadores" aria-label="Indicadores de entregas">
+    <div class="indicador">
+      <span class="indicador__valor">{{ indicadores().porAsignar }}</span>
+      <span class="indicador__etiqueta">Por asignar</span>
+    </div>
+    <div class="indicador indicador--activo">
+      <span class="indicador__valor">{{ indicadores().enRuta }}</span>
+      <span class="indicador__etiqueta">En ruta</span>
+    </div>
+    <div class="indicador">
+      <span class="indicador__valor">{{ indicadores().entregadas }}</span>
+      <span class="indicador__etiqueta">Entregadas</span>
+    </div>
+    <div class="indicador indicador--error">
+      <span class="indicador__valor">{{ indicadores().alertas }}</span>
+      <span class="indicador__etiqueta">Alertas críticas</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Pedidos listos para envío</h2>
+      <span>CP, colonia y fecha prometida de venta_direccion (solo lectura)</span>
+    </div>
+
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Folio, cliente, colonia o CP"
+          aria-label="Buscar pedidos por asignar"
+        />
+      </label>
+      <label class="campo filtro">
+        Ordenar por
+        <select class="campo__entrada" [value]="orden()" (change)="alCambiarOrden($event)">
+          <option value="CP">CP (agrupa rutas)</option>
+          <option value="FECHA">Fecha prometida</option>
+        </select>
+      </label>
+    </div>
+
+    @if (!sinFiltros()) {
+      <p class="filtros">
+        <button type="button" class="boton boton--enlace" (click)="restablecer()">
+          Limpiar filtros
+        </button>
+      </p>
+    }
+
+    @if (servicio.porAsignar().length === 0) {
+      <div class="estado" role="status">
+        <strong>No hay pedidos por asignar.</strong>
+        <p>Los pedidos aparecen aquí cuando M18 termina el empaque y pasan a LISTO_ENVIO.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Ajusta la búsqueda por folio, cliente, colonia o código postal.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">
+            Pedidos LISTO_ENVIO pendientes de asignar
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Pedido / venta</th>
+              <th scope="col">Destinatario</th>
+              <th scope="col">CP y colonia</th>
+              <th scope="col">Fecha prometida</th>
+              <th scope="col">Prendas</th>
+              <th scope="col">Prioridad</th>
+              <th scope="col">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pedido of filtrados(); track pedido.folio) {
+              <tr>
+                <td data-etiqueta="Pedido">
+                  <span class="mono">{{ pedido.folio }}</span>
+                  <span class="celda-secundaria">Venta {{ pedido.ventaFolio }}</span>
+                </td>
+                <td data-etiqueta="Destinatario">
+                  <span class="celda-principal">{{ direccion(pedido).destinatario }}</span>
+                  <span class="celda-secundaria">{{ direccion(pedido).telefono }}</span>
+                </td>
+                <td data-etiqueta="CP y colonia">
+                  <span class="celda-principal">CP {{ direccion(pedido).cp }}</span>
+                  <span class="celda-secundaria">{{ direccion(pedido).colonia }}</span>
+                </td>
+                <td data-etiqueta="Fecha prometida">
+                  {{
+                    pedido.fechaPromesa
+                      ? (pedido.fechaPromesa | date: 'dd/MM/yyyy' : '' : 'es-MX')
+                      : 'Sin fecha'
+                  }}
+                </td>
+                <td data-etiqueta="Prendas">{{ piezas(pedido) }}</td>
+                <td data-etiqueta="Prioridad">
+                  <span class="prioridad" [class.prioridad--alta]="pedido.prioridad === 'ALTA'">
+                    {{ pedido.prioridad === 'ALTA' ? 'Alta' : 'Normal' }}
+                  </span>
+                </td>
+                <td data-etiqueta="Acción">
+                  <button type="button" class="boton boton--enlace" (click)="asignando.set(pedido)">
+                    Asignar
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Asignar crea la entrega en memoria con folio EN-AAAA-NNNNNN. La baja SALIDA_ENVIO en M12, el
+      paso a EN_REPARTO en M09 y la publicación de la guía en M06 requieren Flask.
+    </p>
+  </div>
+
+  @if (asignando(); as pedido) {
+    <app-modal-asignacion
+      [pedido]="pedido"
+      (asignar)="asignar($event)"
+      (cancelar)="asignando.set(null)"
+    />
+  }
+</section>

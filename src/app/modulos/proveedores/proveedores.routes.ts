@@ -33,9 +33,7 @@ export const PROVEEDORES_RUTAS: Routes = [
     path: ':id/materiales',
     title: 'Catálogo del proveedor · UNIQUE',
     loadComponent: () =>
-      import('./paginas/catalogo-proveedor/catalogo-proveedor').then(
-        (c) => c.CatalogoProveedor,
-      ),
+      import('./paginas/catalogo-proveedor/catalogo-proveedor').then((c) => c.CatalogoProveedor),
   },
   { path: '**', redirectTo: '' },
 ];

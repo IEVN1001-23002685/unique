@@ -23,6 +23,94 @@
   font-size: 0.875rem;
 }
 
+/* Filtros de M03: mismos controles píldora y paleta que el desplegable de categorías. */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: -1rem 0 2rem;
+}
+
+.filtro {
+  display: inline-flex;
+  align-items: center;
+}
+
+.filtro__control {
+  min-height: 2.75rem;
+  border: 2px solid var(--color-morado-oscuro);
+  border-radius: 9999px;
+  background-color: var(--color-lavanda-claro);
+  padding: 0.5rem 1rem;
+  color: var(--color-morado-oscuro);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  max-width: 100%;
+}
+
+.filtro__control:focus-visible,
+.filtro__casilla:focus-visible,
+.filtro__limpiar:focus-visible {
+  outline: 3px solid var(--color-unique-orquidea);
+  outline-offset: 2px;
+}
+
+.filtro--casilla {
+  gap: 0.5rem;
+  border: 2px solid var(--color-morado-oscuro);
+  border-radius: 9999px;
+  background-color: var(--color-lavanda-claro);
+  padding: 0.5rem 1rem;
+  color: var(--color-morado-oscuro);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  min-height: 2.75rem;
+}
+
+.filtro__casilla {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-morado-profundo);
+}
+
+.filtro__limpiar {
+  border: 0;
+  background: none;
+  padding: 0.25rem;
+  color: var(--color-morado-primario);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.aviso-sin-conexion {
+  margin: 0 0 1.5rem;
+  border-radius: 12px;
+  background-color: var(--color-unique-adv-suave);
+  padding: 0.75rem 1rem;
+  color: #6b4c08;
+  font-size: 0.875rem;
+}
+
+.aviso-sin-conexion p {
+  margin: 0;
+}
+
+.aviso-sin-conexion button {
+  margin-top: 0.5rem;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+
 @media (min-width: 640px) {
   .catalogo {
     padding-inline: 1.5rem;

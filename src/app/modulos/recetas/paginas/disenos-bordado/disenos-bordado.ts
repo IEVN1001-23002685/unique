@@ -1,6 +1,13 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import {
+  FormArray,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
@@ -9,6 +16,20 @@ import { NavegacionRecetas } from '../../componentes/navegacion-recetas/navegaci
 import type { DatosDiseno, DisenoBordado, HiloDiseno } from '../../modelos/receta';
 import { RecetasServicio } from '../../servicios/recetas-servicio';
 import { redondear } from '../../servicios/calculos-receta';
+
+interface FormaHilo {
+  materialCodigo: FormControl<string>;
+  metrosPorAplicacion: FormControl<number>;
+}
+
+interface FormaDiseno {
+  nombre: FormControl<string>;
+  anchoCm: FormControl<number>;
+  altoCm: FormControl<number>;
+  notas: FormControl<string>;
+  activo: FormControl<boolean>;
+  hilos: FormArray<FormGroup<FormaHilo>>;
+}
 
 @Component({
   selector: 'app-disenos-bordado',
@@ -31,23 +52,22 @@ export class DisenosBordado {
     return id === null ? undefined : this.servicio.disenoDe(id);
   });
 
-  protected readonly hilosDiseno = this.servicio.etiquetasHilo();
+  protected readonly hilosDiseno = computed(() => this.servicio.etiquetasHilo());
 
-  protected readonly formas = this.fb.nonNullable.group({
-    nombre: ['', [Validators.required, Validators.minLength(3)]],
-    anchoCm: [0, [Validators.required, Validators.min(0.1)]],
-    altoCm: [0, [Validators.required, Validators.min(0.1)]],
-    notas: [''],
-    activo: [true],
-    hilos: this.fb.nonNullable.array([]),
+  protected readonly formas = this.fb.group<FormaDiseno>({
+    nombre: this.fb.nonNullable.control('', [Validators.required, Validators.minLength(3)]),
+    anchoCm: this.fb.nonNullable.control(0, [Validators.required, Validators.min(0.1)]),
+    altoCm: this.fb.nonNullable.control(0, [Validators.required, Validators.min(0.1)]),
+    notas: this.fb.nonNullable.control(''),
+    activo: this.fb.nonNullable.control(true),
+    hilos: this.fb.array<FormGroup<FormaHilo>>([]),
   });
 
   private readonly valores = signal(this.formas.getRawValue());
 
   protected readonly totalMetros = computed(() =>
     redondear(
-      this.valores()
-        .hilos.reduce((suma, hilo) => suma + Number(hilo.metrosPorAplicacion), 0),
+      this.valores().hilos.reduce((suma, hilo) => suma + Number(hilo.metrosPorAplicacion), 0),
       3,
     ),
   );
@@ -66,16 +86,19 @@ export class DisenosBordado {
     if (id === null) {
       return [];
     }
-    return this.servicio.recetas().filter((receta) =>
-      receta.bordados.some((bordado) => bordado.disenoId === id),
-    );
+    return this.servicio
+      .recetas()
+      .filter((receta) => receta.bordados.some((bordado) => bordado.disenoId === id));
   });
 
   constructor() {
     this.formas.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
       this.valores.set(this.formas.getRawValue());
     });
-    this.seleccionar(this.servicio.disenos()[0]?.id ?? null);
+    this.servicio.recargar().subscribe({
+      next: () => this.seleccionar(this.servicio.disenos()[0]?.id ?? null),
+      error: () => this.avisos.mostrar('error', 'No fue posible cargar los diseños desde Flask.'),
+    });
   }
 
   protected seleccionar(id: number | null): void {
@@ -102,13 +125,16 @@ export class DisenosBordado {
     this.creando.set(true);
   }
 
-  private hiloForm(hilo?: HiloDiseno) {
-    return this.fb.nonNullable.group({
-      materialCodigo: [hilo?.materialCodigo ?? this.hilosDiseno[0]?.codigo ?? '', Validators.required],
-      metrosPorAplicacion: [
-        hilo?.metrosPorAplicacion ?? 0,
-        [Validators.required, Validators.min(0)],
-      ],
+  private hiloForm(hilo?: HiloDiseno): FormGroup<FormaHilo> {
+    return this.fb.group<FormaHilo>({
+      materialCodigo: this.fb.nonNullable.control(
+        hilo?.materialCodigo ?? this.hilosDiseno()[0]?.codigo ?? '',
+        Validators.required,
+      ),
+      metrosPorAplicacion: this.fb.nonNullable.control(hilo?.metrosPorAplicacion ?? 0, [
+        Validators.required,
+        Validators.min(0),
+      ]),
     });
   }
 
@@ -129,7 +155,10 @@ export class DisenosBordado {
     this.intento.set(true);
     if (this.formas.invalid) {
       this.formas.markAllAsTouched();
-      this.avisos.mostrar('error', 'Revisa el nombre, las dimensiones y los metros de hilo capturados.');
+      this.avisos.mostrar(
+        'error',
+        'Revisa el nombre, las dimensiones y los metros de hilo capturados.',
+      );
       return;
     }
     const raw = this.formas.getRawValue();
@@ -145,11 +174,12 @@ export class DisenosBordado {
       })),
     };
     const id = this.seleccionado();
-    const resultado = this.servicio.guardarDiseno(datos, id ?? undefined);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    if (resultado.ok && resultado.disenoId !== undefined) {
-      this.seleccionar(resultado.disenoId);
-    }
+    this.servicio.guardarDiseno(datos, id ?? undefined).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+      if (resultado.ok && resultado.disenoId !== undefined) {
+        this.seleccionar(resultado.disenoId);
+      }
+    });
   }
 
   protected digitalizar(): void {
@@ -157,11 +187,12 @@ export class DisenosBordado {
     if (id === null) {
       return;
     }
-    const resultado = this.servicio.digitalizarDiseno(id);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
-    if (resultado.ok) {
-      this.seleccionar(id);
-    }
+    this.servicio.digitalizarDiseno(id).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
+      if (resultado.ok) {
+        this.seleccionar(id);
+      }
+    });
   }
 
   protected pedirEliminacion(diseno: DisenoBordado): void {
@@ -173,11 +204,12 @@ export class DisenosBordado {
     if (!diseno) {
       return;
     }
-    const resultado = this.servicio.eliminarDiseno(diseno.id);
-    this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
+    this.servicio.eliminarDiseno(diseno.id).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
+      if (resultado.ok) {
+        this.seleccionar(this.servicio.disenos()[0]?.id ?? null);
+      }
+    });
     this.eliminando.set(null);
-    if (resultado.ok) {
-      this.seleccionar(this.servicio.disenos()[0]?.id ?? null);
-    }
   }
 }

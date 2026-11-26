@@ -1,0 +1,229 @@
+<section class="vista">
+  <app-navegacion-preparacion />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M18 · Logística</p>
+      <h1 class="titulo">Incidencias</h1>
+      <p class="subtitulo">
+        Diferencias de SKU, cantidad o calidad detectadas al surtir y verificar. Una incidencia de
+        calidad sin reposición devuelve el pedido a EN_PRODUCCION.
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <a routerLink="/preparacion" class="boton boton--secundario">Ir a la cola</a>
+    </div>
+  </div>
+
+  <div class="indicadores" aria-label="Indicadores de incidencias">
+    <div class="indicador">
+      <span class="indicador__valor">{{ indicadores().total }}</span>
+      <span class="indicador__etiqueta">Registradas</span>
+    </div>
+    <div class="indicador indicador--adv">
+      <span class="indicador__valor">{{ indicadores().abiertas }}</span>
+      <span class="indicador__etiqueta">Abiertas</span>
+    </div>
+    <div class="indicador indicador--activo">
+      <span class="indicador__valor">{{ indicadores().resueltas }}</span>
+      <span class="indicador__etiqueta">Resueltas</span>
+    </div>
+    <div class="indicador indicador--error">
+      <span class="indicador__valor">{{ indicadores().produccion }}</span>
+      <span class="indicador__etiqueta">Vuelven a producción</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Registro de incidencias</h2>
+      <span>Solo demostración: no se crean mermas ni movimientos reales</span>
+    </div>
+
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Folio, pedido, SKU o descripción"
+          aria-label="Buscar incidencias"
+        />
+      </label>
+      <label class="campo filtro">
+        Estado
+        <select class="campo__entrada" [value]="estado()" (change)="alCambiarEstado($event)">
+          @for (opcion of estados; track opcion.valor) {
+            <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo filtro">
+        Tipo
+        <select class="campo__entrada" [value]="tipo()" (change)="alCambiarTipo($event)">
+          @for (opcion of tipos; track opcion.valor) {
+            <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    @if (!sinFiltros()) {
+      <p class="filtros">
+        <button type="button" class="boton boton--enlace" (click)="restablecer()">
+          Limpiar filtros
+        </button>
+      </p>
+    }
+
+    @if (servicio.incidencias().length === 0) {
+      <div class="estado" role="status">
+        <strong>Aún no hay incidencias.</strong>
+        <p>Se registran desde la hoja de preparación al detectar una diferencia.</p>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin coincidencias.</strong>
+        <p>Ajusta la búsqueda, el estado o el tipo de incidencia.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla tabla-incidencias">
+          <caption class="sr-only">
+            Incidencias de preparación filtradas
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Folio</th>
+              <th scope="col">Pedido / hoja</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">SKU</th>
+              <th scope="col">Descripción</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (incidencia of filtrados(); track incidencia.id) {
+              <tr>
+                <td data-etiqueta="Folio">
+                  <span class="mono">{{ incidencia.folio }}</span>
+                </td>
+                <td data-etiqueta="Pedido">
+                  <span class="mono">{{ incidencia.pedidoFolio }}</span>
+                  <span class="celda-secundaria">
+                    <a class="accion" [routerLink]="['/preparacion', incidencia.preparacionFolio]">
+                      {{ incidencia.preparacionFolio }}
+                    </a>
+                  </span>
+                </td>
+                <td data-etiqueta="Tipo">{{ etiquetaTipo(incidencia.tipo) }}</td>
+                <td data-etiqueta="SKU">
+                  <span class="mono">{{ incidencia.sku }}</span>
+                </td>
+                <td data-etiqueta="Descripción">
+                  <span class="celda-principal">{{ incidencia.descripcion }}</span>
+                  @if (incidencia.resolucion) {
+                    <span class="celda-secundaria">Resolución: {{ incidencia.resolucion }}</span>
+                  }
+                </td>
+                <td data-etiqueta="Estado">
+                  <span
+                    class="chip"
+                    [class.chip--exito]="incidencia.estado === 'RESUELTA'"
+                    [class.chip--adv]="incidencia.estado === 'ABIERTA'"
+                    [class.chip--error]="incidencia.estado === 'PENDIENTE_PRODUCCION'"
+                  >
+                    <span class="chip__punto" aria-hidden="true"></span>
+                    {{ etiquetaEstado(incidencia.estado) }}
+                  </span>
+                </td>
+                <td data-etiqueta="Fecha">
+                  {{ incidencia.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Acción">
+                  @if (incidencia.estado === 'ABIERTA') {
+                    <button
+                      type="button"
+                      class="boton boton--enlace"
+                      (click)="abrirResolucion(incidencia.id)"
+                    >
+                      Resolver
+                    </button>
+                  } @else {
+                    <span class="celda-secundaria">Cerrada</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (actual(); as incidencia) {
+      <section class="resolucion" aria-labelledby="titulo-resolucion">
+        <div class="bloque__titulo">
+          <h3 id="titulo-resolucion">Resolver {{ incidencia.folio }}</h3>
+          <button type="button" class="boton boton--enlace" (click)="resolviendo.set(null)">
+            Cerrar
+          </button>
+        </div>
+        <p class="resolucion__contexto">
+          {{ etiquetaTipo(incidencia.tipo) }} · {{ incidencia.sku }} · {{ incidencia.descripcion }}
+        </p>
+        @if (incidencia.tipo === 'CALIDAD') {
+          <fieldset class="opciones">
+            <legend>¿Hay otra unidad disponible?</legend>
+            <label>
+              <input
+                type="radio"
+                name="reposicion"
+                [checked]="conReposicion()"
+                (change)="conReposicion.set(true)"
+              />
+              Sí: se surte otra del inventario
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="reposicion"
+                [checked]="!conReposicion()"
+                (change)="conReposicion.set(false)"
+              />
+              No: la línea queda pendiente y el pedido vuelve a producción
+            </label>
+          </fieldset>
+        }
+        <form [formGroup]="forma" (ngSubmit)="resolver()" class="resolucion__formulario">
+          <label class="campo">
+            Cómo se resolvió
+            <textarea
+              class="campo__entrada"
+              formControlName="resolucion"
+              rows="2"
+              maxlength="240"
+              placeholder="Ej. Se repuso la unidad y se separó la defectuosa para merma"
+              [attr.aria-invalid]="resolucionInvalida()"
+            ></textarea>
+          </label>
+          <button type="submit" class="boton boton--primario">Guardar resolución</button>
+        </form>
+        @if (resolucionInvalida()) {
+          <p class="campo__error" role="alert">Escribe al menos 4 caracteres.</p>
+        }
+      </section>
+    }
+
+    <p class="nota nota--adv">
+      Si no hay otra unidad, la línea queda pendiente y el pedido regresaría a EN_PRODUCCION
+      (M09/M16). La unidad defectuosa se envía a merma en etapa ALMACEN (M17). Ambos movimientos
+      requieren Flask.
+    </p>
+  </div>
+</section>

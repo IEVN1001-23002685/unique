@@ -1,0 +1,112 @@
+<section class="pagina">
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Clientes registrados</h2>
+      <span
+        >{{ visibles().length }} de {{ servicio.clientes().length }} · {{ totalPendiente() }} pagos
+        pendientes</span
+      >
+    </div>
+    <label class="campo buscador">
+      Buscar por nombre, correo o teléfono
+      <input
+        class="campo__entrada"
+        type="search"
+        placeholder="Ej. María Fernanda"
+        [ngModel]="busqueda()"
+        (ngModelChange)="busqueda.set($event)"
+      />
+    </label>
+  </div>
+
+  <div class="tarjeta tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th scope="col">Cliente</th>
+          <th scope="col">Acceso</th>
+          <th scope="col">Compras</th>
+          <th scope="col">Total en compras</th>
+          <th scope="col">Pagos pendientes</th>
+          <th scope="col">Devoluciones</th>
+          <th scope="col">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (cliente of visibles(); track cliente.id) {
+          <tr>
+            <td data-etiqueta="Cliente">
+              <span class="celda-principal">{{ cliente.nombre }}</span>
+              <span class="celda-secundaria">{{ cliente.correo }}</span>
+            </td>
+            <td data-etiqueta="Acceso">
+              <span
+                class="chip"
+                [class.chip--activa]="cliente.acceso === 'REGISTRADO'"
+                [class.chip--sin-acceso]="cliente.acceso === 'SIN_ACCESO'"
+              >
+                <span class="chip__punto" aria-hidden="true"></span>
+                {{ cliente.acceso === 'REGISTRADO' ? 'Registrado' : 'Sin acceso' }}
+              </span>
+            </td>
+            <td data-etiqueta="Compras">{{ cliente.compras }}</td>
+            <td data-etiqueta="Total">{{ formatoMXN(cliente.totalCompras) }}</td>
+            <td data-etiqueta="Pagos pendientes">{{ cliente.pagosPendientes }}</td>
+            <td data-etiqueta="Devoluciones">{{ cliente.devolucionesDemo }}</td>
+            <td data-etiqueta="Detalle">
+              <button
+                type="button"
+                class="boton boton--enlace"
+                [attr.aria-expanded]="seleccionado() === cliente.id"
+                (click)="alternarDetalle(cliente.id)"
+              >
+                {{ seleccionado() === cliente.id ? 'Ocultar' : 'Ver historial' }}
+              </button>
+            </td>
+          </tr>
+          @if (seleccionado() === cliente.id) {
+            <tr class="fila-detalle">
+              <td colspan="7" data-etiqueta="Historial">
+                <div class="detalle">
+                  <p class="detalle__titulo">Historial de compras y cuenta simulada</p>
+                  @if (cliente.historial.length === 0) {
+                    <p class="vacio">
+                      Este cliente no tiene compras registradas en la demo de M08.
+                    </p>
+                  } @else {
+                    <ul class="historial">
+                      @for (compra of cliente.historial; track compra.folio) {
+                        <li>
+                          <span class="mono">{{ compra.folio }}</span>
+                          <span>{{ fecha(compra.fecha) }}</span>
+                          <strong>{{ formatoMXN(compra.total) }}</strong>
+                          <span class="celda-secundaria">{{ compra.estadoPago }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
+                  <p class="detalle__saldo">
+                    Saldo de cuenta simulada:
+                    <strong>{{ formatoMXN(cliente.saldoSimulado) }}</strong>
+                  </p>
+                </div>
+              </td>
+            </tr>
+          }
+        } @empty {
+          <tr>
+            <td colspan="7">
+              <p class="vacio">No hay clientes que coincidan con la búsqueda.</p>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class="nota nota-final">
+    Esta pantalla es de consulta: no se puede editar la cuenta del cliente ni modificar sus compras,
+    pagos o devoluciones. El saldo es una cuenta simulada definida en parámetros; no representa
+    dinero real.
+  </p>
+</section>

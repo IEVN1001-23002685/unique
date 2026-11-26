@@ -5,5 +5,5 @@
   display: flex;
   min-height: 100dvh;
   flex-direction: column;
-  background-color: #ffffff;
+  background-color: var(--color-unique-lila, #f2d5ed);
 }

@@ -20,8 +20,7 @@
         <p>
           {{ proveedoresEnRevision().length }}
           {{ proveedoresEnRevision().length === 1 ? 'proveedor tiene' : 'proveedores tienen' }}
-          menos del {{ minimoATiempo }}% de entregas a tiempo. Revisa su desempeño antes de
-          cotizar.
+          menos del {{ minimoATiempo }}% de entregas a tiempo. Revisa su desempeño antes de cotizar.
         </p>
       </div>
     </div>
@@ -39,11 +38,7 @@
         />
       </label>
       <label class="interruptor">
-        <input
-          type="checkbox"
-          [checked]="soloRevision()"
-          (change)="alCambiarRevision($event)"
-        />
+        <input type="checkbox" [checked]="soloRevision()" (change)="alCambiarRevision($event)" />
         Solo en revisión
       </label>
     </div>
@@ -74,7 +69,7 @@
                   ></div>
                 </div>
                 <span class="barra__valor">
-                  {{ (fila.evaluacion?.entregasATiempoPct ?? 0) | number: '1.1-1' : 'es-MX' }}%
+                  {{ fila.evaluacion?.entregasATiempoPct ?? 0 | number: '1.1-1' : 'es-MX' }}%
                 </span>
               </div>
               <div class="barra">
@@ -86,7 +81,7 @@
                   ></div>
                 </div>
                 <span class="barra__valor">
-                  {{ (fila.evaluacion?.aceptacionPct ?? 0) | number: '1.1-1' : 'es-MX' }}%
+                  {{ fila.evaluacion?.aceptacionPct ?? 0 | number: '1.1-1' : 'es-MX' }}%
                 </span>
               </div>
             </div>
@@ -101,7 +96,9 @@
       <h2 class="subtitulo-seccion">Detalle de las métricas</h2>
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Detalle de evaluación por proveedor</caption>
+          <caption class="sr-only">
+            Detalle de evaluación por proveedor
+          </caption>
           <thead>
             <tr>
               <th scope="col">Proveedor</th>
@@ -123,25 +120,28 @@
                   <span class="celda-secundaria">{{ fila.proveedor.rfc ?? 'Sin RFC' }}</span>
                 </td>
                 <td data-etiqueta="Órdenes recibidas">
-                  {{ (fila.evaluacion?.ordenesRecibidas ?? 0) | number: '1.0-0' : 'es-MX' }}
+                  {{ fila.evaluacion?.ordenesRecibidas ?? 0 | number: '1.0-0' : 'es-MX' }}
                 </td>
                 <td data-etiqueta="Entregas a tiempo">
-                  {{ (fila.evaluacion?.ordenesATiempo ?? 0) | number: '1.0-0' : 'es-MX' }}
+                  {{ fila.evaluacion?.ordenesATiempo ?? 0 | number: '1.0-0' : 'es-MX' }}
                 </td>
                 <td data-etiqueta="% a tiempo">
-                  <span class="medicion" [attr.data-nivel]="nivel(fila.evaluacion?.entregasATiempoPct)">
+                  <span
+                    class="medicion"
+                    [attr.data-nivel]="nivel(fila.evaluacion?.entregasATiempoPct)"
+                  >
                     <span class="medicion__punto" aria-hidden="true"></span>
-                    {{ (fila.evaluacion?.entregasATiempoPct ?? 0) | number: '1.1-1' : 'es-MX' }}%
+                    {{ fila.evaluacion?.entregasATiempoPct ?? 0 | number: '1.1-1' : 'es-MX' }}%
                   </span>
                 </td>
                 <td data-etiqueta="Cantidad recibida">
-                  {{ (fila.evaluacion?.cantidadRecibida ?? 0) | number: '1.0-0' : 'es-MX' }}
+                  {{ fila.evaluacion?.cantidadRecibida ?? 0 | number: '1.0-0' : 'es-MX' }}
                 </td>
                 <td data-etiqueta="Cantidad aceptada">
-                  {{ (fila.evaluacion?.cantidadAceptada ?? 0) | number: '1.0-0' : 'es-MX' }}
+                  {{ fila.evaluacion?.cantidadAceptada ?? 0 | number: '1.0-0' : 'es-MX' }}
                 </td>
                 <td data-etiqueta="% aceptación">
-                  {{ (fila.evaluacion?.aceptacionPct ?? 0) | number: '1.1-1' : 'es-MX' }}%
+                  {{ fila.evaluacion?.aceptacionPct ?? 0 | number: '1.1-1' : 'es-MX' }}%
                 </td>
                 <td data-etiqueta="Estatus">
                   <app-chip-estatus [estatus]="fila.proveedor.estatus" />
@@ -162,10 +162,10 @@
       </div>
 
       <p class="nota">
-        % a tiempo = órdenes recibidas en o antes de la fecha prometida ÷ órdenes recibidas.
-        % aceptación = cantidad aceptada ÷ cantidad recibida. Un proveedor con menos del
-        {{ minimoATiempo }}% a tiempo pasa a EN_REVISION y genera una alerta informativa. Cifras de
-        demostración: el cálculo real se conectará a Flask.
+        % a tiempo = órdenes recibidas en o antes de la fecha prometida ÷ órdenes recibidas. %
+        aceptación = cantidad aceptada ÷ cantidad recibida. Un proveedor con menos del
+        {{ minimoATiempo }}% a tiempo pasa a EN_REVISION y genera la alerta
+        PROVEEDOR_EN_REVISION. Estas cifras provienen de la evaluación calculada por Flask.
       </p>
     }
   </div>

@@ -1,0 +1,50 @@
+.metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e7d7e8;
+  border-left: 5px solid var(--color-unique-ciruela);
+  border-radius: 16px;
+  background-color: #ffffff;
+  box-shadow: 0 6px 18px rgb(84 45 89 / 0.06);
+}
+
+.metrica[data-tono='ROJO'] {
+  border-left-color: var(--color-unique-error);
+}
+.metrica[data-tono='AMBAR'] {
+  border-left-color: var(--color-unique-adv);
+}
+.metrica[data-tono='VERDE'] {
+  border-left-color: var(--color-unique-exito);
+}
+.metrica[data-tono='INFO'] {
+  border-left-color: var(--color-unique-info);
+}
+.metrica[data-tono='NEUTRO'] {
+  border-left-color: var(--color-unique-orquidea);
+}
+
+.metrica__etiqueta {
+  color: var(--color-unique-texto-suave);
+  font-family: var(--font-interfaz);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.metrica__valor {
+  color: var(--color-unique-morado);
+  font-family: var(--font-titulo);
+  font-size: clamp(1.25rem, 2.4vw, 1.7rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.metrica__detalle {
+  color: var(--color-unique-texto-suave);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}

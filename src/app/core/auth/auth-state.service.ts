@@ -12,17 +12,12 @@ export interface UsuarioSesion {
   estado_cuenta?: string;
 }
 
-/**
- * Respuesta de sesión con la misma forma pública que la futura API.
- * El token de esta rama es una cadena de demostración: no es un JWT real.
- */
 export interface RespuestaSesion {
   access_token: string;
   usuario: UsuarioSesion;
-  expira_en_minutos?: number;
 }
 
-/** Estado de sesión solo en memoria: no escribe en localStorage ni sessionStorage. */
+/** Estado de sesión en memoria. Ningún token se escribe en localStorage ni sessionStorage. */
 @Injectable({ providedIn: 'root' })
 export class AuthStateService {
   private readonly tokenInterno = signal<string | null>(null);
@@ -30,13 +25,11 @@ export class AuthStateService {
 
   readonly token = this.tokenInterno.asReadonly();
   readonly usuario = this.usuarioInterno.asReadonly();
-  readonly autenticado = computed(
-    () => this.tokenInterno() !== null && this.usuarioInterno() !== null,
-  );
+  readonly autenticado = computed(() => !!this.tokenInterno() && !!this.usuarioInterno());
 
   guardarSesion(respuesta: RespuestaSesion): void {
     this.tokenInterno.set(respuesta.access_token);
-    this.usuarioInterno.set({ ...respuesta.usuario });
+    this.usuarioInterno.set(respuesta.usuario);
   }
 
   actualizarToken(token: string): void {
@@ -52,8 +45,10 @@ export class AuthStateService {
     return this.usuarioInterno()?.rol ?? null;
   }
 
-  puede(roles: RolUsuario[]): boolean {
+  puede(roles: readonly RolUsuario[]): boolean {
+    if (!roles.length) return true;
     const rol = this.rol();
-    return rol !== null && roles.includes(rol);
+    if (!rol) return false;
+    return roles.includes(rol) || (rol === 'ADMIN' && roles.includes('OPERATIVO'));
   }
 }

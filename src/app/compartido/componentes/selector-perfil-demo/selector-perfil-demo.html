@@ -1,0 +1,17 @@
+<div class="selector-perfil">
+  <span class="selector-perfil__etiqueta">Perfil de demostración</span>
+  <div class="selector-perfil__opciones" role="group" aria-label="Perfil de demostración">
+    @for (perfil of perfilDemo.perfiles; track perfil) {
+      <button
+        type="button"
+        class="selector-perfil__boton"
+        [class.selector-perfil__boton--activo]="perfilDemo.perfil() === perfil"
+        [attr.aria-pressed]="perfilDemo.perfil() === perfil"
+        (click)="perfilDemo.seleccionar(perfil)"
+      >
+        {{ perfil }}
+      </button>
+    }
+  </div>
+  <small class="selector-perfil__nota">Solo cambia la visibilidad; no es autenticación.</small>
+</div>

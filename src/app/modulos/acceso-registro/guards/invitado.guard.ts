@@ -1,6 +1,5 @@
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
-import type { CanActivateFn } from '@angular/router';
+import { CanActivateFn, Router } from '@angular/router';
 import { AuthStateService } from '../../../core/auth/auth-state.service';
 import { rutaDestinoPorRol } from '../modelos/acceso-registro';
 
@@ -10,5 +9,5 @@ export const invitadoGuard: CanActivateFn = () => {
   const router = inject(Router);
   const rol = estado.rol();
 
-  return rol === null ? true : router.createUrlTree([rutaDestinoPorRol(rol)]);
+  return rol ? router.createUrlTree([rutaDestinoPorRol(rol)]) : true;
 };

@@ -59,7 +59,7 @@ export interface Pedido {
   fechaPromesa: string | null;
   entregadoEn: string | null;
   prioridad: PrioridadPedido;
-  estadoPago: EstadoPagoPedido;
+  estadoPago: EstadoPagoPedido | null;
   canceladoEn: string | null;
   motivoCancelacion: string | null;
   canceladoPor: string | null;

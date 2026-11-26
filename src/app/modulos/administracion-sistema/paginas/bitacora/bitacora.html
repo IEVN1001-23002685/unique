@@ -1,0 +1,93 @@
+<section class="pagina">
+  <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="aplicar()">
+    <div class="bloque__titulo">
+      <h2>Filtros de auditoría</h2>
+      <span>{{ visibles().length }} de {{ servicio.bitacora().length }} registros</span>
+    </div>
+    <div class="filtros">
+      <label class="campo">
+        Usuario
+        <input class="campo__entrada" formControlName="usuario" placeholder="Ej. Paola" />
+      </label>
+      <label class="campo">
+        Entidad
+        <select class="campo__entrada" formControlName="entidad">
+          <option value="">Todas</option>
+          @for (entidad of entidades(); track entidad) {
+            <option [value]="entidad">{{ entidad }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Desde
+        <input class="campo__entrada" type="date" formControlName="desde" />
+      </label>
+      <label class="campo">
+        Hasta
+        <input class="campo__entrada" type="date" formControlName="hasta" />
+      </label>
+      <label class="campo campo--texto">
+        Texto en acción o detalle
+        <input
+          class="campo__entrada"
+          type="search"
+          formControlName="texto"
+          placeholder="Ej. parametro"
+        />
+      </label>
+    </div>
+    @if (errorRango(); as error) {
+      <p class="nota nota--adv error-servicio">{{ error }}</p>
+    }
+    <div class="acciones acciones--form">
+      <button type="submit" class="boton boton--primario">Aplicar filtros</button>
+      <button type="button" class="boton boton--secundario" (click)="limpiar()">Limpiar</button>
+    </div>
+  </form>
+
+  <div class="tarjeta tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th scope="col">Fecha</th>
+          <th scope="col">Usuario</th>
+          <th scope="col">Acción</th>
+          <th scope="col">Entidad</th>
+          <th scope="col">Detalle</th>
+          <th scope="col">IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (registro of visibles(); track registro.id) {
+          <tr>
+            <td data-etiqueta="Fecha">{{ fecha(registro.fecha) }}</td>
+            <td data-etiqueta="Usuario">{{ registro.usuario }}</td>
+            <td data-etiqueta="Acción">
+              <span class="mono">{{ registro.accion }}</span>
+            </td>
+            <td data-etiqueta="Entidad">
+              <span class="celda-principal">{{ registro.entidad }}</span>
+              @if (registro.entidadId !== null) {
+                <span class="celda-secundaria mono">{{ registro.entidadId }}</span>
+              }
+            </td>
+            <td data-etiqueta="Detalle">{{ registro.detalle }}</td>
+            <td data-etiqueta="IP">{{ registro.ip }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6">
+              <p class="vacio">No hay registros que coincidan con los filtros.</p>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class="nota nota-final">
+    La bitácora es de solo lectura: no se pueden editar ni eliminar registros. Los eventos que
+    ocurren en esta demo se agregan al final de la lista; Flask conservará la secuencia, el usuario
+    autenticado y la IP reales.
+  </p>
+</section>

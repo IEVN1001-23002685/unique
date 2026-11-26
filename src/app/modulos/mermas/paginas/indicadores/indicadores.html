@@ -1,0 +1,282 @@
+<div class="vista">
+  <header class="cabecera">
+    <div>
+      <p class="eyebrow">M17 · Mermas · Analítica</p>
+      <h1 class="titulo">Indicadores de merma</h1>
+      <p class="subtitulo">
+        Merma de producto y de materiales contra la meta menor al {{ meta() }} %, distribución por
+        etapa, causa, prenda y material, y evolución mensual. Vista preparada para el Administrador.
+      </p>
+    </div>
+    <a routerLink="/mermas" class="boton boton--enlace">Volver al historial</a>
+  </header>
+
+  <app-navegacion-mermas />
+
+  @if (esAdministrador()) {
+    <p class="nota">
+      Cifras calculadas por Flask desde los movimientos de inventario y la vista de mermas. Los
+      denominadores son acumulados: unidades producidas por M16 y material consumido por M15, no un
+      periodo mensual cerrado.
+    </p>
+
+  <div class="indicadores">
+    <article class="tarjeta indicador" [attr.data-tono]="tonoMeta(datos().mermaProductoPct)">
+      <span class="indicador__numero"
+        >{{ datos().mermaProductoPct | number: '1.0-2' : 'es-MX' }}%</span
+      >
+      <span class="indicador__etiqueta">Merma de producto</span>
+      <span class="indicador__detalle">
+        {{ datos().cantidadProducto }} de {{ datos().referenciaProducto }} piezas del periodo
+      </span>
+    </article>
+    <article class="tarjeta indicador" [attr.data-tono]="tonoMeta(datos().mermaMaterialPct)">
+      <span class="indicador__numero"
+        >{{ datos().mermaMaterialPct | number: '1.0-2' : 'es-MX' }}%</span
+      >
+      <span class="indicador__etiqueta">Merma de materiales (m²)</span>
+      <span class="indicador__detalle">
+        {{ datos().cantidadMaterial }} de {{ datos().referenciaMaterial }} m² consumidos
+      </span>
+    </article>
+    <article class="tarjeta indicador" data-tono="info">
+      <span class="indicador__numero">{{
+        datos().costoPerdidoMes | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+      }}</span>
+      <span class="indicador__etiqueta">Costo perdido del periodo</span>
+      <span class="indicador__detalle"
+        >Total {{ datos().costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</span
+      >
+    </article>
+    <article class="tarjeta indicador">
+      <span class="indicador__numero">{{ datos().totalRegistros }}</span>
+      <span class="indicador__etiqueta">Registros analizados</span>
+      <span class="indicador__detalle">Periodo {{ datos().periodo }} · reversos excluidos</span>
+    </article>
+  </div>
+
+  <section class="tarjeta bloque" aria-labelledby="titulo-alertas">
+    <h2 class="titulo-section" id="titulo-alertas">Alertas MERMA_ALTA</h2>
+    @if (datos().alertas.length > 0) {
+      @for (alerta of datos().alertas; track alerta.id) {
+        <div class="alerta" role="status">
+          <span>
+            <strong>{{ alerta.etiqueta }}</strong>
+            <span class="alerta__detalle">{{ alerta.detalle }}</span>
+          </span>
+          <span class="etiqueta etiqueta--error"
+            >{{ alerta.porcentaje | number: '1.0-2' : 'es-MX' }}%</span
+          >
+        </div>
+      }
+      <p class="nota nota--advertencia">
+        La alerta se muestra aquí solo como indicador visual. Su generación y envío a M21 quedan
+        pendientes de Flask.
+      </p>
+    } @else {
+      <p class="estado" role="status">
+        <strong>Sin alertas:</strong> la merma del periodo se mantiene dentro de la meta del
+        {{ meta() }} %.
+      </p>
+    }
+  </section>
+
+  <div class="dos-columnas">
+    <section class="tarjeta bloque" aria-labelledby="titulo-etapa">
+      <h2 class="titulo-section" id="titulo-etapa">Merma por etapa</h2>
+      @if (datos().porEtapa.length > 0) {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Etapa</th>
+                <th scope="col" class="celda-derecha">Piezas / ref.</th>
+                <th scope="col">Meta {{ meta() }} %</th>
+                <th scope="col" class="celda-derecha">Costo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of datos().porEtapa; track fila.clave) {
+                <tr>
+                  <td data-etiqueta="Etapa">{{ fila.etiqueta }}</td>
+                  <td data-etiqueta="Piezas" class="celda-numero celda-derecha">
+                    {{ fila.cantidad | number: '1.0-2' : 'es-MX' }} / {{ fila.referencia }}
+                  </td>
+                  <td data-etiqueta="Meta">
+                    <app-barra-meta [porcentaje]="fila.porcentaje" [meta]="meta()" />
+                  </td>
+                  <td data-etiqueta="Costo" class="celda-numero celda-derecha">
+                    {{ fila.costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="estado">No hay mermas registradas por etapa en este periodo.</p>
+      }
+    </section>
+
+    <section class="tarjeta bloque" aria-labelledby="titulo-causas">
+      <h2 class="titulo-section" id="titulo-causas">Top 5 de causas por merma</h2>
+      @if (datos().causasTop5.length > 0) {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Causa</th>
+                <th scope="col" class="celda-derecha">Registros</th>
+                <th scope="col">Participación</th>
+                <th scope="col" class="celda-derecha">Costo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of datos().causasTop5; track fila.clave) {
+                <tr>
+                  <td data-etiqueta="Causa">{{ fila.etiqueta }}</td>
+                  <td data-etiqueta="Registros" class="celda-numero celda-derecha">
+                    {{ fila.referencia }}
+                  </td>
+                  <td data-etiqueta="Participación">
+                    <app-barra-meta
+                      [porcentaje]="fila.porcentaje"
+                      [meta]="meta()"
+                      base="participacion"
+                    />
+                  </td>
+                  <td data-etiqueta="Costo" class="celda-numero celda-derecha">
+                    {{ fila.costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="estado">No hay causas con registros en este periodo.</p>
+      }
+    </section>
+  </div>
+
+  <div class="dos-columnas">
+    <section class="tarjeta bloque" aria-labelledby="titulo-producto">
+      <h2 class="titulo-section" id="titulo-producto">Merma por producto</h2>
+      @if (datos().porProducto.length > 0) {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Variante</th>
+                <th scope="col" class="celda-derecha">Piezas / ref.</th>
+                <th scope="col">Meta {{ meta() }} %</th>
+                <th scope="col" class="celda-derecha">Costo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of datos().porProducto; track fila.clave) {
+                <tr>
+                  <td data-etiqueta="Variante">{{ fila.etiqueta }}</td>
+                  <td data-etiqueta="Piezas" class="celda-numero celda-derecha">
+                    {{ fila.cantidad | number: '1.0-2' : 'es-MX' }} / {{ fila.referencia }}
+                  </td>
+                  <td data-etiqueta="Meta">
+                    <app-barra-meta [porcentaje]="fila.porcentaje" [meta]="meta()" />
+                  </td>
+                  <td data-etiqueta="Costo" class="celda-numero celda-derecha">
+                    {{ fila.costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="estado">No hay mermas de producto en este periodo.</p>
+      }
+    </section>
+
+    <section class="tarjeta bloque" aria-labelledby="titulo-material">
+      <h2 class="titulo-section" id="titulo-material">Merma por material</h2>
+      @if (datos().porMaterial.length > 0) {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Material</th>
+                <th scope="col" class="celda-derecha">Merma / ref.</th>
+                <th scope="col">Meta {{ meta() }} %</th>
+                <th scope="col" class="celda-derecha">Costo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of datos().porMaterial; track fila.clave) {
+                <tr>
+                  <td data-etiqueta="Material">{{ fila.etiqueta }}</td>
+                  <td data-etiqueta="Merma" class="celda-numero celda-derecha">
+                    {{ fila.cantidad | number: '1.0-4' : 'es-MX' }} {{ fila.unidad }} /
+                    {{ fila.referencia }}
+                  </td>
+                  <td data-etiqueta="Meta">
+                    <app-barra-meta [porcentaje]="fila.porcentaje" [meta]="meta()" />
+                  </td>
+                  <td data-etiqueta="Costo" class="celda-numero celda-derecha">
+                    {{ fila.costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="estado">No hay mermas de material en este periodo.</p>
+      }
+    </section>
+  </div>
+
+  <section class="tarjeta bloque" aria-labelledby="titulo-evolucion">
+    <h2 class="titulo-section" id="titulo-evolucion">Evolución mensual</h2>
+    <div class="grafica" role="img" aria-label="Barras de mermas por mes en piezas y unidades base">
+      @for (fila of datos().evolucion; track fila.mes) {
+        <div class="grafica__grupo">
+          <div class="grafica__barras">
+            <div
+              class="grafica__barra"
+              [style.height.%]="altura(fila, 'producto')"
+              [attr.title]="fila.etiqueta + ': ' + fila.cantidadProducto + ' piezas en merma'"
+            ></div>
+            <div
+              class="grafica__barra grafica__barra--material"
+              [style.height.%]="altura(fila, 'material')"
+              [attr.title]="
+                fila.etiqueta + ': ' + fila.cantidadMaterial + ' unidades base en merma'
+              "
+            ></div>
+          </div>
+          <span class="grafica__etiqueta">{{ fila.etiqueta }}</span>
+          <span class="grafica__valor">{{
+            fila.costoPerdido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+          }}</span>
+        </div>
+      }
+    </div>
+    <div class="leyenda">
+      <span><i class="leyenda__muestra" aria-hidden="true"></i> Producto (piezas)</span>
+      <span
+        ><i class="leyenda__muestra leyenda__muestra--material" aria-hidden="true"></i> Material
+        (unidades base)</span
+      >
+    </div>
+    <p class="nota">
+      El porcentaje de merma de producto usa unidades en merma entre unidades producidas; el de
+      materiales usa merma entre consumo del periodo (§7). Los reversos restan en el cálculo; los
+      registros originales no se alteran.
+    </p>
+  </section>
+  } @else {
+    <p class="nota nota--advertencia">
+      Los indicadores y los costos de merma están disponibles solo para Administradores. Tu sesión
+      no tiene permiso para consultarlos.
+    </p>
+  }
+</div>

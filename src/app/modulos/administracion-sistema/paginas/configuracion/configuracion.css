@@ -1,0 +1,26 @@
+.tabla--config {
+  min-width: 44rem;
+}
+.valor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+.valor .campo__entrada {
+  width: 7.5rem;
+}
+.error-servicio {
+  margin: 1rem 0 0;
+}
+.acciones--form {
+  margin-top: 1rem;
+}
+.nota-final {
+  margin-top: 1.25rem;
+}
+@media (max-width: 719px) {
+  .valor .campo__entrada {
+    width: 100%;
+  }
+}

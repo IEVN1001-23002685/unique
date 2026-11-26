@@ -7,6 +7,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionInventarioPt } from '../../componentes/navegacion-inventario-pt/navegacion-inventario-pt';
 import { SemaforoInventario } from '../../componentes/semaforo-inventario/semaforo-inventario';
@@ -88,11 +89,15 @@ export class ReglasReposicion {
       }))
       .filter((cambio) => cambio.varianteId !== 0);
 
-    const resultado = this.servicio.guardarReglas(cambios);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    if (resultado.ok) {
-      this.forma.markAsPristine();
-      this.intento.set(false);
-    }
+    this.servicio.guardarReglas(cambios).subscribe({
+      next: (resultado) => {
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+        if (resultado.ok) {
+          this.forma.markAsPristine();
+          this.intento.set(false);
+        }
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 }

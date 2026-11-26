@@ -1,0 +1,191 @@
+<section class="vista">
+  <app-navegacion-produccion />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 5 · Producción y merma · M16</p>
+      <h1 class="titulo">Tablero de órdenes de producción</h1>
+      <p class="subtitulo">
+        Fabricación en unidades enteras con semáforo de materiales. El semáforo se reevalúa con cada
+        cambio de materiales, reserva, disponibilidad o compra; ninguna operación se guarda en
+        servidor.
+      </p>
+    </div>
+    <a routerLink="/produccion/nueva" class="boton boton--primario">Nueva orden</a>
+  </div>
+
+  <div class="indicadores" aria-label="Indicadores de producción">
+    <div class="indicador" data-tono="info">
+      <span class="indicador__numero">{{ indicadores().abiertas }}</span>
+      <span class="indicador__etiqueta">Órdenes abiertas</span>
+    </div>
+    <div class="indicador" data-tono="error">
+      <span class="indicador__numero">{{ indicadores().rojas }}</span>
+      <span class="indicador__etiqueta">Órdenes rojas</span>
+    </div>
+    <div class="indicador" data-tono="exito">
+      <span class="indicador__numero"
+        >{{ indicadores().cumplimientoPct | number: '1.0-1' : 'es-MX' }}%</span
+      >
+      <span class="indicador__etiqueta">Cumplimiento del plan</span>
+    </div>
+    <div class="indicador" data-tono="adv">
+      <span class="indicador__numero"
+        >{{ indicadores().mermaRealPct | number: '1.0-1' : 'es-MX' }}%</span
+      >
+      <span class="indicador__etiqueta">Merma real</span>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por folio, SKU o estado"
+          aria-label="Buscar órdenes de producción"
+        />
+      </label>
+      <div class="filtros" role="group" aria-label="Filtrar tablero">
+        @for (opcion of filtros; track opcion.clave) {
+          <button
+            type="button"
+            class="filtro"
+            [class.filtro--activo]="tab() === opcion.clave"
+            [attr.aria-pressed]="tab() === opcion.clave"
+            (click)="tab.set(opcion.clave)"
+          >
+            {{ opcion.etiqueta }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (filtradas().length === 0) {
+      <div class="estado" role="status">
+        <strong>No hay órdenes en esta vista.</strong>
+        <p>Prueba con otro filtro o revisa el texto de búsqueda.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor tabla-contenedor--ancha">
+        <table class="tabla">
+          <caption class="sr-only">
+            Órdenes de producción por semáforo
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Folio</th>
+              <th scope="col">SKU y cantidad</th>
+              <th scope="col">Origen</th>
+              <th scope="col">Materiales</th>
+              <th scope="col">Semáforo</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Fecha requerida</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (orden of filtradas(); track orden.id) {
+              <tr>
+                <td data-etiqueta="Folio">
+                  <span class="celda-principal">{{ orden.folio }}</span>
+                  <span class="celda-secundaria"
+                    >{{ orden.unidadesPlaneadas | number: '1.0-0' : 'es-MX' }} unidades
+                    planeadas</span
+                  >
+                </td>
+                <td data-etiqueta="SKU y cantidad" class="lista-lineas">
+                  @for (linea of orden.lineas; track linea.id) {
+                    <span class="celda-principal">{{ linea.sku }}</span>
+                    <span class="celda-secundaria"
+                      >{{ linea.cantidadPlaneada | number: '1.0-0' : 'es-MX' }} uds. ·
+                      {{ linea.nombreProducto }}</span
+                    >
+                  }
+                </td>
+                <td data-etiqueta="Origen">{{ etiquetasOrigen[orden.origen] }}</td>
+                <td data-etiqueta="Materiales">
+                  <span class="celda-principal">{{ materialesTexto(orden) }}</span>
+                  <span class="celda-secundaria">
+                    {{ orden.materiales.length - orden.materialesCompletos }} con faltante
+                  </span>
+                </td>
+                <td data-etiqueta="Semáforo">
+                  <app-semaforo-produccion
+                    [tono]="orden.semaforo"
+                    [texto]="etiquetasTono[orden.semaforo]"
+                  />
+                  @if (orden.vencida) {
+                    <span class="etiqueta etiqueta--error">Fecha vencida</span>
+                  }
+                </td>
+                <td data-etiqueta="Estado">
+                  <app-chip-estado-produccion [estado]="orden.estado" />
+                </td>
+                <td data-etiqueta="Fecha requerida" class="celda-numero">
+                  {{
+                    orden.fechaRequerida === null
+                      ? 'Sin fecha'
+                      : (orden.fechaRequerida | date: 'dd/MM/yyyy' : '' : 'es-MX')
+                  }}
+                </td>
+                <td data-etiqueta="Acciones">
+                  <div class="acciones">
+                    <a class="accion" [routerLink]="['/produccion', orden.id]">Ver detalle</a>
+                    @if (orden.estado === 'EN_PROCESO' || orden.estado === 'EN_REVISION') {
+                      <a class="accion" [routerLink]="['/produccion/revision', orden.id]"
+                        >Revisar</a
+                      >
+                    }
+                    @if (orden.estado === 'PLANEADA' || orden.estado === 'LISTA') {
+                      <button
+                        type="button"
+                        class="accion accion--peligro"
+                        (click)="cancelando.set(orden)"
+                      >
+                        Cancelar
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota">
+      Semáforo: verde si todos los materiales están reservados y la orden va en tiempo; ámbar si
+      falta material con requisición u orden de compra vigente; rojo si no hay cobertura, la compra
+      está retrasada o venció la fecha requerida. Cumplimiento = aprobadas ÷ planeadas; merma real =
+      merma ÷ (aprobadas + merma).
+    </p>
+  </div>
+
+  <p class="nota nota--advertencia">
+    La visibilidad de estas acciones no sustituye a los guards ni a la validación autoritativa de
+    Flask. La reserva, el consumo PEPS, la requisición, el alta en M12 y la merma en M17 quedan
+    pendientes de integración; el Operativo no ve costos, precios de compra ni utilidades.
+  </p>
+
+  @if (cancelando(); as orden) {
+    <app-modal-confirmacion
+      titulo="Cancelar orden de producción"
+      [mensaje]="
+        '¿Cancelar la orden ' +
+        orden.folio +
+        '? Solo es posible desde PLANEADA o LISTA. Se liberarán las reservas vigentes.'
+      "
+      etiquetaConfirmar="Cancelar orden"
+      (confirmar)="confirmarCancelacion()"
+      (cancelar)="cancelando.set(null)"
+    />
+  }
+</section>

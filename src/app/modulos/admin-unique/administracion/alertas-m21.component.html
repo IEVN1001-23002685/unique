@@ -1,0 +1,121 @@
+<div class="module-head">
+  <div>
+    <span class="eyebrow">MÓDULO 21 · CONTROL Y ADMINISTRACIÓN</span>
+    <h2>Centro de alertas</h2>
+    <p>Atiende bloqueos y riesgos operativos desde la acción correspondiente del servicio.</p>
+  </div>
+  <button class="btn-outline" (click)="pestana === 'resueltas' ? cargarResueltas() : cargar()">↻ Actualizar</button>
+</div>
+<div class="notice error" *ngIf="error">{{ error }}</div>
+<div class="notice success" *ngIf="aviso">{{ aviso }}</div>
+<div class="alert-counts">
+  <div><b>{{ total }}</b><span>{{ pestana === 'resueltas' ? 'Resueltas' : 'Alertas en vista' }}</span></div>
+  <div><b class="red-text">{{ criticas }}</b><span>Críticas</span></div>
+  <div><b class="amber-text">{{ preventivas }}</b><span>Preventivas</span></div>
+  <div><b class="blue-text">{{ informativas }}</b><span>Informativas</span></div>
+</div>
+<div class="toolbar">
+  <div class="tabs">
+    <button class="tab" [class.active]="pestana === 'abiertas'" (click)="cambiar('abiertas')">Bandeja</button>
+    <button class="tab" [class.active]="pestana === 'resueltas'" (click)="cambiar('resueltas')">Resueltas</button>
+    <button class="tab" *ngIf="esAdmin" [class.active]="pestana === 'reglas'" (click)="cambiar('reglas')">Reglas</button>
+  </div>
+  <select class="search" [(ngModel)]="filtros.severidad" (change)="pagina = 1; cargar()" *ngIf="pestana === 'abiertas'">
+    <option value="">Todas las severidades</option>
+    <option value="CRITICA">CRITICA</option>
+    <option value="PREVENTIVA">PREVENTIVA</option>
+    <option value="INFORMATIVA">INFORMATIVA</option>
+  </select>
+  <select class="search" [(ngModel)]="filtros.tipo" (change)="pagina = 1; pestana === 'resueltas' ? cargarResueltas() : cargar()">
+    <option value="">Todos los tipos</option>
+    <option value="PT_AGOTADO_DEMANDA">PT_AGOTADO_DEMANDA</option>
+    <option value="PT_STOCK_MINIMO">PT_STOCK_MINIMO</option>
+    <option value="MP_INSUFICIENTE">MP_INSUFICIENTE</option>
+    <option value="MP_REORDEN">MP_REORDEN</option>
+    <option value="ORDEN_ROJA">ORDEN_ROJA</option>
+    <option value="OC_RETRASADA">OC_RETRASADA</option>
+    <option value="PEDIDO_ESTANCADO">PEDIDO_ESTANCADO</option>
+    <option value="MERMA_ALTA">MERMA_ALTA</option>
+    <option value="DIFERENCIA_CONTEO">DIFERENCIA_CONTEO</option>
+    <option value="ENTREGA_FALLIDA">ENTREGA_FALLIDA</option>
+    <option value="DEVOLUCION_PENDIENTE">DEVOLUCION_PENDIENTE</option>
+    <option value="PAGO_PENDIENTE">PAGO_PENDIENTE</option>
+    <option value="PROVEEDOR_EN_REVISION">PROVEEDOR_EN_REVISION</option>
+    <option value="DISENO_PENDIENTE">DISENO_PENDIENTE</option>
+  </select>
+</div>
+
+<div class="panel-card" *ngIf="pestana === 'abiertas'">
+  <div class="panel-title">
+    <h3>Alertas abiertas</h3>
+    <span class="muted">No se duplica una alerta con la misma clave de negocio</span>
+  </div>
+  <div class="empty" *ngIf="cargando">Cargando alertas...</div>
+  <div class="empty" *ngIf="!cargando && !alertas.length">No hay alertas abiertas para este filtro.</div>
+  <div class="alert-list">
+    <article class="alert-row" *ngFor="let a of alertas" [ngClass]="a.severidad.toLowerCase()">
+      <div class="alert-symbol">{{ a.severidad === 'CRITICA' ? '!' : a.severidad === 'PREVENTIVA' ? '△' : 'i' }}</div>
+      <div class="alert-copy">
+        <div class="alert-title">
+          <b>{{ a.titulo }}</b>
+          <span class="chip" [ngClass]="a.severidad === 'CRITICA' ? 'red' : a.severidad === 'PREVENTIVA' ? 'amber' : 'blue'">{{ a.severidad }}</span>
+        </div>
+        <p>{{ a.detalle }}</p>
+        <small>{{ a.tipo }} · {{ a.entidad_tipo }} #{{ a.entidad_id }} · {{ a.creado_en | date: 'dd MMM, HH:mm' }}</small>
+      </div>
+      <div class="alert-actions">
+        <button class="btn-primary small" (click)="ejecutar(a)">{{ etiquetaAccion(a) }}</button>
+        <button class="btn-outline small" (click)="ver(a)">Ver detalle</button>
+      </div>
+    </article>
+  </div>
+  <div class="toolbar">
+    <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
+    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
+    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
+  </div>
+</div>
+
+<div class="panel-card" *ngIf="detalle">
+  <div class="panel-title"><h4>Detalle de la alerta #{{ detalle.id }}</h4><button class="btn-outline small" (click)="detalle = null">Cerrar</button></div>
+  <p>{{ detalle.detalle }}</p>
+  <p class="muted">Acción sugerida: {{ detalle.accion_sugerida || etiquetaAccion(detalle) }} · Destinatario: {{ detalle.rol_destino }}</p>
+  <p class="muted">Clave única: {{ detalle.clave_unica || '—' }}</p>
+</div>
+
+<div class="panel-card" *ngIf="pestana === 'resueltas'">
+  <div class="panel-title"><h3>Bitácora de alertas resueltas</h3></div>
+  <div class="empty" *ngIf="!cargando && !resueltas.length">No hay alertas resueltas.</div>
+  <div class="table-wrap" *ngIf="resueltas.length">
+    <table>
+      <thead><tr><th>ALERTA</th><th>TIPO</th><th>SEVERIDAD</th><th>ESTADO</th><th>ATENDIDA POR</th><th>FECHA</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let a of resueltas">
+          <td>{{ a.titulo }}</td>
+          <td>{{ a.tipo }}</td>
+          <td>{{ a.severidad }}</td>
+          <td>{{ a.estado }}</td>
+          <td>{{ a.atendida_por ?? 'Sistema' }}</td>
+          <td>{{ a.atendida_en | date: 'dd MMM yyyy HH:mm' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="toolbar">
+    <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
+    <button class="btn-outline small" [disabled]="pagina <= 1" (click)="cambiarPagina(-1)">← Anterior</button>
+    <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
+  </div>
+</div>
+
+<div class="panel-card" *ngIf="pestana === 'reglas' && esAdmin">
+  <div class="panel-title"><h3>Reglas y umbrales de alertas</h3><span class="muted">Solo Administrador</span></div>
+  <div class="form-grid">
+    <label *ngFor="let r of reglas">
+      {{ r.clave }}
+      <input [(ngModel)]="r.valor" placeholder="Valor numérico" />
+      <small>{{ r.descripcion || 'Sin descripción' }}</small>
+    </label>
+  </div>
+  <button class="btn-primary" (click)="guardarReglas()" [disabled]="!reglas.length">Guardar cambios</button>
+</div>

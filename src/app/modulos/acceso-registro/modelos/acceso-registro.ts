@@ -1,6 +1,6 @@
 /**
  * Modelos de interfaz de M01 · Acceso y registro.
- * La identidad, los tokens y el estado autoritativo los gestionará Flask.
+ * La identidad, los tokens y el estado autoritativo los gestiona Flask.
  */
 
 export type RolAcceso = 'CLIENTE' | 'OPERATIVO' | 'ADMIN';
@@ -33,7 +33,7 @@ export interface IdentidadAcceso {
   estado_cuenta?: EstadoCuentaAcceso;
 }
 
-/** Forma de la futura respuesta de /auth/login, /auth/registro y /auth/refrescar. */
+/** Forma de la respuesta real de /auth/login, /auth/registro y /auth/refrescar. */
 export interface SesionAcceso {
   access_token: string;
   usuario: IdentidadAcceso;
@@ -50,7 +50,7 @@ export function rutaDestinoPorRol(rol: RolAcceso): string {
   return RUTAS_POR_ROL[rol];
 }
 
-/** Acepta solo rutas internas para impedir redirecciones externas desde queryParams. */
+/** Acepta solo rutas internas para no permitir redirecciones externas desde queryParams. */
 export function rutaDestinoSegura(rol: RolAcceso, returnUrl?: string | null): string {
   if (returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//')) {
     return returnUrl;
@@ -62,10 +62,6 @@ export function rutaDestinoSegura(rol: RolAcceso, returnUrl?: string | null): st
 export const TOKEN_RECUPERACION_DEMO = 'demo';
 
 export const VIGENCIA_RECUPERACION_MIN = 30;
-
-export const INTENTOS_LOGIN_MAX = 5;
-
-export const BLOQUEO_LOGIN_MIN = 15;
 
 export const MENSAJES_M01 = {
   registroPendiente: 'Creando tu cuenta…',

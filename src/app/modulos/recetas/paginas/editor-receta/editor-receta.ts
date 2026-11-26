@@ -1,24 +1,23 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import {
+  FormArray,
   FormBuilder,
+  FormControl,
+  FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Observable, catchError, debounceTime, map, of, switchMap } from 'rxjs';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionRecetas } from '../../componentes/navegacion-recetas/navegacion-recetas';
 import type { CodigoTalla } from '../../../productos/modelos/producto-maestro';
-import type { DatosReceta, LineaReceta, Receta } from '../../modelos/receta';
-import { RecetasServicio } from '../../servicios/recetas-servicio';
-import {
-  cantidadBruta,
-  convertirABase,
-  convertirDeBase,
-  redondear,
-} from '../../servicios/calculos-receta';
+import type { DatosReceta, LineaReceta, Receta, UnidadCaptura } from '../../modelos/receta';
+import { RecetasServicio, type PreviewReceta } from '../../servicios/recetas-servicio';
+import { convertirABase, convertirDeBase } from '../../servicios/calculos-receta';
 
 interface LineaVista {
   materialCodigo: string;
@@ -34,9 +33,42 @@ interface LineaVista {
   esEtiqueta: boolean;
 }
 
+interface FormaLinea {
+  materialCodigo: FormControl<string>;
+  cantidadCapturada: FormControl<number>;
+  unidadCaptura: FormControl<UnidadCaptura>;
+  factorConsumo: FormControl<number>;
+  mermaPct: FormControl<number>;
+  esEtiqueta: FormControl<boolean>;
+  nota: FormControl<string>;
+}
+
+interface FormaBordado {
+  disenoId: FormControl<number>;
+  aplicaciones: FormControl<number>;
+  ubicacion: FormControl<string>;
+}
+
+interface FormaReceta {
+  productoId: FormControl<number>;
+  talla: FormControl<CodigoTalla>;
+  nota: FormControl<string>;
+  manoObra: FormControl<number>;
+  costoBordado: FormControl<number>;
+  costosIndirectos: FormControl<number>;
+  lineas: FormArray<FormGroup<FormaLinea>>;
+  bordados: FormArray<FormGroup<FormaBordado>>;
+}
+
 @Component({
   selector: 'app-editor-receta',
-  imports: [CurrencyPipe, DatePipe, ReactiveFormsModule, RouterLink, ModalConfirmacion, NavegacionRecetas],
+  imports: [
+    CurrencyPipe,
+    ReactiveFormsModule,
+    RouterLink,
+    ModalConfirmacion,
+    NavegacionRecetas,
+  ],
   templateUrl: './editor-receta.html',
   styleUrl: './editor-receta.css',
 })
@@ -50,38 +82,38 @@ export class EditorReceta {
   private readonly idCrudo = this.ruta.snapshot.paramMap.get('id');
   private readonly id = this.idCrudo === null ? 0 : Number(this.idCrudo);
   protected readonly esNueva = this.id === 0;
-  protected readonly receta = this.esNueva ? this.recetaVacia() : this.servicio.recetaDe(this.id);
-  protected readonly existe = this.receta !== undefined;
-  protected readonly soloLectura = this.receta?.estado !== 'BORRADOR';
+
+  private readonly recetaInterna = signal<Receta | undefined>(undefined);
+  protected readonly receta = this.recetaInterna.asReadonly();
+  protected readonly existe = computed(() => this.receta() !== undefined);
+  protected readonly soloLectura = computed(() => this.receta()?.estado !== 'BORRADOR');
 
   protected readonly materiales = this.servicio.materiales;
-  protected readonly unidades: LineaReceta['unidadCaptura'][] = ['cm2', 'cm', 'm2', 'm', 'g', 'pieza'];
+  protected readonly unidades: LineaReceta['unidadCaptura'][] = [
+    'cm2',
+    'cm',
+    'm2',
+    'm',
+    'g',
+    'pieza',
+  ];
   protected readonly disenos = this.servicio.disenos;
   protected readonly materialNuevo = signal('HIL-COS');
   protected readonly intento = signal(false);
   protected readonly archivando = signal(false);
-  protected readonly copiarProducto = signal(this.receta?.productoId ?? 1);
-  protected readonly copiarTalla = signal<CodigoTalla>(this.receta?.talla ?? 'CH');
+  protected readonly copiarProducto = signal(1);
+  protected readonly copiarTalla = signal<CodigoTalla>('CH');
+  private readonly vistaPreview = signal<PreviewReceta | null>(null);
 
-  protected readonly forma = this.fb.nonNullable.group({
-    productoId: [this.receta?.productoId ?? 1, Validators.required],
-    talla: [this.receta?.talla ?? 'CH' as CodigoTalla, Validators.required],
-    nota: [this.receta?.nota ?? ''],
-    manoObra: [this.receta?.manoObra ?? 0, [Validators.min(0)]],
-    costoBordado: [this.receta?.costoBordado ?? 0, [Validators.min(0)]],
-    costosIndirectos: [this.receta?.costosIndirectos ?? 0, [Validators.min(0)]],
-    lineas: this.fb.nonNullable.array(
-      (this.receta?.lineas ?? []).map((linea) => this.lineaForm(linea)),
-    ),
-    bordados: this.fb.nonNullable.array(
-      (this.receta?.bordados ?? []).map((bordado) =>
-        this.fb.nonNullable.group({
-          disenoId: [bordado.disenoId, Validators.required],
-          aplicaciones: [bordado.aplicaciones, [Validators.required, Validators.min(1)]],
-          ubicacion: [bordado.ubicacion],
-        }),
-      ),
-    ),
+  protected readonly forma = this.fb.group<FormaReceta>({
+    productoId: this.fb.nonNullable.control(1, Validators.required),
+    talla: this.fb.nonNullable.control<CodigoTalla>('CH', Validators.required),
+    nota: this.fb.nonNullable.control(''),
+    manoObra: this.fb.nonNullable.control(0, [Validators.min(0)]),
+    costoBordado: this.fb.nonNullable.control(0, [Validators.min(0)]),
+    costosIndirectos: this.fb.nonNullable.control(0, [Validators.min(0)]),
+    lineas: this.fb.array<FormGroup<FormaLinea>>([]),
+    bordados: this.fb.array<FormGroup<FormaBordado>>([]),
   });
 
   private readonly valores = signal(this.forma.getRawValue());
@@ -89,8 +121,13 @@ export class EditorReceta {
   protected readonly lineasVista = computed<LineaVista[]>(() =>
     this.valores().lineas.map((linea) => {
       const material = this.servicio.materialDe(linea.materialCodigo);
+      const preview = this.vistaPreview()?.lineas.find(
+        (item) => item.material_codigo === linea.materialCodigo,
+      );
+      const persistida = this.receta()?.lineas.find(
+        (item) => item.materialCodigo === linea.materialCodigo,
+      );
       const neta = convertirABase(Number(linea.cantidadCapturada), linea.unidadCaptura);
-      const bruta = cantidadBruta(neta, Number(linea.factorConsumo), Number(linea.mermaPct));
       return {
         materialCodigo: linea.materialCodigo,
         nombre: material?.nombre ?? linea.materialCodigo,
@@ -99,17 +136,17 @@ export class EditorReceta {
         cantidadCapturada: Number(linea.cantidadCapturada),
         unidadCaptura: linea.unidadCaptura,
         cantidadNeta: neta,
-        bruta,
+        bruta: preview ? Number(preview.cantidad_bruta) : (persistida?.cantidadBruta ?? 0),
         mermaPct: Number(linea.mermaPct),
-        costo: redondear(bruta * (material?.costoBase ?? 0)),
+        costo: preview ? Number(preview.costo_linea) : (persistida?.costoLinea ?? 0),
         esEtiqueta: linea.esEtiqueta,
       };
     }),
   );
 
-  /** Receta temporal con los valores del formulario para alimentar los cálculos. */
+  /** Proyección temporal del formulario para alimentar las reglas y la previsualización. */
   private readonly recetaVista = computed<Receta>(() => {
-    const base = this.receta;
+    const base = this.receta();
     if (!base) {
       throw new Error('Receta no disponible');
     }
@@ -119,8 +156,8 @@ export class EditorReceta {
       productoId: Number(raw.productoId),
       talla: raw.talla,
       manoObra: Number(raw.manoObra),
-      costoBordado: Number(raw.costoBordado),
       costosIndirectos: Number(raw.costosIndirectos),
+      costoBordado: Number(raw.costoBordado),
       lineas: this.lineasVista().map((vista, indice) => ({
         id: base.lineas[indice]?.id ?? indice + 1,
         materialCodigo: vista.materialCodigo,
@@ -129,6 +166,7 @@ export class EditorReceta {
         factorConsumo: Number(raw.lineas[indice]?.factorConsumo ?? 1),
         mermaPct: vista.mermaPct,
         cantidadBruta: vista.bruta,
+        costoLinea: vista.costo,
         esEtiqueta: vista.esEtiqueta,
         nota: raw.lineas[indice]?.nota ?? '',
       })),
@@ -141,14 +179,24 @@ export class EditorReceta {
     };
   });
 
-  protected readonly costeo = computed(() => this.servicio.costeo(this.recetaVista()));
-  protected readonly alcanza = computed(() => this.servicio.alcanzaPara(this.recetaVista()));
-  protected readonly precioVigente = computed(() => this.servicio.precioVigente(Number(this.valores().productoId)));
-  protected readonly margen = computed(() =>
-    this.calcularMargen(this.precioVigente(), this.costeo().costoEstandar),
+  protected readonly costeo = computed(() =>
+    this.vistaPreview()?.costo ?? this.servicio.costeo(this.recetaVista()),
+  );
+  protected readonly alcanza = computed(
+    () => this.vistaPreview()?.capacidad ?? this.servicio.alcanzaPara(this.recetaVista()),
+  );
+  protected readonly precioVigente = computed(() =>
+    this.servicio.precioVigente(Number(this.valores().productoId)),
+  );
+  protected readonly margen = computed(
+    () =>
+      this.vistaPreview()?.margen ??
+      this.servicio.margenDe(this.precioVigente(), this.recetaVista()),
   );
   protected readonly razones = computed(() => this.servicio.validarActivacion(this.recetaVista()));
-  protected readonly pendientes = computed(() => this.servicio.disenosPendientes(this.recetaVista()));
+  protected readonly pendientes = computed(() =>
+    this.servicio.disenosPendientes(this.recetaVista()),
+  );
   protected readonly etiquetasFaltantes = computed(() => {
     const codigos = new Set(this.lineasVista().map((linea) => linea.materialCodigo));
     return this.servicio
@@ -160,38 +208,65 @@ export class EditorReceta {
     this.forma.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
       this.valores.set(this.forma.getRawValue());
     });
-    if (this.soloLectura) {
-      this.forma.disable({ emitEvent: false });
-    } else if (!this.esNueva) {
-      // En una versión existente, producto y talla se cambian copiando la receta.
-      this.forma.controls.productoId.disable({ emitEvent: false });
-      this.forma.controls.talla.disable({ emitEvent: false });
-    }
+    this.forma.valueChanges
+      .pipe(
+        takeUntilDestroyed(),
+        debounceTime(350),
+        switchMap(() => {
+          if (!this.receta()) {
+            return of(null);
+          }
+          return this.servicio.previsualizar(this.datosReceta()).pipe(catchError(() => of(null)));
+        }),
+      )
+      .subscribe((vista) => {
+        if (vista) {
+          this.vistaPreview.set(vista);
+        }
+      });
+
+    this.servicio.recargar().subscribe({
+      next: () => {
+        const cargada = this.esNueva ? this.recetaVacia() : this.servicio.recetaDe(this.id);
+        if (!cargada) {
+          this.avisos.mostrar('error', 'No encontramos la receta solicitada en Flask.');
+          return;
+        }
+        this.recetaInterna.set(cargada);
+        this.copiarProducto.set(cargada.productoId);
+        this.copiarTalla.set(cargada.talla);
+        this.rellenarForma(cargada);
+        if (this.soloLectura()) {
+          this.forma.disable({ emitEvent: false });
+        } else if (!this.esNueva) {
+          this.forma.controls.productoId.disable({ emitEvent: false });
+          this.forma.controls.talla.disable({ emitEvent: false });
+        }
+        this.actualizarPreview();
+      },
+      error: () => this.avisos.mostrar('error', 'No fue posible cargar la receta desde Flask.'),
+    });
   }
 
-  /** Receta temporal para el alta: el identificador se asigna al guardar el borrador. */
+  /** Receta temporal para el alta; Flask asigna identificador y versión al guardar. */
   private recetaVacia(): Receta {
     const productoId = Number(this.ruta.snapshot.queryParamMap.get('producto') ?? 1);
     const tallaQuery = this.ruta.snapshot.queryParamMap.get('talla') as CodigoTalla | null;
     const tallas = this.servicio.tallasDeProducto(productoId);
     const talla = tallaQuery && tallas.includes(tallaQuery) ? tallaQuery : (tallas[0] ?? 'CH');
-    const version =
-      this.servicio
-        .recetasDeProducto(productoId, talla)
-        .reduce((maximo, item) => Math.max(maximo, item.version), 0) + 1;
     return {
       id: 0,
       productoId,
       talla,
-      version,
+      version: 0,
       estado: 'BORRADOR',
       origenRecetaId: null,
       manoObra: 0,
       costoBordado: 0,
       costosIndirectos: 0,
       nota: '',
-      creadaPor: 'Administrador',
-      creadaEn: new Date().toISOString(),
+      creadaPor: 'Por asignar',
+      creadaEn: '',
       activadaEn: null,
       lineas: this.servicio.etiquetasEsperadas(productoId, talla).map((codigo, indice) => ({
         id: indice + 1,
@@ -209,21 +284,78 @@ export class EditorReceta {
     };
   }
 
-  private calcularMargen(precio: number, costo: number): number | null {
-    const base = precio / 1.16;
-    return base <= 0 ? null : redondear(((base - costo) / base) * 100, 1);
+  private rellenarForma(receta: Receta): void {
+    this.forma.controls.productoId.setValue(receta.productoId, { emitEvent: false });
+    this.forma.controls.talla.setValue(receta.talla, { emitEvent: false });
+    this.forma.controls.nota.setValue(receta.nota, { emitEvent: false });
+    this.forma.controls.manoObra.setValue(receta.manoObra, { emitEvent: false });
+    this.forma.controls.costoBordado.setValue(receta.costoBordado, { emitEvent: false });
+    this.forma.controls.costosIndirectos.setValue(receta.costosIndirectos, { emitEvent: false });
+    this.forma.controls.lineas.clear({ emitEvent: false });
+    for (const linea of receta.lineas) {
+      this.forma.controls.lineas.push(this.lineaForm(linea), { emitEvent: false });
+    }
+    this.forma.controls.bordados.clear({ emitEvent: false });
+    for (const bordado of receta.bordados) {
+      this.forma.controls.bordados.push(
+        this.fb.group<FormaBordado>({
+          disenoId: this.fb.nonNullable.control(bordado.disenoId, Validators.required),
+          aplicaciones: this.fb.nonNullable.control(bordado.aplicaciones, [
+            Validators.required,
+            Validators.min(1),
+          ]),
+          ubicacion: this.fb.nonNullable.control(bordado.ubicacion),
+        }),
+        { emitEvent: false },
+      );
+    }
+    this.valores.set(this.forma.getRawValue());
   }
 
-  private lineaForm(linea: LineaReceta) {
-    return this.fb.nonNullable.group({
-      materialCodigo: [linea.materialCodigo, Validators.required],
-      cantidadCapturada: [convertirDeBase(linea.cantidadNeta, linea.unidadCaptura), [Validators.min(0)]],
-      unidadCaptura: [linea.unidadCaptura, Validators.required],
-      factorConsumo: [linea.factorConsumo, [Validators.min(0.001)]],
-      mermaPct: [linea.mermaPct, [Validators.min(0), Validators.max(99.99)]],
-      esEtiqueta: [linea.esEtiqueta],
-      nota: [linea.nota],
+  private actualizarPreview(): void {
+    if (!this.receta()) {
+      return;
+    }
+    this.servicio
+      .previsualizar(this.datosReceta())
+      .pipe(catchError(() => of(null)))
+      .subscribe((vista) => {
+        if (vista) {
+          this.vistaPreview.set(vista);
+        }
+      });
+  }
+
+  private lineaFormDesde(
+    materialCodigo: string,
+    cantidadCapturada: number,
+    unidadCaptura: UnidadCaptura,
+    mermaPct: number,
+    esEtiqueta: boolean,
+    nota: string,
+  ): FormGroup<FormaLinea> {
+    return this.fb.group<FormaLinea>({
+      materialCodigo: this.fb.nonNullable.control(materialCodigo, Validators.required),
+      cantidadCapturada: this.fb.nonNullable.control(cantidadCapturada, [Validators.min(0)]),
+      unidadCaptura: this.fb.nonNullable.control(unidadCaptura, Validators.required),
+      factorConsumo: this.fb.nonNullable.control(1, [Validators.min(0.001)]),
+      mermaPct: this.fb.nonNullable.control(mermaPct, [Validators.min(0), Validators.max(99.99)]),
+      esEtiqueta: this.fb.nonNullable.control(esEtiqueta),
+      nota: this.fb.nonNullable.control(nota),
     });
+  }
+
+  private lineaForm(linea: LineaReceta): FormGroup<FormaLinea> {
+    const grupo = this.lineaFormDesde(
+      linea.materialCodigo,
+      convertirDeBase(linea.cantidadNeta, linea.unidadCaptura),
+      linea.unidadCaptura,
+      linea.mermaPct,
+      linea.esEtiqueta,
+      linea.nota,
+    );
+    grupo.controls.factorConsumo.setValue(linea.factorConsumo);
+    return grupo;
   }
 
   protected invalido(campo: 'manoObra' | 'costoBordado' | 'costosIndirectos'): boolean {
@@ -238,15 +370,7 @@ export class EditorReceta {
     }
     const unidad = material.unidadBase === 'pieza' ? 'pieza' : material.unidadBase;
     this.forma.controls.lineas.push(
-      this.fb.nonNullable.group({
-        materialCodigo: [material.codigo, Validators.required],
-        cantidadCapturada: [1, [Validators.min(0)]],
-        unidadCaptura: [unidad, Validators.required],
-        factorConsumo: [1, [Validators.min(0.001)]],
-        mermaPct: [material.mermaPct, [Validators.min(0), Validators.max(99.99)]],
-        esEtiqueta: [false],
-        nota: [''],
-      }),
+      this.lineaFormDesde(material.codigo, 1, unidad, material.mermaPct, false, ''),
     );
   }
 
@@ -258,15 +382,7 @@ export class EditorReceta {
         continue;
       }
       this.forma.controls.lineas.push(
-        this.fb.nonNullable.group({
-          materialCodigo: [codigo, Validators.required],
-          cantidadCapturada: [1, [Validators.min(0)]],
-          unidadCaptura: ['pieza' as const, Validators.required],
-          factorConsumo: [1, [Validators.min(0.001)]],
-          mermaPct: [0, [Validators.min(0), Validators.max(99.99)]],
-          esEtiqueta: [true],
-          nota: ['Etiqueta precargada según §11.4'],
-        }),
+        this.lineaFormDesde(codigo, 1, 'pieza', 0, true, 'Etiqueta precargada según §11.4'),
       );
     }
     this.avisos.mostrar(
@@ -284,7 +400,9 @@ export class EditorReceta {
     if (!material || !grupo) {
       return;
     }
-    grupo.controls.unidadCaptura.setValue(material.unidadBase === 'pieza' ? 'pieza' : material.unidadBase);
+    grupo.controls.unidadCaptura.setValue(
+      material.unidadBase === 'pieza' ? 'pieza' : material.unidadBase,
+    );
     grupo.controls.mermaPct.setValue(material.mermaPct);
   }
 
@@ -306,15 +424,33 @@ export class EditorReceta {
     this.forma.controls.bordados.removeAt(indice);
   }
 
-  protected guardar(): number | null {
+  protected guardar(): void {
+    this.guardarBorrador().subscribe();
+  }
+
+  private guardarBorrador(): Observable<number | null> {
     this.intento.set(true);
     if (this.forma.invalid) {
       this.forma.markAllAsTouched();
       this.avisos.mostrar('error', 'Revisa las cantidades, factores y mermas marcadas.');
-      return null;
+      return of(null);
     }
+    return this.servicio
+      .guardarBorrador(this.datosReceta(), this.esNueva ? undefined : this.id)
+      .pipe(
+        map((resultado) => {
+          this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+          if (resultado.ok && this.esNueva && resultado.recetaId !== undefined) {
+            void this.router.navigate(['/admin/recetas/editar', resultado.recetaId]);
+          }
+          return resultado.ok ? (resultado.recetaId ?? this.id) : null;
+        }),
+      );
+  }
+
+  private datosReceta(): DatosReceta {
     const raw = this.forma.getRawValue();
-    const datos: DatosReceta = {
+    return {
       productoId: Number(raw.productoId),
       talla: raw.talla,
       nota: raw.nota,
@@ -336,12 +472,6 @@ export class EditorReceta {
         ubicacion: bordado.ubicacion,
       })),
     };
-    const resultado = this.servicio.guardarBorrador(datos, this.esNueva ? undefined : this.id);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    if (resultado.ok && this.esNueva && resultado.recetaId !== undefined) {
-      void this.router.navigate(['/admin/recetas/editar', resultado.recetaId]);
-    }
-    return resultado.ok ? (resultado.recetaId ?? null) : null;
   }
 
   protected activar(): void {
@@ -350,27 +480,30 @@ export class EditorReceta {
       this.avisos.mostrar('advertencia', `No se puede activar: ${razones.join(' ')}`);
       return;
     }
-    const guardado = this.guardar();
-    if (guardado === null) {
-      return;
-    }
-    const resultado = this.servicio.activarReceta(guardado);
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
-    if (resultado.ok) {
-      void this.router.navigate(['/admin/recetas']);
-    }
+    this.guardarBorrador()
+      .pipe(
+        switchMap((id) => (id === null ? of(null) : this.servicio.activarReceta(id))),
+      )
+      .subscribe((resultado) => {
+        if (!resultado) {
+          return;
+        }
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'advertencia', resultado.mensaje);
+        if (resultado.ok) {
+          void this.router.navigate(['/admin/recetas']);
+        }
+      });
   }
 
   protected copiar(): void {
-    const resultado = this.servicio.copiarReceta(
-      this.id,
-      Number(this.copiarProducto()),
-      this.copiarTalla(),
-    );
-    this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
-    if (resultado.ok && resultado.recetaId !== undefined) {
-      void this.router.navigate(['/admin/recetas/editar', resultado.recetaId]);
-    }
+    this.servicio
+      .copiarReceta(this.id, Number(this.copiarProducto()), this.copiarTalla())
+      .subscribe((resultado) => {
+        this.avisos.mostrar(resultado.ok ? 'exito' : 'error', resultado.mensaje);
+        if (resultado.ok && resultado.recetaId !== undefined) {
+          void this.router.navigate(['/admin/recetas/editar', resultado.recetaId]);
+        }
+      });
   }
 
   protected pedirArchivado(): void {
@@ -378,12 +511,10 @@ export class EditorReceta {
   }
 
   protected confirmarArchivado(): void {
-    const resultado = this.servicio.archivarReceta(this.id);
-    this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
-    this.archivando.set(false);
-    if (resultado.ok) {
-      void this.router.navigate(['/admin/recetas']);
-    }
+    this.servicio.archivarReceta(this.id).subscribe((resultado) => {
+      this.avisos.mostrar(resultado.ok ? 'advertencia' : 'error', resultado.mensaje);
+      this.archivando.set(false);
+    });
   }
 
   protected tallasDeCopia(): CodigoTalla[] {
@@ -416,15 +547,7 @@ export class EditorReceta {
     }
     for (const codigo of this.servicio.etiquetasEsperadas(productoId, talla)) {
       lineas.push(
-        this.fb.nonNullable.group({
-          materialCodigo: [codigo, Validators.required],
-          cantidadCapturada: [1, [Validators.min(0)]],
-          unidadCaptura: ['pieza' as const, Validators.required],
-          factorConsumo: [1, [Validators.min(0.001)]],
-          mermaPct: [0, [Validators.min(0), Validators.max(99.99)]],
-          esEtiqueta: [true],
-          nota: ['Etiqueta precargada según §11.4'],
-        }),
+        this.lineaFormDesde(codigo, 1, 'pieza', 0, true, 'Etiqueta precargada según §11.4'),
       );
     }
   }

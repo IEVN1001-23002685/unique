@@ -8,6 +8,30 @@
     Catálogo maestro
   </a>
   <a
+    routerLink="/admin/productos/nuevas"
+    routerLinkActive="pestana--activa"
+    [class.pestana--activa]="activo() === 'nuevas'"
+    class="pestana"
+  >
+    Nuevas
+  </a>
+  <a
+    routerLink="/admin/productos/categorias"
+    routerLinkActive="pestana--activa"
+    [class.pestana--activa]="activo() === 'categorias'"
+    class="pestana"
+  >
+    Categorías
+  </a>
+  <a
+    routerLink="/admin/productos/imagenes"
+    routerLinkActive="pestana--activa"
+    [class.pestana--activa]="activo() === 'imagenes'"
+    class="pestana"
+  >
+    Imágenes
+  </a>
+  <a
     routerLink="/admin/productos/nuevo"
     routerLinkActive="pestana--activa"
     [class.pestana--activa]="activo() === 'nuevo'"

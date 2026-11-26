@@ -9,8 +9,8 @@
         <p class="eyebrow">Detalle de venta</p>
         <h1 class="titulo">{{ venta.folio }}</h1>
         <p class="subtitulo">
-          {{ venta.cliente }} · {{ venta.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }} ·
-          Canal {{ venta.canal }}
+          {{ venta.cliente }} · {{ venta.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }} · Canal
+          {{ venta.canal }}
         </p>
       </div>
       <div class="chips">
@@ -21,8 +21,8 @@
 
     @if (venta.estadoPago === 'PENDIENTE' && venta.estado === 'ACTIVA') {
       <div class="aviso" role="status">
-        <strong>Pago pendiente.</strong> Esta venta tiene una transferencia por validar; pasadas
-        las 2 horas se genera la alerta PAGO_PENDIENTE en M21. Valida el pago o cancela la venta.
+        <strong>Pago pendiente.</strong> Esta venta tiene una transferencia por validar; pasadas las
+        2 horas se genera la alerta PAGO_PENDIENTE en M21. Valida el pago o cancela la venta.
       </div>
     }
 
@@ -36,22 +36,34 @@
     <div class="resumen">
       <div class="tarjeta metrica">
         <span class="metrica__etiqueta">Subtotal</span>
-        <strong class="metrica__valor">{{ venta.subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+        <strong class="metrica__valor">
+          {{
+            venta.subtotal === null
+              ? '—'
+              : (venta.subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX')
+          }}
+        </strong>
         <span class="metrica__detalle">Desglose de líneas sin envío</span>
       </div>
       <div class="tarjeta metrica">
         <span class="metrica__etiqueta">Descuento aplicado</span>
-        <strong class="metrica__valor">− {{ venta.descuentoMonto | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+        <strong class="metrica__valor"
+          >− {{ venta.descuentoMonto | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong
+        >
         <span class="metrica__detalle">{{ venta.descuentoNombre ?? 'Sin descuento' }}</span>
       </div>
       <div class="tarjeta metrica">
         <span class="metrica__etiqueta">Costo de envío</span>
-        <strong class="metrica__valor">{{ venta.costoEnvio | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
-        <span class="metrica__detalle">Tarifa Local León (demo)</span>
+        <strong class="metrica__valor">{{
+          venta.costoEnvio | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+        }}</strong>
+        <span class="metrica__detalle">Tarifa vigente consultada en M02</span>
       </div>
       <div class="tarjeta metrica metrica--total">
         <span class="metrica__etiqueta">Total de la venta</span>
-        <strong class="metrica__valor">{{ venta.total | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+        <strong class="metrica__valor">{{
+          venta.total | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+        }}</strong>
         <span class="metrica__detalle">
           IVA informativo: {{ venta.ivaIncluido | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
         </span>
@@ -65,7 +77,12 @@
       </div>
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Líneas de la venta {{ venta.folio }}</caption>
+          <caption class="sr-only">
+            Líneas de la venta
+            {{
+              venta.folio
+            }}
+          </caption>
           <thead>
             <tr>
               <th scope="col">SKU</th>
@@ -80,15 +97,23 @@
           <tbody>
             @for (linea of venta.lineas; track linea.sku) {
               <tr>
-                <td data-etiqueta="SKU"><span class="mono">{{ linea.sku }}</span></td>
+                <td data-etiqueta="SKU">
+                  <span class="mono">{{ linea.sku }}</span>
+                </td>
                 <td data-etiqueta="Prenda">
                   <span class="celda-principal">{{ linea.nombreProducto }}</span>
                   <span class="celda-secundaria">Talla {{ linea.talla }} · {{ linea.color }}</span>
                 </td>
                 <td data-etiqueta="Cantidad">{{ linea.cantidad }}</td>
-                <td data-etiqueta="Precio unit.">{{ linea.precioUnitario | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
-                <td data-etiqueta="Subtotal">{{ linea.subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
-                <td data-etiqueta="Costo estándar">{{ linea.costoEstandarUnitario | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
+                <td data-etiqueta="Precio unit.">
+                  {{ linea.precioUnitario | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Subtotal">
+                  {{ linea.subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Costo estándar">
+                  {{ linea.costoEstandarUnitario | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </td>
                 <td data-etiqueta="Margen">{{ margen(linea) | number: '1.1-1' : 'es-MX' }}%</td>
               </tr>
             }
@@ -113,7 +138,9 @@
             <p>
               {{ envio.destinatario }}<br />
               {{ envio.calle }} {{ envio.numeroExt }}
-              @if (envio.numeroInt) { <span>, Int. {{ envio.numeroInt }}</span> }
+              @if (envio.numeroInt) {
+                <span>, Int. {{ envio.numeroInt }}</span>
+              }
               <br />
               {{ envio.colonia }}, {{ envio.municipio }}, {{ envio.estado }}<br />
               C.P. {{ envio.codigoPostal }} · Tel. {{ envio.telefono }}
@@ -129,7 +156,9 @@
               {{ facturacion.calle }} {{ facturacion.numeroExt }}<br />
               {{ facturacion.colonia }}, {{ facturacion.municipio }}, {{ facturacion.estado }}<br />
               C.P. {{ facturacion.codigoPostal }}
-              @if (facturacion.rfc) { <br />RFC {{ facturacion.rfc }} }
+              @if (facturacion.rfc) {
+                <br />RFC {{ facturacion.rfc }}
+              }
             </p>
           </div>
         }
@@ -143,11 +172,17 @@
         <dl class="detalles">
           <div>
             <dt>Folio del pedido</dt>
-            <dd class="mono">{{ venta.pedidoFolio }}</dd>
+            <dd class="mono">{{ venta.pedidoFolio || 'No disponible' }}</dd>
           </div>
           <div>
             <dt>Estado del pedido</dt>
-            <dd><app-chip-estado-venta dominio="pedido" [estado]="venta.estadoPedido" /></dd>
+            <dd>
+              @if (venta.estadoPedido) {
+                <app-chip-estado-venta dominio="pedido" [estado]="venta.estadoPedido" />
+              } @else {
+                Sin pedido vinculado
+              }
+            </dd>
           </div>
           <div>
             <dt>Fecha promesa</dt>
@@ -165,13 +200,19 @@
           </div>
         </dl>
         <div class="acciones">
-          <a
-            class="boton boton--secundario"
-            [routerLink]="['/admin/pedidos', venta.pedidoFolio]"
-            [attr.aria-label]="'Ver pedido ' + venta.pedidoFolio + ' en M09'"
-          >
-            Ver pedido (M09)
-          </a>
+          @if (venta.pedidoFolio) {
+            <a
+              class="boton boton--secundario"
+              [routerLink]="['/admin/pedidos', venta.pedidoFolio]"
+              [attr.aria-label]="'Ver pedido ' + venta.pedidoFolio + ' en M09'"
+            >
+              Ver pedido (M09)
+            </a>
+          } @else {
+            <button type="button" class="boton boton--secundario" disabled>
+              Ver pedido (M09) no disponible
+            </button>
+          }
           <button type="button" class="boton boton--secundario" (click)="descargarComprobante()">
             Descargar comprobante
           </button>
@@ -182,11 +223,16 @@
     <div class="tarjeta bloque">
       <div class="bloque__titulo">
         <h2>Pagos y reembolsos</h2>
-        <span>Referencias simuladas SIM-000123 · sin datos bancarios reales</span>
+        <span>Referencias simuladas generadas por Flask · sin datos bancarios reales</span>
       </div>
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Pagos de la venta {{ venta.folio }}</caption>
+          <caption class="sr-only">
+            Pagos de la venta
+            {{
+              venta.folio
+            }}
+          </caption>
           <thead>
             <tr>
               <th scope="col">Tipo</th>
@@ -203,13 +249,25 @@
                 <td data-etiqueta="Tipo">{{ pago.tipo === 'COBRO' ? 'Cobro' : 'Reembolso' }}</td>
                 <td data-etiqueta="Método">{{ pago.metodo }}</td>
                 <td data-etiqueta="Estado">
-                  <span class="punto-estado" [attr.data-estado]="pago.estado" aria-hidden="true"></span>
+                  <span
+                    class="punto-estado"
+                    [attr.data-estado]="pago.estado"
+                    aria-hidden="true"
+                  ></span>
                   {{ pago.estado }}
-                  @if (pago.motivoRechazo) { · {{ pago.motivoRechazo }} }
+                  @if (pago.motivoRechazo) {
+                    · {{ pago.motivoRechazo }}
+                  }
                 </td>
-                <td data-etiqueta="Monto">{{ pago.monto | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</td>
-                <td data-etiqueta="Referencia"><span class="mono">{{ pago.referencia }}</span></td>
-                <td data-etiqueta="Fecha">{{ pago.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}</td>
+                <td data-etiqueta="Monto">
+                  {{ pago.monto | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Referencia">
+                  <span class="mono">{{ pago.referencia }}</span>
+                </td>
+                <td data-etiqueta="Fecha">
+                  {{ pago.fecha | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+                </td>
               </tr>
             }
           </tbody>
@@ -219,7 +277,11 @@
       @if (venta.estado === 'ACTIVA') {
         <div class="acciones acciones--accion">
           @if (venta.estadoPago === 'PENDIENTE') {
-            <button type="button" class="boton boton--primario" (click)="validarPagoAbierto.set(true)">
+            <button
+              type="button"
+              class="boton boton--primario"
+              (click)="validarPagoAbierto.set(true)"
+            >
               Validar pago
             </button>
           }
@@ -296,9 +358,8 @@
     </div>
 
     <p class="nota">
-      Una venta no se edita: solo cambian el pago y la cancelación. Los cambios de esta pantalla son
-      de demostración, no persisten en Flask y no representan movimientos bancarios ni liberaciones
-      de inventario reales.
+      Una venta no se edita: solo cambian el pago y la cancelación. Las operaciones se registran en
+      Flask; el cobro es simulado, sin movimientos bancarios. El inventario se ajusta en M09/M12.
     </p>
   } @else {
     <div class="tarjeta bloque estado" role="status">
@@ -310,7 +371,7 @@
   @if (validarPagoAbierto()) {
     <app-modal-confirmacion
       titulo="Validar pago"
-      mensaje="¿Confirmas que el pago pendiente fue recibido? La validación queda solo en memoria hasta conectar Flask."
+      mensaje="¿Confirmas que el pago pendiente fue recibido? La validación se registra en Flask."
       etiquetaConfirmar="Validar pago"
       (confirmar)="confirmarValidarPago()"
       (cancelar)="validarPagoAbierto.set(false)"
@@ -326,7 +387,7 @@
       [pedirMonto]="accion.pedirMonto"
       [montoMaximo]="accion.montoMaximo"
       (confirmar)="confirmarAccion($event)"
-      (cancelar)="accion.set(null)"
+      (cancelar)="cerrarAccion()"
     />
   }
 </section>

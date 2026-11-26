@@ -1,0 +1,123 @@
+<section class="vista">
+  <app-navegacion-productos [activo]="'categorias'" />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M10 · Catálogos</p>
+      <h1 class="titulo">Categorías de producto</h1>
+      <p class="subtitulo">
+        La categoría define el prefijo del SKU y si la prenda usa tallas. Crea aquí las categorías
+        nuevas antes de dar de alta un producto.
+      </p>
+    </div>
+  </div>
+
+  <div class="rejilla-pagina">
+    <form class="tarjeta seccion" [formGroup]="forma" (ngSubmit)="guardar()" novalidate>
+      <h2 class="seccion__titulo">{{ editando() ? 'Editar categoría' : 'Nueva categoría' }}</h2>
+
+      <label class="campo">
+        Nombre *
+        <input
+          class="campo__entrada"
+          formControlName="nombre"
+          maxlength="40"
+          placeholder="Ej. Bolsa de tela"
+          [attr.aria-invalid]="invalido('nombre')"
+        />
+        @if (invalido('nombre')) {
+          <span class="campo__error">Escribe entre 3 y 40 caracteres.</span>
+        }
+      </label>
+
+      <label class="campo">
+        Prefijo del SKU *
+        <input
+          class="campo__entrada mono"
+          formControlName="prefijo"
+          maxlength="2"
+          placeholder="Ej. BO"
+          [attr.aria-invalid]="invalido('prefijo')"
+        />
+        @if (invalido('prefijo')) {
+          <span class="campo__error">Usa exactamente dos letras, por ejemplo SD.</span>
+        }
+      </label>
+
+      <label class="campo">
+        Descripción
+        <textarea class="campo__entrada" formControlName="descripcion" rows="2" maxlength="140"></textarea>
+      </label>
+
+      <label class="casilla">
+        <input type="checkbox" formControlName="usaTallas" />
+        <span>Usa tallas CH, MD y GD</span>
+      </label>
+      <label class="casilla">
+        <input type="checkbox" formControlName="activa" />
+        <span>Categoría activa</span>
+      </label>
+
+      <p class="nota">
+        El prefijo se valida contra las demás categorías. Los productos ya creados conservan su SKU
+        aunque cambies el prefijo.
+      </p>
+
+      <div class="acciones-forma">
+        <button type="submit" class="boton boton--primario">
+          {{ editando() ? 'Guardar cambios' : 'Crear categoría' }}
+        </button>
+        <button type="button" class="boton boton--secundario" (click)="nueva()">Limpiar</button>
+      </div>
+    </form>
+
+    <div class="tarjeta seccion">
+      <h2 class="seccion__titulo">Catálogo de categorías</h2>
+      @if (categorias().length === 0) {
+        <p class="estado-linea">Aún no hay categorías. Crea la primera con el formulario.</p>
+      } @else {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <caption class="sr-only">Categorías de producto</caption>
+            <thead>
+              <tr>
+                <th scope="col">Categoría</th>
+                <th scope="col">Prefijo</th>
+                <th scope="col">Tallas</th>
+                <th scope="col">Estatus</th>
+                <th scope="col">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (categoria of categorias(); track categoria.id) {
+                <tr>
+                  <td data-etiqueta="Categoría">
+                    <span class="celda-principal">{{ categoria.nombre }}</span>
+                    <span class="celda-secundaria">{{ categoria.descripcion }}</span>
+                  </td>
+                  <td data-etiqueta="Prefijo"><span class="mono">{{ categoria.prefijo }}</span></td>
+                  <td data-etiqueta="Tallas">
+                    {{ categoria.usaTallas ? 'CH, MD, GD' : 'Única (UN)' }}
+                  </td>
+                  <td data-etiqueta="Estatus">
+                    <span class="chip" [class.chip--activo]="categoria.activa">
+                      {{ categoria.activa ? 'Activa' : 'Inactiva' }}
+                    </span>
+                  </td>
+                  <td data-etiqueta="Acciones">
+                    <div class="acciones">
+                      <button type="button" class="accion" (click)="editar(categoria)">Editar</button>
+                      <button type="button" class="accion" (click)="alternar(categoria)">
+                        {{ categoria.activa ? 'Desactivar' : 'Activar' }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</section>

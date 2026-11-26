@@ -1,0 +1,167 @@
+<section class="vista">
+  <app-navegacion-entregas />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">M19 · Logística</p>
+      <h1 class="titulo">Hoja de reparto</h1>
+      <p class="subtitulo">
+        Paradas por repartidor y día, imprimibles. Confirma la salida para pasar la entrega a
+        EN_RUTA y después registra «Entregado» o «Fallida».
+      </p>
+    </div>
+    <div class="cabecera__acciones">
+      <button type="button" class="boton boton--secundario" (click)="imprimir()">
+        Imprimir hoja
+      </button>
+      <a routerLink="/entregas/seguimiento" class="boton boton--secundario">Seguimiento</a>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Paradas del día</h2>
+      <span>Solo entregas PROGRAMADA o EN_RUTA</span>
+    </div>
+
+    <div class="barra">
+      <label class="campo filtro">
+        Repartidor
+        <select
+          class="campo__entrada"
+          [value]="repartidorId()"
+          (change)="alCambiarRepartidor($event)"
+        >
+          <option value="0" disabled>Selecciona un repartidor</option>
+          @for (repartidor of activos(); track repartidor.id) {
+            <option [value]="repartidor.id">{{ repartidor.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo filtro">
+        Fecha programada
+        <input
+          class="campo__entrada"
+          type="date"
+          [value]="fecha()"
+          (change)="alCambiarFecha($event)"
+        />
+      </label>
+      <div class="resumen" aria-live="polite">
+        <strong>{{ paradas().length }} paradas</strong>
+        <span>{{ piezas() }} prendas · {{ repartidor()?.nombre ?? 'Sin repartidor' }}</span>
+      </div>
+    </div>
+
+    @if (repartidorId() === 0) {
+      <div class="estado" role="status">
+        <strong>Selecciona un repartidor activo.</strong>
+        <p>Da de alta repartidores en la pestaña correspondiente si aún no hay ninguno.</p>
+      </div>
+    } @else if (paradas().length === 0) {
+      <div class="estado" role="status">
+        <strong>Sin paradas para esta fecha.</strong>
+        <p>Asigna pedidos en «Por asignar» con este repartidor y la fecha elegida.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--paradas">
+          <caption class="sr-only">
+            Hoja de reparto de
+            {{
+              repartidor()?.nombre
+            }}
+            para
+            {{
+              fecha()
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Guía / pedido</th>
+              <th scope="col">Destinatario</th>
+              <th scope="col">Dirección</th>
+              <th scope="col">CP / teléfono</th>
+              <th scope="col">Prendas</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entrega of paradas(); track entrega.folio) {
+              <tr>
+                <td data-etiqueta="Guía">
+                  <span class="mono">{{ entrega.folio }}</span>
+                  <span class="celda-secundaria">{{ entrega.pedidoFolio }}</span>
+                </td>
+                <td data-etiqueta="Destinatario">{{ entrega.direccion.destinatario }}</td>
+                <td data-etiqueta="Dirección">
+                  <span class="celda-principal">{{ entrega.direccion.calle }}</span>
+                  <span class="celda-secundaria"
+                    >{{ entrega.direccion.colonia }}, {{ entrega.direccion.ciudad }}</span
+                  >
+                </td>
+                <td data-etiqueta="CP / teléfono">
+                  <span class="celda-principal">CP {{ entrega.direccion.cp }}</span>
+                  <span class="celda-secundaria">{{ entrega.direccion.telefono }}</span>
+                </td>
+                <td data-etiqueta="Prendas">
+                  <span class="celda-principal">{{ prendas(entrega) }}</span>
+                  <span class="celda-secundaria"
+                    >{{ servicio.piezas(entrega) }} piezas · intento {{ entrega.intento }}</span
+                  >
+                </td>
+                <td data-etiqueta="Estado">
+                  <app-chip-estado-entrega [estado]="entrega.estado" />
+                </td>
+                <td data-etiqueta="Acciones">
+                  @if (entrega.estado === 'PROGRAMADA') {
+                    <button
+                      type="button"
+                      class="boton boton--enlace"
+                      (click)="confirmarSalida(entrega)"
+                    >
+                      Confirmar salida
+                    </button>
+                  } @else {
+                    <div class="acciones">
+                      <button
+                        type="button"
+                        class="boton boton--enlace"
+                        (click)="abrirResultado(entrega, 'ENTREGADO')"
+                      >
+                        Entregado
+                      </button>
+                      <button
+                        type="button"
+                        class="boton boton--enlace"
+                        (click)="abrirResultado(entrega, 'FALLIDA')"
+                      >
+                        Fallida
+                      </button>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <p class="nota nota--adv">
+      Confirmar salida descuenta la existencia (SALIDA_ENVIO en M12) y el pedido pasa a EN_REPARTO
+      en M09/M06. Un fallo reingresa las prendas conservando la reserva; ambos movimientos reales
+      requieren Flask.
+    </p>
+  </div>
+
+  @if (resultado(); as actual) {
+    <app-modal-resultado-entrega
+      [entrega]="actual.entrega"
+      [modo]="actual.modo"
+      (confirmar)="registrar($event)"
+      (cancelar)="resultado.set(null)"
+    />
+  }
+</section>

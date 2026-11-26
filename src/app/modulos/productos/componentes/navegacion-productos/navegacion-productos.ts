@@ -9,5 +9,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styleUrl: './navegacion-productos.css',
 })
 export class NavegacionProductos {
-  readonly activo = input<'catalogo' | 'nuevo' | 'variantes' | null>(null);
+  readonly activo = input<'catalogo' | 'nuevo' | 'variantes' | 'categorias' | 'imagenes' | 'nuevas' | null>(
+    null,
+  );
 }

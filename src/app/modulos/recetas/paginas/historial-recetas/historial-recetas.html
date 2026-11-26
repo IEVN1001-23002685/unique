@@ -18,7 +18,9 @@
       <label class="campo">
         Producto
         <select class="campo__entrada" [value]="producto()" (change)="alCambiarProducto($event)">
-          @for (item of productos; track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }
+          @for (item of productos(); track item.id) {
+            <option [value]="item.id">{{ item.nombre }}</option>
+          }
         </select>
       </label>
       <label class="campo">
@@ -34,32 +36,55 @@
     @if (versiones().length === 0) {
       <div class="estado" role="status">
         <strong>Sin versiones registradas.</strong>
-        <p>Este producto y talla aún no tienen recetas en la demostración.</p>
+        <p>Este producto y talla aún no tienen recetas registradas en Flask.</p>
       </div>
     } @else {
       <div class="versiones">
         @for (receta of versiones(); track receta.id) {
-          <article class="tarjeta version"
-            [class.version--seleccionada]="idA() === receta.id || idB() === receta.id">
+          <article
+            class="tarjeta version"
+            [class.version--seleccionada]="idA() === receta.id || idB() === receta.id"
+          >
             <div class="version__cabecera">
               <strong>v{{ receta.version }}</strong>
-              <span class="chip" [class.chip--vigente]="receta.estado === 'VIGENTE'"
+              <span
+                class="chip"
+                [class.chip--vigente]="receta.estado === 'VIGENTE'"
                 [class.chip--borrador]="receta.estado === 'BORRADOR'"
-                [class.chip--archivada]="receta.estado === 'ARCHIVADA'">{{ receta.estado }}</span>
+                [class.chip--archivada]="receta.estado === 'ARCHIVADA'"
+                >{{ receta.estado }}</span
+              >
             </div>
             <p class="version__dato">
-              Creada por {{ receta.creadaPor }} el {{ receta.creadaEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+              Creada por {{ receta.creadaPor }} el
+              {{ receta.creadaEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
             </p>
             <p class="version__dato">
-              {{ receta.activadaEn ? ('Activada el ' + (receta.activadaEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX')) : 'Sin activar' }}
+              {{
+                receta.activadaEn
+                  ? 'Activada el ' + (receta.activadaEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX')
+                  : 'Sin activar'
+              }}
             </p>
-            <p class="version__dato">{{ receta.lineas.length }} línea(s) · {{ receta.bordados.length }} bordado(s)</p>
-            @if (receta.nota) { <p class="version__nota">{{ receta.nota }}</p> }
+            <p class="version__dato">
+              {{ receta.lineas.length }} línea(s) · {{ receta.bordados.length }} bordado(s)
+            </p>
+            @if (receta.nota) {
+              <p class="version__nota">{{ receta.nota }}</p>
+            }
             <div class="version__acciones">
-              <button type="button" class="boton boton--secundario" (click)="seleccionar('A', receta.id)">
+              <button
+                type="button"
+                class="boton boton--secundario"
+                (click)="seleccionar('A', receta.id)"
+              >
                 {{ idA() === receta.id ? 'Versión A ✓' : 'Usar como A' }}
               </button>
-              <button type="button" class="boton boton--secundario" (click)="seleccionar('B', receta.id)">
+              <button
+                type="button"
+                class="boton boton--secundario"
+                (click)="seleccionar('B', receta.id)"
+              >
                 {{ idB() === receta.id ? 'Versión B ✓' : 'Usar como B' }}
               </button>
             </div>
@@ -77,7 +102,9 @@
         } @else {
           <div class="tabla-contenedor">
             <table class="tabla">
-              <caption class="sr-only">Comparación línea por línea de dos versiones</caption>
+              <caption class="sr-only">
+                Comparación línea por línea de dos versiones
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">Material / concepto</th>
@@ -96,9 +123,13 @@
                     <td data-etiqueta="A">{{ fila.detalleA }}</td>
                     <td data-etiqueta="B">{{ fila.detalleB }}</td>
                     <td data-etiqueta="Resultado">
-                      <span class="chip" [class.chip--cambio]="fila.estado === 'CAMBIO'"
+                      <span
+                        class="chip"
+                        [class.chip--cambio]="fila.estado === 'CAMBIO'"
                         [class.chip--nueva]="fila.estado === 'NUEVA'"
-                        [class.chip--baja]="fila.estado === 'ELIMINADA'">{{ fila.estado }}</span>
+                        [class.chip--baja]="fila.estado === 'ELIMINADA'"
+                        >{{ fila.estado }}</span
+                      >
                     </td>
                   </tr>
                 }

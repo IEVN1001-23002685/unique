@@ -23,10 +23,18 @@
         <span class="paso-indicador__numero">{{ numero }}</span>
         <span class="paso-indicador__texto">
           @switch (numero) {
-            @case (1) { Cliente }
-            @case (2) { Prendas }
-            @case (3) { Envío }
-            @case (4) { Pago }
+            @case (1) {
+              Cliente
+            }
+            @case (2) {
+              Prendas
+            }
+            @case (3) {
+              Envío
+            }
+            @case (4) {
+              Pago
+            }
           }
         </span>
       </li>
@@ -55,7 +63,7 @@
             Cliente
             <select class="campo__entrada" formControlName="clienteId">
               <option [ngValue]="0">Selecciona un cliente</option>
-              @for (cliente of clientes; track cliente.id) {
+              @for (cliente of clientes(); track cliente.id) {
                 <option [ngValue]="cliente.id">{{ cliente.nombre }}</option>
               }
             </select>
@@ -66,10 +74,17 @@
         } @else {
           <div class="campos">
             <label class="campo">
-              Nombre completo
+              Nombre
               <input class="campo__entrada" type="text" formControlName="nombreNuevo" />
               @if (intentoPaso() && formulario.controls.nombreNuevo.value.trim() === '') {
                 <span class="campo__error">El nombre es obligatorio.</span>
+              }
+            </label>
+            <label class="campo">
+              Apellidos
+              <input class="campo__entrada" type="text" formControlName="apellidosNuevo" />
+              @if (intentoPaso() && formulario.controls.apellidosNuevo.value.trim() === '') {
+                <span class="campo__error">Los apellidos son obligatorios.</span>
               }
             </label>
             <label class="campo">
@@ -85,8 +100,8 @@
             </label>
           </div>
           <p class="nota-nota">
-            «Nuevo sin acceso» crea solo los datos de contacto para la venta; no crea credenciales ni
-            una cuenta de cliente.
+            «Nuevo sin acceso» crea solo los datos de contacto para la venta; no crea credenciales
+            ni una cuenta de cliente.
           </p>
         }
       </div>
@@ -107,9 +122,11 @@
                 SKU
                 <select class="campo__entrada" formControlName="sku" (change)="sincronizarLineas()">
                   <option value="">Selecciona una variante</option>
-                  @for (variante of variantes; track variante.sku) {
+                  @for (variante of variantes(); track variante.sku) {
                     <option [value]="variante.sku">
-                      {{ variante.sku }} · {{ variante.nombreProducto }} · ${{ variante.precioUnitario }}
+                      {{ variante.sku }} · {{ variante.nombreProducto }} · ${{
+                        variante.precioUnitario
+                      }}
                     </option>
                   }
                 </select>
@@ -127,7 +144,9 @@
               </label>
               <div class="fila-linea__subtotal">
                 <span>Subtotal</span>
-                <strong>{{ lineasCarrito()[indice]?.subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+                <strong>{{
+                  lineasCarrito()[indice]?.subtotal | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX'
+                }}</strong>
               </div>
               <button
                 type="button"
@@ -261,7 +280,12 @@
         <div class="descuento">
           <label class="campo">
             Código de cupón
-            <input class="campo__entrada" type="text" formControlName="codigoCupon" placeholder="UNQ10" />
+            <input
+              class="campo__entrada"
+              type="text"
+              formControlName="codigoCupon"
+              placeholder="UNQ10"
+            />
           </label>
           <button type="button" class="boton boton--secundario" (click)="aplicarCupon()">
             Aplicar
@@ -285,8 +309,11 @@
             <div>
               <strong>{{ descuento.nombre }}</strong>
               <span>
-                @if (descuento.tipo === 'PORCENTAJE') { {{ descuento.valor }}% }
-                @else { ${{ descuento.valor }} }
+                @if (descuento.tipo === 'PORCENTAJE') {
+                  {{ descuento.valor }}%
+                } @else {
+                  ${{ descuento.valor }}
+                }
                 · {{ descuento.aplicacion === 'CUPON' ? 'Cupón' : 'Automático' }}
               </span>
             </div>
@@ -340,10 +367,24 @@
         }
 
         <div class="resumen">
-          <div><span>Subtotal</span><strong>{{ subtotal() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div><span>Descuento</span><strong>− {{ descuentoMonto() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div><span>Envío</span><strong>{{ costoEnvio() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
-          <div class="resumen__total"><span>Total</span><strong>{{ total() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong></div>
+          <div>
+            <span>Subtotal</span
+            ><strong>{{ subtotal() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+          </div>
+          <div>
+            <span>Descuento</span
+            ><strong
+              >− {{ descuentoMonto() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong
+            >
+          </div>
+          <div>
+            <span>Envío</span
+            ><strong>{{ costoEnvio() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+          </div>
+          <div class="resumen__total">
+            <span>Total</span
+            ><strong>{{ total() | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}</strong>
+          </div>
         </div>
       </div>
     }
@@ -359,9 +400,7 @@
         </button>
       }
       @if (paso() < 4) {
-        <button type="button" class="boton boton--primario" (click)="avanzar()">
-          Continuar
-        </button>
+        <button type="button" class="boton boton--primario" (click)="avanzar()">Continuar</button>
       } @else {
         <button type="submit" class="boton boton--primario">Registrar venta</button>
       }

@@ -77,7 +77,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Padrón de proveedores de UNIQUE</caption>
+          <caption class="sr-only">
+            Padrón de proveedores de UNIQUE
+          </caption>
           <thead>
             <tr>
               <th scope="col">Proveedor</th>
@@ -121,11 +123,13 @@
                 <td data-etiqueta="% a tiempo">
                   <span class="medicion" [attr.data-nivel]="nivelEntrega(proveedor)">
                     <span class="medicion__punto" aria-hidden="true"></span>
-                    {{ (evaluacion(proveedor)?.entregasATiempoPct ?? 0) | number: '1.1-1' : 'es-MX' }}%
+                    {{
+                      evaluacion(proveedor)?.entregasATiempoPct ?? 0 | number: '1.1-1' : 'es-MX'
+                    }}%
                   </span>
                 </td>
                 <td data-etiqueta="% aceptación">
-                  {{ (evaluacion(proveedor)?.aceptacionPct ?? 0) | number: '1.1-1' : 'es-MX' }}%
+                  {{ evaluacion(proveedor)?.aceptacionPct ?? 0 | number: '1.1-1' : 'es-MX' }}%
                 </td>
                 <td data-etiqueta="Estatus">
                   <app-chip-estatus [estatus]="proveedor.estatus" />
@@ -164,8 +168,8 @@
     }
 
     <p class="nota">
-      Eliminar solo es posible sin órdenes de compra; con historial el proveedor se desactiva.
-      Los cambios de esta vista son de demostración y no persisten en servidor.
+      Eliminar solo es posible sin órdenes de compra; con historial el proveedor se desactiva. La
+      decisión la toma Flask y los cambios se reflejan al recargar el padrón.
     </p>
   </div>
 

@@ -1,0 +1,259 @@
+@if (!servicio.esAdmin()) {
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Ventas y productos</h2>
+      <span>Vista previa con rol Operativo</span>
+    </div>
+    <p class="vacio">
+      Esta pestaña contiene ingresos y márgenes: según el documento, solo el Administrador puede
+      consultarla. El cambio de rol es demostrativo y no constituye un control de acceso real.
+    </p>
+    <p class="filtros__acciones">
+      <a class="boton boton--secundario" routerLink="/dashboard/resumen">Volver al resumen</a>
+    </p>
+  </div>
+} @else {
+  <div class="bloque__titulo">
+    <h2>Ventas e ingresos por producto</h2>
+    <span>Fórmulas del §7: margen real = (precio ÷ 1.16 − costo) ÷ (precio ÷ 1.16)</span>
+  </div>
+
+  <div class="metricas" aria-label="Indicadores de ventas">
+    @for (metrica of metricasVentas(); track metrica.etiqueta) {
+      <app-tarjeta-metrica [metrica]="metrica" />
+    }
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Ventas mensuales</h2>
+      <span>Según el periodo y los filtros comunes</span>
+    </div>
+    @if (servicio.ventasPorMes().length === 0) {
+      <p class="vacio">No hay ventas que coincidan con los filtros seleccionados.</p>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--corta">
+          <caption class="sr-only">
+            Ventas agrupadas por mes
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Mes</th>
+              <th scope="col">Ingresos</th>
+              <th scope="col">Participación</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (mes of servicio.ventasPorMes(); track mes.etiqueta) {
+              <tr>
+                <td data-etiqueta="Mes">{{ mes.etiqueta }}</td>
+                <td data-etiqueta="Ingresos">{{ mxn(mes.valor) }}</td>
+                <td data-etiqueta="Participación">
+                  {{ porcentaje(servicio.participacion(mes.valor)) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Ingresos por SKU y margen real</h2>
+      <span>Los costos se conservan como copia histórica de cada venta</span>
+    </div>
+    @if (servicio.ingresosPorSku().length === 0) {
+      <p class="vacio">Sin SKU para los filtros aplicados.</p>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <caption class="sr-only">
+            Ingresos y margen real por SKU
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">SKU</th>
+              <th scope="col">Prenda</th>
+              <th scope="col">Categoría</th>
+              <th scope="col">Color</th>
+              <th scope="col">Talla</th>
+              <th scope="col">Piezas</th>
+              <th scope="col">Ingresos</th>
+              <th scope="col">Margen real</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of servicio.ingresosPorSku(); track item.sku) {
+              <tr>
+                <td data-etiqueta="SKU">
+                  <span class="mono">{{ item.sku }}</span>
+                </td>
+                <td data-etiqueta="Prenda">{{ item.producto }}</td>
+                <td data-etiqueta="Categoría">{{ item.categoria }}</td>
+                <td data-etiqueta="Color">{{ item.color }}</td>
+                <td data-etiqueta="Talla">{{ item.talla }}</td>
+                <td data-etiqueta="Piezas">{{ numero(item.piezas) }}</td>
+                <td data-etiqueta="Ingresos">{{ mxn(item.ingresos) }}</td>
+                <td data-etiqueta="Margen real">
+                  <span class="valor-margen" [class.valor-margen--bajo]="item.margen < 55">{{
+                    porcentaje(item.margen)
+                  }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <p class="nota">Objetivo de margen real por SKU: 55 %. El costo es el estándar de la venta.</p>
+  </div>
+
+  <div class="dos-columnas">
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Ingresos por categoría</h2>
+        <span>M10 · catálogo de productos</span>
+      </div>
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--corta">
+          <caption class="sr-only">
+            Ingresos por categoría
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Categoría</th>
+              <th scope="col">Piezas</th>
+              <th scope="col">Ingresos</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of servicio.ingresosPorCategoria(); track item.etiqueta) {
+              <tr>
+                <td data-etiqueta="Categoría">{{ item.etiqueta }}</td>
+                <td data-etiqueta="Piezas">{{ numero(item.piezas) }}</td>
+                <td data-etiqueta="Ingresos">{{ mxn(item.ingresos) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="vacio">Sin datos para los filtros actuales.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Ingresos por color y talla</h2>
+        <span>Colores y tallas observados en ventas</span>
+      </div>
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--corta">
+          <caption class="sr-only">
+            Ingresos por color
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Color</th>
+              <th scope="col">Piezas</th>
+              <th scope="col">Ingresos</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of servicio.ingresosPorColor(); track item.etiqueta) {
+              <tr>
+                <td data-etiqueta="Color">{{ item.etiqueta }}</td>
+                <td data-etiqueta="Piezas">{{ numero(item.piezas) }}</td>
+                <td data-etiqueta="Ingresos">{{ mxn(item.ingresos) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="vacio">Sin datos para los filtros actuales.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--corta">
+          <caption class="sr-only">
+            Ingresos por talla
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Talla</th>
+              <th scope="col">Piezas</th>
+              <th scope="col">Ingresos</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of servicio.ingresosPorTalla(); track item.etiqueta) {
+              <tr>
+                <td data-etiqueta="Talla">{{ item.etiqueta }}</td>
+                <td data-etiqueta="Piezas">{{ numero(item.piezas) }}</td>
+                <td data-etiqueta="Ingresos">{{ mxn(item.ingresos) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="vacio">Sin datos para los filtros actuales.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="dos-columnas">
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Más vendidos</h2>
+        <span>Por piezas en el periodo</span>
+      </div>
+      <ol class="ranking">
+        @for (item of servicio.masVendidos(); track item.sku) {
+          <li>
+            <span class="mono">{{ item.sku }}</span> · {{ numero(item.piezas) }} pzas
+          </li>
+        } @empty {
+          <li class="vacio">Sin datos para los filtros actuales.</li>
+        }
+      </ol>
+    </div>
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Menos vendidos</h2>
+        <span>Por piezas en el periodo</span>
+      </div>
+      <ol class="ranking">
+        @for (item of servicio.menosVendidos(); track item.sku) {
+          <li>
+            <span class="mono">{{ item.sku }}</span> · {{ numero(item.piezas) }} pzas
+          </li>
+        } @empty {
+          <li class="vacio">Sin datos para los filtros actuales.</li>
+        }
+      </ol>
+    </div>
+  </div>
+
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Clientes nuevos y recompra</h2>
+      <span>Recompra a 60 días · referencia 20 %</span>
+    </div>
+    <div class="metricas metricas--clientes">
+      @for (metrica of metricasClientes(); track metrica.etiqueta) {
+        <app-tarjeta-metrica [metrica]="metrica" />
+      }
+    </div>
+  </div>
+
+  <p class="filtros__acciones">
+    <a class="boton boton--secundario" routerLink="/ventas">Abrir módulo de ventas</a>
+  </p>
+}

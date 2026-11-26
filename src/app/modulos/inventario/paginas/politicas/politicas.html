@@ -1,0 +1,139 @@
+<section class="vista">
+  <app-navegacion-inventario />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 5 · Administración de M15</p>
+      <h1 class="titulo">Políticas de reposición</h1>
+      <p class="subtitulo">
+        Stock mínimo, stock de seguridad y consumo diario manual por material y color. El punto de
+        reorden se calcula como consumo diario × plazo del proveedor + stock de seguridad.
+      </p>
+    </div>
+    <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
+  </div>
+
+  <form class="tarjeta bloque" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+    <div class="barra">
+      <label class="buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="buscador__icono">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por código, material o color"
+          aria-label="Buscar políticas"
+        />
+      </label>
+      <span class="etiqueta etiqueta--neutro">{{ vistas().length }} registros visibles</span>
+    </div>
+
+    @if (vistas().length === 0) {
+      <div class="estado" role="status">
+        <strong>No hay políticas para mostrar.</strong>
+        <p>Cambia el texto de búsqueda o da de alta materiales en el catálogo.</p>
+      </div>
+    } @else {
+      <div class="tabla-contenedor tabla-contenedor--ancha">
+        <table class="tabla tabla--politicas">
+          <caption class="sr-only">
+            Políticas de inventario por material y color
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Material</th>
+              <th scope="col">Color</th>
+              <th scope="col">Mínimo</th>
+              <th scope="col">Seguridad</th>
+              <th scope="col">Consumo manual</th>
+              <th scope="col">Consumo usado</th>
+              <th scope="col">Pto. reorden</th>
+              <th scope="col" class="celda-derecha">Disponible</th>
+            </tr>
+          </thead>
+          <tbody formArrayName="filas">
+            @for (vista of vistas(); track vista.id) {
+              @let indice = indiceDe(vista);
+              <tr [formGroupName]="indice">
+                <td data-etiqueta="Material">
+                  <span class="celda-principal">{{ vista.material.nombre }}</span>
+                  <span class="celda-secundaria"
+                    >{{ vista.material.codigo }} · {{ vista.material.unidadBase }}</span
+                  >
+                </td>
+                <td data-etiqueta="Color">{{ vista.color }}</td>
+                <td data-etiqueta="Mínimo">
+                  <input
+                    class="campo__entrada campo__entrada--tabla"
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    formControlName="stockMinimo"
+                  />
+                  @if (campoInvalido(indice, 'stockMinimo')) {
+                    <span class="campo__error">Mayor o igual a 0, hasta 4 decimales.</span>
+                  }
+                </td>
+                <td data-etiqueta="Seguridad">
+                  <input
+                    class="campo__entrada campo__entrada--tabla"
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    formControlName="stockSeguridad"
+                  />
+                  @if (campoInvalido(indice, 'stockSeguridad')) {
+                    <span class="campo__error">Valor no válido.</span>
+                  }
+                </td>
+                <td data-etiqueta="Consumo manual">
+                  <input
+                    class="campo__entrada campo__entrada--tabla"
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    formControlName="consumoDiarioManual"
+                  />
+                  @if (campoInvalido(indice, 'consumoDiarioManual')) {
+                    <span class="campo__error">Valor no válido.</span>
+                  }
+                </td>
+                <td data-etiqueta="Consumo usado">
+                  <span class="celda-numero">{{
+                    vista.consumoDiario | number: '1.0-4' : 'es-MX'
+                  }}</span>
+                  <span class="celda-secundaria">
+                    {{
+                      servicio.tieneHistoricoConsumo(vista.materialId, vista.color)
+                        ? 'Promedio 30 días'
+                        : 'Valor manual'
+                    }}
+                  </span>
+                </td>
+                <td data-etiqueta="Pto. reorden" class="celda-numero">
+                  {{ puntoReorden(indice) | number: '1.0-4' : 'es-MX' }}
+                </td>
+                <td data-etiqueta="Disponible" class="celda-numero celda-derecha">
+                  {{ vista.disponible | number: '1.0-4' : 'es-MX' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <div class="form-acciones">
+      <button type="submit" class="boton boton--primario">Guardar políticas</button>
+    </div>
+
+    <p class="nota nota--advertencia">
+      Con historial de CONSUMO en los últimos 30 días, Flask usa el promedio de ese periodo aunque
+      el valor manual sea distinto; el manual aplica solo mientras no haya historial. Los cambios se
+      se guardan en Flask con PATCH sobre la política del material.
+    </p>
+  </form>
+</section>

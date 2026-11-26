@@ -1,0 +1,22 @@
+<nav class="pestanas" aria-label="Pantallas de entregas">
+  <a
+    routerLink="/entregas"
+    routerLinkActive="pestana--activa"
+    [routerLinkActiveOptions]="{ exact: true }"
+    class="pestana"
+  >
+    Por asignar
+  </a>
+  <a routerLink="/entregas/hoja-reparto" routerLinkActive="pestana--activa" class="pestana">
+    Hoja de reparto
+  </a>
+  <a routerLink="/entregas/seguimiento" routerLinkActive="pestana--activa" class="pestana">
+    Seguimiento
+  </a>
+  <a routerLink="/entregas/productos-repartidos" routerLinkActive="pestana--activa" class="pestana">
+    Productos repartidos
+  </a>
+  <a routerLink="/entregas/repartidores" routerLinkActive="pestana--activa" class="pestana">
+    Repartidores
+  </a>
+</nav>

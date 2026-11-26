@@ -1,0 +1,71 @@
+<div class="modal" (keydown)="alPulsarTecla($event)">
+  <div class="modal__telon" (click)="cancelar.emit()" aria-hidden="true"></div>
+
+  <section
+    class="modal__panel"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="esEdicion() ? 'Editar repartidor' : 'Alta de repartidor'"
+  >
+    <form [formGroup]="forma" (ngSubmit)="alEnviar()">
+      <h2 class="modal__titulo">{{ esEdicion() ? 'Editar repartidor' : 'Nuevo repartidor' }}</h2>
+      <p class="modal__contexto">
+        Nombre, teléfono y vehículo. Si el repartidor tiene entregas, la baja solo lo desactiva y
+        conserva su historial.
+      </p>
+
+      <div class="modal__campos">
+        <label class="campo">
+          Nombre
+          <input
+            class="campo__entrada"
+            type="text"
+            formControlName="nombre"
+            autofocus
+            maxlength="80"
+            placeholder="Ej. Luis Ramírez"
+            [attr.aria-invalid]="nombreInvalido()"
+          />
+        </label>
+        @if (nombreInvalido()) {
+          <p class="campo__error" role="alert">Captura al menos 3 caracteres.</p>
+        }
+
+        <label class="campo">
+          Teléfono
+          <input
+            class="campo__entrada"
+            type="tel"
+            formControlName="telefono"
+            maxlength="20"
+            placeholder="477 145 8820"
+            [attr.aria-invalid]="telefonoInvalido()"
+          />
+        </label>
+        @if (telefonoInvalido()) {
+          <p class="campo__error" role="alert">Captura un teléfono de 10 dígitos.</p>
+        }
+
+        <label class="campo">
+          Vehículo (opcional)
+          <input
+            class="campo__entrada"
+            type="text"
+            formControlName="vehiculo"
+            maxlength="40"
+            placeholder="Ej. Motocicleta"
+          />
+        </label>
+      </div>
+
+      <div class="modal__acciones">
+        <button type="button" class="boton boton--secundario" (click)="cancelar.emit()">
+          Cancelar
+        </button>
+        <button type="submit" class="boton boton--primario">
+          {{ esEdicion() ? 'Guardar cambios' : 'Dar de alta' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

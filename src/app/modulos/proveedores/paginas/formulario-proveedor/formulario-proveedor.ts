@@ -1,7 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rfcValido, telefono10 } from '../../../../compartido/validadores/validadores-negocio';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionProveedores } from '../../componentes/navegacion-proveedores/navegacion-proveedores';
 import { ProveedoresServicio } from '../../servicios/proveedores-servicio';
@@ -33,11 +34,7 @@ export class FormularioProveedor {
     'Crédito 30 días',
     'Crédito 45 días',
   ];
-  protected readonly estatusPosibles: EstadoProveedor[] = [
-    'ACTIVO',
-    'EN_REVISION',
-    'INACTIVO',
-  ];
+  protected readonly estatusPosibles: EstadoProveedor[] = ['ACTIVO', 'EN_REVISION', 'INACTIVO'];
 
   protected readonly formulario = this.fb.nonNullable.group({
     razonSocial: ['', [Validators.required, Validators.minLength(3)]],
@@ -52,28 +49,35 @@ export class FormularioProveedor {
     notas: [''],
   });
 
+  private formularioInicializado = false;
+
   constructor() {
     if (!this.esEdicion) {
       return;
     }
 
-    const proveedor = this.servicio.obtenerPorId(this.idEditar);
-    if (!proveedor) {
-      this.noEncontrado.set(true);
-      return;
-    }
-
-    this.formulario.patchValue({
-      razonSocial: proveedor.razonSocial,
-      nombreComercial: proveedor.nombreComercial,
-      rfc: proveedor.rfc ?? '',
-      contacto: proveedor.contacto,
-      telefono: proveedor.telefono,
-      correo: proveedor.correo,
-      direccion: proveedor.direccion,
-      condicionesPago: proveedor.condicionesPago,
-      estatus: proveedor.estatus,
-      notas: proveedor.notas ?? '',
+    effect(() => {
+      if (this.formularioInicializado || !this.servicio.cargado()) {
+        return;
+      }
+      const proveedor = this.servicio.obtenerPorId(this.idEditar);
+      if (!proveedor) {
+        this.noEncontrado.set(true);
+        return;
+      }
+      this.formularioInicializado = true;
+      this.formulario.patchValue({
+        razonSocial: proveedor.razonSocial,
+        nombreComercial: proveedor.nombreComercial,
+        rfc: proveedor.rfc ?? '',
+        contacto: proveedor.contacto,
+        telefono: proveedor.telefono,
+        correo: proveedor.correo,
+        direccion: proveedor.direccion,
+        condicionesPago: proveedor.condicionesPago,
+        estatus: proveedor.estatus,
+        notas: proveedor.notas ?? '',
+      });
     });
   }
 
@@ -116,11 +120,12 @@ export class FormularioProveedor {
       materiales: previo?.materiales ?? [],
     };
 
-    this.servicio.guardarProveedor(proveedor);
-    this.avisos.mostrar(
-      'exito',
-      `${proveedor.nombreComercial} se guardó solo en memoria (demostración). Persistencia pendiente de Flask.`,
-    );
-    this.router.navigate(['/proveedores']);
+    this.servicio.guardarProveedor(proveedor).subscribe({
+      next: () => {
+        this.avisos.mostrar('exito', `${proveedor.nombreComercial} se guardó en Flask.`);
+        this.router.navigate(['/proveedores']);
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 }

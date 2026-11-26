@@ -1,4 +1,4 @@
-import type { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 /** §10.3b · telefono10: exactamente 10 dígitos. */
 export function telefono10(control: AbstractControl): ValidationErrors | null {

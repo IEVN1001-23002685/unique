@@ -54,7 +54,11 @@
       <div class="selectores">
         <label class="selector">
           <span>Prioridad</span>
-          <select class="campo__entrada" [value]="prioridad()" (change)="alCambiarPrioridad($event)">
+          <select
+            class="campo__entrada"
+            [value]="prioridad()"
+            (change)="alCambiarPrioridad($event)"
+          >
             @for (opcion of prioridades; track opcion.valor) {
               <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
             }
@@ -134,10 +138,7 @@
               >
                 <div class="tarjeta-pedido__arriba">
                   <span class="mono">{{ pedido.folio }}</span>
-                  <span
-                    class="prioridad"
-                    [class.prioridad--alta]="pedido.prioridad === 'ALTA'"
-                  >
+                  <span class="prioridad" [class.prioridad--alta]="pedido.prioridad === 'ALTA'">
                     {{ pedido.prioridad === 'ALTA' ? 'Alta' : 'Normal' }}
                   </span>
                 </div>
@@ -160,7 +161,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Pedidos activos filtrados</caption>
+          <caption class="sr-only">
+            Pedidos activos filtrados
+          </caption>
           <thead>
             <tr>
               <th scope="col">Folio</th>
@@ -176,7 +179,9 @@
           <tbody>
             @for (pedido of filtrados(); track pedido.folio) {
               <tr>
-                <td data-etiqueta="Folio"><span class="mono">{{ pedido.folio }}</span></td>
+                <td data-etiqueta="Folio">
+                  <span class="mono">{{ pedido.folio }}</span>
+                </td>
                 <td data-etiqueta="Cliente">
                   <span class="celda-principal">{{ pedido.cliente }}</span>
                   <span class="celda-secundaria">{{ pedido.lineas.length }} SKU</span>
@@ -195,7 +200,7 @@
                       {{ pedido.ventaFolio }}
                     </a>
                   } @else {
-                    <span class="celda-secundaria">{{ pedido.ventaFolio }} · solo demo</span>
+                    <span class="celda-secundaria">Sin venta vinculada</span>
                   }
                 </td>
                 <td data-etiqueta="Acciones">
@@ -211,7 +216,7 @@
     <p class="nota">
       Umbrales de estancamiento (§8.2): RECIBIDO 2 h, CONFIRMADO 24 h, EN_PRODUCCION 7 d,
       EN_PREPARACION 24 h, LISTO_ENVIO 24 h y EN_REPARTO 24 h. Ámbar al 75 % y rojo al superarlos.
-      Editables en M22; los valores aquí mostrados son de demostración.
+      Umbrales configurables en M22.
     </p>
   </div>
 </section>

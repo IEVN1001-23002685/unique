@@ -63,9 +63,7 @@ export class RegistroVentas {
       .filter((venta) => {
         const coincidePeriodo =
           periodo === 'TODOS' ||
-          (periodo === 'HOY'
-            ? venta.fecha.startsWith(hoy)
-            : venta.fecha.startsWith(mes));
+          (periodo === 'HOY' ? venta.fecha.startsWith(hoy) : venta.fecha.startsWith(mes));
         const coincideCanal = canal === 'TODOS' || venta.canal === canal;
         const coincideEstado = estado === 'TODOS' || venta.estadoPago === estado;
         const coincideTexto =
@@ -94,6 +92,10 @@ export class RegistroVentas {
     const inicio = (this.paginaSegura() - 1) * this.tamanoPagina;
     return this.filtrados().slice(inicio, inicio + this.tamanoPagina);
   });
+
+  constructor() {
+    this.servicio.recargar().subscribe();
+  }
 
   protected readonly sinFiltros = computed(
     () =>
@@ -138,8 +140,7 @@ export class RegistroVentas {
       return;
     }
 
-    const escapar = (valor: string | number): string =>
-      `"${String(valor).replace(/"/g, '""')}"`;
+    const escapar = (valor: string | number): string => `"${String(valor).replace(/"/g, '""')}"`;
     const cabecera = [
       'Folio',
       'Cliente',
@@ -156,11 +157,9 @@ export class RegistroVentas {
       venta.canal,
       venta.total.toFixed(2),
       venta.estadoPago,
-      venta.estadoPedido,
+      venta.estadoPedido ?? '',
     ]);
-    const contenido = [cabecera, ...cuerpo]
-      .map((fila) => fila.map(escapar).join(','))
-      .join('\r\n');
+    const contenido = [cabecera, ...cuerpo].map((fila) => fila.map(escapar).join(',')).join('\r\n');
     const url = URL.createObjectURL(
       new Blob([`\uFEFF${contenido}`], { type: 'text/csv;charset=utf-8;' }),
     );
@@ -172,7 +171,7 @@ export class RegistroVentas {
 
     this.avisos.mostrar(
       'exito',
-      `${filas.length} ventas exportadas a CSV de demostración. No se envió nada a un servidor.`,
+      `${filas.length} ventas exportadas a CSV desde los datos de la API.`,
     );
   }
 }

@@ -1,0 +1,338 @@
+<section class="vista">
+  <app-navegacion-preparacion />
+
+  <a routerLink="/preparacion" class="volver">← Volver a la cola</a>
+
+  @if (preparacion(); as hoja) {
+    <div class="cabecera">
+      <div>
+        <p class="eyebrow">Hoja de preparación</p>
+        <h1 class="titulo mono">{{ hoja.folio }}</h1>
+        <p class="subtitulo">
+          Pedido
+          <a class="accion" [routerLink]="['/admin/pedidos', hoja.pedidoFolio]">{{
+            hoja.pedidoFolio
+          }}</a>
+          · {{ hoja.cliente }} · Tomada por {{ hoja.tomadaPor }}
+          @if (hoja.terminadaEn) {
+            · Terminada el {{ hoja.terminadaEn | date: 'dd/MM/yyyy HH:mm' : '' : 'es-MX' }}
+          }
+        </p>
+      </div>
+      <div class="cabecera__acciones">
+        <app-chip-estado-preparacion [estado]="hoja.estado" />
+        <span class="prioridad" [class.prioridad--alta]="hoja.prioridad === 'ALTA'">
+          Prioridad {{ hoja.prioridad === 'ALTA' ? 'alta' : 'normal' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="tarjeta bloque pasos-bloque">
+      <app-pasos-preparacion [paso]="paso()" />
+      <p class="pasos-nota">
+        Fecha prometida:
+        @if (hoja.fechaPromesa) {
+          {{ hoja.fechaPromesa | date: 'dd/MM/yyyy' : '' : 'es-MX' }}
+        } @else {
+          Sin fecha prometida
+        }
+        · Las verificaciones se registran por línea antes de empacar.
+      </p>
+    </div>
+
+    @if (abiertas() > 0) {
+      <div class="aviso aviso--adv" role="status">
+        <strong>{{ abiertas() }} incidencia(s) sin cerrar.</strong>
+        Revisa la sección de incidencias antes de marcar el pedido como listo.
+      </div>
+    }
+
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Líneas del pedido</h2>
+        <span>SKU generado por el sistema · no editable</span>
+      </div>
+
+      <div class="tabla-contenedor">
+        <table class="tabla tabla-lineas">
+          <caption class="sr-only">
+            Líneas de la hoja
+            {{
+              hoja.folio
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">SKU</th>
+              <th scope="col">Prenda</th>
+              <th scope="col">Talla</th>
+              <th scope="col">Color</th>
+              <th scope="col">Requerida</th>
+              <th scope="col">Surtida</th>
+              <th scope="col">SKU verif.</th>
+              <th scope="col">Diseño / bordado</th>
+              <th scope="col">Etiquetas</th>
+              <th scope="col">Incidencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (linea of hoja.lineas; track linea.id) {
+              <tr>
+                <td data-etiqueta="SKU">
+                  <span class="mono">{{ linea.sku }}</span>
+                </td>
+                <td data-etiqueta="Prenda">
+                  <span class="celda-principal">{{ linea.nombreProducto }}</span>
+                </td>
+                <td data-etiqueta="Talla">{{ linea.talla }}</td>
+                <td data-etiqueta="Color">{{ linea.color }}</td>
+                <td data-etiqueta="Requerida">{{ linea.cantidadRequerida }}</td>
+                <td data-etiqueta="Surtida">
+                  <span [class.dato-alerta]="linea.cantidadSurtida < linea.cantidadRequerida">
+                    {{ linea.cantidadSurtida }}
+                  </span>
+                </td>
+                <td data-etiqueta="SKU verif.">
+                  <input
+                    type="checkbox"
+                    [checked]="linea.skuVerificado"
+                    [disabled]="hoja.estado !== 'EN_VERIFICACION'"
+                    [attr.aria-label]="'SKU verificado de ' + linea.sku"
+                    (change)="verificar(linea.id, 'sku')"
+                  />
+                </td>
+                <td data-etiqueta="Diseño">
+                  <input
+                    type="checkbox"
+                    [checked]="linea.disenoVerificado"
+                    [disabled]="hoja.estado !== 'EN_VERIFICACION'"
+                    [attr.aria-label]="'Diseño y bordado verificados de ' + linea.sku"
+                    (change)="verificar(linea.id, 'diseno')"
+                  />
+                </td>
+                <td data-etiqueta="Etiquetas">
+                  <input
+                    type="checkbox"
+                    [checked]="linea.etiquetasVerificadas"
+                    [disabled]="hoja.estado !== 'EN_VERIFICACION'"
+                    [attr.aria-label]="'Etiquetas verificadas de ' + linea.sku"
+                    (change)="verificar(linea.id, 'etiquetas')"
+                  />
+                </td>
+                <td data-etiqueta="Incidencia">
+                  <button
+                    type="button"
+                    class="boton boton--enlace"
+                    (click)="abrirIncidencia(linea.sku)"
+                  >
+                    Registrar
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (hoja.estado === 'EN_PICKING') {
+        <div class="pick">
+          <label class="campo">
+            Capturar o escanear SKU
+            <input
+              class="campo__entrada"
+              type="text"
+              autocomplete="off"
+              [value]="codigoSku()"
+              (input)="alCapturarSku($event)"
+              (keydown.enter)="surtir()"
+              placeholder="Ej. SD-GD-NG"
+            />
+          </label>
+          <button type="button" class="boton boton--primario" (click)="surtir()">Surtir</button>
+        </div>
+      }
+
+      @if (hoja.notas) {
+        <p class="nota nota--adv">Nota de la hoja: {{ hoja.notas }}</p>
+      }
+
+      <div class="acciones acciones--hoja">
+        @if (hoja.estado === 'EN_PICKING') {
+          <button type="button" class="boton boton--primario" (click)="pasarAVerificacion()">
+            Pasar a verificación
+          </button>
+        }
+        @if (hoja.estado === 'EN_VERIFICACION') {
+          <button type="button" class="boton boton--primario" (click)="pasarAEmpaque()">
+            Pasar a empaque
+          </button>
+        }
+        @if (hoja.estado === 'EN_EMPAQUE') {
+          <button type="button" class="boton boton--primario" (click)="marcarListo()">
+            Marcar listo
+          </button>
+        }
+        <button type="button" class="boton boton--secundario" (click)="abrirIncidencia()">
+          Registrar incidencia
+        </button>
+        @if (hoja.estado === 'EN_EMPAQUE' || hoja.estado === 'LISTA') {
+          <button type="button" class="boton boton--secundario" (click)="imprimirEtiqueta()">
+            Imprimir etiqueta de envío
+          </button>
+        }
+      </div>
+
+      <p class="nota">
+        No se puede empacar hasta que todas las líneas tengan SKU, diseño/bordado y etiquetas
+        verificados. El consumo de empaque, la merma y el paso a LISTO_ENVIO reales requieren Flask.
+      </p>
+    </div>
+
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Lista de empaque</h2>
+        <span>Proyección de empaque_regla · sin costos para el Operativo</span>
+      </div>
+      <div class="tabla-contenedor">
+        <table class="tabla tabla-empaque">
+          <caption class="sr-only">
+            Materiales de empaque por preparación
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Material</th>
+              <th scope="col">Concepto</th>
+              <th scope="col">Base</th>
+              <th scope="col">Cantidad</th>
+              <th scope="col">Unidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (consumo of consumos(); track consumo.materialId) {
+              <tr>
+                <td data-etiqueta="Material">
+                  <span class="mono">{{ consumo.materialId }}</span>
+                </td>
+                <td data-etiqueta="Concepto">{{ consumo.nombre }}</td>
+                <td data-etiqueta="Base">
+                  {{ consumo.base === 'POR_PRENDA' ? 'Por prenda' : 'Por pedido' }}
+                </td>
+                <td data-etiqueta="Cantidad">{{ consumo.cantidad }}</td>
+                <td data-etiqueta="Unidad">{{ consumo.unidad }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="nota">
+        Bolsa individual y papel protector por prenda; tarjeta con QR y etiqueta de envío por
+        pedido. Las existencias de Empaque se consumen en Flask contra M15 al marcar el empaque.
+      </p>
+    </div>
+
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Etiqueta de envío</h2>
+        <span>Vista previa · el QR rastreable se genera en Flask</span>
+      </div>
+      <div class="etiqueta">
+        <p class="etiqueta__marca">UNIQUE <small>tan único como tú</small></p>
+        <dl>
+          <div>
+            <dt>Folio</dt>
+            <dd class="mono">{{ hoja.folio }}</dd>
+          </div>
+          <div>
+            <dt>Pedido</dt>
+            <dd class="mono">{{ hoja.pedidoFolio }}</dd>
+          </div>
+          <div>
+            <dt>Destinatario</dt>
+            <dd>{{ hoja.direccion.destinatario }}</dd>
+          </div>
+          <div>
+            <dt>Dirección</dt>
+            <dd>{{ hoja.direccion.calle }}, {{ hoja.direccion.colonia }}</dd>
+          </div>
+          <div>
+            <dt>CP y ciudad</dt>
+            <dd>
+              {{ hoja.direccion.cp }} · {{ hoja.direccion.ciudad }}, {{ hoja.direccion.estado }}
+            </dd>
+          </div>
+          <div>
+            <dt>Teléfono</dt>
+            <dd>{{ hoja.direccion.telefono }}</dd>
+          </div>
+        </dl>
+        <div class="etiqueta__qr">
+          <svg
+            width="64"
+            height="64"
+            viewBox="0 0 9 9"
+            aria-hidden="true"
+            shape-rendering="crispEdges"
+          >
+            <rect width="9" height="9" fill="#fff" />
+            <path
+              fill="#542d59"
+              d="M0 0h3v3H0zM6 0h3v3H6zM0 6h3v3H0zM4 1h1v1H4zM5 3h2v1H5zM3 4h2v1H3zM6 5h1v1H6zM2 6h1v2H2zM5 7h2v1H5zM8 4h1v4H8z"
+            />
+          </svg>
+          <span>Código QR de demostración</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tarjeta bloque">
+      <div class="bloque__titulo">
+        <h2>Incidencias de la hoja</h2>
+        <a routerLink="/preparacion/incidencias" class="accion">Ver todas</a>
+      </div>
+      @if (incidencias().length === 0) {
+        <p class="vacio">No se registraron incidencias para esta preparación.</p>
+      } @else {
+        <ul class="incidencias">
+          @for (incidencia of incidencias(); track incidencia.id) {
+            <li>
+              <span class="mono">{{ incidencia.folio }}</span>
+              <span class="celda-principal"
+                >{{ incidencia.sku }} · {{ incidencia.descripcion }}</span
+              >
+              <span
+                class="chip"
+                [class.chip--exito]="incidencia.estado === 'RESUELTA'"
+                [class.chip--adv]="incidencia.estado === 'ABIERTA'"
+                [class.chip--error]="incidencia.estado === 'PENDIENTE_PRODUCCION'"
+              >
+                <span class="chip__punto" aria-hidden="true"></span>
+                {{
+                  incidencia.estado === 'PENDIENTE_PRODUCCION'
+                    ? 'Vuelve a producción'
+                    : incidencia.estado === 'ABIERTA'
+                      ? 'Abierta'
+                      : 'Resuelta'
+                }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  } @else {
+    <div class="tarjeta bloque estado" role="status">
+      <strong>No encontramos la hoja {{ folio }}.</strong>
+      <p>Regresa a la cola para tomar un pedido o abrir una hoja disponible.</p>
+      <a routerLink="/preparacion" class="boton boton--primario">Ir a la cola</a>
+    </div>
+  }
+
+  @if (abrirModal()) {
+    <app-modal-incidencia
+      [skus]="skus()"
+      [skuInicial]="incidenciaSku()"
+      (registrar)="registrarIncidencia($event)"
+      (cancelar)="abrirModal.set(false)"
+    />
+  }
+</section>

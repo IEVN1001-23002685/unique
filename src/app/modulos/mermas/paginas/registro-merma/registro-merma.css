@@ -1,0 +1,63 @@
+.perfil-demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font: 600 0.78rem var(--font-interfaz);
+  color: var(--color-unique-morado);
+}
+.confirmacion {
+  margin: 0.85rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: var(--color-unique-exito-suave);
+  color: #1e6b3c;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.ayuda {
+  font: 400 0.7rem var(--font-texto);
+  color: var(--color-unique-texto-suave);
+}
+.evidencia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-self: end;
+  gap: 0.6rem;
+  padding-bottom: 0.2rem;
+}
+.resumen .lector {
+  gap: 0.55rem;
+}
+.costo {
+  display: grid;
+  gap: 0.2rem;
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: var(--color-unique-lila);
+  color: var(--color-unique-morado);
+}
+.costo span {
+  font: 600 0.75rem var(--font-interfaz);
+}
+.costo strong {
+  font: 700 1.35rem var(--font-titulo);
+  font-variant-numeric: tabular-nums;
+}
+.costo small {
+  font: 400 0.7rem var(--font-texto);
+  color: var(--color-unique-texto-suave);
+}
+.reglas {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--color-unique-texto-suave);
+}
+.reglas li + li {
+  margin-top: 0.35rem;
+}

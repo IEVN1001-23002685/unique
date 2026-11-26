@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
 import { ChipEstatus } from '../../componentes/chip-estatus/chip-estatus';
@@ -97,20 +98,17 @@ export class Padron {
       return;
     }
 
-    const resultado = this.servicio.eliminarProveedor(proveedor.id);
-    this.proveedorAEliminar.set(null);
-
-    if (resultado === 'desactivado') {
-      this.avisos.mostrar(
-        'advertencia',
-        `${proveedor.nombreComercial} tiene órdenes de compra: se desactivó. Cambio solo en memoria, pendiente de Flask.`,
-      );
-      return;
-    }
-
-    this.avisos.mostrar(
-      'exito',
-      `${proveedor.nombreComercial} se eliminó del padrón de demostración. Pendiente de Flask.`,
-    );
+    this.servicio.eliminarProveedor(proveedor.id).subscribe({
+      next: (resultado) => {
+        this.proveedorAEliminar.set(null);
+        this.avisos.mostrar(
+          resultado === 'desactivado' ? 'advertencia' : 'exito',
+          resultado === 'desactivado'
+            ? `${proveedor.nombreComercial} tiene historial: Flask lo desactivó.`
+            : `${proveedor.nombreComercial} se eliminó del padrón en Flask.`,
+        );
+      },
+      error: (error: unknown) => this.avisos.mostrar('error', mensajeError(error)),
+    });
   }
 }

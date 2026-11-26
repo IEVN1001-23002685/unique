@@ -1,0 +1,57 @@
+<section class="pagina">
+  <div class="tarjeta bloque">
+    <div class="bloque__titulo">
+      <h2>Bitácora de resueltas</h2>
+      <span>{{ filtradas().length }} registro(s) visibles</span>
+    </div>
+    <button type="button" class="boton boton--enlace" (click)="alternarFiltro()">
+      {{ soloAuto() ? 'Ver todas las resueltas' : 'Ver solo resueltas automáticas' }}
+    </button>
+  </div>
+
+  @if (filtradas().length === 0) {
+    <p class="vacio">
+      Aún no hay alertas cerradas en esta sesión. Al marcar una alerta como atendida —o al
+      desaparecer una condición observada— aparecerá aquí con quién y cuándo se cerró.
+    </p>
+  } @else {
+    <div class="tarjeta tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Alerta</th>
+            <th scope="col">Severidad</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Cerrada por</th>
+            <th scope="col">Cuándo</th>
+            <th scope="col">Origen</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (alerta of filtradas(); track alerta.id) {
+            <tr>
+              <td data-etiqueta="Alerta">
+                <span class="celda-principal">{{ alerta.titulo }}</span>
+                <span class="celda-secundaria"
+                  >{{ alerta.entidadTipo }} · {{ alerta.entidadId }}</span
+                >
+              </td>
+              <td data-etiqueta="Severidad">
+                <app-chip-severidad [severidad]="alerta.severidad" />
+              </td>
+              <td data-etiqueta="Estado">{{ etiquetaEstado(alerta.estado) }}</td>
+              <td data-etiqueta="Cerrada por">{{ alerta.atendidaPor ?? '—' }}</td>
+              <td data-etiqueta="Cuándo">{{ fecha(alerta.atendidaEn) }}</td>
+              <td data-etiqueta="Origen">{{ alerta.origen }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <p class="nota nota-final">
+    La bitácora definitiva la conserva Flask en los campos <span class="mono">atendida_por</span> y
+    <span class="mono">atendida_en</span>. Esta tabla solo refleja la sesión de demostración.
+  </p>
+</section>

@@ -43,7 +43,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Historial de pedidos cancelados</caption>
+          <caption class="sr-only">
+            Historial de pedidos cancelados
+          </caption>
           <thead>
             <tr>
               <th scope="col">Folio</th>
@@ -58,7 +60,9 @@
           <tbody>
             @for (pedido of filtrados(); track pedido.folio) {
               <tr>
-                <td data-etiqueta="Folio"><span class="mono">{{ pedido.folio }}</span></td>
+                <td data-etiqueta="Folio">
+                  <span class="mono">{{ pedido.folio }}</span>
+                </td>
                 <td data-etiqueta="Cliente">
                   <span class="celda-principal">{{ pedido.cliente }}</span>
                   <span class="celda-secundaria">{{ servicio.articulos(pedido) }} artículo(s)</span>
@@ -76,7 +80,7 @@
                       {{ pedido.ventaFolio }}
                     </a>
                   } @else {
-                    <span class="celda-secundaria">{{ pedido.ventaFolio }} · solo demo</span>
+                    <span class="celda-secundaria">Sin venta vinculada</span>
                   }
                 </td>
                 <td data-etiqueta="Acción">
@@ -90,9 +94,8 @@
     }
 
     <p class="nota">
-      Al cancelar, el documento indica liberar reservas (M12), quitar el pedido de las órdenes de
-      producción (M16) y pedir el reembolso a M08. Esas operaciones requieren servidor y no se
-      ejecutan desde esta vista de demostración.
+      Al cancelar, Flask libera reservas (M12), ajusta las órdenes de producción (M16) y registra
+      el reembolso simulado (M08).
     </p>
   </div>
 </section>

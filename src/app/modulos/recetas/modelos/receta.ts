@@ -1,18 +1,8 @@
 import type { CodigoTalla } from '../../productos/modelos/producto-maestro';
 
-/**
- * Modelos de interfaz de M11 · Recetas y bordados.
- * Corresponden a las entidades del §6; la persistencia y el cálculo
- * autoritativo corresponderán a Flask cuando se integre el backend.
- */
+/** Modelos de interfaz de M11 · Recetas y bordados, servidos por Flask. */
 
-export type CategoriaMaterial =
-  | 'Tela'
-  | 'Hilo'
-  | 'Estabilizador'
-  | 'Avio'
-  | 'Etiqueta'
-  | 'Empaque';
+export type CategoriaMaterial = 'Tela' | 'Hilo' | 'Estabilizador' | 'Avio' | 'Etiqueta' | 'Empaque';
 
 export type UnidadBase = 'm2' | 'm' | 'g' | 'pieza';
 export type UnidadCaptura = 'cm2' | 'cm' | 'm2' | 'm' | 'g' | 'pieza';
@@ -42,8 +32,9 @@ export interface LineaReceta {
   unidadCaptura: UnidadCaptura;
   factorConsumo: number;
   mermaPct: number;
-  /** Derivada: neta × factor ÷ (1 − merma/100). */
+  /** Cantidad bruta y costo de línea calculados por Flask. */
   cantidadBruta: number;
+  costoLinea?: number;
   esEtiqueta: boolean;
   nota: string;
 }
@@ -66,7 +57,9 @@ export interface EntradaBitacoraReceta {
 export interface Receta {
   id: number;
   productoId: number;
+  producto?: string;
   talla: CodigoTalla;
+  tallaId?: number;
   version: number;
   estado: EstadoReceta;
   origenRecetaId: number | null;
@@ -77,6 +70,14 @@ export interface Receta {
   creadaPor: string;
   creadaEn: string;
   activadaEn: string | null;
+  precioVenta?: number;
+  /** Importes calculados por Flask; ausentes para el rol OPERATIVO. */
+  materiaPrima?: number;
+  hiloBordado?: number;
+  costoEmpaque?: number;
+  costoEstandar?: number;
+  precioSugerido?: number;
+  margenReal?: number;
   lineas: LineaReceta[];
   bordados: BordadoReceta[];
   bitacora: EntradaBitacoraReceta[];

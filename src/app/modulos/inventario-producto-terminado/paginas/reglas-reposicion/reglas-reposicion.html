@@ -11,7 +11,12 @@
       </p>
     </div>
     <div class="cabecera__acciones">
-      <button type="button" class="boton boton--primario" [disabled]="forma.pristine" (click)="guardar()">
+      <button
+        type="button"
+        class="boton boton--primario"
+        [disabled]="forma.pristine"
+        (click)="guardar()"
+      >
         Guardar cambios
       </button>
     </div>
@@ -44,7 +49,9 @@
       } @else {
         <div class="tabla-contenedor">
           <table class="tabla tabla--reglas">
-            <caption class="sr-only">Reglas de reposición por variante</caption>
+            <caption class="sr-only">
+              Reglas de reposición por variante
+            </caption>
             <thead>
               <tr>
                 <th scope="col">SKU</th>
@@ -59,7 +66,9 @@
             <tbody formArrayName="reglas">
               @for (item of filasConIndice(); track item.fila.varianteId) {
                 <tr [formGroupName]="item.indice">
-                  <td data-etiqueta="SKU"><span class="celda-principal">{{ item.fila.sku }}</span></td>
+                  <td data-etiqueta="SKU">
+                    <span class="celda-principal">{{ item.fila.sku }}</span>
+                  </td>
                   <td data-etiqueta="Producto">{{ item.fila.productoNombre }}</td>
                   <td data-etiqueta="Categoría">{{ item.fila.categoriaNombre }}</td>
                   <td data-etiqueta="Disponible" class="tabla__numero">
@@ -69,7 +78,7 @@
                   </td>
                   <td data-etiqueta="Semáforo">
                     @if (servicio.existencias()[item.indice]; as detalle) {
-                      <app-semaforo-inventario [estado]="detalle.semaforo" />
+                      <app-semaforo-inventario-pt [estado]="detalle.semaforo" />
                     }
                   </td>
                   <td data-etiqueta="Stock mínimo">
@@ -110,13 +119,13 @@
 
     <p class="nota">
       Cada movimiento que deja el disponible en el mínimo o menos genera una señal de reposición con
-      origen STOCK_MINIMO por la cantidad indicada; Flask debe crearla o sumarla a la orden abierta en
-      M16 y abrir la alerta. Cambiar el mínimo o la cantidad no crea órdenes por sí mismo.
+      origen STOCK_MINIMO por la cantidad indicada; Flask debe crearla o sumarla a la orden abierta
+      en M16 y abrir la alerta. Cambiar el mínimo o la cantidad no crea órdenes por sí mismo.
     </p>
     <p class="nota nota--adv">
-      Permisos del documento: el Administrador edita estas reglas; el Operativo solo consulta. Como no
-      existe autenticación aún, el prototipo permite la edición para demostrar la pantalla y deja el
-      contrato PATCH /inventario/producto/{variante_id}/reglas listo para Flask.
+      Permisos del documento: el Administrador edita estas reglas; el Operativo solo consulta. Como
+      no existe autenticación aún, el prototipo permite la edición para demostrar la pantalla y deja
+      el contrato PATCH /inventario/producto/{{ '{variante_id}' }}/reglas listo para Flask.
     </p>
   </div>
 </section>

@@ -10,20 +10,9 @@ import type { CodigoColor, CodigoTalla } from '../../productos/modelos/producto-
 export type SemaforoInventario = 'ROJO' | 'AMBAR' | 'VERDE';
 
 export type TipoMovimientoProducto =
-  | 'PRODUCCION'
-  | 'RESERVA'
-  | 'LIBERA_RESERVA'
-  | 'SALIDA_ENVIO'
-  | 'REINGRESO'
-  | 'MERMA'
-  | 'AJUSTE';
+  'PRODUCCION' | 'RESERVA' | 'LIBERA_RESERVA' | 'SALIDA_ENVIO' | 'REINGRESO' | 'MERMA' | 'AJUSTE';
 
-export type TipoDocumentoMovimiento =
-  | 'ORDEN'
-  | 'PEDIDO'
-  | 'DEVOLUCION'
-  | 'ENTREGA'
-  | 'AJUSTE';
+export type TipoDocumentoMovimiento = 'ORDEN' | 'PEDIDO' | 'DEVOLUCION' | 'ENTREGA' | 'AJUSTE';
 
 /** Fila de stock_variante enriquecida con la lectura de M10 y de órdenes abiertas. */
 export interface FilaInventario {
@@ -44,6 +33,8 @@ export interface FilaInventario {
   enProduccion: number;
   /** Promedio de salidas de los últimos 30 días; 0 cuando no hay historial. */
   ventasDiarias30: number;
+  /** Días de cobertura calculados por Flask; se respeta cuando viene en la respuesta. */
+  diasCoberturaApi?: number | null;
 }
 
 export interface FilaExistencia extends FilaInventario {

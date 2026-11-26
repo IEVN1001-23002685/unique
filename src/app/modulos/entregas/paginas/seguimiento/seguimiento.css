@@ -1,0 +1,32 @@
+:host {
+  display: block;
+}
+
+.barra--seguimiento {
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.bloque--alerta {
+  margin-bottom: 1.25rem;
+  border-left: 5px solid var(--color-unique-error);
+}
+
+.alerta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #eadcea;
+}
+
+.alerta > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.tabla--historial {
+  min-width: 70rem;
+}

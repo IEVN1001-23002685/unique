@@ -6,8 +6,12 @@
       <p class="eyebrow">M10 · Catálogo maestro</p>
       <h1 class="titulo">Productos y variantes</h1>
       <p class="subtitulo">
-        Prendas con código base y SKU generados por el sistema. El precio se muestra con IVA
-        incluido y el margen se calcula con el costo provisional que entrega M11.
+        Prendas con código base y SKU generados por el sistema. El precio se calcula en el
+        formulario con materiales, porcentajes, bordado y margen; no se captura a mano.
+      </p>
+      <p class="ruta-guiada">
+        Ruta guiada: <strong>Materiales + Porcentajes + Bordado → Receta → Precio</strong> y
+        <strong>Categorías, Variantes/Colores e Imágenes → Producto</strong>.
       </p>
     </div>
     <a routerLink="/admin/productos/nuevo" class="boton boton--primario">Nuevo producto</a>
@@ -51,7 +55,7 @@
         Categoría
         <select class="campo__entrada" [value]="categoria()" (change)="alCambiarCategoria($event)">
           <option value="TODAS">Todas</option>
-          @for (categoria of servicio.categorias; track categoria.id) {
+          @for (categoria of servicio.categorias(); track categoria.id) {
             <option [value]="categoria.id">{{ categoria.nombre }}</option>
           }
         </select>
@@ -80,7 +84,9 @@
     } @else {
       <div class="tabla-contenedor">
         <table class="tabla">
-          <caption class="sr-only">Catálogo maestro de productos</caption>
+          <caption class="sr-only">
+            Catálogo maestro de productos
+          </caption>
           <thead>
             <tr>
               <th scope="col">Imagen</th>
@@ -89,8 +95,10 @@
               <th scope="col">Código base</th>
               <th scope="col">Variantes</th>
               <th scope="col">Precio vigente</th>
-              <th scope="col">Costo estándar</th>
-              <th scope="col">Margen real</th>
+              @if (perfilDemo.puedeVerCostos()) {
+                <th scope="col">Costo estándar</th>
+                <th scope="col">Margen real</th>
+              }
               <th scope="col">Estatus</th>
               <th scope="col">Acciones</th>
             </tr>
@@ -115,28 +123,34 @@
                   <span class="celda-principal">{{ producto.nombre }}</span>
                   <span class="celda-secundaria">{{ producto.descripcion }}</span>
                 </td>
-                <td data-etiqueta="Categoría">{{ servicio.nombreCategoria(producto.categoriaId) }}</td>
-                <td data-etiqueta="Código base"><span class="mono">{{ producto.codigoSku }}</span></td>
+                <td data-etiqueta="Categoría">
+                  {{ servicio.nombreCategoria(producto.categoriaId) }}
+                </td>
+                <td data-etiqueta="Código base">
+                  <span class="mono">{{ producto.codigoSku }}</span>
+                </td>
                 <td data-etiqueta="Variantes">{{ producto.variantes.length }}</td>
                 <td data-etiqueta="Precio">
                   {{ producto.precioVenta | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
                 </td>
-                <td data-etiqueta="Costo">
-                  @if (producto.costoEstandar !== null) {
-                    {{ producto.costoEstandar | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
-                  } @else {
-                    <span class="celda-secundaria">Pendiente de M11</span>
-                  }
-                </td>
-                <td data-etiqueta="Margen">
-                  @if (margen(producto) !== null) {
-                    <span class="margen" [class.margen--bajo]="margenBajo(producto)">
-                      {{ textoMargen(producto) }}
-                    </span>
-                  } @else {
-                    <span class="celda-secundaria">—</span>
-                  }
-                </td>
+                @if (perfilDemo.puedeVerCostos()) {
+                  <td data-etiqueta="Costo">
+                    @if (producto.costoEstandar !== null) {
+                      {{ producto.costoEstandar | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
+                    } @else {
+                      <span class="celda-secundaria">Pendiente de M11</span>
+                    }
+                  </td>
+                  <td data-etiqueta="Margen">
+                    @if (margen(producto) !== null) {
+                      <span class="margen" [class.margen--bajo]="margenBajo(producto)">
+                        {{ textoMargen(producto) }}
+                      </span>
+                    } @else {
+                      <span class="celda-secundaria">—</span>
+                    }
+                  </td>
+                }
                 <td data-etiqueta="Estatus">
                   <span
                     class="chip"
@@ -186,8 +200,8 @@
 
     <p class="nota">
       El código base y los SKU se generan con la regla 6.5 y no se editan a mano. El costo y el
-      margen son valores de demostración provenientes de la tabla de recetas semilla; M11 es el
-      dueño de esa cifra. Las existencias se consultan en M12 y no se modifican aquí.
+      margen provienen de M11 y solo se muestran al Administrador; Operativo no ve costos ni
+      utilidades (§3). Las existencias se consultan en M12 y no se modifican aquí.
     </p>
   </div>
 

@@ -1,0 +1,108 @@
+<section class="vista">
+  <app-navegacion-produccion />
+
+  <div class="cabecera">
+    <div>
+      <p class="eyebrow">Bloque 5 · Producción y merma · M16</p>
+      <h1 class="titulo">Nueva orden de producción</h1>
+      <p class="subtitulo">
+        Alta manual: una o varias variantes con cantidad en unidades enteras y fecha requerida
+        opcional. Las órdenes por pedido y por stock mínimo las crea el sistema.
+      </p>
+    </div>
+    <a routerLink="/produccion" class="boton boton--secundario">Volver al tablero</a>
+  </div>
+
+  <form class="tarjeta bloque" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    <h2 class="titulo-section">Variantes a fabricar</h2>
+
+    @for (grupo of lineas.controls; track grupo; let i = $index) {
+      <div class="linea" [formGroup]="grupo">
+        <span class="linea__numero" aria-hidden="true">{{ i + 1 }}</span>
+        <label class="campo">
+          Variante
+          <select
+            class="campo__entrada"
+            formControlName="varianteId"
+            (change)="alCambiarVariante(grupo)"
+          >
+            @for (opcion of opciones(); track opcion.sku) {
+              <option [value]="opcion.varianteId">
+                {{ opcion.sku }} · {{ opcion.nombreProducto }} · {{ opcion.talla }} /
+                {{ opcion.color }}
+              </option>
+            }
+          </select>
+        </label>
+        <label class="campo">
+          SKU (generado por M10)
+          <input class="campo__entrada" formControlName="sku" readonly aria-readonly="true" />
+        </label>
+        <label class="campo">
+          Cantidad (unidades)
+          <input
+            type="number"
+            class="campo__entrada"
+            formControlName="cantidad"
+            min="1"
+            step="1"
+            [attr.aria-invalid]="grupo.controls.cantidad.invalid && grupo.controls.cantidad.touched"
+          />
+          @if (grupo.controls.cantidad.touched && grupo.controls.cantidad.invalid) {
+            <p class="campo__error">Usa un número entero mayor a cero.</p>
+          }
+        </label>
+        <button
+          type="button"
+          class="accion accion--peligro"
+          (click)="quitarLinea(i)"
+          [disabled]="lineas.length === 1"
+        >
+          Quitar
+        </button>
+      </div>
+    }
+
+    <button type="button" class="boton boton--secundario" (click)="agregarLinea()">
+      + Agregar variante
+    </button>
+
+    <div class="form-grid">
+      <label class="campo">
+        Fecha requerida (opcional)
+        <input type="date" class="campo__entrada" formControlName="fechaRequerida" [min]="hoy" />
+      </label>
+      <label class="campo">
+        Notas de la orden (opcional)
+        <input
+          class="campo__entrada"
+          formControlName="notas"
+          placeholder="Ej. Prioridad por campaña"
+        />
+      </label>
+    </div>
+
+    <div class="form-acciones">
+      <button type="submit" class="boton boton--primario" [disabled]="enviando()">
+        Crear orden en PLANEADA
+      </button>
+      <a routerLink="/produccion" class="boton boton--secundario">Cancelar</a>
+    </div>
+  </form>
+
+  <section class="tarjeta bloque vista__resumen" aria-live="polite">
+    <div class="panel-solicitud__cabecera">
+      <div>
+        <p class="eyebrow">Receta vigente de M11</p>
+        <h2 class="titulo-section">Resumen de la solicitud</h2>
+      </div>
+      <span class="etiqueta etiqueta--neutro">{{ unidadesTotales() }} unidades</span>
+    </div>
+
+    <p class="nota">
+      Flask copia la receta vigente de M11 al crear la orden y calcula la explosión de materiales en
+      unidad base, incluida la merma estándar. Podrás revisarla en el detalle de la orden. El
+      contrato no expone una previsualización de explosión antes de crearla.
+    </p>
+  </section>
+</section>
