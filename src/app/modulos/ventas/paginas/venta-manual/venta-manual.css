@@ -243,6 +243,16 @@
   line-height: 1.5;
 }
 
+.aviso--error {
+  border-left-color: var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+  color: #8e2b39;
+}
+
+.aviso p {
+  margin: 0.35rem 0 0.75rem;
+}
+
 .resumen {
   display: grid;
   gap: 0.5rem;

@@ -362,8 +362,20 @@
       Flask; el cobro es simulado, sin movimientos bancarios. El inventario se ajusta en M09/M12.
     </p>
   } @else {
-    <div class="tarjeta bloque estado" role="status">
-      <strong>No encontramos la venta {{ folio }}.</strong>
+    <div
+      class="tarjeta bloque estado"
+      [class.estado--error]="!!servicio.errorDetalle()"
+      [attr.role]="servicio.errorDetalle() ? 'alert' : 'status'"
+    >
+      @if (servicio.errorDetalle()) {
+        <strong>No fue posible cargar la venta {{ folio }}.</strong>
+        <p>{{ servicio.errorDetalle() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      } @else {
+        <strong>No encontramos la venta {{ folio }}.</strong>
+      }
       <p><a routerLink="/ventas">Regresar al registro de ventas</a></p>
     </div>
   }

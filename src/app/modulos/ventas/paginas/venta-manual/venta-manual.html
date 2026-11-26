@@ -6,11 +6,19 @@
       <p class="eyebrow">M08 · Asistente de cuatro pasos</p>
       <h1 class="titulo">Venta manual</h1>
       <p class="subtitulo">
-        Registra una venta fuera del carrito. Comparte el contrato de pago simulado con M05; nada se
-        persiste en servidor.
+        Registra una venta fuera del carrito. Comparte el contrato de pago simulado con M05; la
+        operación se envía a Flask y no se capturan datos bancarios reales.
       </p>
     </div>
   </div>
+
+  @if (servicio.errorManual()) {
+    <div class="aviso aviso--error" role="alert">
+      <strong>No fue posible cargar clientes y variantes.</strong>
+      <p>{{ servicio.errorManual() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="reintentar()">Reintentar</button>
+    </div>
+  }
 
   <ol class="pasos" aria-label="Progreso de la venta manual">
     @for (numero of [1, 2, 3, 4]; track numero) {
@@ -235,13 +243,13 @@
 
         @if (tarifa(); as tarifa) {
           <p class="tarifa" role="status">
-            <strong>Tarifa Local León:</strong> ${{ tarifa.costo }}.00 · {{ tarifa.dias }} días
-            estimados.
+            <strong>Tarifa de envío:</strong>
+            {{ tarifa.costo | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }} · {{ tarifa.dias }}
+            días estimados.
           </p>
         } @else {
           <p class="tarifa tarifa--error" role="status">
-            Sin cobertura para ese código postal. No se puede continuar hasta capturar un CP de León
-            (37000–37999).
+            Sin cobertura para ese código postal. Captura un CP con cobertura para continuar.
           </p>
         }
 

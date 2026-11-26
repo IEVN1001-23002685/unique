@@ -365,6 +365,19 @@
   color: var(--color-unique-ciruela);
 }
 
+.estado--error {
+  border: 1px solid var(--color-unique-error);
+  background-color: var(--color-unique-error-suave);
+}
+
+.estado--error strong {
+  color: #8e2b39;
+}
+
+.estado--error .boton {
+  margin: 0.85rem 0;
+}
+
 @media (min-width: 768px) {
   .resumen {
     grid-template-columns: repeat(4, minmax(0, 1fr));

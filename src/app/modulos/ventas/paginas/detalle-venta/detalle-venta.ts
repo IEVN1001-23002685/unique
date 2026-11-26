@@ -55,6 +55,10 @@ export class DetalleVenta {
     this.servicio.cargarDetalle(this.folio).subscribe();
   }
 
+  protected reintentar(): void {
+    this.servicio.cargarDetalle(this.folio).subscribe();
+  }
+
   protected readonly formaPago = this.fb.nonNullable.group({
     monto: [0, [Validators.required, Validators.min(0.01)]],
     metodo: ['TRANSFERENCIA' as MetodoPago, [Validators.required]],
@@ -119,6 +123,7 @@ export class DetalleVenta {
         monto: valor.monto,
         metodo: valor.metodo,
         estado: valor.estado,
+        ultimos4: valor.ultimos4.trim() === '' ? null : valor.ultimos4.trim(),
       })
       .subscribe((resultado) => {
         if (!resultado.ok) {

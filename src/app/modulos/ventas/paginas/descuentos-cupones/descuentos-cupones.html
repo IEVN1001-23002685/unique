@@ -53,7 +53,15 @@
       </div>
     </div>
 
-    @if (servicio.descuentos().length === 0) {
+    @if (servicio.errorCarga()) {
+      <div class="estado estado--error" role="alert">
+        <strong>No fue posible cargar los descuentos.</strong>
+        <p>{{ servicio.errorCarga() }}</p>
+        <button type="button" class="boton boton--secundario" (click)="reintentar()">
+          Reintentar
+        </button>
+      </div>
+    } @else if (servicio.descuentos().length === 0) {
       <div class="estado" role="status">
         <strong>Aún no hay descuentos registrados.</strong>
         <p>Usa «+ Nuevo descuento» para crear el primero.</p>
