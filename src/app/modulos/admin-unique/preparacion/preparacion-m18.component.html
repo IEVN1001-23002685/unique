@@ -10,7 +10,12 @@
 <div class="notice success" *ngIf="aviso">{{ aviso }}</div>
 <div class="toolbar">
   <div class="tabs">
-    <span class="tab active">Cola de preparación</span><span class="tab">Incidencias</span>
+    <button class="tab" [class.active]="pestana === 'cola'" (click)="cambiarPestana('cola')">
+      Cola de preparación
+    </button>
+    <button class="tab" [class.active]="pestana === 'incidencias'" (click)="cambiarPestana('incidencias')">
+      Incidencias
+    </button>
   </div>
   <select class="search" [(ngModel)]="estado" (change)="pagina = 1; cargar()">
     <option value="">Todos los estados</option>
@@ -22,7 +27,7 @@
   </select>
   <input class="search" [(ngModel)]="filtro" placeholder="Buscar folio o destinatario..." />
 </div>
-<div class="stats-grid">
+<div class="stats-grid" *ngIf="pestana === 'cola'">
   <article class="stat-card">
     <small>PEDIDOS EN COLA</small><b>{{ total }}</b><span>Preparaciones paginadas</span>
   </article>
@@ -33,7 +38,7 @@
     <small>ETAPAS</small><b>4</b><span>Picking · Verificación · Empaque · Lista</span>
   </article>
 </div>
-<div class="panel-card" *ngIf="!seleccionado">
+<div class="panel-card" *ngIf="pestana === 'cola' && !seleccionado">
   <div class="panel-title">
     <h3>Cola de preparación</h3>
     <span class="muted">Ordenada por prioridad y fecha prometida</span>
@@ -78,7 +83,7 @@
     <button class="btn-outline small" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(1)">Siguiente →</button>
   </div>
 </div>
-<div class="panel-card" *ngIf="seleccionado">
+<div class="panel-card" *ngIf="pestana === 'cola' && seleccionado">
   <div class="panel-title">
     <div>
       <span class="eyebrow">HOJA DE PREPARACIÓN</span>
@@ -174,5 +179,43 @@
       </label>
       <button class="btn-outline" (click)="registrarIncidencia()">Registrar incidencia</button>
     </div>
+  </div>
+</div>
+
+<div class="panel-card" *ngIf="pestana === 'incidencias'">
+  <div class="panel-title">
+    <div>
+      <span class="eyebrow">SEGUIMIENTO DE INCIDENCIAS</span>
+      <h3>Incidencias registradas en la cola activa</h3>
+    </div>
+    <button class="btn-outline" (click)="cargar()">↻ Actualizar</button>
+  </div>
+  <p class="muted">
+    El backend no expone un listado independiente; esta vista deriva las incidencias de las líneas
+    devueltas por <code>/preparacion/cola</code>.
+  </p>
+  <div *ngIf="cargando" class="empty">Cargando incidencias...</div>
+  <div *ngIf="!cargando && !incidencias.length" class="empty">
+    No hay incidencias registradas en la cola actual.
+  </div>
+  <div class="table-wrap" *ngIf="incidencias.length">
+    <table>
+      <thead>
+        <tr>
+          <th>PEDIDO</th>
+          <th>SKU</th>
+          <th>PRODUCTO</th>
+          <th>INCIDENCIA</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let incidencia of incidencias">
+          <td><b>{{ incidencia.folio }}</b></td>
+          <td>{{ incidencia.sku }}</td>
+          <td>{{ incidencia.producto }}</td>
+          <td>{{ incidencia.descripcion }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>

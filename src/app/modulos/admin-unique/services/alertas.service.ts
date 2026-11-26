@@ -37,13 +37,15 @@ const ACCIONES_SUGERIDAS: Record<string, AccionAlerta> = {
 export class AlertasService {
   private readonly api = inject(ApiAdminService);
 
+  /**
+   * `AlertaFiltrosSchema` solo admite estado/tipo/severidad. La paginación se
+   * resuelve en el servidor con valores por defecto para no provocar 400.
+   */
   private params(filtros: FiltrosAlerta): Record<string, ValorParametro> {
     return {
       estado: filtros.estado,
       tipo: filtros.tipo,
       severidad: filtros.severidad,
-      pagina: filtros.pagina,
-      por_pagina: filtros.por_pagina,
     };
   }
 

@@ -35,7 +35,7 @@
     <span class="muted">El backend no expone una lista de entregas; el seguimiento muestra las asignadas desde esta sesión</span>
   </div>
   <div class="filters" *ngIf="pestana === 'asignar' && puedeOperar">
-    <label>Código postal<input [(ngModel)]="codigoPostal" maxlength="5" placeholder="37000" (change)="pagina = 1; cargar()" /></label>
+    <label>Código postal<input [(ngModel)]="codigoPostal" maxlength="5" inputmode="numeric" pattern="\d{5}" placeholder="37000" (change)="pagina = 1; cargar()" /></label>
     <label>Repartidor
       <select *ngIf="esAdmin" [(ngModel)]="asignacion.repartidor_id">
         <option [ngValue]="null">Selecciona repartidor</option>

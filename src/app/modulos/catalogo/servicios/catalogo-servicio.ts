@@ -25,7 +25,8 @@ interface VarianteApi {
   color: string;
   disponibilidad: string;
   bajo_pedido: boolean;
-  comprable: boolean;
+  /** Flask calcula este valor, pero `VarianteDisponibilidadSchema` no lo serializa todavía. */
+  comprable?: boolean;
   fecha_estimada: string | null;
 }
 
@@ -37,9 +38,11 @@ interface ProductoApi {
   categoria: string;
   imagen?: string | null;
   mas_buscado?: boolean;
+  activo?: boolean;
   imagenes?: Array<{ url: string; color: string | null }>;
   composicion_textil?: string;
   guia_medidas?: string;
+  creado_en?: string;
   variantes: VarianteApi[];
 }
 
@@ -88,13 +91,13 @@ export class CatalogoServicio {
       imagen: item.imagen ?? imagenes[0]?.url ?? '',
       etiqueta: item.mas_buscado ? 'Más buscado' : undefined,
       masBuscado: !!item.mas_buscado,
-      activo: true,
+      activo: item.activo ?? true,
       composicion: item.composicion_textil ?? '',
       guiaMedidasTexto: item.guia_medidas || undefined,
       variantes: item.variantes.map((variante) =>
         this.aVariante(variante, imagenes, item.imagen ?? ''),
       ),
-      creadoEn: '',
+      creadoEn: item.creado_en ?? '',
     };
   }
 
@@ -115,7 +118,9 @@ export class CatalogoServicio {
         ? (item.disponibilidad as EstadoDisponibilidadCatalogo)
         : 'Agotado',
       bajoPedido: item.bajo_pedido,
-      comprable: item.comprable,
+      // El esquema público no expone `comprable`; toda variante publicada con
+      // disponibilidad distinta de "Agotado" es adquirible según el backend.
+      comprable: item.comprable ?? item.disponibilidad !== 'Agotado',
       fechaEstimada: item.fecha_estimada ?? undefined,
       imagen: imagenes.find((imagen) => imagen.color === item.color)?.url ?? imagenProducto,
       activa: true,

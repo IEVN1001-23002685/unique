@@ -6,7 +6,6 @@ import {
   IncidenciaPreparacion,
   LineaPreparacionActualizar,
   Pagina,
-  ParametrosLista,
   Preparacion,
 } from './ui-admin.models';
 
@@ -15,8 +14,12 @@ import {
 export class PreparacionService {
   private readonly api = inject(ApiAdminService);
 
-  cola(estado?: string, parametros: ParametrosLista = {}): Observable<Pagina<Preparacion>> {
-    const params: Record<string, ValorParametro> = { ...parametros };
+  /**
+   * El esquema `PreparacionFiltrosSchema` de Flask solo admite `estado`.
+   * `pagina`/`por_pagina` se omiten porque Marshmallow rechaza campos no declarados.
+   */
+  cola(estado?: string): Observable<Pagina<Preparacion>> {
+    const params: Record<string, ValorParametro> = {};
     if (estado) params['estado'] = estado;
     return this.api.get<Pagina<Preparacion>>('/preparacion/cola', params);
   }

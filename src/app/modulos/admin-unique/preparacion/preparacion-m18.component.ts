@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { mensajeError } from '../../../core/api/errores';
 import { AuthSessionService } from '../services/auth-session.service';
 import { abrirPdf } from '../services/descargas';
@@ -17,6 +18,14 @@ interface VistaPreparacion extends Preparacion {
   fecha_prometida: string | null;
 }
 
+interface IncidenciaVista {
+  folio: string;
+  pedidoId: number;
+  sku: string;
+  producto: string;
+  descripcion: string;
+}
+
 @Component({
   selector: 'app-preparacion-m18',
   standalone: true,
@@ -27,7 +36,10 @@ interface VistaPreparacion extends Preparacion {
 export class PreparacionM18Component implements OnInit {
   private readonly servicio = inject(PreparacionService);
   private readonly auth = inject(AuthSessionService);
+  private readonly ruta = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
+  pestana: 'cola' | 'incidencias' = 'cola';
   pedidos: VistaPreparacion[] = [];
   seleccionado: VistaPreparacion | null = null;
   cargando = true;
@@ -50,23 +62,54 @@ export class PreparacionM18Component implements OnInit {
     cantidad: null,
   };
 
+  /** Flask aplica herencia ADMIN → OPERATIVO en `roles_requeridos`. */
   get puedeOperar(): boolean {
     const rol = this.auth.usuario?.rol;
     return rol === 'OPERATIVO' || rol === 'ADMIN';
   }
 
+  /** El filtro estricto de Flask impide enviar paginación en este endpoint. */
   get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.total / this.porPagina));
+    return 1;
+  }
+
+  get incidencias(): IncidenciaVista[] {
+    return this.pedidos.flatMap((p) =>
+      p.lineas
+        .filter((linea) => !!linea.incidencia)
+        .map((linea) => ({
+          folio: p.folio || `Pedido #${p.pedido_id}`,
+          pedidoId: p.pedido_id,
+          sku: linea.sku || 'SKU no capturado',
+          producto: linea.nombre_producto || 'Producto',
+          descripcion: linea.incidencia ?? '',
+        })),
+    );
   }
 
   ngOnInit(): void {
-    this.cargar();
+    this.ruta.paramMap.subscribe((params) => {
+      this.pestana = params.get('seccion') === 'incidencias' ? 'incidencias' : 'cola';
+      this.seleccionado = null;
+      this.error = '';
+      this.aviso = '';
+      this.cargar();
+    });
+  }
+
+  cambiarPestana(pestana: 'cola' | 'incidencias'): void {
+    this.pestana = pestana;
+    this.error = '';
+    this.aviso = '';
+    void this.router.navigate(
+      pestana === 'incidencias' ? ['/panel-admin/preparacion/incidencias'] : ['/panel-admin/preparacion'],
+    );
   }
 
   cargar(): void {
     this.cargando = true;
     this.error = '';
-    this.servicio.cola(this.estado || undefined, { pagina: this.pagina, por_pagina: this.porPagina }).subscribe({
+    this.servicio.cola(this.estado || undefined).subscribe({
       next: (respuesta) => {
         this.pedidos = respuesta.items.map((item) => this.comoVista(item));
         this.total = respuesta.total;
@@ -81,11 +124,8 @@ export class PreparacionM18Component implements OnInit {
     });
   }
 
-  cambiarPagina(delta: number): void {
-    const destino = this.pagina + delta;
-    if (destino < 1 || destino > this.totalPaginas) return;
-    this.pagina = destino;
-    this.cargar();
+  cambiarPagina(_delta: number): void {
+    // El backend no acepta `pagina`/`por_pagina` en este filtro; se mantiene la primera página.
   }
 
   get filtrados(): VistaPreparacion[] {
@@ -110,6 +150,7 @@ export class PreparacionM18Component implements OnInit {
   }
 
   abrir(p: VistaPreparacion): void {
+    this.pestana = 'cola';
     this.seleccionado = p;
     this.aviso = '';
     this.error = '';

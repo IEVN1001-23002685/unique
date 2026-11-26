@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { mensajeError } from '../../../core/api/errores';
 import { DashboardService } from '../services/dashboard.service';
 import { descargarTexto } from '../services/descargas';
@@ -25,6 +25,8 @@ type Pestana = 'resumen' | 'ventas' | 'produccion' | 'abasto' | 'logistica';
 })
 export class DashboardM20Component implements OnInit {
   private readonly servicio = inject(DashboardService);
+  private readonly ruta = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly auth = inject(AuthSessionService);
 
   resumen: DashboardResumen | null = null;
@@ -55,8 +57,25 @@ export class DashboardM20Component implements OnInit {
   }
 
   ngOnInit(): void {
-    this.pestana = this.esAdmin ? 'resumen' : 'produccion';
-    this.cargar();
+    const secciones: Record<string, Pestana> = {
+      resumen: 'resumen',
+      'ventas-productos': 'ventas',
+      ventas: 'ventas',
+      'produccion-merma': 'produccion',
+      produccion: 'produccion',
+      abastecimiento: 'abasto',
+      abasto: 'abasto',
+      'logistica-devoluciones': 'logistica',
+      logistica: 'logistica',
+    };
+    this.ruta.paramMap.subscribe((params) => {
+      this.pestana = secciones[params.get('seccion') ?? ''] ?? (this.esAdmin ? 'resumen' : 'produccion');
+      if (!this.esAdmin && (this.pestana === 'resumen' || this.pestana === 'ventas')) {
+        this.pestana = 'produccion';
+      }
+      this.error = '';
+      this.cargar();
+    });
   }
 
   filtros(): void {
@@ -65,7 +84,15 @@ export class DashboardM20Component implements OnInit {
 
   cambiar(pestana: Pestana): void {
     this.pestana = pestana;
-    this.cargar();
+    this.error = '';
+    const secciones: Record<Pestana, string> = {
+      resumen: 'resumen',
+      ventas: 'ventas-productos',
+      produccion: 'produccion-merma',
+      abasto: 'abastecimiento',
+      logistica: 'logistica-devoluciones',
+    };
+    void this.router.navigate(['/panel-admin/dashboard', secciones[pestana]]);
   }
 
   private get filtro(): { desde?: string; hasta?: string } {

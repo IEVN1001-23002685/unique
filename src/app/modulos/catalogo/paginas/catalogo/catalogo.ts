@@ -1,6 +1,7 @@
 import { Component, computed, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { combineLatest, debounceTime, switchMap } from 'rxjs';
+import { mensajeError } from '../../../../core/api/errores';
 import { TarjetaProducto } from '../../../../compartido/componentes/tarjeta-producto/tarjeta-producto';
 import { BusquedaCatalogoServicio } from '../../../../nucleo/servicios/busqueda-catalogo-servicio';
 import { DesplegableCategorias } from '../../componentes/desplegable-categorias/desplegable-categorias';
@@ -31,6 +32,7 @@ export class Catalogo {
   private readonly opciones = signal<ProductoCatalogo[]>([]);
   protected readonly cargando = signal(true);
   protected readonly error = signal('');
+  private readonly reintento = signal(0);
 
   protected readonly categoriaSeleccionada = signal<string | null>(null);
   protected readonly colorSeleccionado = signal<CodigoColorCatalogo | null>(null);
@@ -87,6 +89,11 @@ export class Catalogo {
       this.soloDisponibles(),
   );
 
+  /** El backend publica solo productos activos con variantes activas y precio vigente. */
+  protected readonly catalogoSinPublicaciones = computed(
+    () => !this.cargando() && !this.error() && this.opciones().length === 0,
+  );
+
   protected readonly productosFiltrados = computed(() => {
     const filtrados = this.productos()
       .filter(productoVisible)
@@ -99,7 +106,8 @@ export class Catalogo {
       .listar({ categoria: null, color: null, talla: null, soloDisponibles: false, busqueda: '' })
       .subscribe({
         next: (items) => this.opciones.set(items.filter(productoVisible)),
-        error: () => this.error.set('No fue posible cargar los filtros del catálogo.'),
+        error: (error: unknown) =>
+          this.error.set(mensajeError(error, 'No fue posible cargar los filtros del catálogo.')),
       });
 
     combineLatest([
@@ -108,11 +116,12 @@ export class Catalogo {
       toObservable(this.tallaSeleccionada),
       toObservable(this.soloDisponibles),
       toObservable(this.busqueda.termino),
+      toObservable(this.reintento),
     ])
       .pipe(
         debounceTime(120),
         takeUntilDestroyed(),
-        switchMap(([categoria, color, talla, soloDisponibles, termino]) => {
+        switchMap(([categoria, color, talla, soloDisponibles, termino, _reintento]) => {
           this.cargando.set(true);
           this.error.set('');
           return this.catalogo.listar({
@@ -126,15 +135,23 @@ export class Catalogo {
       )
       .subscribe({
         next: (items) => {
-          this.productos.set(items.filter(productoVisible));
+          const visibles = items.filter(productoVisible);
+          this.productos.set(visibles);
+          this.opciones.set(visibles);
           this.cargando.set(false);
         },
-        error: () => {
+        error: (error: unknown) => {
           this.productos.set([]);
           this.cargando.set(false);
-          this.error.set('No fue posible cargar el catálogo.');
+          this.error.set(mensajeError(error, 'No fue posible cargar el catálogo.'));
         },
       });
+  }
+
+  protected reintentar(): void {
+    this.error.set('');
+    this.cargando.set(true);
+    this.reintento.update((valor) => valor + 1);
   }
 
   private enRango(precio: number, rango: RangoPrecio): boolean {

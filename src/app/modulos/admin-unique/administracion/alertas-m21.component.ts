@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { mensajeError } from '../../../core/api/errores';
 import { AlertasService, FiltrosAlerta } from '../services/alertas.service';
 import { AuthSessionService } from '../services/auth-session.service';
@@ -17,6 +18,8 @@ type Pestana = 'abiertas' | 'resueltas' | 'reglas';
 })
 export class AlertasM21Component implements OnInit {
   private readonly servicio = inject(AlertasService);
+  private readonly ruta = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly auth = inject(AuthSessionService);
 
   pestana: Pestana = 'abiertas';
@@ -37,8 +40,9 @@ export class AlertasM21Component implements OnInit {
     return this.auth.usuario?.rol === 'ADMIN';
   }
 
+  /** `AlertaFiltrosSchema` rechaza paginación; se conserva la primera página del servidor. */
   get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.total / this.porPagina));
+    return 1;
   }
 
   get criticas(): number {
@@ -54,8 +58,22 @@ export class AlertasM21Component implements OnInit {
   }
 
   ngOnInit(): void {
-    this.cargar();
-    if (this.esAdmin) this.cargarReglas();
+    const secciones: Record<string, Pestana> = {
+      bandeja: 'abiertas',
+      abiertas: 'abiertas',
+      resueltas: 'resueltas',
+      reglas: 'reglas',
+    };
+    this.ruta.paramMap.subscribe((params) => {
+      this.pestana = secciones[params.get('seccion') ?? ''] ?? 'abiertas';
+      if (this.pestana === 'reglas' && !this.esAdmin) this.pestana = 'abiertas';
+      this.error = '';
+      this.aviso = '';
+      this.detalle = null;
+      if (this.pestana === 'abiertas') this.cargar();
+      if (this.pestana === 'resueltas') this.cargarResueltas();
+      if (this.pestana === 'reglas') this.cargarReglas();
+    });
   }
 
   cargar(): void {
@@ -66,8 +84,6 @@ export class AlertasM21Component implements OnInit {
         estado: this.filtros.estado || undefined,
         tipo: this.filtros.tipo || undefined,
         severidad: this.filtros.severidad || undefined,
-        pagina: this.pagina,
-        por_pagina: this.porPagina,
       })
       .subscribe({
         next: (respuesta) => {
@@ -91,8 +107,6 @@ export class AlertasM21Component implements OnInit {
       .resueltas({
         tipo: this.filtros.tipo || undefined,
         severidad: this.filtros.severidad || undefined,
-        pagina: this.pagina,
-        por_pagina: this.porPagina,
       })
       .subscribe({
         next: (respuesta) => {
@@ -126,9 +140,12 @@ export class AlertasM21Component implements OnInit {
     this.pagina = 1;
     this.error = '';
     this.aviso = '';
-    if (pestana === 'abiertas') this.cargar();
-    if (pestana === 'resueltas') this.cargarResueltas();
-    if (pestana === 'reglas') this.cargarReglas();
+    const secciones: Record<Pestana, string> = {
+      abiertas: 'bandeja',
+      resueltas: 'resueltas',
+      reglas: 'reglas',
+    };
+    void this.router.navigate(['/panel-admin/alertas', secciones[pestana]]);
   }
 
   cambiarPagina(delta: number): void {

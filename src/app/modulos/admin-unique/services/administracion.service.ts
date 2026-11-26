@@ -129,11 +129,16 @@ export class AdministracionService {
     return this.api.get<ClienteDetalle>(`/clientes/${id}`);
   }
 
+  /** `CatalogoAdminFiltrosSchema` solo admite `q` y `activa`. */
   listarCatalogo(
     recurso: RecursoCatalogo,
-    filtros: { q?: string; activa?: boolean } & ParametrosLista = {},
+    filtros: { q?: string; activa?: boolean } = {},
   ): Observable<Pagina<ElementoCatalogo>> {
-    return this.api.get<Pagina<ElementoCatalogo>>(`/catalogos/${recurso}`, { ...filtros });
+    const params: Record<string, ValorParametro> = {
+      q: filtros.q,
+      activa: filtros.activa,
+    };
+    return this.api.get<Pagina<ElementoCatalogo>>(`/catalogos/${recurso}`, params);
   }
 
   crearCatalogo(
@@ -163,6 +168,7 @@ export class AdministracionService {
     return this.api.patch<Record<string, string>>('/configuracion', { valores });
   }
 
+  /** `BitacoraFiltrosSchema` rechaza `pagina`/`por_pagina`; se envían solo filtros declarados. */
   listarBitacora(
     filtros: {
       accion?: string;
@@ -170,9 +176,15 @@ export class AdministracionService {
       usuario_id?: number;
       desde?: string;
       hasta?: string;
-    } & ParametrosLista = {},
+    } = {},
   ): Observable<Pagina<BitacoraRegistro>> {
-    const params: Record<string, ValorParametro> = { ...filtros };
+    const params: Record<string, ValorParametro> = {
+      accion: filtros.accion,
+      entidad: filtros.entidad,
+      usuario_id: filtros.usuario_id,
+      desde: filtros.desde,
+      hasta: filtros.hasta,
+    };
     return this.api.get<Pagina<BitacoraRegistro>>('/bitacora', params);
   }
 }

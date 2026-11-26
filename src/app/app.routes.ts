@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { Tienda } from './plantillas/tienda/tienda';
-import { Administracion } from './plantillas/administracion/administracion';
+import { PanelAdminComponent } from './modulos/admin-unique/preparacion/panel-admin.component';
 import { authGuard, roleGuard } from './core/auth/auth-session.service';
 import { ADMIN_UNIQUE_ROUTES } from './modulos/admin-unique/admin.routes';
 
@@ -96,7 +96,7 @@ export const routes: Routes = [
   },
   {
     path: 'panel',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: OPERATIVO,
     data: { titulo: 'Panel', roles: ['ADMIN', 'OPERATIVO'] },
     children: [
@@ -112,14 +112,14 @@ export const routes: Routes = [
   },
   {
     path: 'admin/pedidos',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: OPERATIVO,
     data: { titulo: 'Pedidos', roles: ['ADMIN', 'OPERATIVO'] },
     loadChildren: () => import('./modulos/pedidos/pedidos.routes').then((m) => m.PEDIDOS_RUTAS),
   },
   {
     path: 'admin/productos',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: ADMINISTRADOR,
     data: { titulo: 'Productos', roles: ['ADMIN'] },
     loadChildren: () =>
@@ -128,7 +128,7 @@ export const routes: Routes = [
   { path: 'productos', redirectTo: 'admin/productos' },
   {
     path: 'admin/recetas',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: ADMINISTRADOR,
     data: { titulo: 'Recetas', roles: ['ADMIN'] },
     loadChildren: () => import('./modulos/recetas/recetas.routes').then((m) => m.RECETAS_RUTAS),
@@ -136,7 +136,7 @@ export const routes: Routes = [
   { path: 'recetas', redirectTo: 'admin/recetas' },
   {
     path: 'operacion/inventario-pt',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: OPERATIVO,
     data: { titulo: 'Inventario PT', roles: ['ADMIN', 'OPERATIVO'] },
     loadChildren: () =>
@@ -145,14 +145,38 @@ export const routes: Routes = [
       ),
   },
   { path: 'inventario-pt', redirectTo: 'operacion/inventario-pt' },
-  { path: 'preparacion', redirectTo: 'panel-admin/preparacion' },
-  { path: 'entregas', redirectTo: 'panel-admin/entregas' },
-  { path: 'dashboard', redirectTo: 'panel-admin/dashboard' },
-  { path: 'alertas', redirectTo: 'panel-admin/alertas' },
-  { path: 'sistema', redirectTo: 'panel-admin/sistema' },
+  // Alias históricos: dirigen al panel canónico sin reactivar copias duplicadas.
+  { path: 'preparacion/incidencias', redirectTo: 'panel-admin/preparacion/incidencias' },
+  { path: 'preparacion/:folio', redirectTo: 'panel-admin/preparacion' },
+  { path: 'preparacion', pathMatch: 'full', redirectTo: 'panel-admin/preparacion' },
+  { path: 'entregas/hoja-reparto', redirectTo: 'panel-admin/entregas/hoja-reparto' },
+  { path: 'entregas/seguimiento', redirectTo: 'panel-admin/entregas/seguimiento' },
+  { path: 'entregas/productos-repartidos', redirectTo: 'panel-admin/entregas/productos-repartidos' },
+  { path: 'entregas/repartidores', redirectTo: 'panel-admin/entregas/repartidores' },
+  { path: 'entregas/:seccion', redirectTo: 'panel-admin/entregas' },
+  { path: 'entregas', pathMatch: 'full', redirectTo: 'panel-admin/entregas' },
+  { path: 'dashboard/resumen', redirectTo: 'panel-admin/dashboard/resumen' },
+  { path: 'dashboard/ventas-productos', redirectTo: 'panel-admin/dashboard/ventas-productos' },
+  { path: 'dashboard/produccion-merma', redirectTo: 'panel-admin/dashboard/produccion-merma' },
+  { path: 'dashboard/abastecimiento', redirectTo: 'panel-admin/dashboard/abastecimiento' },
+  { path: 'dashboard/logistica-devoluciones', redirectTo: 'panel-admin/dashboard/logistica-devoluciones' },
+  { path: 'dashboard/:seccion', redirectTo: 'panel-admin/dashboard' },
+  { path: 'dashboard', pathMatch: 'full', redirectTo: 'panel-admin/dashboard' },
+  { path: 'alertas/bandeja', redirectTo: 'panel-admin/alertas/bandeja' },
+  { path: 'alertas/resueltas', redirectTo: 'panel-admin/alertas/resueltas' },
+  { path: 'alertas/reglas', redirectTo: 'panel-admin/alertas/reglas' },
+  { path: 'alertas/:seccion', redirectTo: 'panel-admin/alertas' },
+  { path: 'alertas', pathMatch: 'full', redirectTo: 'panel-admin/alertas' },
+  { path: 'sistema/usuarios', redirectTo: 'panel-admin/sistema/usuarios' },
+  { path: 'sistema/clientes', redirectTo: 'panel-admin/sistema/clientes' },
+  { path: 'sistema/catalogos', redirectTo: 'panel-admin/sistema/catalogos' },
+  { path: 'sistema/configuracion', redirectTo: 'panel-admin/sistema/configuracion' },
+  { path: 'sistema/bitacora', redirectTo: 'panel-admin/sistema/bitacora' },
+  { path: 'sistema/:seccion', redirectTo: 'panel-admin/sistema' },
+  { path: 'sistema', pathMatch: 'full', redirectTo: 'panel-admin/sistema' },
   {
     path: 'proveedores',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: ADMINISTRADOR,
     data: { titulo: 'Proveedores', roles: ['ADMIN'] },
     loadChildren: () =>
@@ -161,21 +185,21 @@ export const routes: Routes = [
   { path: 'admin/ventas', redirectTo: 'ventas' },
   {
     path: 'ventas',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: ADMINISTRADOR,
     data: { titulo: 'Ventas', roles: ['ADMIN'] },
     loadChildren: () => import('./modulos/ventas/ventas.routes').then((m) => m.VENTAS_RUTAS),
   },
   {
     path: 'compras',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: ADMINISTRADOR,
     data: { titulo: 'Compras', roles: ['ADMIN'] },
     loadChildren: () => import('./modulos/compras/compras.routes').then((m) => m.COMPRAS_RUTAS),
   },
   {
     path: 'recepciones',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: OPERATIVO,
     data: { titulo: 'Recepciones', roles: ['ADMIN', 'OPERATIVO'] },
     children: [
@@ -189,14 +213,14 @@ export const routes: Routes = [
   },
   {
     path: 'inventario-mp',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: OPERATIVO,
     data: { titulo: 'Inventario MP', roles: ['ADMIN', 'OPERATIVO'] },
     loadChildren: () => import('./modulos/inventario/inventario.routes').then((m) => m.INVENTARIO_RUTAS),
   },
   {
     path: 'produccion',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: OPERATIVO,
     data: { titulo: 'Producción', roles: ['ADMIN', 'OPERATIVO'] },
     loadChildren: () =>
@@ -204,14 +228,14 @@ export const routes: Routes = [
   },
   {
     path: 'mermas',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: OPERATIVO,
     data: { titulo: 'Mermas', roles: ['ADMIN', 'OPERATIVO'] },
     loadChildren: () => import('./modulos/mermas/mermas.routes').then((m) => m.MERMAS_RUTAS),
   },
   {
     path: 'operacion/devoluciones',
-    component: Administracion,
+    component: PanelAdminComponent,
     canActivate: OPERATIVO,
     data: { titulo: 'Devoluciones', roles: ['ADMIN', 'OPERATIVO'] },
     children: [

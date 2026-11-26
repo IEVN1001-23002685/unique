@@ -5,7 +5,6 @@ import { ApiAdminService } from './api-admin.service';
 import {
   Entrega,
   Pagina,
-  ParametrosLista,
   PedidoPorAsignar,
   ProductoRepartido,
   Repartidor,
@@ -30,10 +29,11 @@ export interface DatosResultadoEntrega {
 export class EntregasService {
   private readonly api = inject(ApiAdminService);
 
-  porAsignar(
-    filtros: { codigo_postal?: string } & ParametrosLista = {},
-  ): Observable<Pagina<PedidoPorAsignar>> {
-    return this.api.get<Pagina<PedidoPorAsignar>>('/entregas/por-asignar', { ...filtros });
+  /** `PorAsignarFiltrosSchema` solo admite `codigo_postal` (5 dígitos). */
+  porAsignar(filtros: { codigo_postal?: string } = {}): Observable<Pagina<PedidoPorAsignar>> {
+    const params: Record<string, ValorParametro> = {};
+    if (filtros.codigo_postal) params['codigo_postal'] = filtros.codigo_postal;
+    return this.api.get<Pagina<PedidoPorAsignar>>('/entregas/por-asignar', params);
   }
 
   asignar(datos: DatosAsignarEntrega): Observable<Entrega> {
@@ -55,16 +55,23 @@ export class EntregasService {
     });
   }
 
+  /** `RepartidosFiltrosSchema` solo admite `repartidor`, `desde` y `hasta`. */
   productosRepartidos(
-    filtros: { repartidor?: number; desde?: string; hasta?: string } & ParametrosLista = {},
+    filtros: { repartidor?: number; desde?: string; hasta?: string } = {},
   ): Observable<Pagina<ProductoRepartido>> {
-    return this.api.get<Pagina<ProductoRepartido>>('/entregas/productos-repartidos', { ...filtros });
+    const params: Record<string, ValorParametro> = {
+      repartidor: filtros.repartidor,
+      desde: filtros.desde,
+      hasta: filtros.hasta,
+    };
+    return this.api.get<Pagina<ProductoRepartido>>('/entregas/productos-repartidos', params);
   }
 
-  listarRepartidores(
-    filtros: { activo?: boolean } & ParametrosLista = {},
-  ): Observable<Pagina<Repartidor>> {
-    return this.api.get<Pagina<Repartidor>>('/repartidores', { ...filtros });
+  /** `RepartidorFiltrosSchema` solo admite `activo`. */
+  listarRepartidores(filtros: { activo?: boolean } = {}): Observable<Pagina<Repartidor>> {
+    const params: Record<string, ValorParametro> = {};
+    if (filtros.activo !== undefined) params['activo'] = filtros.activo;
+    return this.api.get<Pagina<Repartidor>>('/repartidores', params);
   }
 
   crearRepartidor(datos: {

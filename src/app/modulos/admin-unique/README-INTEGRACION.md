@@ -1,31 +1,48 @@
-# UNIQUE — paquete Angular M18–M22
+# UNIQUE — paquete canónico Angular M18–M22
 
-Este paquete vive en `src/app/modulos/admin-unique/`. Conserva las pantallas y estilos propios y usa la infraestructura canónica de la aplicación (`ApiService`, `AuthSessionService`, contratos `{ codigo, mensaje, detalle }` y paginación `items/total/pagina/por_pagina`).
+Este paquete en `src/app/modulos/admin-unique/` es la **única implementación activa** de M18–M22. Conserva las pantallas y estilos del panel actual y usa la infraestructura canónica (`ApiService`, `AuthSessionService`, contrato de errores `{ codigo, mensaje, detalle }` y respuestas `items/total/pagina/por_pagina`).
 
 ## Contenido
 
-- M18 Preparación: `GET /preparacion/cola`, `POST /preparacion/{pedido_id}/tomar`, `PATCH /preparacion/{id}/lineas`, incidencia, empaque y etiqueta PDF.
-- M19 Entregas: `GET /entregas/por-asignar`, `POST /entregas`, salida, resultado, hoja de reparto PDF, productos repartidos y CRUD de `/repartidores`.
-- M20 Dashboard: `resumen`, `ventas`, `produccion`, `abastecimiento`, `logistica` y `exportar` CSV; filtros `desde`/`hasta`.
-- M21 Alertas: bandeja paginada, resueltas, acciones explícitas y reglas numéricas.
-- M22 Administración: `/usuarios`, `/clientes`, seis catálogos, `/configuracion` y `/bitacora`.
-- Servicios por módulo en `services/`; toda petición HTTP pasa por `ApiAdminService`.
-- Rutas propias `ADMIN_UNIQUE_ROUTES` con guards locales que redirigen a `/login-admin` y `/sin-acceso-admin`.
+- M18 Preparación: cola, hoja de preparación y pestaña de incidencias derivada de las líneas devueltas por la API.
+- M19 Entregas: por asignar, hoja de reparto, seguimiento de la sesión, productos repartidos y repartidores.
+- M20 Dashboard: resumen, ventas, producción, abastecimiento, logística y exportación CSV.
+- M21 Alertas: bandeja, resueltas, acciones y reglas numéricas.
+- M22 Administración: usuarios, clientes, catálogos, configuración y bitácora.
+- Toda petición HTTP pasa por `ApiAdminService`, que delega en `ApiService`.
 
-## Integración mínima
+## Shell y rutas canónicas
 
-En `app.routes.ts` se agrega el import y se inserta `...ADMIN_UNIQUE_ROUTES` sin reemplazar las rutas existentes:
+`PanelAdminComponent` es el único layout del panel: sustituye al antiguo componente `Administracion` también para los módulos M01–M17. Su menú incluye los enlaces autorizados por rol y el selector visual de perfil; los guards y Flask siguen siendo la autoridad real.
 
-```ts
-import { ADMIN_UNIQUE_ROUTES } from './modulos/admin-unique/admin.routes';
-```
+Las rutas del panel son `/panel-admin/{dashboard|preparacion|entregas|alertas|sistema}`. Cada módulo admite una subruta por sección:
 
-Las URL del paquete son `/login-admin` y `/panel-admin/...`. La sesión se mantiene en memoria con cookie `httpOnly`; no se usa `localStorage` ni `sessionStorage`.
+| Módulo | Subrutas |
+|---|---|
+| M18 | `preparacion`, `preparacion/incidencias` |
+| M19 | `entregas/por-asignar`, `hoja-reparto`, `seguimiento`, `productos-repartidos`, `repartidores` |
+| M20 | `dashboard/resumen`, `ventas-productos`, `produccion-merma`, `abastecimiento`, `logistica-devoluciones` |
+| M21 | `alertas/bandeja`, `resueltas`, `reglas` |
+| M22 | `sistema/usuarios`, `clientes`, `catalogos`, `configuracion`, `bitacora` |
 
-## Notas del contrato
+`app.routes.ts` conserva alias como `/preparacion/incidencias`, `/entregas/seguimiento`, `/dashboard/resumen`, `/alertas/bandeja` y `/sistema/usuarios`, redirigiéndolos al panel canónico. Ya no existen rutas huérfanas que caigan en `/no-encontrado`.
 
-- Base URL configurada en `src/environments/environment.ts` (`/api/v1`).
-- Los componentes solo presentan datos y validan interacción; reglas y escrituras las ejecuta el backend.
-- ADMIN hereda permisos de OPERATIVO. El catálogo de repartidores es ADMIN-only: los Operativos indican el ID del repartidor en los formularios.
-- El backend no expone un listado general de entregas; la pestaña “Seguimiento” muestra las entregas asignadas durante la sesión.
-- Los guards de Angular son controles de navegación y no sustituyen la autorización del servidor.
+## Contrato verificado contra Flask
+
+Se contrastaron las rutas y esquemas del repositorio `unique_api` (`main`) con los servicios de este paquete:
+
+- Métodos y rutas: coinciden con los blueprints `preparacion`, `entregas`, `dashboard`, `alertas` y `admin`.
+- Roles: ADMIN hereda OPERATIVO en `roles_requeridos`; `/repartidores`, `/alertas/reglas`, `/dashboard/resumen`, `/dashboard/ventas`, `/dashboard/exportar` y todo M22 son ADMIN-only. La interfaz refleja esa herencia y esas restricciones.
+- **Filtros estrictos:** `/preparacion/cola`, `/entregas/por-asignar`, `/entregas/productos-repartidos`, `/repartidores`, `/alertas`, `/alertas/resueltas` y `/dashboard/*` cargan `request.args` directamente en un esquema Marshmallow, que rechaza campos no declarados. Por eso los servicios NO envían `pagina`/`por_pagina` a esos endpoints; la API responde con su paginación por defecto.
+- `/catalogos/{recurso}` y `/bitacora` eliminan `pagina`/`por_pagina` antes de validar, pero el frontend tampoco los envía para depender solo del filtro declarado. Usuarios y clientes sí aceptan paginación porque esos endpoints la leen directamente.
+- `/dashboard/resumen`, `/dashboard/ventas` y `/dashboard/exportar` son ADMIN-only; la UI oculta esas pestañas/acciones al perfil OPERATIVO.
+- `/entregas` no expone listado general; “Seguimiento” muestra las entregas asignadas durante la sesión.
+- Las incidencias no tienen endpoint propio; la pestaña M18 deriva la información del campo `lineas[].incidencia`.
+
+## Sesión y seguridad
+
+La sesión se mantiene en memoria con cookie `httpOnly`; no se usa `localStorage` ni `sessionStorage`. Los guards de Angular son controles de navegación y no sustituyen la autorización definitiva de Flask.
+
+## Duplicidad eliminada
+
+Las copias antiguas en `modulos/preparacion`, `modulos/entregas`, `modulos/dashboard-gerencial`, `modulos/centro-alertas` y `modulos/administracion-sistema` no deben conservarse: usaban datos simulados y sus rutas nunca se montaron.

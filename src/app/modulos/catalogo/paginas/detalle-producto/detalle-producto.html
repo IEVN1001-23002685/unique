@@ -177,7 +177,13 @@
     </article>
   } @else {
     <div class="detalle__no-encontrado" role="alert">
-      <p class="detalle__no-encontrado-texto">No se encontró el producto solicitado.</p>
+      <p class="detalle__no-encontrado-texto">
+        @if (error()) {
+          {{ error() }}
+        } @else {
+          No se encontró el producto solicitado.
+        }
+      </p>
       <a routerLink="/catalogo" class="detalle__enlace">Volver al catálogo</a>
     </div>
   }

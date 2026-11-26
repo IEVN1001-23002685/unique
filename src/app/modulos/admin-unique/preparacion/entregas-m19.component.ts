@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { mensajeError } from '../../../core/api/errores';
 import { AuthSessionService } from '../services/auth-session.service';
@@ -27,6 +28,8 @@ export class EntregasM19Component implements OnInit {
   private readonly servicio = inject(EntregasService);
   private readonly auth = inject(AuthSessionService);
   private readonly fb = inject(FormBuilder);
+  private readonly ruta = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   pestana: Pestana = 'asignar';
   porAsignar: PedidoPorAsignar[] = [];
@@ -83,8 +86,9 @@ export class EntregasM19Component implements OnInit {
     return rol === 'OPERATIVO' || rol === 'ADMIN';
   }
 
+  /** Los filtros estrictos de Flask no aceptan paginación en estos listados. */
   get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.total / this.porPagina));
+    return 1;
   }
 
   get repartidoresActivos(): number {
@@ -104,8 +108,24 @@ export class EntregasM19Component implements OnInit {
   }
 
   ngOnInit(): void {
-    this.cargar();
-    if (this.esAdmin) this.cargarRepartidores();
+    const secciones: Record<string, Pestana> = {
+      'por-asignar': 'asignar',
+      asignar: 'asignar',
+      'hoja-reparto': 'hoja',
+      hoja: 'hoja',
+      seguimiento: 'seguimiento',
+      'productos-repartidos': 'productos',
+      productos: 'productos',
+      repartidores: 'repartidores',
+    };
+    this.ruta.paramMap.subscribe((params) => {
+      this.pestana = secciones[params.get('seccion') ?? ''] ?? 'asignar';
+      if (this.pestana === 'repartidores' && !this.esAdmin) this.pestana = 'asignar';
+      this.error = '';
+      this.aviso = '';
+      this.cargar();
+      if (this.esAdmin && this.pestana !== 'repartidores') this.cargarRepartidores();
+    });
   }
 
   private hoy(): string {
@@ -123,8 +143,13 @@ export class EntregasM19Component implements OnInit {
     this.cargando = true;
     this.error = '';
     if (this.pestana === 'asignar') {
+      if (this.codigoPostal && !/^\d{5}$/.test(this.codigoPostal)) {
+        this.error = 'El código postal debe tener 5 dígitos.';
+        this.cargando = false;
+        return;
+      }
       this.servicio
-        .porAsignar({ codigo_postal: this.codigoPostal, pagina: this.pagina, por_pagina: this.porPagina })
+        .porAsignar({ codigo_postal: this.codigoPostal })
         .subscribe({
           next: (respuesta) => {
             this.porAsignar = respuesta.items;
@@ -146,8 +171,6 @@ export class EntregasM19Component implements OnInit {
           repartidor: this.repartidorReporte ?? undefined,
           desde: this.reporte.desde || undefined,
           hasta: this.reporte.hasta || undefined,
-          pagina: this.pagina,
-          por_pagina: this.porPagina,
         })
         .subscribe({
           next: (respuesta) => {
@@ -169,7 +192,7 @@ export class EntregasM19Component implements OnInit {
   }
 
   cargarRepartidores(): void {
-    this.servicio.listarRepartidores({ pagina: this.pagina, por_pagina: this.porPagina }).subscribe({
+    this.servicio.listarRepartidores().subscribe({
       next: (respuesta) => {
         this.repartidores = respuesta.items;
         this.total = respuesta.total;
@@ -186,7 +209,16 @@ export class EntregasM19Component implements OnInit {
     this.pestana = pestana;
     this.pagina = 1;
     this.filtro = '';
-    this.cargar();
+    this.error = '';
+    this.aviso = '';
+    const secciones: Record<Pestana, string> = {
+      asignar: 'por-asignar',
+      hoja: 'hoja-reparto',
+      seguimiento: 'seguimiento',
+      productos: 'productos-repartidos',
+      repartidores: 'repartidores',
+    };
+    void this.router.navigate(['/panel-admin/entregas', secciones[pestana]]);
   }
 
   cambiarPagina(delta: number): void {

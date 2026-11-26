@@ -35,6 +35,7 @@ export class DetalleProducto {
   protected readonly tallaSeleccionada = signal<CodigoTallaCatalogo | null>(null);
   protected readonly cantidad = signal(1);
   protected readonly mensaje = signal('');
+  protected readonly error = signal('');
   protected readonly sinConexion = signal(
     typeof navigator !== 'undefined' ? !navigator.onLine : false,
   );
@@ -47,6 +48,7 @@ export class DetalleProducto {
       const productoId = Number(parametros.get('productoId') ?? parametros.get('slug') ?? '0');
       this.cantidad.set(1);
       this.mensaje.set('');
+      this.error.set('');
       this.imagenNoDisponible.set(false);
       if (!Number.isInteger(productoId) || productoId <= 0) {
         this.producto.set(undefined);
@@ -60,7 +62,10 @@ export class DetalleProducto {
           this.colorSeleccionado.set(primeraVariante?.colorCodigo ?? null);
           this.tallaSeleccionada.set(primeraVariante?.talla ?? null);
         },
-        error: () => this.producto.set(undefined),
+        error: (error: unknown) => {
+          this.producto.set(undefined);
+          this.error.set(mensajeError(error, 'No fue posible consultar el producto.'));
+        },
       });
     });
   }

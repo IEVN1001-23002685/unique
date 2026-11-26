@@ -9,7 +9,7 @@
 <div class="notice error" *ngIf="error">{{ error }}</div>
 <div class="critical-banner" *ngIf="(resumen?.alertas_abiertas || 0) > 0">
   <b>⚠ {{ resumen?.alertas_abiertas }} alertas abiertas</b>
-  <a routerLink="../alertas">Revisar en Centro de alertas →</a>
+  <a routerLink="/panel-admin/alertas">Revisar en Centro de alertas →</a>
 </div>
 <div class="filters">
   <label>Desde<input type="date" [(ngModel)]="desde" (change)="filtros()" /></label>

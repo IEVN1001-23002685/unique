@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { mensajeError } from '../../../core/api/errores';
 import {
@@ -31,6 +32,8 @@ type Pestana = 'usuarios' | 'clientes' | 'catalogos' | 'configuracion' | 'bitaco
 export class AdministracionM22Component implements OnInit {
   private readonly servicio = inject(AdministracionService);
   private readonly fb = inject(FormBuilder);
+  private readonly ruta = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly recursos = RECURSOS_CATALOGO;
   readonly camposCatalogo = CAMPOS_CATALOGO;
@@ -66,8 +69,12 @@ export class AdministracionM22Component implements OnInit {
     acepta_promociones: [false],
   });
 
+  /** Usuarios y clientes sí paginan en Flask; catálogos y bitácora usan filtros estrictos. */
   get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.total / this.porPagina));
+    if (this.pestana === 'usuarios' || this.pestana === 'clientes') {
+      return Math.max(1, Math.ceil(this.total / this.porPagina));
+    }
+    return 1;
   }
 
   get campos(): (typeof CAMPOS_CATALOGO)[RecursoCatalogo] {
@@ -75,7 +82,22 @@ export class AdministracionM22Component implements OnInit {
   }
 
   ngOnInit(): void {
-    this.cargar();
+    const secciones: Record<string, Pestana> = {
+      usuarios: 'usuarios',
+      clientes: 'clientes',
+      catalogos: 'catalogos',
+      configuracion: 'configuracion',
+      bitacora: 'bitacora',
+    };
+    this.ruta.paramMap.subscribe((params) => {
+      this.pestana = secciones[params.get('seccion') ?? ''] ?? 'usuarios';
+      this.pagina = 1;
+      this.filtro = '';
+      this.error = '';
+      this.aviso = '';
+      this.clienteDetalle = null;
+      this.cargar();
+    });
   }
 
   cambiar(pestana: Pestana): void {
@@ -85,7 +107,7 @@ export class AdministracionM22Component implements OnInit {
     this.error = '';
     this.aviso = '';
     this.clienteDetalle = null;
-    this.cargar();
+    void this.router.navigate(['/panel-admin/sistema', pestana]);
   }
 
   cargar(): void {
@@ -135,8 +157,6 @@ export class AdministracionM22Component implements OnInit {
     this.servicio
       .listarCatalogo(this.recurso, {
         q: this.filtro || undefined,
-        pagina: this.pagina,
-        por_pagina: this.porPagina,
       })
       .subscribe({
         next: (respuesta) => {
@@ -173,8 +193,6 @@ export class AdministracionM22Component implements OnInit {
         usuario_id: this.filtrosBitacora.usuario_id ?? undefined,
         desde: this.filtrosBitacora.desde || undefined,
         hasta: this.filtrosBitacora.hasta || undefined,
-        pagina: this.pagina,
-        por_pagina: this.porPagina,
       })
       .subscribe({
         next: (respuesta) => {
