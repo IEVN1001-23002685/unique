@@ -51,6 +51,12 @@ export class RestablecerPassword {
   }
 
   onSubmit(): void {
+    if (this.esDemostracion) {
+      // El token 'demo' solo ilustra la pantalla: Flask exige un token real de >=20 caracteres.
+      this.mensaje =
+        'Este enlace es solo una demostración. Solicita una recuperación real para continuar.';
+      return;
+    }
     if (this.tokenInvalido) {
       this.mensaje = 'El enlace no es válido. Solicita una nueva instrucción de recuperación.';
       return;

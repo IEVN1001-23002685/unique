@@ -13,8 +13,8 @@ export class SinAcceso {
   private readonly router = inject(Router);
   private readonly parametros = this.ruta.snapshot.queryParamMap;
 
-  protected readonly perfil = this.parametros.get('perfil') ?? 'tu perfil de demostración';
-  protected readonly requerido = this.parametros.get('requerido') ?? 'Administrador';
+  protected readonly perfil = this.parametros.get('perfil') ?? 'tu rol';
+  protected readonly requerido = this.parametros.get('requerido') ?? 'ADMIN';
   protected readonly destino = this.parametros.get('ruta') ?? 'la sección solicitada';
 
   protected volver(): void {

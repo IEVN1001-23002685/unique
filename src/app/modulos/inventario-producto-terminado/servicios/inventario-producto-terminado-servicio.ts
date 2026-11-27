@@ -3,7 +3,7 @@ import { Observable, concatMap, forkJoin, from, map, of, tap, catchError } from 
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
 import { mensajeError } from '../../../core/api/errores';
 import { AuthStateService } from '../../../core/auth/auth-state.service';
-import { PerfilDemoServicio } from '../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../nucleo/servicios/perfil-sesion-servicio';
 import { ProductosServicio } from '../../productos/servicios/productos-servicio';
 import type {
   AlertaInventarioProducto,
@@ -108,7 +108,7 @@ export class InventarioProductoServicio {
   private readonly api = inject(ApiService);
   private readonly catalogo = inject(ProductosServicio);
   private readonly auth = inject(AuthStateService);
-  private readonly perfilDemo = inject(PerfilDemoServicio);
+  private readonly perfilSesion = inject(PerfilSesionServicio);
 
   private readonly filasLista = signal<FilaInventario[]>([]);
   private readonly movimientosLista = signal<MovimientoProducto[]>([]);
@@ -129,14 +129,11 @@ export class InventarioProductoServicio {
   );
 
   /**
-   * Sin sesión se usa el perfil de demostración para explorar la pantalla.
-   * Con sesión manda el rol; las reglas de reposición son exclusivas del Administrador (§3 y §9).
-   * La autoridad definitiva la comprueba Flask.
+   * Manda el rol real de la sesión; las reglas de reposición son exclusivas del
+   * Administrador (§3 y §9). Flask comprueba la autoridad definitiva.
    */
   readonly puedeEditarReglas = computed(() =>
-    this.auth.autenticado()
-      ? this.auth.puede(['ADMIN'])
-      : this.perfilDemo.esAdministrador(),
+    this.auth.puede(['ADMIN']),
   );
 
   readonly existencias = computed<FilaExistencia[]>(() =>

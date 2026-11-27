@@ -2,7 +2,7 @@ import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthStateService } from '../../../../core/auth/auth-state.service';
-import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../../nucleo/servicios/perfil-sesion-servicio';
 import { NavegacionInventario } from '../../componentes/navegacion-inventario/navegacion-inventario';
 import { InventarioServicio } from '../../servicios/inventario-servicio';
 
@@ -16,9 +16,9 @@ export class Lotes {
   protected readonly servicio = inject(InventarioServicio);
   private readonly ruta = inject(ActivatedRoute);
   private readonly auth = inject(AuthStateService);
-  private readonly perfilDemo = inject(PerfilDemoServicio);
+  private readonly perfilSesion = inject(PerfilSesionServicio);
   protected readonly esAdministrador = computed(() =>
-    this.auth.autenticado() ? this.auth.puede(['ADMIN']) : this.perfilDemo.esAdministrador(),
+    this.auth.puede(['ADMIN']),
   );
 
   protected readonly materiales = computed(() =>

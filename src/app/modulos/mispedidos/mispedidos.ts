@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { interval } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { AvisoToast } from '../../compartido/componentes/aviso-toast/aviso-toast';
+import { UrlImagenPipe } from '../../compartido/pipes/url-imagen.pipe';
 import { mensajeError } from '../../core/api/errores';
 import { formatearFecha, formatearFechaHora } from '../../core/api/formato';
 import { AvisosServicio } from '../../nucleo/servicios/avisos-servicio';
@@ -47,7 +48,7 @@ type AccionPedido = 'guia' | 'devolucion' | 'seguimiento';
 @Component({
   selector: 'app-mis-pedidos',
   standalone: true,
-  imports: [AvisoToast, CurrencyPipe, ReactiveFormsModule, RouterLink],
+  imports: [AvisoToast, CurrencyPipe, ReactiveFormsModule, RouterLink, UrlImagenPipe],
   templateUrl: './mispedidos.html',
   styleUrl: './mispedidos.css',
 })

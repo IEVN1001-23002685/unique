@@ -331,8 +331,8 @@ export class AdministracionM22Component implements OnInit {
     }
     const valores = this.usuarioForm.getRawValue();
     this.error = '';
-    if (valores.rol === 'CLIENTE' && this.editandoUsuario === null) {
-      this.error = 'El alta desde M22 crea cuentas Operativo o Administrador; los clientes se registran solos.';
+    if (!valores.rol) {
+      this.error = 'Selecciona el rol de la cuenta.';
       return;
     }
     if (this.editandoUsuario) {
@@ -362,7 +362,7 @@ export class AdministracionM22Component implements OnInit {
         correo: valores.correo ?? '',
         telefono: valores.telefono ?? '',
         password: valores.password ?? '',
-        rol: valores.rol === 'ADMIN' ? 'ADMIN' : 'OPERATIVO',
+        rol: valores.rol,
         acepta_promociones: valores.acepta_promociones ?? false,
       })
       .subscribe({

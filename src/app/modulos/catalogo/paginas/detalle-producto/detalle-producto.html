@@ -11,7 +11,7 @@
             <span class="detalle__imagen-respaldo">Imagen no disponible</span>
           } @else {
             <img
-              [src]="imagen()"
+              [src]="imagen() | urlImagen"
               [alt]="productoActual.nombre"
               (error)="imagenNoDisponible.set(true)"
             />
@@ -30,7 +30,7 @@
             >
               @if (imagenMiniatura(miniatura.color)) {
                 <img
-                  [src]="imagenMiniatura(miniatura.color)"
+                  [src]="imagenMiniatura(miniatura.color) | urlImagen"
                   [alt]="productoActual.nombre + ' en ' + miniatura.nombre"
                   (error)="marcarMiniaturaSinImagen(miniatura.color)"
                 />

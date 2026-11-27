@@ -40,7 +40,7 @@
             <span>Colores: {{ colores.length }}</span>
             <span>SKU: {{ prenda.tallas.length * colores.length }}</span>
           </p>
-          @if (perfilDemo.puedeVerCostos()) {
+          @if (perfilSesion.puedeVerCostos()) {
             <p class="prenda__costo">
               Costo de materia prima de referencia:
               {{ prenda.costoMateriaPrimaBase | number: '1.2-2' : 'es-MX' }} MXN

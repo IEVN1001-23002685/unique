@@ -3,7 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthStateService } from '../../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
-import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../../nucleo/servicios/perfil-sesion-servicio';
 import { DetalleMerma } from '../../componentes/detalle-merma/detalle-merma';
 import { ModalReversarMerma } from '../../componentes/modal-reversar-merma/modal-reversar-merma';
 import { NavegacionMermas } from '../../componentes/navegacion-mermas/navegacion-mermas';
@@ -38,7 +38,7 @@ export class ZonaMerma {
   protected readonly servicio = inject(MermasServicio);
   private readonly avisos = inject(AvisosServicio);
   private readonly auth = inject(AuthStateService);
-  private readonly perfilDemo = inject(PerfilDemoServicio);
+  private readonly perfilSesion = inject(PerfilSesionServicio);
 
   private readonly tamanoPagina = 8;
 
@@ -106,9 +106,7 @@ export class ZonaMerma {
   });
 
   protected readonly esAdministrador = computed(() =>
-    this.auth.autenticado()
-      ? this.auth.puede(['ADMIN'])
-      : this.perfilDemo.esAdministrador(),
+    this.auth.puede(['ADMIN']),
   );
 
   protected reintentar(): void {

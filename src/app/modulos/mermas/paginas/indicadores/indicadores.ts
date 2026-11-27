@@ -2,7 +2,7 @@ import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthStateService } from '../../../../core/auth/auth-state.service';
-import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../../nucleo/servicios/perfil-sesion-servicio';
 import { BarraMeta } from '../../componentes/barra-meta/barra-meta';
 import { NavegacionMermas } from '../../componentes/navegacion-mermas/navegacion-mermas';
 import { MermasServicio } from '../../servicios/mermas-servicio';
@@ -18,12 +18,10 @@ import type { FilaEvolucion } from '../../modelos/merma';
 export class Indicadores {
   protected readonly servicio = inject(MermasServicio);
   private readonly auth = inject(AuthStateService);
-  private readonly perfilDemo = inject(PerfilDemoServicio);
+  private readonly perfilSesion = inject(PerfilSesionServicio);
 
   protected readonly esAdministrador = computed(() =>
-    this.auth.autenticado()
-      ? this.auth.puede(['ADMIN'])
-      : this.perfilDemo.esAdministrador(),
+    this.auth.puede(['ADMIN']),
   );
 
   protected reintentar(): void {

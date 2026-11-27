@@ -55,7 +55,7 @@
             <span class="recurso__visual">
               @if (imagenVisible(recurso)) {
                 <img
-                  [src]="recurso.url"
+                  [src]="recurso.url | urlImagen"
                   [alt]="recurso.etiqueta"
                   loading="lazy"
                   (error)="marcarFallido(recurso.url)"

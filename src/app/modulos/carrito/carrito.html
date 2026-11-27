@@ -51,7 +51,7 @@
             <div class="linea__imagen">
               @if (imagenValida(item)) {
                 <img
-                  [src]="item.imagenUrl"
+                  [src]="item.imagenUrl | urlImagen"
                   [alt]="item.nombre"
                   (error)="marcarImagenFallida(item)"
                 />

@@ -1,16 +1,12 @@
 import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AvisoToast } from '../../compartido/componentes/aviso-toast/aviso-toast';
-import { SelectorPerfilDemo } from '../../compartido/componentes/selector-perfil-demo/selector-perfil-demo';
-import {
-  PerfilDemoServicio,
-  type PerfilDemo,
-} from '../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio, type PerfilSesion } from '../../nucleo/servicios/perfil-sesion-servicio';
 
 interface EnlacePanel {
   etiqueta: string;
   ruta: string;
-  roles: PerfilDemo[];
+  roles: PerfilSesion[];
 }
 
 interface GrupoPanel {
@@ -20,25 +16,24 @@ interface GrupoPanel {
 
 /**
  * Bandera superior del panel administrativo. La navegación se agrupa por
- * responsabilidad y se filtra por el perfil de demostración; los guards y la
- * autoridad definitiva corresponden a Flask (§3 y §10).
+ * responsabilidad y se filtra por el rol real de la sesión (§3 y §10).
  */
 @Component({
   selector: 'app-administracion',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, AvisoToast, SelectorPerfilDemo],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AvisoToast],
   templateUrl: './administracion.html',
   styleUrl: './administracion.css',
 })
 export class Administracion {
   private readonly ruta = inject(ActivatedRoute);
-  protected readonly perfilDemo = inject(PerfilDemoServicio);
+  protected readonly perfilSesion = inject(PerfilSesionServicio);
 
   protected readonly tituloModulo = String(this.ruta.snapshot.data['titulo'] ?? 'PANEL');
   protected readonly etiquetaRol = String(this.ruta.snapshot.data['rol'] ?? 'Administrador');
-  protected readonly perfil = this.perfilDemo.perfil;
+  protected readonly perfil = this.perfilSesion.perfil;
 
-  private readonly admin: PerfilDemo[] = ['Administrador'];
-  private readonly operacion: PerfilDemo[] = ['Administrador', 'Operativo'];
+  private readonly admin: PerfilSesion[] = ['Administrador'];
+  private readonly operacion: PerfilSesion[] = ['Administrador', 'Operativo'];
 
   /** Ruta guiada: Materiales + Porcentajes + Bordado → Receta → Precio → Producto. */
   protected readonly grupos: GrupoPanel[] = [
@@ -87,6 +82,7 @@ export class Administracion {
   );
 
   visible(grupo: GrupoPanel): EnlacePanel[] {
-    return grupo.enlaces.filter((enlace) => enlace.roles.includes(this.perfil()));
+    const perfil = this.perfil();
+    return perfil ? grupo.enlaces.filter((enlace) => enlace.roles.includes(perfil)) : [];
   }
 }

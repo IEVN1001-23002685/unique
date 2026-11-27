@@ -24,6 +24,10 @@ export class BarraNavegacionTienda {
 
   /** Estado de sesión canónico: la navbar no crea un estado paralelo. */
   protected readonly autenticado = this.sesion.autenticado;
+  protected readonly nombreUsuario = computed(() => {
+    const nombre = this.sesion.usuario()?.nombre?.trim();
+    return nombre ? `Hola, ${nombre.split(/\s+/)[0]}` : 'Mi cuenta';
+  });
 
   /** El badge lee el mismo resumen que la página del carrito, sin valores simulados. */
   protected readonly totalArticulos = computed(() => this.carrito.resumen().totalArticulos);

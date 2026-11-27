@@ -160,7 +160,7 @@
         <div class="cd-evidencias">
           @for (evidencia of casoActual.evidencias; track evidencia.id) {
             <figure>
-              <img [src]="evidencia.url" [alt]="evidencia.nombre ?? 'Evidencia de la solicitud'" />
+              <img [src]="evidencia.url | urlImagen" [alt]="evidencia.nombre ?? 'Evidencia de la solicitud'" />
               <figcaption>{{ evidencia.nombre ?? 'Evidencia' }}</figcaption>
             </figure>
           }

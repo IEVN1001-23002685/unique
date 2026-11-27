@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { rolDemoGuard } from '../../nucleo/guards/rol-demo.guard';
+import { roleGuard } from '../../core/auth/auth-session.service';
 
 /** Rutas de M15 · Inventario de materia prima, montadas bajo /inventario-mp (§10). */
 export const INVENTARIO_RUTAS: Routes = [
@@ -28,32 +28,32 @@ export const INVENTARIO_RUTAS: Routes = [
     path: 'catalogo',
     pathMatch: 'full',
     title: 'Catálogo de materiales · UNIQUE',
-    data: { modo: 'listado', roles: ['Administrador'] },
-    canActivate: [rolDemoGuard],
+    data: { modo: 'listado', roles: ['ADMIN'] },
+    canActivate: [roleGuard],
     loadComponent: () =>
       import('./paginas/catalogo-materiales/catalogo-materiales').then((c) => c.CatalogoMateriales),
   },
   {
     path: 'catalogo/nuevo',
     title: 'Alta de material · UNIQUE',
-    data: { modo: 'nuevo', roles: ['Administrador'] },
-    canActivate: [rolDemoGuard],
+    data: { modo: 'nuevo', roles: ['ADMIN'] },
+    canActivate: [roleGuard],
     loadComponent: () =>
       import('./paginas/catalogo-materiales/catalogo-materiales').then((c) => c.CatalogoMateriales),
   },
   {
     path: 'catalogo/:id/editar',
     title: 'Editar material · UNIQUE',
-    data: { modo: 'editar', roles: ['Administrador'] },
-    canActivate: [rolDemoGuard],
+    data: { modo: 'editar', roles: ['ADMIN'] },
+    canActivate: [roleGuard],
     loadComponent: () =>
       import('./paginas/catalogo-materiales/catalogo-materiales').then((c) => c.CatalogoMateriales),
   },
   {
     path: 'politicas',
     title: 'Políticas de reposición · UNIQUE',
-    data: { roles: ['Administrador'] },
-    canActivate: [rolDemoGuard],
+    data: { roles: ['ADMIN'] },
+    canActivate: [roleGuard],
     loadComponent: () => import('./paginas/politicas/politicas').then((c) => c.Politicas),
   },
   { path: '**', redirectTo: '' },

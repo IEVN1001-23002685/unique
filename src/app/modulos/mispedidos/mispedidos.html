@@ -274,7 +274,7 @@
                 <div class="tarjeta-pedido__miniatura">
                   @if (tieneMiniatura(pedido)) {
                     <img
-                      [src]="pedido.miniaturaUrl ?? ''"
+                      [src]="(pedido.miniaturaUrl ?? '') | urlImagen"
                       [alt]="'Prenda del pedido ' + pedido.folio"
                       (error)="marcarImagenFallida(pedido.id)"
                     />

@@ -231,9 +231,14 @@ export class MisPedidosServicio {
     return this.api.get<ComprobantePedido>(`/mis-pedidos/${pedidoId}/comprobante`);
   }
 
-  /** Descarga del comprobante digital empleando el mismo contrato documentado. */
+  /**
+   * Flask entrega el comprobante como JSON estructurado (ComprobanteSchema).
+   * El navegador genera el archivo descargable a partir de ese mismo contrato.
+   */
   descargarComprobante(pedidoId: number): Observable<Blob> {
-    return this.api.getBlob(`/mis-pedidos/${pedidoId}/comprobante`);
+    return this.comprobante(pedidoId).pipe(
+      map((datos) => new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' })),
+    );
   }
 
   private aPedido(pedido: PedidoListaApi): PedidoCliente {

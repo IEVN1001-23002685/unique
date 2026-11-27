@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { UrlImagenPipe } from '../../../../compartido/pipes/url-imagen.pipe';
 import { mensajeError } from '../../../../core/api/errores';
 import { formatearFechaHora } from '../../../../core/api/formato';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
@@ -29,7 +30,7 @@ const FILTROS = [
 @Component({
   selector: 'app-cd-bandeja',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, UrlImagenPipe],
   templateUrl: './bandeja.html',
   styleUrls: ['./bandeja.css', '../../cambios-devoluciones-compartido.css'],
 })

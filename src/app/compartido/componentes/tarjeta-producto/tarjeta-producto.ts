@@ -2,9 +2,10 @@ import { CurrencyPipe } from '@angular/common';
 import { Component, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { IProducto } from '../../../nucleo/modelos/producto';
+import { UrlImagenPipe } from '../../pipes/url-imagen.pipe';
 
 @Component({
-  imports: [CurrencyPipe, RouterLink],
+  imports: [CurrencyPipe, RouterLink, UrlImagenPipe],
   selector: 'app-tarjeta-producto',
   styleUrl: './tarjeta-producto.css',
   templateUrl: './tarjeta-producto.html',

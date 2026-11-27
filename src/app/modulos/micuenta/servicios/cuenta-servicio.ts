@@ -66,15 +66,15 @@ export class CuentaServicio {
   }
 
   cambiarContrasena(contrasenaActual: string, contrasenaNueva: string): Observable<{ mensaje: string }> {
-    return this.api.post<{ mensaje: string }>('/cuenta/contrasena', {
+    return this.api.patch<{ mensaje: string }>('/cuenta/contrasena', {
       contrasena_actual: contrasenaActual,
       contrasena_nueva: contrasenaNueva,
     });
   }
 
   /** §7 M02: estado INACTIVA sin borrar el historial. Flask aplica la regla autoritativa. */
-  desactivarCuenta(): Observable<PerfilCuenta> {
-    return this.api.patch<PerfilCuenta>('/cuenta', { estado_cuenta: 'INACTIVA' });
+  desactivarCuenta(): Observable<{ mensaje: string }> {
+    return this.api.patch<{ mensaje: string }>('/cuenta/desactivar');
   }
 
   listarDirecciones(): Observable<DireccionCliente[]> {

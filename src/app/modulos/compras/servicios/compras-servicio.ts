@@ -3,7 +3,7 @@ import { Observable, catchError, concatMap, forkJoin, from, map, of, tap, throwE
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
 import { mensajeError } from '../../../core/api/errores';
 import { AuthStateService } from '../../../core/auth/auth-state.service';
-import { PerfilDemoServicio } from '../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../nucleo/servicios/perfil-sesion-servicio';
 import { InventarioServicio } from '../../inventario/servicios/inventario-servicio';
 import type { MaterialProveedor } from '../../proveedores/modelos/proveedor';
 import { ProveedoresServicio } from '../../proveedores/servicios/proveedores-servicio';
@@ -185,7 +185,7 @@ function codigoColor(color: string | null): string {
 export class ComprasServicio {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthStateService);
-  private readonly perfilDemo = inject(PerfilDemoServicio);
+  private readonly perfilSesion = inject(PerfilSesionServicio);
   private readonly proveedores = inject(ProveedoresServicio);
   private readonly inventario = inject(InventarioServicio);
 
@@ -223,18 +223,13 @@ export class ComprasServicio {
 
   /**
    * §9 permite requisiciones para Administrador y Operativo, pero §10 reserva
-   * /compras al Administrador. Sin sesión se usa el perfil de demostración para
-   * explorar la pantalla; la autoridad definitiva sigue siendo Flask.
+   * /compras al Administrador. El rol sale del token real; Flask es la autoridad definitiva.
    */
   readonly puedeGestionarCompras = computed(() =>
-    this.auth.autenticado()
-      ? this.auth.puede(['ADMIN'])
-      : this.perfilDemo.esAdministrador(),
+    this.auth.puede(['ADMIN']),
   );
   readonly puedeRecibir = computed(() =>
-    this.auth.autenticado()
-      ? this.auth.puede(['ADMIN', 'OPERATIVO'])
-      : this.perfilDemo.esOperativo(),
+    this.auth.puede(['ADMIN', 'OPERATIVO']),
   );
 
   constructor() {

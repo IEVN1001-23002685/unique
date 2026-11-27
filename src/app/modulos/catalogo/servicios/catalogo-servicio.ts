@@ -236,7 +236,7 @@ export class CatalogoServicio {
       talla,
       disponibilidad,
       bajoPedido: item.bajo_pedido && disponibilidad === 'Bajo pedido',
-      // `comprable` no está en el esquema público: se deriva de disponibilidad.
+      // El backend ya expone `comprable`; solo se deriva en el modo simulado.
       comprable: item.comprable ?? (activa && disponibilidad !== 'Agotado'),
       fechaEstimada: item.fecha_estimada ?? undefined,
       imagen: imagenes.find((imagen) => imagen.color === item.color)?.url ?? imagenProducto,

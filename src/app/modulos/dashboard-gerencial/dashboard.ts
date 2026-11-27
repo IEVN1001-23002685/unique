@@ -3,7 +3,6 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import type {
   CanalDashboard,
   PeriodoDashboard,
-  RolDashboard,
   SeccionDashboard,
 } from './modelos/dashboard';
 import { DashboardServicio } from './servicios/dashboard-servicio';
@@ -85,14 +84,6 @@ export class Dashboard {
       'canal',
       (evento.target as HTMLSelectElement).value as CanalDashboard,
     );
-  }
-
-  protected alCambiarRol(evento: Event): void {
-    const rol = (evento.target as HTMLSelectElement).value as RolDashboard;
-    this.servicio.cambiarRol(rol);
-    if (rol === 'Operativo' && this.seccionActual() === 'ventas-productos') {
-      void this.router.navigate(['/dashboard', 'resumen']);
-    }
   }
 
   protected exportar(): void {

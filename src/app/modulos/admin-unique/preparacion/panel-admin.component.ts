@@ -11,11 +11,7 @@ import {
 } from '@angular/router';
 import { filter } from 'rxjs';
 import { AvisoToast } from '../../../compartido/componentes/aviso-toast/aviso-toast';
-import { SelectorPerfilDemo } from '../../../compartido/componentes/selector-perfil-demo/selector-perfil-demo';
-import {
-  PerfilDemoServicio,
-  type PerfilDemo,
-} from '../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../nucleo/servicios/perfil-sesion-servicio';
 import { AuthSessionService, type RolUsuario } from '../services/auth-session.service';
 
 interface EnlacePanel {
@@ -49,22 +45,21 @@ const TODOS: RolUsuario[] = ['CLIENTE', 'ADMIN', 'OPERATIVO'];
     RouterLinkActive,
     RouterOutlet,
     AvisoToast,
-    SelectorPerfilDemo,
   ],
   templateUrl: './panel-admin.component.html',
   styleUrl: './panel-admin.component.css',
 })
 export class PanelAdminComponent {
   private readonly auth = inject(AuthSessionService);
-  private readonly perfilDemo = inject(PerfilDemoServicio);
+  private readonly perfilSesion = inject(PerfilSesionServicio);
   private readonly router = inject(Router);
   private readonly ruta = inject(ActivatedRoute);
 
   protected readonly titulo = signal('Panel administrativo');
   protected readonly menuAbierto = signal(false);
 
-  /** El selector de demostración gobierna la visibilidad del menú; los guards y Flask deciden el acceso real. */
-  protected readonly rol = computed<RolUsuario>(() => this.aRol(this.perfilDemo.perfil()));
+  /** Visibilidad derivada del rol real devuelto por Flask; no hay selector de perfil. */
+  protected readonly rol = computed<RolUsuario | null>(() => this.perfilSesion.rol());
 
   private readonly grupos: GrupoPanel[] = [
     {
@@ -114,14 +109,17 @@ export class PanelAdminComponent {
 
   protected readonly gruposVisibles = computed(() =>
     this.grupos
-      .map((grupo) => ({
-        titulo: grupo.titulo,
-        enlaces: grupo.enlaces.filter((enlace) => enlace.roles.includes(this.rol())),
-      }))
+      .map((grupo) => {
+        const rol = this.rol();
+        return {
+          titulo: grupo.titulo,
+          enlaces: rol ? grupo.enlaces.filter((enlace) => enlace.roles.includes(rol)) : [],
+        };
+      })
       .filter((grupo) => grupo.enlaces.length > 0),
   );
 
-  protected readonly rolEtiqueta = computed(() => this.perfilDemo.perfil());
+  protected readonly rolEtiqueta = computed(() => this.perfilSesion.perfil() ?? 'Sin sesión');
   protected readonly nombreUsuario = computed(() => this.auth.usuario?.nombre || 'Usuario');
   protected readonly inicialUsuario = computed(() => this.nombreUsuario().charAt(0).toUpperCase());
 
@@ -145,12 +143,6 @@ export class PanelAdminComponent {
       next: () => this.router.navigateByUrl('/login-admin'),
       error: () => this.router.navigateByUrl('/login-admin'),
     });
-  }
-
-  private aRol(perfil: PerfilDemo): RolUsuario {
-    if (perfil === 'Administrador') return 'ADMIN';
-    if (perfil === 'Operativo') return 'OPERATIVO';
-    return 'CLIENTE';
   }
 
   private actualizarTitulo(): void {
