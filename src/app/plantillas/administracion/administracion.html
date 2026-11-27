@@ -10,10 +10,9 @@
 
       <div class="panel__derecha">
         <a routerLink="/catalogo" class="panel__enlace">Ver tienda</a>
-        <app-selector-perfil-demo />
         <span class="panel__perfil" [attr.title]="'Rol de la ruta: ' + etiquetaRol">
-          <span class="panel__avatar" aria-hidden="true">{{ perfil().charAt(0) }}</span>
-          {{ perfil() }}
+          <span class="panel__avatar" aria-hidden="true">{{ perfil()?.charAt(0) ?? '·' }}</span>
+          {{ perfil() ?? 'Sin sesión' }}
         </span>
       </div>
     </div>

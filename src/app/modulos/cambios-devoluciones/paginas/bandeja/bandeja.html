@@ -226,7 +226,7 @@
                 <div class="cd-evidencias__vacio">Imagen no disponible</div>
               } @else {
                 <img
-                  [src]="evidencia.url"
+                  [src]="evidencia.url | urlImagen"
                   [alt]="evidencia.nombre ?? 'Evidencia de la solicitud'"
                   (error)="marcarImagenFallida(indice)"
                 />

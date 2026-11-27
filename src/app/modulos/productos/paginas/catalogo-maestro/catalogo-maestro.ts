@@ -2,8 +2,9 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
+import { UrlImagenPipe } from '../../../../compartido/pipes/url-imagen.pipe';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
-import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../../nucleo/servicios/perfil-sesion-servicio';
 import { NavegacionProductos } from '../../componentes/navegacion-productos/navegacion-productos';
 import type { ProductoMaestro } from '../../modelos/producto-maestro';
 import { ProductosServicio } from '../../servicios/productos-servicio';
@@ -13,13 +14,13 @@ type FiltroEstatus = 'TODOS' | EstatusProducto;
 
 @Component({
   selector: 'app-catalogo-maestro',
-  imports: [CurrencyPipe, RouterLink, ModalConfirmacion, NavegacionProductos],
+  imports: [CurrencyPipe, RouterLink, ModalConfirmacion, NavegacionProductos, UrlImagenPipe],
   templateUrl: './catalogo-maestro.html',
   styleUrl: './catalogo-maestro.css',
 })
 export class CatalogoMaestro {
   protected readonly servicio = inject(ProductosServicio);
-  protected readonly perfilDemo = inject(PerfilDemoServicio);
+  protected readonly perfilSesion = inject(PerfilSesionServicio);
   private readonly avisos = inject(AvisosServicio);
   private readonly router = inject(Router);
 

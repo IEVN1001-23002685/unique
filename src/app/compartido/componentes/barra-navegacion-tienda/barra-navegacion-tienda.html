@@ -78,7 +78,7 @@
               stroke-linecap="round"
             />
           </svg>
-          <span class="cta-cuenta__texto">Mi cuenta</span>
+          <span class="cta-cuenta__texto">{{ nombreUsuario() }}</span>
         </a>
       } @else {
         <button
@@ -147,7 +147,7 @@
     <div id="menu-tienda" class="menu-movil">
       <div class="menu-movil__contenido">
         @if (autenticado()) {
-          <a routerLink="/cuenta" class="enlace-menu" (click)="cerrarMenu()">Mi cuenta</a>
+          <a routerLink="/cuenta" class="enlace-menu" (click)="cerrarMenu()">{{ nombreUsuario() }}</a>
         } @else {
           <button type="button" class="enlace-menu" (click)="abrirInicioSesion()">
             Iniciar sesión

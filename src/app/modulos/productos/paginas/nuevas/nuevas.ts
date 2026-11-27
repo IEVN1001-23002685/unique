@@ -7,7 +7,7 @@ import {
   TALLAS_OFICIALES,
   type PrendaOficial,
 } from '../../../../nucleo/datos/catalogo-oficial';
-import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../../nucleo/servicios/perfil-sesion-servicio';
 import { NavegacionProductos } from '../../componentes/navegacion-productos/navegacion-productos';
 
 /** Sección «Nuevas»: explora prendas y variables nuevas antes de crear un producto. */
@@ -19,7 +19,7 @@ import { NavegacionProductos } from '../../componentes/navegacion-productos/nave
 })
 export class Nuevas {
   private readonly router = inject(Router);
-  protected readonly perfilDemo = inject(PerfilDemoServicio);
+  protected readonly perfilSesion = inject(PerfilSesionServicio);
 
   protected readonly prendas = PRENDAS_OFICIALES;
   protected readonly colores = COLORES_OFICIALES;

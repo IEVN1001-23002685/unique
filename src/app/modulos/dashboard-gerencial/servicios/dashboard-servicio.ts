@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { AuthStateService } from '../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../nucleo/servicios/avisos-servicio';
 import { EntregasServicio } from '../../entregas/servicios/entregas-servicio';
 import { InventarioProductoServicio } from '../../inventario-producto-terminado/servicios/inventario-producto-terminado-servicio';
@@ -108,6 +109,7 @@ const ESTADOS_PEDIDO = [
   providedIn: 'root',
 })
 export class DashboardServicio {
+  private readonly auth = inject(AuthStateService);
   private readonly ventas = inject(VentasServicio);
   private readonly pedidos = inject(PedidosServicio);
   private readonly productos = inject(ProductosServicio);
@@ -125,12 +127,13 @@ export class DashboardServicio {
     canal: 'TODOS',
   });
 
-  /** Vista previa demostrativa; no sustituye un guard ni define permisos reales. */
-  private readonly rolLista = signal<RolDashboard>('Administrador');
+  /** Rol real de la sesión: no existe vista previa seleccionable. */
+  readonly rol = computed<RolDashboard>(() =>
+    this.auth.puede(['ADMIN']) ? 'Administrador' : 'Operativo',
+  );
 
   readonly filtros = this.filtrosLista.asReadonly();
-  readonly rol = this.rolLista.asReadonly();
-  readonly esAdmin = computed(() => this.rolLista() === 'Administrador');
+  readonly esAdmin = computed(() => this.auth.puede(['ADMIN']));
 
   readonly periodos: { valor: PeriodoDashboard; etiqueta: string }[] = [
     { valor: '30_DIAS', etiqueta: 'Últimos 30 días' },
@@ -192,10 +195,6 @@ export class DashboardServicio {
       talla: '',
       canal: 'TODOS',
     });
-  }
-
-  cambiarRol(rol: RolDashboard): void {
-    this.rolLista.set(rol);
   }
 
   private pagoAprobado(venta: Venta): boolean {

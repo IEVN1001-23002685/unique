@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { mensajeError } from '../../../../core/api/errores';
 import { AuthStateService } from '../../../../core/auth/auth-state.service';
+import { UrlImagenPipe } from '../../../../compartido/pipes/url-imagen.pipe';
 import { MAX_PIEZAS_POR_LINEA } from '../../../carrito/modelos/carrito';
 import { CarritoServicio } from '../../../carrito/servicios/carrito-servicio';
 import { CatalogoServicio, type OrigenCatalogo } from '../../servicios/catalogo-servicio';
@@ -20,7 +21,7 @@ import {
 } from '../../modelos/catalogo';
 
 @Component({
-  imports: [CurrencyPipe, RouterLink],
+  imports: [CurrencyPipe, RouterLink, UrlImagenPipe],
   selector: 'app-detalle-producto',
   styleUrl: './detalle-producto.css',
   templateUrl: './detalle-producto.html',

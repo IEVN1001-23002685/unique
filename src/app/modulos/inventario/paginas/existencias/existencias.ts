@@ -2,7 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthStateService } from '../../../../core/auth/auth-state.service';
-import { PerfilDemoServicio } from '../../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../../nucleo/servicios/perfil-sesion-servicio';
 import { NavegacionInventario } from '../../componentes/navegacion-inventario/navegacion-inventario';
 import { SemaforoInventario } from '../../componentes/semaforo-inventario/semaforo-inventario';
 import { CATEGORIAS, type CategoriaMaterial, type ExistenciaVista } from '../../modelos/inventario';
@@ -19,12 +19,12 @@ type FiltroCategoria = CategoriaMaterial | 'Todas';
 export class Existencias {
   protected readonly servicio = inject(InventarioServicio);
   private readonly auth = inject(AuthStateService);
-  private readonly perfilDemo = inject(PerfilDemoServicio);
+  private readonly perfilSesion = inject(PerfilSesionServicio);
   protected readonly categorias: FiltroCategoria[] = ['Todas', ...CATEGORIAS];
 
   /** §10 reserva /compras al Administrador, aunque §3 permita al Operativo requisitar. */
   protected readonly puedeCapturarRequisicion = computed(() =>
-    this.auth.autenticado() ? this.auth.puede(['ADMIN']) : this.perfilDemo.esAdministrador(),
+    this.auth.puede(['ADMIN']),
   );
 
   protected readonly categoria = signal<FiltroCategoria>('Todas');

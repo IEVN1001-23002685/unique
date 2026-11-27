@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { UrlImagenPipe } from '../../../../compartido/pipes/url-imagen.pipe';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionProductos } from '../../componentes/navegacion-productos/navegacion-productos';
 import type { CodigoColor, RecursoImagen } from '../../modelos/producto-maestro';
@@ -10,7 +11,7 @@ type DestinoImagen = 'Producto' | 'Categoría' | 'Material' | 'Bordado' | 'Nueva
 /** Biblioteca de imágenes reales y subida persistente al producto mediante M10. */
 @Component({
   selector: 'app-imagenes',
-  imports: [NavegacionProductos],
+  imports: [NavegacionProductos, UrlImagenPipe],
   templateUrl: './imagenes.html',
   styleUrl: './imagenes.css',
 })

@@ -4,7 +4,7 @@ import { Observable, catchError, concatMap, forkJoin, map, of, tap } from 'rxjs'
 import { ApiService, type ValorParametro } from '../../../core/api/api.service';
 import { mensajeError } from '../../../core/api/errores';
 import { AuthStateService } from '../../../core/auth/auth-state.service';
-import { PerfilDemoServicio } from '../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../nucleo/servicios/perfil-sesion-servicio';
 import { decimalPositivo } from '../../../compartido/validadores/validadores-negocio';
 import type { LoteMaterial, Material } from '../../inventario/modelos/inventario';
 import { InventarioServicio } from '../../inventario/servicios/inventario-servicio';
@@ -239,7 +239,7 @@ interface IndicadoresVacios {
 export class MermasServicio {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthStateService);
-  private readonly perfilDemo = inject(PerfilDemoServicio);
+  private readonly perfilSesion = inject(PerfilSesionServicio);
   private readonly inventario = inject(InventarioServicio);
   private readonly productos = inject(ProductosServicio);
   private readonly produccion = inject(ProduccionServicio);
@@ -260,9 +260,7 @@ export class MermasServicio {
   /** Catálogo e indicadores son de Administrador; si fallan, el historial sigue útil. */
   readonly limitacionAdmin = this.limitacionAdminInterno.asReadonly();
   readonly esAdministrador = computed(() =>
-    this.auth.autenticado()
-      ? this.auth.puede(['ADMIN'])
-      : this.perfilDemo.esAdministrador(),
+    this.auth.puede(['ADMIN']),
   );
 
   readonly mermas = this.lista.asReadonly();

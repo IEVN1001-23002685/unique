@@ -9,13 +9,7 @@
       </p>
     </div>
     <div class="cabecera__acciones">
-      <label class="campo campo--rol">
-        Vista previa de rol (no es seguridad)
-        <select class="campo__entrada" [value]="servicio.rol()" (change)="alCambiarRol($event)">
-          <option value="Administrador">Administrador</option>
-          <option value="Operativo">Operativo</option>
-        </select>
-      </label>
+      <span class="campo campo--rol">Rol: {{ servicio.rol() }}</span>
       <button type="button" class="boton boton--primario" (click)="exportar()">Exportar CSV</button>
     </div>
   </div>

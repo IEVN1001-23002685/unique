@@ -4,7 +4,7 @@
       <span class="imagen-respaldo">{{ producto().nombre }}</span>
     } @else {
       <img
-        [src]="producto().imagen"
+        [src]="producto().imagen | urlImagen"
         [alt]="producto().nombre"
         class="h-full w-full object-contain"
         (error)="imagenNoDisponible.set(true)"

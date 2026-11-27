@@ -103,7 +103,7 @@
               <th scope="col">Código base</th>
               <th scope="col">Variantes</th>
               <th scope="col">Precio vigente</th>
-              @if (perfilDemo.puedeVerCostos()) {
+              @if (perfilSesion.puedeVerCostos()) {
                 <th scope="col">Costo estándar</th>
                 <th scope="col">Margen real</th>
               }
@@ -118,7 +118,7 @@
                   @if (producto.imagenes[0]; as imagen) {
                     <img
                       class="miniatura"
-                      [src]="imagen.url"
+                      [src]="imagen.url | urlImagen"
                       [alt]="'Imagen de ' + producto.nombre"
                       width="52"
                       height="52"
@@ -141,7 +141,7 @@
                 <td data-etiqueta="Precio">
                   {{ producto.precioVenta | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}
                 </td>
-                @if (perfilDemo.puedeVerCostos()) {
+                @if (perfilSesion.puedeVerCostos()) {
                   <td data-etiqueta="Costo">
                     @if (producto.costoEstandar !== null) {
                       {{ producto.costoEstandar | currency: 'MXN' : 'symbol' : '1.2-2' : 'es-MX' }}

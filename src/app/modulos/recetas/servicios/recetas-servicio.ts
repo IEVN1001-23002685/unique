@@ -15,7 +15,7 @@ import {
 import { AuthStateService } from '../../../core/auth/auth-state.service';
 import { ApiService, type ValorParametro } from '../../../core/api/api.service';
 import { codigoError, mensajeError } from '../../../core/api/errores';
-import { PerfilDemoServicio } from '../../../nucleo/servicios/perfil-demo-servicio';
+import { PerfilSesionServicio } from '../../../nucleo/servicios/perfil-sesion-servicio';
 import { ProductosServicio } from '../../productos/servicios/productos-servicio';
 import type { CodigoTalla } from '../../productos/modelos/producto-maestro';
 import type {
@@ -225,7 +225,7 @@ function texto(valor: string | null | undefined): string {
 export class RecetasServicio {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthStateService);
-  private readonly perfilDemo = inject(PerfilDemoServicio);
+  private readonly perfilSesion = inject(PerfilSesionServicio);
   private readonly maestro = inject(ProductosServicio);
 
   private readonly lista = signal<Receta[]>([]);
@@ -246,13 +246,10 @@ export class RecetasServicio {
   readonly errorDetalle = this.errorDetalleInterno.asReadonly();
 
   /**
-   * Sin autenticación real, el perfil de demostración permite explorar el panel.
-   * Con sesión, manda el rol del token: Operativo nunca ve costos (§3).
+   * Manda el rol del token: Operativo nunca ve costos (§3). Sin sesión no hay acceso.
    */
   readonly puedeVerCostos = computed(() =>
-    this.auth.autenticado()
-      ? this.auth.puede(['ADMIN'])
-      : this.perfilDemo.puedeVerCostos(),
+    this.auth.puede(['ADMIN']),
   );
 
   readonly productos = computed(() => {

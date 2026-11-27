@@ -3,9 +3,8 @@
     <p class="pagina-estado__codigo">403</p>
     <h1 id="titulo-sin-acceso" class="titulo">Sin acceso a esta sección</h1>
     <p class="subtitulo">
-      Tu perfil de demostración es <strong>{{ perfil }}</strong> y esta pantalla requiere
-      <strong>{{ requerido }}</strong>. La validación definitiva la hará el servicio de
-      autenticación cuando se integre Flask; aquí solo se ajusta la visibilidad de la interfaz.
+      Tu rol es <strong>{{ perfil }}</strong> y esta pantalla requiere
+      <strong>{{ requerido }}</strong>. El acceso lo decide el token real emitido por Flask.
     </p>
     <p class="nota">Ruta solicitada: <span class="mono">{{ destino }}</span></p>
     <div class="pagina-estado__acciones">

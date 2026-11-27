@@ -80,7 +80,7 @@ export class Recepciones {
   private readonly auth = inject(AuthStateService);
   private readonly avisos = inject(AvisosServicio);
   protected readonly servicio = inject(ComprasServicio);
-  /** Misma resolución de rol que el resto de M14: sesión real o perfil de demostración. */
+  /** Misma resolución de rol que el resto de M14: solo la sesión real. */
   protected readonly esAdministrador = this.servicio.puedeGestionarCompras;
 
   protected readonly ordenesDisponibles = computed(() =>

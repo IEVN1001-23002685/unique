@@ -9,6 +9,7 @@ import {
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs/operators';
+import { UrlImagenPipe } from '../../../../compartido/pipes/url-imagen.pipe';
 import { mensajeError } from '../../../../core/api/errores';
 import { formatearFechaHora } from '../../../../core/api/formato';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
@@ -38,7 +39,7 @@ interface LineaInspeccionForm {
 @Component({
   selector: 'app-cd-recepcion',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, UrlImagenPipe],
   templateUrl: './recepcion.html',
   styleUrls: ['./recepcion.css', '../../cambios-devoluciones-compartido.css'],
 })

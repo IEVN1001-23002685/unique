@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { AuthStateService } from '../../../core/auth/auth-state.service';
 import { AvisosServicio } from '../../../nucleo/servicios/avisos-servicio';
 import { EntregasServicio } from '../../entregas/servicios/entregas-servicio';
 import { InventarioProductoServicio } from '../../inventario-producto-terminado/servicios/inventario-producto-terminado-servicio';
@@ -33,6 +34,7 @@ function isoHace(horas: number): string {
   providedIn: 'root',
 })
 export class AlertasServicio {
+  private readonly auth = inject(AuthStateService);
   private readonly inventario = inject(InventarioProductoServicio);
   private readonly entregas = inject(EntregasServicio);
   private readonly pedidos = inject(PedidosServicio);
@@ -40,21 +42,22 @@ export class AlertasServicio {
   private readonly ventas = inject(VentasServicio);
   private readonly avisos = inject(AvisosServicio);
 
-  /** Vista previa demostrativa; no sustituye authGuard ni roleGuard. */
-  private readonly rolLista = signal<RolVistaAlertas>('Administrador');
+  /** Rol real de la sesión: no existe vista previa seleccionable. */
+  readonly rol = computed<RolVistaAlertas>(() =>
+    this.auth.puede(['ADMIN']) ? 'Administrador' : 'Operativo',
+  );
   private readonly reglasLista = signal<ReglaAlerta[]>(
     REGLAS_INICIALES.map((regla) => ({ ...regla })),
   );
 
   private readonly lista = signal<AlertaCentro[]>(this.condicionesActuales());
 
-  readonly rol = this.rolLista.asReadonly();
-  readonly esAdmin = computed(() => this.rolLista() === 'Administrador');
+  readonly esAdmin = computed(() => this.auth.puede(['ADMIN']));
   readonly reglas = this.reglasLista.asReadonly();
   readonly tipos = TIPOS_ALERTA;
 
   readonly visibles = computed(() =>
-    this.lista().filter((alerta) => this.puedeVer(alerta, this.rolLista())),
+    this.lista().filter((alerta) => this.puedeVer(alerta, this.rol())),
   );
 
   readonly abiertas = computed(() =>
@@ -78,10 +81,6 @@ export class AlertasServicio {
       informativas: abiertas.filter((alerta) => alerta.severidad === 'INFORMATIVA').length,
     };
   });
-
-  cambioRol(rol: RolVistaAlertas): void {
-    this.rolLista.set(rol);
-  }
 
   /** Aplica la regla de clave única y cierra sola la condición que desapareció. */
   sincronizar(): void {
@@ -125,8 +124,8 @@ export class AlertasServicio {
     if (!alerta || alerta.estado !== 'ABIERTA') {
       return;
     }
-    if (!this.puedeVer(alerta, this.rolLista())) {
-      this.avisos.mostrar('error', 'Esa alerta no corresponde al rol demostrativo seleccionado.');
+    if (!this.puedeVer(alerta, this.rol())) {
+      this.avisos.mostrar('error', 'Esa alerta no corresponde a tu rol.');
       return;
     }
 
@@ -138,7 +137,7 @@ export class AlertasServicio {
               ...item,
               estado: 'ATENDIDA' as const,
               claveUnica: null,
-              atendidaPor: this.rolLista(),
+              atendidaPor: this.rol(),
               atendidaEn: ahora,
             }
           : item,

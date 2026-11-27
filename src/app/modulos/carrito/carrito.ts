@@ -4,6 +4,7 @@ import { finalize } from 'rxjs/operators';
 import { Router, RouterLink } from '@angular/router';
 import { AvisoToast } from '../../compartido/componentes/aviso-toast/aviso-toast';
 import { ModalConfirmacion } from '../../compartido/componentes/modal-confirmacion/modal-confirmacion';
+import { UrlImagenPipe } from '../../compartido/pipes/url-imagen.pipe';
 import { esCantidadEnteraValida } from '../../compartido/validadores/validadores-negocio';
 import { mensajeError } from '../../core/api/errores';
 import { AuthStateService } from '../../core/auth/auth-state.service';
@@ -17,7 +18,7 @@ export type { EstadoLineaCarrito, ItemCarrito, ResumenCarrito } from './modelos/
 @Component({
   selector: 'app-carrito',
   standalone: true,
-  imports: [AvisoToast, CurrencyPipe, RouterLink, ModalConfirmacion],
+  imports: [AvisoToast, CurrencyPipe, RouterLink, ModalConfirmacion, UrlImagenPipe],
   templateUrl: './carrito.html',
   styleUrl: './carrito.css',
 })
