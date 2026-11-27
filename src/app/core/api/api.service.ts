@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { ApiConfigService } from './api-config.service';
 
 export type ValorParametro = string | number | boolean | null | undefined;
 
@@ -15,7 +15,7 @@ export interface OpcionesApi {
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
-  private readonly base = environment.apiBaseUrl.replace(/\/$/, '');
+  private readonly config = inject(ApiConfigService);
 
   get<T>(path: string, opciones: OpcionesApi = {}): Observable<T> {
     return this.http.get<T>(this.url(path), {
@@ -84,7 +84,11 @@ export class ApiService {
   }
 
   private url(path: string): string {
-    return `${this.base}${path.startsWith('/') ? path : `/${path}`}`;
+    const base = this.config.apiBaseUrl();
+    if (!base) {
+      throw new Error('La URL de la API no está configurada.');
+    }
+    return `${base}${path.startsWith('/') ? path : `/${path}`}`;
   }
 
   private params(valores: Record<string, ValorParametro> | undefined): HttpParams {

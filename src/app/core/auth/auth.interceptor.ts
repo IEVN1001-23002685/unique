@@ -15,7 +15,7 @@ import {
   tap,
   throwError,
 } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { ApiConfigService } from '../api/api-config.service';
 import { AuthSessionService, cabeceraCsrf } from './auth-session.service';
 import { AuthStateService, RespuestaSesion } from './auth-state.service';
 
@@ -32,10 +32,14 @@ function conCredenciales(req: HttpRequest<unknown>, token: string | null) {
   });
 }
 
-function renovar(cliente: HttpClient, sesion: AuthSessionService): Observable<RespuestaSesion> {
+function renovar(
+  cliente: HttpClient,
+  sesion: AuthSessionService,
+  base: string,
+): Observable<RespuestaSesion> {
   return cliente
     .post<RespuestaSesion>(
-      `${environment.apiBaseUrl.replace(/\/$/, '')}/auth/refrescar`,
+      `${base}/auth/refrescar`,
       {},
       { withCredentials: true, headers: cabeceraCsrf() },
     )
@@ -56,6 +60,7 @@ function renovar(cliente: HttpClient, sesion: AuthSessionService): Observable<Re
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const estado = inject(AuthStateService);
   const sesion = inject(AuthSessionService);
+  const config = inject(ApiConfigService);
   const backend = inject(HttpBackend);
   const clienteSinInterceptores = new HttpClient(backend);
   const omitirRefresco =
@@ -70,7 +75,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
-      const refresco = refrescoEnCurso ?? (refrescoEnCurso = renovar(clienteSinInterceptores, sesion));
+      const base = config.apiBaseUrl();
+      if (!base) {
+        sesion.cerrarSesionLocal();
+        return throwError(() => new Error('La URL de la API no está configurada.'));
+      }
+      const refresco =
+        refrescoEnCurso ?? (refrescoEnCurso = renovar(clienteSinInterceptores, sesion, base));
       const reintento = req.clone({ setHeaders: { [CABECERA_REINTENTO]: '1' } });
       return refresco.pipe(switchMap(() => next(conCredenciales(reintento, estado.token()))));
     }),

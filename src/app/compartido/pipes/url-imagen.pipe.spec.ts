@@ -1,31 +1,37 @@
 import { environment } from '../../../environments/environment';
-import { UrlImagenPipe } from './url-imagen.pipe';
+import { resolverUrlImagen } from './url-imagen.pipe';
 
-describe('UrlImagenPipe', () => {
-  const pipe = new UrlImagenPipe();
-  const origen = environment.apiBaseUrl.replace(/\/+$/, '').replace(/\/api\/v1\/?$/, '');
+describe('resolverUrlImagen', () => {
+  const base = environment.apiBaseUrl.replace(/\/+$/, '');
 
-  it('resuelve las imágenes de Flask contra el origen de la API', () => {
-    expect(pipe.transform('/uploads/abc123.png')).toBe(`${origen}/uploads/abc123.png`);
-    expect(pipe.transform('uploads/abc123.png')).toBe(`${origen}/uploads/abc123.png`);
+  it('resuelve las imágenes de Flask contra el origen de la API configurado', () => {
+    expect(resolverUrlImagen('/uploads/abc123.png', base)).toBe(
+      'http://localhost:8001/uploads/abc123.png',
+    );
+    expect(resolverUrlImagen('uploads/abc123.png', base)).toBe(
+      'http://localhost:8001/uploads/abc123.png',
+    );
   });
 
   it('deja intactos los recursos locales y las URLs ya absolutas', () => {
-    expect(pipe.transform('/prendas/sudadera/Sudaderanegra.png')).toBe(
+    expect(resolverUrlImagen('/prendas/sudadera/Sudaderanegra.png', base)).toBe(
       '/prendas/sudadera/Sudaderanegra.png',
     );
-    expect(pipe.transform('https://otro-dominio/upload.png')).toBe(
+    expect(resolverUrlImagen('https://otro-dominio/upload.png', base)).toBe(
       'https://otro-dominio/upload.png',
     );
-    expect(pipe.transform('data:image/png;base64,AAA')).toBe('data:image/png;base64,AAA');
-    expect(pipe.transform('blob:http://localhost:4200/abc')).toBe(
+    expect(resolverUrlImagen('data:image/png;base64,AAA', base)).toBe(
+      'data:image/png;base64,AAA',
+    );
+    expect(resolverUrlImagen('blob:http://localhost:4200/abc', base)).toBe(
       'blob:http://localhost:4200/abc',
     );
   });
 
-  it('devuelve cadena vacía cuando no hay imagen', () => {
-    expect(pipe.transform('')).toBe('');
-    expect(pipe.transform(null)).toBe('');
-    expect(pipe.transform(undefined)).toBe('');
+  it('no genera rutas relativas cuando falta la configuración', () => {
+    expect(resolverUrlImagen('/uploads/abc123.png', '')).toBe('');
+    expect(resolverUrlImagen('', base)).toBe('');
+    expect(resolverUrlImagen(null, base)).toBe('');
+    expect(resolverUrlImagen(undefined, base)).toBe('');
   });
 });

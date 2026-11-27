@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { Observable, catchError, concatMap, forkJoin, from, last, map, of, switchMap, tap } from 'rxjs';
 import { ApiService, type ValorParametro } from '../../../core/api/api.service';
 import { mensajeError } from '../../../core/api/errores';
 import type { IProducto } from '../../../nucleo/modelos/producto';
@@ -367,9 +367,6 @@ export class ProductosServicio {
 
   guardarProducto(datos: DatosProducto, id?: number): Observable<ResultadoProducto> {
     const precio = datos.precioVenta ?? calcularCosteo(datos.costeo).precioConIva;
-    const imagenesPorColor = Object.fromEntries(
-      Object.entries(datos.imagenesPorColor).filter(([, url]) => url !== ''),
-    );
     const comun = {
       nombre: datos.nombre.trim(),
       descripcion: datos.descripcion.trim(),
@@ -379,9 +376,8 @@ export class ProductosServicio {
       permite_bajo_pedido: datos.permiteBajoPedido,
       colores: datos.colores,
       tallas: datos.tallas,
-      imagen_general: datos.imagenGeneral,
-      imagenes_por_color: imagenesPorColor,
     };
+    // Las imágenes se envían solo por /productos/{id}/imagenes (multipart).
     const catalogo = {
       categoria_id: datos.categoriaId,
       stock_minimo: datos.stockMinimo,
@@ -390,7 +386,23 @@ export class ProductosServicio {
     const peticion =
       id === undefined
         ? this.api.post<ProductoDetalleApi>('/productos', { ...comun, ...catalogo })
-        : this.api.patch<ProductoDetalleApi>(`/productos/${id}`, { ...comun, ...catalogo });
+        : this.api.patch<ProductoDetalleApi>(`/productos/${id}`, comun).pipe(
+            // El contrato de actualización no cambia categoría ni reglas: van por sus endpoints.
+            switchMap((respuesta) => {
+              const variantes = respuesta.variantes ?? [];
+              if (variantes.length === 0) return of(respuesta);
+              return from(variantes).pipe(
+                concatMap((variante) =>
+                  this.api.patch(`/inventario/producto/${variante.id}/reglas`, {
+                    stock_minimo: datos.stockMinimo,
+                    cantidad_reposicion: datos.cantidadReposicion,
+                  }),
+                ),
+                last(),
+                map(() => respuesta),
+              );
+            }),
+          );
 
     return peticion.pipe(
       switchMap((respuesta) =>
@@ -522,7 +534,6 @@ export class ProductosServicio {
       nombre,
       usa_tallas: datos.usaTallas,
       activa: datos.activa,
-      descripcion: datos.descripcion.trim(),
       ...(id === undefined ? { prefijo_sku: prefijo } : {}),
     };
     const peticion =

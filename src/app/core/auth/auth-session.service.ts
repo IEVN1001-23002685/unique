@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { catchError, firstValueFrom, Observable, of, tap, throwError } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { ApiConfigService } from '../api/api-config.service';
 import { AuthStateService, RespuestaSesion, RolUsuario, UsuarioSesion } from './auth-state.service';
 
 export type { RolUsuario, UsuarioSesion, RespuestaSesion } from './auth-state.service';
@@ -35,7 +35,15 @@ export function cabeceraCsrf(): Record<string, string> {
 export class AuthSessionService {
   private readonly http = inject(HttpClient);
   private readonly estado = inject(AuthStateService);
-  private readonly base = environment.apiBaseUrl.replace(/\/$/, '');
+  private readonly config = inject(ApiConfigService);
+
+  private get base(): string {
+    const base = this.config.apiBaseUrl();
+    if (!base) {
+      throw new Error('La URL de la API no está configurada.');
+    }
+    return base;
+  }
 
   get token(): string | null {
     return this.estado.token();
@@ -83,7 +91,10 @@ export class AuthSessionService {
 
   cerrarSesion(): Observable<MensajeApi> {
     return this.http
-      .post<MensajeApi>(`${this.base}/auth/logout`, {}, { withCredentials: true })
+      .post<MensajeApi>(`${this.base}/auth/logout`, {}, {
+        withCredentials: true,
+        headers: cabeceraCsrf(),
+      })
       .pipe(
         catchError(() => of({ mensaje: 'Sesión cerrada localmente' })),
         tap(() => this.estado.limpiar()),

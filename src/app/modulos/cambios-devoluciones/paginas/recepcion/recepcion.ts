@@ -133,8 +133,8 @@ export class Recepcion {
         return {
           devolucion_linea_id: valor.devolucionLineaId,
           dictamen: 'MERMA',
-          causa: valor.causa,
-          etapa: valor.etapa,
+          causa_nombre: valor.causa,
+          descripcion: valor.etapa,
         };
       }
       return {

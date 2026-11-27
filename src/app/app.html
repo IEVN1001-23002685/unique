@@ -1,3 +1,10 @@
-<router-outlet />
+@if (config.error()) {
+  <main class="error-configuracion" role="alert">
+    <h1>UNIQUE no está configurado</h1>
+    <p>{{ config.error() }}</p>
+  </main>
+} @else {
+  <router-outlet />
 
-<app-modal-autenticacion />
+  <app-modal-autenticacion />
+}

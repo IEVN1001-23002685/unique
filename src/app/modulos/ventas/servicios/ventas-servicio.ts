@@ -633,6 +633,7 @@ export class VentasServicio {
       lineas: solicitud.lineas.map((linea) => ({ sku: linea.sku, cantidad: linea.cantidad })),
       direccion: {
         tipo: direccion.tipo,
+        alias: 'Venta manual',
         destinatario: direccion.destinatario,
         telefono: direccion.telefono,
         calle: direccion.calle,
@@ -686,7 +687,6 @@ export class VentasServicio {
       accion: aprueba ? 'APROBAR' : 'RECHAZAR',
       metodo_pago: datos.metodo,
       titular: datos.titular ?? null,
-      ultimos4: datos.ultimos4 ?? null,
       motivo: aprueba ? null : 'Pago rechazado desde el panel de ventas',
     };
     return this.api.post<VentaDetalleApi>(`/ventas/${id}/pago`, cuerpo).pipe(
