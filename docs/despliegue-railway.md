@@ -115,6 +115,9 @@ curl -i -o /dev/null -w '%{http_code}\n' http://127.0.0.1:4180/catalogo
 | `401`/sin sesión después del login | `CORS_ORIGINS` o cookies `SameSite=None`/`Secure` mal configurados en la API | Corregir variables de la API |
 | Imágenes `/uploads/...` no cargan | CSP sin el origen de la API o volumen de la API sin imágenes | Reiniciar frontend y revisar el volumen de la API |
 | Rutas internas devuelven 404 | Nginx no usa el `try_files` actualizado | Verificar que el build usó el `nginx.conf.template` del repositorio |
+| `/health` o `/runtime-config.json` devuelven `index.html` (`text/html`, mismo ETag que `/`) | El servicio está usando la configuración por defecto de Nginx, no el `Dockerfile` del repositorio | Configurar el builder de Railway como `Dockerfile`, forzar build sin caché y redeploy |
+| Los logs no muestran `Launching /docker-entrypoint.d/30-unique-config.sh` | Falta el script de configuración en runtime en la imagen desplegada | Verificar que Railway construye desde el `Dockerfile` y no desde un builder automático estático |
+| Las respuestas no incluyen `X-Content-Type-Options`, `X-Frame-Options` ni CSP | No se aplicó `nginx-seguridad.conf.template` | Reconstruir usando el `Dockerfile` actual |
 
 No se han publicado dominios definitivos ni secretos en este documento; sustituir los marcadores
 por los valores reales del proyecto Railway.
