@@ -491,10 +491,17 @@ export class AdministracionM22Component implements OnInit {
   guardarCatalogo(): void {
     const datos: Record<string, ValorCatalogo> = {};
     for (const campo of this.campos) {
+      if (this.editandoCatalogo && campo.soloCreacion) continue;
       const valor = this.catalogoDatos[campo.nombre];
       if (valor === '' && campo.tipo === 'numero') continue;
       datos[campo.nombre] =
         campo.tipo === 'numero' && valor !== null && valor !== '' ? Number(valor) : valor;
+      if (
+        (campo.nombre === 'codigo' || campo.nombre === 'prefijo_sku') &&
+        typeof datos[campo.nombre] === 'string'
+      ) {
+        datos[campo.nombre] = String(datos[campo.nombre]).trim().toUpperCase();
+      }
     }
     const requerido: Partial<Record<RecursoCatalogo, string>> = {
       color: 'codigo',

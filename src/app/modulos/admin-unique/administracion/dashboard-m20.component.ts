@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { mensajeError } from '../../../core/api/errores';
@@ -55,6 +56,7 @@ export class DashboardM20Component implements OnInit {
   private readonly alertasServicio = inject(AlertasService);
   private readonly ruta = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private solicitud = 0;
 
   readonly auth = inject(AuthSessionService);
@@ -84,6 +86,10 @@ export class DashboardM20Component implements OnInit {
 
   get esAdmin(): boolean {
     return this.auth.usuario?.rol === 'ADMIN';
+  }
+
+  get tienePeriodo(): boolean {
+    return Boolean(this.servicio.desde() || this.servicio.hasta());
   }
 
   get criticasVisibles(): Alerta[] {
@@ -230,11 +236,17 @@ export class DashboardM20Component implements OnInit {
   }
 
   private get filtro(): { desde?: string; hasta?: string } {
-    return { desde: this.desde || undefined, hasta: this.hasta || undefined };
+    return this.servicio.filtros();
   }
 
   ngOnInit(): void {
     this.cargarAlertas();
+    const consulta = this.ruta.snapshot.queryParamMap;
+    if (consulta.has('desde') || consulta.has('hasta')) {
+      this.servicio.establecerPeriodo(consulta.get('desde'), consulta.get('hasta'));
+    }
+    this.desde = this.servicio.desde();
+    this.hasta = this.servicio.hasta();
     const secciones: Record<string, Pestana> = {
       resumen: 'resumen',
       'ventas-productos': 'ventas',
@@ -246,7 +258,7 @@ export class DashboardM20Component implements OnInit {
       'logistica-devoluciones': 'logistica',
       logistica: 'logistica',
     };
-    this.ruta.paramMap.subscribe((params) => {
+    this.ruta.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.pestana = secciones[params.get('seccion') ?? ''] ?? (this.esAdmin ? 'resumen' : 'produccion');
       if (!this.esAdmin && (this.pestana === 'resumen' || this.pestana === 'ventas')) {
         this.pestana = 'produccion';
@@ -269,13 +281,31 @@ export class DashboardM20Component implements OnInit {
   }
 
   filtros(): void {
+    this.servicio.establecerPeriodo(this.desde, this.hasta);
+    this.desde = this.servicio.desde();
+    this.hasta = this.servicio.hasta();
+    this.sincronizarUrl();
     this.cargar();
   }
 
   limpiarPeriodo(): void {
     this.desde = '';
     this.hasta = '';
-    this.filtros();
+    this.servicio.limpiarPeriodo();
+    this.sincronizarUrl();
+    this.cargar();
+  }
+
+  private sincronizarUrl(): void {
+    void this.router.navigate([], {
+      relativeTo: this.ruta,
+      queryParams: {
+        desde: this.servicio.desde() || null,
+        hasta: this.servicio.hasta() || null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   alCambiarCategoria(): void {
@@ -308,7 +338,12 @@ export class DashboardM20Component implements OnInit {
       abasto: 'abastecimiento',
       logistica: 'logistica-devoluciones',
     };
-    void this.router.navigate(['/panel-admin/dashboard', secciones[destination]]);
+    void this.router.navigate(['/panel-admin/dashboard', secciones[destination]], {
+      queryParams: {
+        desde: this.servicio.desde() || null,
+        hasta: this.servicio.hasta() || null,
+      },
+    });
   }
 
   reintentar(): void {

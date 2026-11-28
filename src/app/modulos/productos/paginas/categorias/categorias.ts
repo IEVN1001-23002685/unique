@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { NavegacionProductos } from '../../componentes/navegacion-productos/navegacion-productos';
 import type { CategoriaProducto } from '../../modelos/producto-maestro';
@@ -70,7 +71,8 @@ export class Categorias {
             this.nueva();
           }
         },
-        error: () => this.avisos.mostrar('error', 'No fue posible guardar la categoría en Flask.'),
+        error: (error: unknown) =>
+          this.avisos.mostrar('error', mensajeError(error, 'No fue posible guardar la categoría en Flask.')),
       });
   }
 

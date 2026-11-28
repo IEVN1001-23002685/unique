@@ -216,6 +216,7 @@ export interface DashboardLogistica {
   repartidores_activos: number;
   intentos_maximos: number;
   entregas_programadas_hoy: number;
+  entregas_programadas_periodo?: number;
 }
 
 export interface UsuarioAdmin {
