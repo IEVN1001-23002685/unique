@@ -13,10 +13,10 @@
     <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
   </div>
 
-  @if (servicio.errorCarga()) {
+  @if (servicio.errorLotes()) {
     <div class="tarjeta bloque estado estado--error" role="alert">
       <strong>No fue posible cargar los lotes.</strong>
-      <p>{{ servicio.errorCarga() }}</p>
+      <p>{{ servicio.errorLotes() }}</p>
       <button type="button" class="boton boton--secundario" (click)="reintentar()">
         Reintentar
       </button>
@@ -69,7 +69,7 @@
       </div>
     </div>
 
-    @if (!servicio.cargado() || servicio.errorCarga()) {
+    @if (!servicio.cargado() || servicio.errorLotes()) {
       <p class="sr-only">Esperando la carga de lotes.</p>
     } @else if (filtrados().length === 0) {
       <div class="estado" role="status">

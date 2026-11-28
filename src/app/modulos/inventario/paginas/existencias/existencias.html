@@ -12,10 +12,10 @@
     </div>
   </div>
 
-  @if (servicio.errorCarga()) {
+  @if (servicio.errorInventario()) {
     <div class="tarjeta bloque estado estado--error" role="alert">
       <strong>No fue posible cargar las existencias.</strong>
-      <p>{{ servicio.errorCarga() }}</p>
+      <p>{{ servicio.errorInventario() }}</p>
       <button type="button" class="boton boton--secundario" (click)="reintentar()">
         Reintentar
       </button>
@@ -79,7 +79,7 @@
       </div>
     </div>
 
-    @if (!servicio.cargado() || servicio.errorCarga()) {
+    @if (!servicio.cargado() || servicio.errorInventario()) {
       <p class="sr-only">Esperando la carga de existencias.</p>
     } @else if (filtradas().length === 0) {
       <div class="estado" role="status">

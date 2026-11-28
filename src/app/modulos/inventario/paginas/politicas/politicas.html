@@ -13,10 +13,10 @@
     <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
   </div>
 
-  @if (servicio.errorCarga()) {
+  @if (servicio.errorInventario()) {
     <div class="tarjeta bloque estado estado--error" role="alert">
       <strong>No fue posible cargar las políticas.</strong>
-      <p>{{ servicio.errorCarga() }}</p>
+      <p>{{ servicio.errorInventario() }}</p>
       <button type="button" class="boton boton--secundario" (click)="reintentar()">
         Reintentar
       </button>
@@ -45,7 +45,7 @@
       <span class="etiqueta etiqueta--neutro">{{ vistas().length }} registros visibles</span>
     </div>
 
-    @if (!servicio.cargado() || servicio.errorCarga()) {
+    @if (!servicio.cargado() || servicio.errorInventario()) {
       <p class="sr-only">Esperando la carga de políticas.</p>
     } @else if (vistas().length === 0) {
       <div class="estado" role="status">
@@ -150,7 +150,7 @@
       <button
         type="submit"
         class="boton boton--primario"
-        [disabled]="servicio.errorCarga() !== '' || servicio.cargando()"
+        [disabled]="servicio.errorInventario() !== '' || servicio.cargando()"
       >
         Guardar políticas
       </button>

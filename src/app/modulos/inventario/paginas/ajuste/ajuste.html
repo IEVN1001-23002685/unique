@@ -13,10 +13,10 @@
     <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
   </div>
 
-  @if (servicio.errorCarga()) {
+  @if (servicio.errorInventario()) {
     <div class="tarjeta bloque estado estado--error" role="alert">
       <strong>No fue posible cargar los materiales para el ajuste.</strong>
-      <p>{{ servicio.errorCarga() }}</p>
+      <p>{{ servicio.errorInventario() }}</p>
       <button type="button" class="boton boton--secundario" (click)="reintentar()">
         Reintentar
       </button>
@@ -118,7 +118,7 @@
       <button
         type="submit"
         class="boton boton--primario"
-        [disabled]="servicio.errorCarga() !== '' || servicio.cargando()"
+        [disabled]="servicio.errorInventario() !== '' || servicio.cargando()"
       >
         Registrar ajuste
       </button>

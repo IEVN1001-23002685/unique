@@ -13,10 +13,10 @@
     <a routerLink="/inventario-mp" class="boton boton--secundario">Volver a existencias</a>
   </div>
 
-  @if (servicio.errorCarga()) {
+  @if (servicio.errorMovimientos()) {
     <div class="tarjeta bloque estado estado--error" role="alert">
       <strong>No fue posible cargar el kardex.</strong>
-      <p>{{ servicio.errorCarga() }}</p>
+      <p>{{ servicio.errorMovimientos() }}</p>
       <button type="button" class="boton boton--secundario" (click)="reintentar()">
         Reintentar
       </button>
@@ -107,7 +107,7 @@
       </button>
     </div>
 
-    @if (!servicio.cargado() || servicio.errorCarga()) {
+    @if (!servicio.cargado() || servicio.errorMovimientos()) {
       <p class="sr-only">Esperando la carga de movimientos.</p>
     } @else if (movimientos().length === 0) {
       <div class="estado" role="status">

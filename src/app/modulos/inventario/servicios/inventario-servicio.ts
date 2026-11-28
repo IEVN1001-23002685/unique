@@ -177,6 +177,9 @@ export class InventarioServicio {
   private readonly catalogoCategorias = signal<CategoriaMaterialApi[]>([]);
   private readonly cargandoInterno = signal(false);
   private readonly errorCargaInterno = signal('');
+  private readonly errorInventarioInterno = signal('');
+  private readonly errorLotesInterno = signal('');
+  private readonly errorMovimientosInterno = signal('');
   private readonly limitacionRequisicionesInterno = signal('');
   private readonly limitacionCatalogosInterno = signal('');
 
@@ -194,6 +197,10 @@ export class InventarioServicio {
   readonly cargando = this.cargandoInterno.asReadonly();
   /** Una lista vacía no debe confundirse con un fallo de Flask. */
   readonly errorCarga = this.errorCargaInterno.asReadonly();
+  /** Cada lectura auxiliar informa de su propio fallo sin invalidar el catálogo de materiales. */
+  readonly errorInventario = this.errorInventarioInterno.asReadonly();
+  readonly errorLotes = this.errorLotesInterno.asReadonly();
+  readonly errorMovimientos = this.errorMovimientosInterno.asReadonly();
   /** M14 puede no autorizar GET /requisiciones al Operativo; no bloquea M15. */
   readonly limitacionRequisiciones = this.limitacionRequisicionesInterno.asReadonly();
   /** M22 puede no estar disponible; se conservan las FK ya conocidas en M15. */
@@ -216,8 +223,16 @@ export class InventarioServicio {
   recargar(): Observable<void> {
     this.cargandoInterno.set(true);
     this.errorCargaInterno.set('');
+    this.errorInventarioInterno.set('');
+    this.errorLotesInterno.set('');
+    this.errorMovimientosInterno.set('');
     this.limitacionRequisicionesInterno.set('');
     this.limitacionCatalogosInterno.set('');
+    const sinDatos = <T>(registrar: (mensaje: string) => void, predeterminado: string) =>
+      (error: unknown) => {
+        registrar(mensajeError(error, predeterminado));
+        return of([] as T[]);
+      };
     const categorias = listarTodo<CategoriaMaterialApi>(
       this.api,
       '/catalogos/categoria-material',
@@ -243,10 +258,38 @@ export class InventarioServicio {
     return forkJoin({
       materiales: listarTodo<MaterialApi>(this.api, '/materiales', {
         incluir_inactivos: true,
-      }),
-      inventario: listarTodo<InventarioApi>(this.api, '/inventario/material'),
-      lotes: listarTodo<LoteApi>(this.api, '/inventario/material/lotes'),
-      movimientos: listarTodo<MovimientoApi>(this.api, '/inventario/material/movimientos'),
+      }).pipe(
+        catchError(
+          sinDatos<MaterialApi>(
+            (mensaje) => this.errorCargaInterno.set(mensaje),
+            'No fue posible cargar el catálogo de materiales desde Flask.',
+          ),
+        ),
+      ),
+      inventario: listarTodo<InventarioApi>(this.api, '/inventario/material').pipe(
+        catchError(
+          sinDatos<InventarioApi>(
+            (mensaje) => this.errorInventarioInterno.set(mensaje),
+            'No fue posible cargar las existencias de materia prima desde Flask.',
+          ),
+        ),
+      ),
+      lotes: listarTodo<LoteApi>(this.api, '/inventario/material/lotes').pipe(
+        catchError(
+          sinDatos<LoteApi>(
+            (mensaje) => this.errorLotesInterno.set(mensaje),
+            'No fue posible cargar los lotes de materia prima desde Flask.',
+          ),
+        ),
+      ),
+      movimientos: listarTodo<MovimientoApi>(this.api, '/inventario/material/movimientos').pipe(
+        catchError(
+          sinDatos<MovimientoApi>(
+            (mensaje) => this.errorMovimientosInterno.set(mensaje),
+            'No fue posible cargar el kardex de materia prima desde Flask.',
+          ),
+        ),
+      ),
       requisiciones,
       categorias,
     }).pipe(
@@ -308,6 +351,9 @@ export class InventarioServicio {
         this.errorCargaInterno.set(
           mensajeError(error, 'No fue posible cargar el inventario de materia prima desde Flask.'),
         );
+        this.errorInventarioInterno.set('');
+        this.errorLotesInterno.set('');
+        this.errorMovimientosInterno.set('');
         this.listaMateriales.set([]);
         this.listaExistencias.set([]);
         this.listaLotes.set([]);
