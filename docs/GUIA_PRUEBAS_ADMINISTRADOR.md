@@ -245,6 +245,14 @@ Aunque el parámetro se llama `material_id`, `_obtener_material()` resuelve con 
 
 **Integridad confirmada con Flask.** El cuerpo enviado coincide con `ProveedorMaterialCrearSchema` / `ActualizarSchema`: `material_id`, `precio_compra`, `minimo_compra`, `plazo_dias`, `es_principal`, `vigencia_hasta`, `activo`. No se envía `unidad_compra` porque el esquema la excluye. No se requiere ningún cambio en Flask/MySQL.
 
+**Segunda revisión (si todavía no guardaba).** Se corrigieron tres causas adicionales:
+
+1. El `<select>` podía actualizar su control después del evento `(change)`, dejando la unidad de compra vacía y el formulario inválido sin mensaje claro. Ahora la unidad se sincroniza con `valueChanges` y se deriva de M15 al guardar; ya no es obligatoria como captura manual.
+2. Al navegar de un proveedor a otro, Angular reutilizaba el componente y conservaba las líneas del proveedor anterior (`lineasInicializadas`). El id de la ruta ahora es reactivo y el formulario se limpia y se repuebla al cambiar de proveedor.
+3. Si la caché local no traía una fila ya existente, el `POST` devolvía `MATERIAL_PROVEEDOR_DUPLICADO` (409). Angular ahora recupera el id real con `GET /proveedores/{id}/materiales` y reactiva la fila con `PATCH`.
+
+Además, los errores 422 muestran el `detalle` campo por campo y cada línea inválida indica si falta material, precio o plazo. Si el guardado sigue fallando, copia el toast completo: ahora contiene el mensaje de Flask y los campos rechazados.
+
 ---
 
 ## 5. Fase 3 — M14 · Compras (ciclo completo)
