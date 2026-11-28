@@ -24,6 +24,18 @@ export interface DatosResultadoEntrega {
   notas?: string | null;
 }
 
+/** Coincide con `EntregaFiltrosSchema` de Flask; `ApiService` omite los valores vacíos. */
+export interface FiltrosEntrega {
+  estado?: string;
+  repartidor_id?: number;
+  pedido_id?: number;
+  folio?: string;
+  desde?: string;
+  hasta?: string;
+  pagina?: number;
+  por_pagina?: number;
+}
+
 /** M19: única puerta HTTP de entregas, hojas de reparto y repartidores. */
 @Injectable({ providedIn: 'root' })
 export class EntregasService {
@@ -34,6 +46,21 @@ export class EntregasService {
     const params: Record<string, ValorParametro> = {};
     if (filtros.codigo_postal) params['codigo_postal'] = filtros.codigo_postal;
     return this.api.get<Pagina<PedidoPorAsignar>>('/entregas/por-asignar', params);
+  }
+
+  /** Historial persistente de guías. Requiere el `GET /api/v1/entregas` de Flask. */
+  listar(filtros: FiltrosEntrega = {}): Observable<Pagina<Entrega>> {
+    const params: Record<string, ValorParametro> = {
+      estado: filtros.estado,
+      repartidor_id: filtros.repartidor_id,
+      pedido_id: filtros.pedido_id,
+      folio: filtros.folio,
+      desde: filtros.desde,
+      hasta: filtros.hasta,
+      pagina: filtros.pagina,
+      por_pagina: filtros.por_pagina,
+    };
+    return this.api.get<Pagina<Entrega>>('/entregas', params);
   }
 
   asignar(datos: DatosAsignarEntrega): Observable<Entrega> {

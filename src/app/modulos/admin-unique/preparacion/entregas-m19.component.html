@@ -31,8 +31,9 @@
 </div>
 <div class="panel-card" *ngIf="pestana !== 'repartidores' && pestana !== 'hoja' && pestana !== 'productos'">
   <div class="panel-title">
-    <h3>{{ pestana === 'asignar' ? 'Pedidos LISTO_ENVIO' : 'Entregas asignadas en esta sesión' }}</h3>
-    <span class="muted">El backend no expone una lista de entregas; el seguimiento muestra las asignadas desde esta sesión</span>
+    <h3>{{ pestana === 'asignar' ? 'Pedidos LISTO_ENVIO' : 'Historial de entregas' }}</h3>
+    <span class="muted" *ngIf="pestana === 'seguimiento' && historialDesdeApi">Historial leído desde Flask; persiste al recargar la página.</span>
+    <span class="muted" *ngIf="pestana === 'seguimiento' && !cargando && !historialDesdeApi">Vista local: Flask aún no expone el historial; se muestran las asignaciones de esta sesión.</span>
   </div>
   <div class="filters" *ngIf="pestana === 'asignar' && puedeOperar">
     <label>Código postal<input [(ngModel)]="codigoPostal" maxlength="5" inputmode="numeric" pattern="\d{5}" placeholder="37000" (change)="pagina = 1; cargar()" /></label>
@@ -67,6 +68,7 @@
     <label>Repartidor<input [(ngModel)]="filtroRepartidor" placeholder="Nombre o ID" /></label>
     <label>Desde<input type="date" [(ngModel)]="seguimientoFiltro.desde" /></label>
     <label>Hasta<input type="date" [(ngModel)]="seguimientoFiltro.hasta" /></label>
+    <span class="muted" *ngIf="historialDesdeApi">Los filtros se aplican a la página actual.</span>
   </div>
   <div class="empty" role="status" *ngIf="cargando">Cargando entregas...</div>
   <div class="empty" *ngIf="!cargando && !filtradas.length">No hay registros para esta vista.</div>

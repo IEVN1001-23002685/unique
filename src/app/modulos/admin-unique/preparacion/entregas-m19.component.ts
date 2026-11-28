@@ -3,13 +3,14 @@ import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
-import { mensajeError } from '../../../core/api/errores';
+import { ErrorHttpConCuerpo, mensajeError } from '../../../core/api/errores';
 import { AuthSessionService } from '../services/auth-session.service';
 import { abrirPdf } from '../services/descargas';
 import { EntregasService } from '../services/entregas.service';
 import {
   Entrega,
   FilaEntrega,
+  Pagina,
   PedidoPorAsignar,
   ProductoRepartido,
   Repartidor,
@@ -34,6 +35,7 @@ export class EntregasM19Component implements OnInit {
   pestana: Pestana = 'asignar';
   porAsignar: PedidoPorAsignar[] = [];
   seguimiento: Entrega[] = [];
+  historialDesdeApi = false;
   productos: ProductoRepartido[] = [];
   repartidores: Repartidor[] = [];
   cargando = true;
@@ -90,8 +92,11 @@ export class EntregasM19Component implements OnInit {
     return rol === 'OPERATIVO' || rol === 'ADMIN';
   }
 
-  /** Los filtros estrictos de Flask no aceptan paginación en estos listados. */
+  /** Solo `GET /entregas` pagina; los demás listados de Flask no aceptan paginación. */
   get totalPaginas(): number {
+    if (this.pestana === 'seguimiento' && this.historialDesdeApi) {
+      return Math.max(1, Math.ceil(this.total / this.porPagina));
+    }
     return 1;
   }
 
@@ -196,8 +201,53 @@ export class EntregasM19Component implements OnInit {
         });
       return;
     }
-    this.total = this.seguimiento.length;
-    this.cargando = false;
+    this.cargarSeguimiento();
+  }
+
+  private cargarSeguimiento(): void {
+    this.servicio.listar({ pagina: this.pagina, por_pagina: this.porPagina }).subscribe({
+      next: (respuesta) => {
+        this.aplicarHistorial(respuesta);
+        this.cargando = false;
+      },
+      error: (error: unknown) => {
+        this.historialDesdeApi = false;
+        this.total = this.seguimiento.length;
+        this.aviso = this.mensajeHistorialNoDisponible(error);
+        this.cargando = false;
+      },
+    });
+  }
+
+  private aplicarHistorial(respuesta: Pagina<Entrega>): void {
+    this.seguimiento = respuesta.items;
+    this.total = respuesta.total;
+    this.pagina = respuesta.pagina;
+    this.porPagina = respuesta.por_pagina;
+    this.historialDesdeApi = true;
+  }
+
+  /** Si la API aún no publica el historial, la demo continúa con lo capturado en memoria. */
+  private sincronizarSeguimiento(): void {
+    if (!this.historialDesdeApi) {
+      this.total = this.seguimiento.length;
+      return;
+    }
+    this.servicio.listar({ pagina: this.pagina, por_pagina: this.porPagina }).subscribe({
+      next: (respuesta) => this.aplicarHistorial(respuesta),
+      error: () => {
+        this.historialDesdeApi = false;
+        this.total = this.seguimiento.length;
+      },
+    });
+  }
+
+  private mensajeHistorialNoDisponible(error: unknown): string {
+    const http = error as ErrorHttpConCuerpo;
+    if (http.status === 404) {
+      return 'Historial no disponible en la API; se muestran solo las asignaciones de esta sesión.';
+    }
+    return `No se pudo cargar el historial (${mensajeError(error, 'error de conexión')}); se muestran solo las asignaciones de esta sesión.`;
   }
 
   cargarRepartidores(): void {
@@ -375,6 +425,7 @@ export class EntregasM19Component implements OnInit {
           this.seguimiento = [entrega, ...this.seguimiento.filter((e) => e.id !== entrega.id)];
           this.aviso = `Entrega ${entrega.folio} asignada. Esa guía es la que verá el cliente en M06.`;
           this.cargar();
+          this.sincronizarSeguimiento();
         },
         error: (error: unknown) => (this.error = mensajeError(error, 'No se pudo asignar la entrega.')),
       });
@@ -387,6 +438,7 @@ export class EntregasM19Component implements OnInit {
       next: (actualizada) => {
         this.reemplazar(actualizada);
         this.aviso = `Salida de ${actualizada.folio} confirmada: el pedido pasa a EN_REPARTO y Flask descuenta la existencia (M12).`;
+        this.sincronizarSeguimiento();
       },
       error: (error: unknown) => (this.error = mensajeError(error, 'No se pudo confirmar la salida.')),
     });
@@ -425,6 +477,7 @@ export class EntregasM19Component implements OnInit {
           this.aviso = this.resultado.entregado
             ? 'Entrega registrada como ENTREGADA: se guarda la hora y se abre la ventana de devolución (M07).'
             : 'Fallo registrado: las prendas se reingresan conservando su reserva y el pedido vuelve a LISTO_ENVIO para un nuevo intento.';
+          this.sincronizarSeguimiento();
         },
         error: (error: unknown) => (this.error = mensajeError(error, 'No se pudo registrar el resultado.')),
       });
