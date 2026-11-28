@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { catchError, defer, firstValueFrom, Observable, of, tap, throwError } from 'rxjs';
+import { catchError, defer, firstValueFrom, from, Observable, of, switchMap, tap, throwError } from 'rxjs';
 import { ApiConfigService } from '../api/api-config.service';
 import { AuthStateService, RespuestaSesion, RolUsuario, UsuarioSesion } from './auth-state.service';
 
@@ -36,6 +36,8 @@ export class AuthSessionService {
   private readonly http = inject(HttpClient);
   private readonly estado = inject(AuthStateService);
   private readonly config = inject(ApiConfigService);
+  private csrfRemoto: string | null = null;
+  private hayCookieRefresco = false;
 
   private get base(): string {
     const base = this.config.apiBaseUrl();
@@ -57,6 +59,36 @@ export class AuthSessionService {
     return this.estado.autenticado();
   }
 
+  /** La API y el frontend están en dominios distintos en producción: document.cookie no ve
+   * la cookie CSRF de la API, así que se solicita al backend autorizado por CORS. */
+  async cargarCsrf(): Promise<boolean> {
+    const local = cabeceraCsrf()['X-CSRF-TOKEN'];
+    if (local) {
+      this.csrfRemoto = local;
+      this.hayCookieRefresco = true;
+      return true;
+    }
+    try {
+      const respuesta = await fetch(`${this.base}/auth/csrf`, { credentials: 'include' });
+      if (!respuesta.ok) {
+        throw new Error(`HTTP ${respuesta.status}`);
+      }
+      const datos = (await respuesta.json()) as { csrf?: unknown; con_refresco?: unknown };
+      this.csrfRemoto = typeof datos.csrf === 'string' && datos.csrf ? datos.csrf : null;
+      this.hayCookieRefresco = datos.con_refresco === true;
+    } catch {
+      this.csrfRemoto = null;
+      this.hayCookieRefresco = false;
+    }
+    return this.hayCookieRefresco;
+  }
+
+  cabeceraCsrf(): Record<string, string> {
+    const local = cabeceraCsrf();
+    if (local['X-CSRF-TOKEN']) return local;
+    return this.csrfRemoto ? { 'X-CSRF-TOKEN': this.csrfRemoto } : {};
+  }
+
   registrar(datos: DatosRegistroApi): Observable<RespuestaSesion> {
     return this.http
       .post<RespuestaSesion>(`${this.base}/auth/registro`, datos, { withCredentials: true })
@@ -73,7 +105,7 @@ export class AuthSessionService {
     return this.http
       .post<RespuestaSesion>(`${this.base}/auth/refrescar`, {}, {
         withCredentials: true,
-        headers: cabeceraCsrf(),
+        headers: this.cabeceraCsrf(),
       })
       .pipe(
         tap((respuesta) => this.estado.guardarSesion(respuesta)),
@@ -84,23 +116,28 @@ export class AuthSessionService {
       );
   }
 
-  /** Recupera la sesión desde la cookie httpOnly al cargar la aplicación. */
+  /** Recupera la sesión desde la cookie httpOnly al cargar la aplicación. Sin cookie de
+   * refresco no se llama a `/auth/refrescar`: un visitante anónimo no debe provocar un 401. */
   async hidratar(): Promise<void> {
-    // `refrescar()` calcula `base` de forma síncrona; `defer` convierte ese fallo
-    // en un error del Observable para que no detenga el arranque de la aplicación.
-    await firstValueFrom(defer(() => this.refrescar()).pipe(catchError(() => of(null))));
+    await firstValueFrom(
+      defer(() => from(this.cargarCsrf())).pipe(
+        switchMap((conRefresco) => (conRefresco ? this.refrescar() : of(null))),
+        catchError(() => of(null)),
+      ),
+    );
   }
 
   cerrarSesion(): Observable<MensajeApi> {
-    return this.http
-      .post<MensajeApi>(`${this.base}/auth/logout`, {}, {
-        withCredentials: true,
-        headers: cabeceraCsrf(),
-      })
-      .pipe(
-        catchError(() => of({ mensaje: 'Sesión cerrada localmente' })),
-        tap(() => this.estado.limpiar()),
-      );
+    return from(this.cargarCsrf()).pipe(
+      switchMap(() =>
+        this.http.post<MensajeApi>(`${this.base}/auth/logout`, {}, {
+          withCredentials: true,
+          headers: this.cabeceraCsrf(),
+        }),
+      ),
+      catchError(() => of({ mensaje: 'Sesión cerrada localmente' })),
+      tap(() => this.estado.limpiar()),
+    );
   }
 
   recuperar(correo: string): Observable<MensajeApi> {

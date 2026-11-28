@@ -9,6 +9,7 @@ import { inject } from '@angular/core';
 import {
   catchError,
   finalize,
+  from,
   Observable,
   shareReplay,
   switchMap,
@@ -16,7 +17,7 @@ import {
   throwError,
 } from 'rxjs';
 import { ApiConfigService } from '../api/api-config.service';
-import { AuthSessionService, cabeceraCsrf } from './auth-session.service';
+import { AuthSessionService } from './auth-session.service';
 import { AuthStateService, RespuestaSesion } from './auth-state.service';
 
 const RUTAS_SIN_REFRESCO = ['/auth/login', '/auth/registro', '/auth/refrescar', '/auth/logout'];
@@ -37,23 +38,27 @@ function renovar(
   sesion: AuthSessionService,
   base: string,
 ): Observable<RespuestaSesion> {
-  return cliente
-    .post<RespuestaSesion>(
-      `${base}/auth/refrescar`,
-      {},
-      { withCredentials: true, headers: cabeceraCsrf() },
-    )
-    .pipe(
-      tap((respuesta) => sesion.guardarSesion(respuesta)),
-      catchError((error: unknown) => {
-        sesion.cerrarSesionLocal();
-        return throwError(() => error);
-      }),
-      finalize(() => {
-        refrescoEnCurso = null;
-      }),
-      shareReplay({ bufferSize: 1, refCount: true }),
-    );
+  return from(sesion.cargarCsrf()).pipe(
+    switchMap(() =>
+      cliente
+        .post<RespuestaSesion>(
+          `${base}/auth/refrescar`,
+          {},
+          { withCredentials: true, headers: sesion.cabeceraCsrf() },
+        )
+        .pipe(
+          tap((respuesta) => sesion.guardarSesion(respuesta)),
+          catchError((error: unknown) => {
+            sesion.cerrarSesionLocal();
+            return throwError(() => error);
+          }),
+        ),
+    ),
+    finalize(() => {
+      refrescoEnCurso = null;
+    }),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
 }
 
 /** Adjunta el access token y comparte una única renovación entre las peticiones que reciben 401. */
