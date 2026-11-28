@@ -23,8 +23,10 @@ export const appConfig: ApplicationConfig = {
     // Un único initializer: los initializers de Angular pueden ejecutarse en paralelo,
     // por lo que hidratar la sesión debe esperar a que la URL de la API esté lista.
     provideAppInitializer(async () => {
-      await inject(ApiConfigService).cargar();
-      await inject(AuthSessionService).hidratar();
+      const config = inject(ApiConfigService);
+      const sesion = inject(AuthSessionService);
+      await config.cargar();
+      await sesion.hidratar();
     }),
     // Los guards encuentran data.roles también en las rutas hijas (§10.2).
     provideRouter(routes, withRouterConfig({ paramsInheritanceStrategy: 'always' })),
