@@ -216,11 +216,34 @@ Secuencia correcta para proseguir:
 
 1. Entra con **ADMIN**. `/proveedores` y `/compras` son ADMIN-only; `/recepciones` también permite OPERATIVO. Si llegaste como Operativo, cambia de sesión antes de crear proveedores.
 2. `/proveedores` → **+ Nuevo proveedor** → captura los campos de §4.1 → **Dar de alta**.
-3. En la fila del proveedor pulsa **Catálogo** (`/proveedores/{id}/materiales`) → **+ Agregar material** → Material `Loneta (TEL-LON)`, Unidad de compra `Rollo de 1.50 x 50.00 m = 75.00 m2`, Precio cotizado, Mínimo `1.00`, Plazo acordado, **Principal = Sí**, **Activo = Sí** → **Guardar catálogo**.
+3. En la fila del proveedor pulsa **Catálogo** (`/proveedores/{id}/materiales`) → **+ Agregar material** → Material `Loneta (TEL-LON)` (la unidad de compra se llena sola desde M15: `Rollo de 1.50 x 50.00 m = 75.00 m2`), Precio cotizado, Mínimo `1.00`, Plazo acordado, **Principal = Sí**, **Activo = Sí** → **Guardar catálogo**.
 4. Aunque arriba aparezca el aviso de cobertura, guarda: es informativo y no deshabilita el botón. Para continuar de inmediato, en `/compras/requisiciones` pulsa **Emitir orden directa**: toma el principal, crea y emite la orden en Flask. Si quieres comparación normal, crea el segundo proveedor **después** y asígnale `TEL-LON` con **Principal = No**; entonces usa **Cotizar**.
 5. Continúa en `/recepciones` con la cabecera `Idempotency-Key` (§5.4).
 
 Si aparece otro mensaje, sí es un bloqueo distinto: `Solo el Administrador puede modificar el padrón` → cambia a ADMIN; `El RFC ya está registrado` → usa otro RFC o déjalo vacío; `Catálogo de materiales no disponible` → M15 no respondió, pulsa **Reintentar**; `No hay proveedor principal disponible para emitir la orden directa` → marca **Principal = Sí** en el catálogo.
+
+### 4.4 Causa raíz corregida: “Guardar catálogo” no respondía al agregar materiales
+
+**Síntoma.** Con un proveedor que ya tenía materiales, agregar otra línea y pulsar **Guardar catálogo** no guardaba nada, o aparecía `MATERIAL_PROVEEDOR_NO_ENCONTRADO` (404). Con el primer material sí funcionaba.
+
+**Causa real (verificada en `unique_api`).** Las rutas Flask son:
+
+```text
+PATCH  /api/v1/proveedores/{proveedor_id}/materiales/{material_id}
+DELETE /api/v1/proveedores/{proveedor_id}/materiales/{material_id}
+```
+
+Aunque el parámetro se llama `material_id`, `_obtener_material()` resuelve con `db.session.get(ProveedorMaterial, id)`: espera el **id de la relación proveedor_material**, no el id del material de M15. Angular enviaba `materialId` (el de M15) en esas dos URLs. El 404 abortaba el `concatMap` completo, por lo que tampoco se creaba la línea nueva.
+
+**Corrección aplicada en este repositorio.** `ProveedoresServicio.reemplazarMateriales()` ahora usa `ProveedorMaterial.id` para `PATCH` y `DELETE`, y `material_id` solo dentro del cuerpo JSON. Además:
+
+- Si el material ya existió (aunque esté inactivo), se **reactiva con PATCH** en vez de reintentar un POST. MySQL tiene `uq_proveedor_material(proveedor_id, material_id)` y el DELETE de Flask solo desactiva; un POST duplicado devolvería `MATERIAL_PROVEEDOR_DUPLICADO` (409).
+- `plazo_dias` ahora valida máximo 365, igual que `ProveedorMaterialCrearSchema`.
+- La unidad de compra es de solo lectura: Flask la deriva de `Material.unidad_compra` e ignora cualquier valor enviado desde Angular.
+- El aviso de validación ya es visible: al intentar guardar con una línea incompleta aparece un mensaje de error y un recuadro rojo, en lugar de no hacer nada.
+- **Reintentar** recarga M15 y M13 juntos; antes solo recargaba M13 y el botón seguía deshabilitado si M15 no había respondido.
+
+**Integridad confirmada con Flask.** El cuerpo enviado coincide con `ProveedorMaterialCrearSchema` / `ActualizarSchema`: `material_id`, `precio_compra`, `minimo_compra`, `plazo_dias`, `es_principal`, `vigencia_hasta`, `activo`. No se envía `unidad_compra` porque el esquema la excluye. No se requiere ningún cambio en Flask/MySQL.
 
 ---
 

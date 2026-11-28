@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 import { mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
@@ -33,7 +33,7 @@ function crearGrupoLinea(fb: FormBuilder, valores?: Partial<LineaFormValue>) {
     precioCompra: [valores?.precioCompra ?? 0, [Validators.required, Validators.min(0.01)]],
     unidadCompra: [valores?.unidadCompra ?? '', Validators.required],
     minimoCompra: [valores?.minimoCompra ?? 0, [Validators.required, Validators.min(0)]],
-    plazoDias: [valores?.plazoDias ?? 0, [Validators.required, Validators.min(0)]],
+    plazoDias: [valores?.plazoDias ?? 0, [Validators.required, Validators.min(0), Validators.max(365)]],
     esPrincipal: [valores?.esPrincipal ?? false],
     vigenciaHasta: [valores?.vigenciaHasta ?? ''],
     activo: [valores?.activo ?? true],
@@ -193,6 +193,20 @@ export class CatalogoProveedor {
     this.lineas.push(crearGrupoLinea(this.fb));
   }
 
+  /**
+   * Flask deriva `unidad_compra` del catálogo M15 y el esquema ignora el campo
+   * si Angular lo envía. Sincronizar el valor evita que la interfaz muestre una
+   * unidad que no se va a persistir.
+   */
+  protected sincronizarUnidad(indice: number): void {
+    const linea = this.lineas.at(indice);
+    if (!linea) {
+      return;
+    }
+    const materialId = Number(linea.controls.materialId.value);
+    linea.controls.unidadCompra.setValue(this.referencia(materialId)?.unidadCompra ?? '');
+  }
+
   protected confirmarEliminacionLinea(): void {
     const indice = this.lineaAEliminar();
     if (indice === null) {
@@ -211,6 +225,10 @@ export class CatalogoProveedor {
     this.intentoEnvio.set(true);
 
     if (this.formulario.invalid) {
+      this.avisos.mostrar(
+        'error',
+        'Revisa las líneas marcadas: selecciona un material, captura un precio mayor a cero y la unidad de compra.',
+      );
       return;
     }
 
@@ -258,7 +276,8 @@ export class CatalogoProveedor {
       });
   }
 
+  /** El botón de cobertura depende de M15 y M13: recarga ambos servicios. */
   protected reintentar(): void {
-    this.servicio.recargar().subscribe();
+    forkJoin([this.inventario.recargar(), this.servicio.recargar()]).subscribe();
   }
 }

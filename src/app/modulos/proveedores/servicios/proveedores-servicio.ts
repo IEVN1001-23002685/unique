@@ -292,7 +292,21 @@ export class ProveedoresServicio {
     );
   }
 
-  /** El contrato no tiene reemplazo masivo: aplica altas, cambios y bajas por separado. */
+  /**
+   * El contrato no tiene reemplazo masivo: aplica altas, cambios y bajas por separado.
+   *
+   * Integración verificada contra Flask: las rutas
+   * `PATCH/DELETE /proveedores/{id}/materiales/{material_id}` nombran el parámetro
+   * `material_id`, pero `_obtener_material()` resuelve con
+   * `db.session.get(ProveedorMaterial, id)`. Por tanto el segmento de la URL es el
+   * `id` de la relación proveedor_material (`ProveedorMaterial.id`), NO el id del
+   * catálogo M15. Usar `materialId` aquí produce 404 MATERIAL_PROVEEDOR_NO_ENCONTRADO
+   * y aborta toda la operación, incluidas las líneas nuevas.
+   *
+   * Además, MySQL tiene `uq_proveedor_material(proveedor_id, material_id)` y el
+   * DELETE de Flask desactiva en lugar de borrar. Por eso una línea que ya existió
+   * se reactiva con PATCH; un POST posterior chocaría con 409 DUPLICADO.
+   */
   reemplazarMateriales(proveedorId: number, materiales: MaterialProveedor[]): Observable<void> {
     if (!this.puedeEditar()) {
       return throwError(() => new Error('Solo el Administrador puede editar el catálogo.'));
@@ -308,7 +322,7 @@ export class ProveedoresServicio {
     return from(bajas)
       .pipe(
         concatMap((linea) =>
-          this.api.delete(`/proveedores/${proveedorId}/materiales/${linea.materialId}`),
+          this.api.delete(`/proveedores/${proveedorId}/materiales/${linea.id}`),
         ),
       )
       .pipe(
@@ -326,10 +340,7 @@ export class ProveedoresServicio {
               };
               const previa = porMaterial.get(linea.materialId);
               return previa
-                ? this.api.patch(
-                    `/proveedores/${proveedorId}/materiales/${linea.materialId}`,
-                    cuerpo,
-                  )
+                ? this.api.patch(`/proveedores/${proveedorId}/materiales/${previa.id}`, cuerpo)
                 : this.api.post(`/proveedores/${proveedorId}/materiales`, cuerpo);
             }),
           ),

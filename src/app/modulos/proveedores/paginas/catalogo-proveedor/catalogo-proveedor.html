@@ -51,14 +51,28 @@
             M15 no devolvió materiales activos. No se pueden evaluar coberturas ni agregar líneas
             hasta que Flask responda; vuelve a intentar después.
           </p>
+          <button type="button" class="boton boton--secundario" (click)="reintentar()">
+            Reintentar
+          </button>
         </div>
       </div>
     }
 
     <p class="nota">
-      El precio y el mínimo se expresan por unidad de compra. Cambiar un precio no altera las
-      órdenes de compra ya emitidas.
+      El precio y el mínimo se expresan por unidad de compra. La unidad la define M15 y Flask la
+      toma del material; no se puede editar aquí. Cambiar un precio no altera las órdenes de compra
+      ya emitidas.
     </p>
+
+    @if (intentoEnvio() && formulario.invalid) {
+      <div class="tarjeta estado estado--error" role="alert">
+        <strong>Revisa las líneas marcadas.</strong>
+        <p>
+          Selecciona un material, captura un precio mayor a cero y conserva la unidad de compra
+          que viene de M15.
+        </p>
+      </div>
+    }
 
     <form class="formulario" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
       <div formArrayName="lineas">
@@ -97,6 +111,7 @@
                         class="campo__entrada"
                         formControlName="materialId"
                         aria-label="Material"
+                        (change)="sincronizarUnidad(i)"
                       >
                         @for (material of materialesReferencia(); track material.id) {
                           <option [ngValue]="material.id">{{ material.nombre }}</option>
@@ -114,7 +129,8 @@
                         class="campo__entrada"
                         type="text"
                         formControlName="unidadCompra"
-                        aria-label="Unidad de compra"
+                        aria-label="Unidad de compra (definida por M15)"
+                        readonly
                       />
                     </td>
                     <td data-etiqueta="Precio">
