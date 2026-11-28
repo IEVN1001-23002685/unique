@@ -85,18 +85,31 @@ describe('AuthSessionService · inicio de sesión real', () => {
     expect(estado.puede(['OPERATIVO'])).toBe(true);
   });
 
-  it('cerrar sesión borra token y rol reales', () => {
-    sesion.iniciarSesion('cliente@unique.local', 'ClaveSegura123!').subscribe();
-    http.expectOne(URL_LOGIN).flush(respuesta('CLIENTE'));
-    expect(perfil.perfil()).toBe('Cliente');
+  it('cerrar sesión borra token y rol reales', async () => {
+    const fetchOriginal = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({ csrf: 'csrf-token', con_refresco: true }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      )) as typeof fetch;
 
-    sesion.cerrarSesion().subscribe();
-    http.expectOne(`${environment.apiBaseUrl.replace(/\/$/, '')}/auth/logout`).flush({
-      mensaje: 'Sesión cerrada',
-    });
+    try {
+      sesion.iniciarSesion('cliente@unique.local', 'ClaveSegura123!').subscribe();
+      http.expectOne(URL_LOGIN).flush(respuesta('CLIENTE'));
+      expect(perfil.perfil()).toBe('Cliente');
 
-    expect(estado.autenticado()).toBe(false);
-    expect(estado.rol()).toBeNull();
-    expect(perfil.perfil()).toBeNull();
+      sesion.cerrarSesion().subscribe();
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+      const peticion = http.expectOne(`${environment.apiBaseUrl.replace(/\/$/, '')}/auth/logout`);
+      expect(peticion.request.headers.get('X-CSRF-TOKEN')).toBe('csrf-token');
+      peticion.flush({ mensaje: 'Sesión cerrada' });
+
+      expect(estado.autenticado()).toBe(false);
+      expect(estado.rol()).toBeNull();
+      expect(perfil.perfil()).toBeNull();
+    } finally {
+      globalThis.fetch = fetchOriginal;
+    }
   });
 });

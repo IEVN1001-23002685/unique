@@ -28,6 +28,32 @@ interface GrupoConfiguracion {
   parametros: ConfiguracionParametro[];
 }
 
+/** Estado visible de una pestaña. Permite volver a ella sin repetir la petición HTTP. */
+interface EstadoAdministracion {
+  usuarios: UsuarioAdmin[];
+  clientes: UsuarioAdmin[];
+  catalogos: ElementoCatalogo[];
+  configuracion: ConfiguracionParametro[];
+  configuracionOriginal: ConfiguracionParametro[];
+  bitacora: BitacoraRegistro[];
+  clienteDetalle: ClienteDetalle | null;
+  recurso: RecursoCatalogo;
+  filtro: string;
+  filtroActivo: boolean | null;
+  filtrosBitacora: {
+    accion: string;
+    entidad: string;
+    usuario_id: number | null;
+    desde: string;
+    hasta: string;
+  };
+  pagina: number;
+  porPagina: number;
+  total: number;
+}
+
+type FiltrosBitacora = EstadoAdministracion['filtrosBitacora'];
+
 /** Claves del §11.5 del documento; la agrupación es solo presentación, no cambia valores. */
 const CLAVES_PROPUESTA = new Set([
   'dias_devolucion',
@@ -95,6 +121,9 @@ export class AdministracionM22Component implements OnInit {
   total = 0;
   cargando = true;
   error = '';
+  /** Una entrada por pestaña ya visitada; el botón Actualizar y los filtros la invalidan. */
+  private readonly estados: Partial<Record<Pestana, EstadoAdministracion>> = {};
+  private pestanaActual: Pestana | null = null;
   aviso = '';
   passwordPendiente: UsuarioAdmin | null = null;
 
@@ -188,28 +217,104 @@ export class AdministracionM22Component implements OnInit {
       bitacora: 'bitacora',
     };
     this.ruta.paramMap.subscribe((params) => {
-      this.pestana = secciones[params.get('seccion') ?? ''] ?? 'usuarios';
-      this.pagina = 1;
-      this.filtro = '';
-      this.filtroActivo = null;
-      this.error = '';
-      this.aviso = '';
-      this.clienteDetalle = null;
-      this.passwordPendiente = null;
-      this.cargar();
+      this.activarPestana(secciones[params.get('seccion') ?? ''] ?? 'usuarios');
     });
   }
 
   cambiar(pestana: Pestana): void {
-    this.pestana = pestana;
+    if (pestana === this.pestana) return;
+    this.activarPestana(pestana);
+    void this.router.navigate(['/panel-admin/sistema', pestana]);
+  }
+
+  /** Cambia de sección reutilizando el estado ya cargado; solo pide datos en la primera visita. */
+  private activarPestana(destino: Pestana): void {
+    if (this.pestanaActual === destino) return;
+    if (this.pestanaActual && !this.cargando) this.guardar(this.pestanaActual);
+
+    const cached = this.estados[destino];
+    this.pestana = destino;
+    this.pestanaActual = destino;
+
+    if (cached) {
+      this.restaurar(cached);
+      this.cargando = false;
+      this.error = '';
+      this.aviso = '';
+      this.passwordPendiente = null;
+      return;
+    }
+
     this.pagina = 1;
     this.filtro = '';
     this.filtroActivo = null;
+    this.filtrosBitacora = this.filtrosVacios();
     this.error = '';
     this.aviso = '';
     this.clienteDetalle = null;
     this.passwordPendiente = null;
-    void this.router.navigate(['/panel-admin/sistema', pestana]);
+    this.cargar();
+  }
+
+  private filtrosVacios(): FiltrosBitacora {
+    return { accion: '', entidad: '', usuario_id: null, desde: '', hasta: '' };
+  }
+
+  private guardar(pestana: Pestana): void {
+    const base: EstadoAdministracion = {
+      usuarios: [],
+      clientes: [],
+      catalogos: [],
+      configuracion: [],
+      configuracionOriginal: [],
+      bitacora: [],
+      clienteDetalle: null,
+      recurso: 'color',
+      filtro: '',
+      filtroActivo: null,
+      filtrosBitacora: this.filtrosVacios(),
+      pagina: this.pagina,
+      porPagina: this.porPagina,
+      total: this.total,
+    };
+
+    if (pestana === 'usuarios') {
+      base.usuarios = [...this.usuarios];
+      base.filtro = this.filtro;
+    } else if (pestana === 'clientes') {
+      base.clientes = [...this.clientes];
+      base.filtro = this.filtro;
+      base.clienteDetalle = this.clienteDetalle;
+    } else if (pestana === 'catalogos') {
+      base.catalogos = [...this.catalogos];
+      base.recurso = this.recurso;
+      base.filtro = this.filtro;
+      base.filtroActivo = this.filtroActivo;
+    } else if (pestana === 'configuracion') {
+      base.configuracion = this.configuracion.map((p) => ({ ...p }));
+      base.configuracionOriginal = this.configuracionOriginal.map((p) => ({ ...p }));
+    } else {
+      base.bitacora = [...this.bitacora];
+      base.filtrosBitacora = { ...this.filtrosBitacora };
+    }
+    this.estados[pestana] = base;
+  }
+
+  private restaurar(estado: EstadoAdministracion): void {
+    this.usuarios = [...estado.usuarios];
+    this.clientes = [...estado.clientes];
+    this.catalogos = [...estado.catalogos];
+    this.configuracion = estado.configuracion.map((p) => ({ ...p }));
+    this.configuracionOriginal = estado.configuracionOriginal.map((p) => ({ ...p }));
+    this.bitacora = [...estado.bitacora];
+    this.clienteDetalle = estado.clienteDetalle;
+    this.recurso = estado.recurso;
+    this.filtro = estado.filtro;
+    this.filtroActivo = estado.filtroActivo;
+    this.filtrosBitacora = { ...estado.filtrosBitacora };
+    this.pagina = estado.pagina;
+    this.porPagina = estado.porPagina;
+    this.total = estado.total;
   }
 
   cargar(): void {
@@ -230,12 +335,16 @@ export class AdministracionM22Component implements OnInit {
   }
 
   private cargarUsuarios(): void {
+    delete this.estados['usuarios'];
     this.servicio.listarUsuarios({ pagina: this.pagina, por_pagina: this.porPagina }).subscribe({
       next: (respuesta) => {
+        if (this.pestanaActual !== 'usuarios') return;
         this.usuarios = respuesta.items;
         this.aplicarPagina(respuesta.total, respuesta.pagina, respuesta.por_pagina);
+        this.guardar('usuarios');
       },
       error: (error: unknown) => {
+        if (this.pestanaActual !== 'usuarios') return;
         this.error = mensajeError(error, 'No se pudo cargar la lista de usuarios.');
         this.cargando = false;
       },
@@ -243,12 +352,16 @@ export class AdministracionM22Component implements OnInit {
   }
 
   private cargarClientes(): void {
+    delete this.estados['clientes'];
     this.servicio.listarClientes({ pagina: this.pagina, por_pagina: this.porPagina }).subscribe({
       next: (respuesta) => {
+        if (this.pestanaActual !== 'clientes') return;
         this.clientes = respuesta.items;
         this.aplicarPagina(respuesta.total, respuesta.pagina, respuesta.por_pagina);
+        this.guardar('clientes');
       },
       error: (error: unknown) => {
+        if (this.pestanaActual !== 'clientes') return;
         this.error = mensajeError(error, 'No se pudo cargar el directorio de clientes.');
         this.cargando = false;
       },
@@ -256,6 +369,7 @@ export class AdministracionM22Component implements OnInit {
   }
 
   private cargarCatalogo(): void {
+    delete this.estados['catalogos'];
     this.servicio
       .listarCatalogo(this.recurso, {
         q: this.filtro || undefined,
@@ -263,10 +377,13 @@ export class AdministracionM22Component implements OnInit {
       })
       .subscribe({
         next: (respuesta) => {
+          if (this.pestanaActual !== 'catalogos') return;
           this.catalogos = respuesta.items;
           this.aplicarPagina(respuesta.total, respuesta.pagina, respuesta.por_pagina);
+          this.guardar('catalogos');
         },
         error: (error: unknown) => {
+          if (this.pestanaActual !== 'catalogos') return;
           this.error = mensajeError(error, 'No se pudo cargar el catálogo.');
           this.cargando = false;
         },
@@ -274,14 +391,18 @@ export class AdministracionM22Component implements OnInit {
   }
 
   private cargarConfiguracion(): void {
+    delete this.estados['configuracion'];
     this.servicio.listarConfiguracion().subscribe({
       next: (parametros) => {
+        if (this.pestanaActual !== 'configuracion') return;
         this.configuracion = parametros;
         this.configuracionOriginal = parametros.map((p) => ({ ...p }));
         this.total = parametros.length;
         this.cargando = false;
+        this.guardar('configuracion');
       },
       error: (error: unknown) => {
+        if (this.pestanaActual !== 'configuracion') return;
         this.error = mensajeError(error, 'No se pudo cargar la configuración.');
         this.cargando = false;
       },
@@ -289,6 +410,7 @@ export class AdministracionM22Component implements OnInit {
   }
 
   cargarBitacora(): void {
+    delete this.estados['bitacora'];
     this.servicio
       .listarBitacora({
         accion: this.filtrosBitacora.accion || undefined,
@@ -299,10 +421,13 @@ export class AdministracionM22Component implements OnInit {
       })
       .subscribe({
         next: (respuesta) => {
+          if (this.pestanaActual !== 'bitacora') return;
           this.bitacora = respuesta.items;
           this.aplicarPagina(respuesta.total, respuesta.pagina, respuesta.por_pagina);
+          this.guardar('bitacora');
         },
         error: (error: unknown) => {
+          if (this.pestanaActual !== 'bitacora') return;
           this.error = mensajeError(error, 'No se pudo cargar la bitácora.');
           this.cargando = false;
         },
@@ -466,8 +591,13 @@ export class AdministracionM22Component implements OnInit {
     this.error = '';
     this.clienteDetalle = null;
     this.servicio.obtenerCliente(id).subscribe({
-      next: (detalle) => (this.clienteDetalle = detalle),
+      next: (detalle) => {
+        if (this.pestanaActual !== 'clientes') return;
+        this.clienteDetalle = detalle;
+        this.guardar('clientes');
+      },
       error: (error: unknown) => {
+        if (this.pestanaActual !== 'clientes') return;
         this.error = mensajeError(error, 'No se pudo consultar el detalle del cliente.');
       },
     });
