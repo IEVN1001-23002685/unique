@@ -16,6 +16,22 @@
 </div>
 <div class="notice success" *ngIf="aviso">{{ aviso }}</div>
 
+<div class="notice warning" *ngIf="configuracionVacia" role="status">
+  <span>
+    <strong>Configuración inicial pendiente en la API.</strong>
+    Flask devolvió cero parámetros y solo expone <code>PATCH /configuracion</code> sobre claves
+    existentes. M22 no inventa valores: ejecuta la siembra del backend y vuelve a cargar.
+  </span>
+  <button type="button" class="btn-outline small" (click)="cargar()">Reintentar</button>
+</div>
+
+<div class="notice warning" *ngIf="catalogoVacio" role="status">
+  <span>
+    No hay elementos para los filtros actuales. Puedes darlos de alta con el formulario; Flask
+    validará códigos y registrará el cambio en la bitácora.
+  </span>
+</div>
+
 <div class="toolbar">
   <div class="tabs" role="tablist" aria-label="Secciones de administración">
     <button type="button" class="tab" role="tab" [class.active]="pestana === 'usuarios'" (click)="cambiar('usuarios')">Usuarios y roles</button>
@@ -225,6 +241,7 @@
         </tr>
       </tbody>
     </table>
+    <div class="empty" *ngIf="!catalogos.length">No hay elementos registrados en este catálogo.</div>
   </div>
   <div class="toolbar">
     <span class="muted">Página {{ pagina }} de {{ totalPaginas }} · {{ total }} registros</span>
@@ -254,7 +271,7 @@
       </div>
     </div>
   </section>
-  <div class="modal-actions">
+  <div class="modal-actions" *ngIf="configuracion.length">
     <button type="button" class="btn-primary" (click)="guardarConfiguracion()">Guardar cambios</button>
   </div>
 </div>

@@ -1,9 +1,16 @@
 /* M22: estilos propios; hereda tokens y tablas de modulos-admin.css */
-.notice.error {
+.notice.error,
+.notice.warning {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.notice.warning {
+  background: #fbefc9;
+  color: #6b4f08;
+  border-left: 3px solid #b9830f;
 }
 
 .pendiente,
@@ -84,7 +91,8 @@ code {
 }
 
 @media (max-width: 650px) {
-  .notice.error {
+  .notice.error,
+  .notice.warning {
     flex-direction: column;
     align-items: flex-start;
   }

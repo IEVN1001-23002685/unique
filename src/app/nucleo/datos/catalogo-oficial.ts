@@ -83,6 +83,7 @@ export const IMAGENES_OFICIALES: ReadonlyArray<{ url: string; etiqueta: string; 
   { url: '/prendas/Gorro/gorroblanco.png', etiqueta: 'Gorro blanco', categoria: 'Gorro' },
   { url: '/prendas/Gorro/Gorronegro.png', etiqueta: 'Gorro negro', categoria: 'Gorro' },
   { url: '/prendas/Gorro/gorrogris.png', etiqueta: 'Gorro gris', categoria: 'Gorro' },
+  { url: '/prendas/bolsa%20de%20tela/bolsablanca.png', etiqueta: 'Bolsa de tela blanca', categoria: 'Bolsa de tela' },
   { url: '/prendas/bolsa%20de%20tela/bolsanegra.png', etiqueta: 'Bolsa de tela negra', categoria: 'Bolsa de tela' },
   { url: '/prendas/bolsa%20de%20tela/Bolsagris.png', etiqueta: 'Bolsa de tela gris', categoria: 'Bolsa de tela' },
 ];
@@ -208,10 +209,9 @@ export const PRENDAS_OFICIALES: readonly PrendaOficial[] = [
     composicion: '100% manta de algodón',
     guiaMedidas: 'Única, 40 × 35 cm',
     precio: 850,
-    imagen: '/prendas/bolsa%20de%20tela/Bolsagris.png',
+    imagen: '/prendas/bolsa%20de%20tela/bolsablanca.png',
     imagenesPorColor: {
-      // No existe fotografía oficial de la bolsa blanca: se usa el respaldo accesible.
-      BL: IMAGEN_NO_DISPONIBLE,
+      BL: '/prendas/bolsa%20de%20tela/bolsablanca.png',
       NG: '/prendas/bolsa%20de%20tela/bolsanegra.png',
       GR: '/prendas/bolsa%20de%20tela/Bolsagris.png',
     },

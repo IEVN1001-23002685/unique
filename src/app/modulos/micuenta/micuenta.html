@@ -9,10 +9,16 @@
     </nav>
     <h1>Mi cuenta</h1>
     <p>Tus datos, direcciones, medios de pago y seguridad en un solo lugar.</p>
-    <p class="cuenta__rol">
-      <span class="punto" aria-hidden="true"></span>
-      Rol: Cliente
-    </p>
+    <div class="cuenta__accesos">
+      <p class="cuenta__rol">
+        <span class="punto" aria-hidden="true"></span>
+        Rol: Cliente
+      </p>
+      <a class="boton boton--primario boton--compacto cuenta__pedidos" routerLink="/pedidos">
+        <span aria-hidden="true">▥</span>
+        Seguir mis pedidos
+      </a>
+    </div>
   </header>
 
   @if (modoDemo()) {

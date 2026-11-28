@@ -132,6 +132,22 @@ export class AdministracionM22Component implements OnInit {
     return this.usuarios.length >= this.total;
   }
 
+  /** La API solo edita claves existentes: sin siembra no hay parámetros que mostrar. */
+  get configuracionVacia(): boolean {
+    return (
+      !this.cargando &&
+      !this.error &&
+      this.pestana === 'configuracion' &&
+      this.configuracion.length === 0
+    );
+  }
+
+  get catalogoVacio(): boolean {
+    return (
+      !this.cargando && !this.error && this.pestana === 'catalogos' && this.catalogos.length === 0
+    );
+  }
+
   get gruposConfiguracion(): GrupoConfiguracion[] {
     const conocidas = new Set([
       ...CLAVES_PROPUESTA,
