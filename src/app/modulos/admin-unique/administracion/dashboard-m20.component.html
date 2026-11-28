@@ -29,8 +29,8 @@
 </div>
 
 <div class="filters" aria-label="Filtro de periodo">
-  <label>Desde<input type="date" [(ngModel)]="desde" (change)="filtros()" /></label>
-  <label>Hasta<input type="date" [(ngModel)]="hasta" (change)="filtros()" /></label>
+  <label>Desde<input type="date" [(ngModel)]="desde" (ngModelChange)="filtros()" /></label>
+  <label>Hasta<input type="date" [(ngModel)]="hasta" (ngModelChange)="filtros()" /></label>
   <button type="button" class="btn-outline" (click)="limpiarPeriodo()">Sin filtro de fecha</button>
 </div>
 
@@ -474,7 +474,7 @@
 <ng-container *ngIf="!cargando && pestana === 'logistica' && logistica">
   <div class="stats-grid">
     <article class="stat-card"><small>PEDIDOS LISTO ENVÍO</small><b>{{ logistica.pedidos_listo_envio }}</b></article>
-    <article class="stat-card"><small>PROGRAMADAS HOY</small><b>{{ logistica.entregas_programadas_hoy }}</b></article>
+    <article class="stat-card"><small>{{ tienePeriodo ? 'PROGRAMADAS EN EL PERIODO' : 'PROGRAMADAS HOY' }}</small><b>{{ tienePeriodo ? num(logistica.entregas_programadas_periodo) : num(logistica.entregas_programadas_hoy) }}</b></article>
     <article class="stat-card"><small>REPARTIDORES ACTIVOS</small><b>{{ logistica.repartidores_activos }}</b></article>
     <article class="stat-card accent-amber"><small>INTENTOS MÁXIMOS</small><b>{{ logistica.intentos_maximos }}</b></article>
   </div>

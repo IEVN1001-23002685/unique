@@ -210,9 +210,14 @@ export class Pago {
   }
 
   protected irAPaso(paso: number): void {
-    if (this.confirmacion() || paso < 1 || paso > this.pasos.length || paso > this.maxPaso()) {
+    if (this.confirmacion() || paso < 1 || paso > this.pasos.length) {
       return;
     }
+    // Solo se avanza de uno en uno; retroceder siempre es permitido.
+    if (paso > this.maxPaso() + 1) {
+      return;
+    }
+    this.maxPaso.update((alcanzado) => Math.max(alcanzado, paso));
     this.paso.set(paso);
     this.error.set('');
   }

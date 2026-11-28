@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://uniqueapi-production.up.railway.app/api/v1',
+  // En producción la URL se entrega en /runtime-config.json desde API_BASE_URL.
+  apiBaseUrl: '',
 };

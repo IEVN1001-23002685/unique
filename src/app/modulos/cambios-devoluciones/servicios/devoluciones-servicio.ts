@@ -54,7 +54,7 @@ interface DevolucionApi {
   venta_reemplazo_id?: number | null;
   venta_reemplazo_folio?: string | null;
   lineas: LineaDevolucionApi[];
-  evidencias?: Array<{ id?: number; url: string; nombre?: string }> | null;
+  evidencias?: Array<string | { id?: number; url: string; nombre?: string }> | null;
 }
 
 interface ListaPaginada<T> {
@@ -71,8 +71,8 @@ interface DetalleCatalogoApi {
 export interface DictamenLineaSolicitud {
   devolucion_linea_id: number;
   dictamen: string;
-  causa?: string;
-  etapa?: string;
+  causa_nombre?: string;
+  descripcion?: string;
 }
 
 /** M07: los seis contratos documentados en §9. Flask ejecuta las transacciones. */
@@ -154,11 +154,14 @@ export class DevolucionesServicio {
   }
 
   private aCaso(item: DevolucionApi): SolicitudCambioDevolucion {
-    const evidencias: EvidenciaCaso[] = (item.evidencias ?? []).map((evidencia, indice) => ({
-      id: evidencia.id ?? indice + 1,
-      url: evidencia.url,
-      nombre: evidencia.nombre ?? `Evidencia ${indice + 1}`,
-    }));
+    const evidencias: EvidenciaCaso[] = (item.evidencias ?? []).map((evidencia, indice) => {
+      const valor = typeof evidencia === 'string' ? { url: evidencia } : evidencia;
+      return {
+        id: valor.id ?? indice + 1,
+        url: valor.url,
+        nombre: valor.nombre ?? `Evidencia ${indice + 1}`,
+      };
+    });
 
     return {
       id: item.id,

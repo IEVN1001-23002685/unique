@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ModalAutenticacion } from './compartido/componentes/modal-autenticacion/modal-autenticacion';
+import { ApiConfigService } from './core/api/api-config.service';
 
 @Component({
   imports: [RouterOutlet, ModalAutenticacion],
@@ -8,4 +9,6 @@ import { ModalAutenticacion } from './compartido/componentes/modal-autenticacion
   styleUrl: './app.css',
   templateUrl: './app.html',
 })
-export class App {}
+export class App {
+  protected readonly config = inject(ApiConfigService);
+}

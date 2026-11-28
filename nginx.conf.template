@@ -5,7 +5,36 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # Las rutas de Angular (Router) deben resolver a index.html.
+    include /etc/nginx/snippets/seguridad.conf;
+
+    # Health check de Railway: no depende de la API ni de autenticación.
+    location = /health {
+        access_log off;
+        default_type application/json;
+        return 200 '{"estado":"ok","servicio":"frontend"}';
+    }
+
+    # Configuración de ejecución: nunca se guarda en caché.
+    location = /runtime-config.json {
+        include /etc/nginx/snippets/seguridad.conf;
+        add_header Cache-Control "no-store" always;
+        try_files $uri =404;
+    }
+
+    # Recursos con hash: caché larga y verificable por nombre de archivo.
+    location /assets/ {
+        include /etc/nginx/snippets/seguridad.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    location ~* \.(?:js|css|woff2?|png|svg)$ {
+        include /etc/nginx/snippets/seguridad.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    # Router de Angular: cualquier ruta interna devuelve index.html.
     location / {
         try_files $uri $uri/ /index.html;
     }
