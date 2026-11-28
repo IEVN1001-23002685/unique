@@ -1,8 +1,9 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { finalize, forkJoin } from 'rxjs';
-import { mensajeError } from '../../../../core/api/errores';
+import { finalize, forkJoin, map } from 'rxjs';
+import { detalleError, mensajeError } from '../../../../core/api/errores';
 import { AvisosServicio } from '../../../../nucleo/servicios/avisos-servicio';
 import { ModalConfirmacion } from '../../../../compartido/componentes/modal-confirmacion/modal-confirmacion';
 import { InventarioServicio } from '../../../inventario/servicios/inventario-servicio';
@@ -31,7 +32,8 @@ function crearGrupoLinea(fb: FormBuilder, valores?: Partial<LineaFormValue>) {
   return fb.nonNullable.group({
     materialId: [valores?.materialId ?? 0, [Validators.required, Validators.min(1)]],
     precioCompra: [valores?.precioCompra ?? 0, [Validators.required, Validators.min(0.01)]],
-    unidadCompra: [valores?.unidadCompra ?? '', Validators.required],
+    // La unidad la deriva M15; no se exige captura manual (ver vincularUnidad).
+    unidadCompra: [valores?.unidadCompra ?? ''],
     minimoCompra: [valores?.minimoCompra ?? 0, [Validators.required, Validators.min(0)]],
     plazoDias: [valores?.plazoDias ?? 0, [Validators.required, Validators.min(0), Validators.max(365)]],
     esPrincipal: [valores?.esPrincipal ?? false],
@@ -55,11 +57,21 @@ export class CatalogoProveedor {
   private readonly inventario = inject(InventarioServicio);
   private readonly avisos = inject(AvisosServicio);
 
-  private readonly parametroId = this.ruta.snapshot.paramMap.get('id');
-  protected readonly id =
-    this.parametroId !== null && /^\d+$/.test(this.parametroId) ? Number(this.parametroId) : 0;
+  /**
+   * El id debe ser reactivo: Angular reutiliza este componente cuando se navega
+   * de `/proveedores/1/materiales` a `/proveedores/2/materiales`.
+   */
+  protected readonly id = toSignal(
+    this.ruta.paramMap.pipe(
+      map((parametros) => {
+        const valor = parametros.get('id');
+        return valor !== null && /^\d+$/.test(valor) ? Number(valor) : 0;
+      }),
+    ),
+    { initialValue: 0 },
+  );
 
-  protected readonly proveedor = computed(() => this.servicio.obtenerPorId(this.id));
+  protected readonly proveedor = computed(() => this.servicio.obtenerPorId(this.id()));
   protected readonly materialesReferencia = computed<MaterialReferencia[]>(() =>
     this.inventario
       .materiales()
@@ -88,29 +100,42 @@ export class CatalogoProveedor {
     return this.formulario.controls.lineas;
   }
 
-  private lineasInicializadas = false;
+  private idInicializado = 0;
 
   constructor() {
     effect(() => {
+      const id = this.id();
       const proveedor = this.proveedor();
-      if (!proveedor || this.lineasInicializadas) {
+      if (id === 0 || !proveedor || this.idInicializado === id) {
         return;
       }
-      this.lineasInicializadas = true;
+      this.idInicializado = id;
+      this.lineas.clear();
       for (const material of proveedor.materiales) {
-        this.lineas.push(
-          crearGrupoLinea(this.fb, {
-            materialId: material.materialId,
-            precioCompra: material.precioCompra,
-            unidadCompra: material.unidadCompra,
-            minimoCompra: material.minimoCompra,
-            plazoDias: material.plazoDias,
-            esPrincipal: material.esPrincipal,
-            vigenciaHasta: material.vigenciaHasta ?? '',
-            activo: material.activo,
-          }),
-        );
+        const grupo = crearGrupoLinea(this.fb, {
+          materialId: material.materialId,
+          precioCompra: material.precioCompra,
+          unidadCompra: material.unidadCompra,
+          minimoCompra: material.minimoCompra,
+          plazoDias: material.plazoDias,
+          esPrincipal: material.esPrincipal,
+          vigenciaHasta: material.vigenciaHasta ?? '',
+          activo: material.activo,
+        });
+        this.lineas.push(grupo);
+        this.vincularUnidad(grupo);
       }
+    });
+  }
+
+  /**
+   * La unidad se sincroniza con valueChanges, no con el evento `change` del DOM:
+   * así no dependemos del orden en que Angular dispare sus listeners y el campo
+   * nunca queda vacío por una carrera de eventos.
+   */
+  private vincularUnidad(grupo: LineaGrupo): void {
+    grupo.controls.materialId.valueChanges.subscribe((materialId) => {
+      grupo.controls.unidadCompra.setValue(this.referencia(materialId)?.unidadCompra ?? '');
     });
   }
 
@@ -181,6 +206,25 @@ export class CatalogoProveedor {
     return linea !== undefined && linea.invalid;
   }
 
+  /** Diagnóstico visible: dice qué control falla, no solo «revisa la línea». */
+  protected errorDeLinea(indice: number): string {
+    const linea = this.lineas.at(indice);
+    if (!linea) {
+      return '';
+    }
+    const errores: string[] = [];
+    if (linea.controls.materialId.invalid) {
+      errores.push('selecciona un material');
+    }
+    if (linea.controls.precioCompra.invalid) {
+      errores.push('precio mayor a 0.01');
+    }
+    if (linea.controls.plazoDias.invalid) {
+      errores.push('plazo entre 0 y 365 días');
+    }
+    return errores.join(', ');
+  }
+
   protected materialIdDe(indice: number): number {
     return this.lineas.at(indice)?.value.materialId ?? 0;
   }
@@ -190,7 +234,9 @@ export class CatalogoProveedor {
   }
 
   protected agregarLinea(): void {
-    this.lineas.push(crearGrupoLinea(this.fb));
+    const grupo = crearGrupoLinea(this.fb);
+    this.lineas.push(grupo);
+    this.vincularUnidad(grupo);
   }
 
   /**
@@ -234,6 +280,10 @@ export class CatalogoProveedor {
 
     const proveedor = this.proveedor();
     if (!proveedor) {
+      this.avisos.mostrar(
+        'error',
+        'No fue posible identificar el proveedor. Regresa al padrón y vuelve a entrar al catálogo.',
+      );
       return;
     }
 
@@ -256,7 +306,9 @@ export class CatalogoProveedor {
         categoria: referencia?.categoria ?? 'Avío',
         critico: referencia?.critico ?? false,
         precioCompra: Number(valor.precioCompra),
-        unidadCompra: valor.unidadCompra.trim(),
+        // Se deriva de M15 en el momento del guardado, aunque el evento del DOM
+        // no haya alcanzado a sincronizar el control (Flask la ignora de todos modos).
+        unidadCompra: (this.referencia(valor.materialId)?.unidadCompra ?? valor.unidadCompra).trim(),
         minimoCompra: Number(valor.minimoCompra),
         plazoDias: Number(valor.plazoDias),
         esPrincipal: valor.esPrincipal,
@@ -267,12 +319,24 @@ export class CatalogoProveedor {
 
     this.guardando.set(true);
     this.servicio
-      .reemplazarMateriales(this.id, materiales)
+      .reemplazarMateriales(this.id(), materiales)
       .pipe(finalize(() => this.guardando.set(false)))
       .subscribe({
         next: () => this.avisos.mostrar('exito', 'Catálogo del proveedor actualizado en Flask.'),
-        error: (error: unknown) =>
-          this.avisos.mostrar('error', mensajeError(error, 'No fue posible guardar el catálogo.')),
+        error: (error: unknown) => {
+          const prefijo = mensajeError(error, 'No fue posible guardar el catálogo.');
+          const campos = detalleError(error)
+            .map((item) => {
+              if (item && typeof item === 'object') {
+                const fila = item as Record<string, unknown>;
+                return `${String(fila['campo'] ?? '')}: ${String(fila['mensaje'] ?? '')}`.trim();
+              }
+              return String(item);
+            })
+            .filter((texto) => texto.length > 0)
+            .join(' · ');
+          this.avisos.mostrar('error', campos ? `${prefijo} — ${campos}` : prefijo);
+        },
       });
   }
 

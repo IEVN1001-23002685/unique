@@ -198,7 +198,7 @@
                         Eliminar
                       </button>
                       @if (lineaInvalida(i) && intentoEnvio()) {
-                        <span class="campo__error">Revisa los valores de esta línea.</span>
+                        <span class="campo__error">{{ errorDeLinea(i) }}</span>
                       }
                     </td>
                   </tr>

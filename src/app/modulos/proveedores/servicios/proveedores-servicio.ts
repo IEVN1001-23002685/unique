@@ -11,7 +11,7 @@ import {
   throwError,
 } from 'rxjs';
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
-import { mensajeError } from '../../../core/api/errores';
+import { codigoError, mensajeError } from '../../../core/api/errores';
 import { AuthStateService } from '../../../core/auth/auth-state.service';
 import { esMaterialCritico } from '../modelos/proveedor';
 import type { EvaluacionProveedor, MaterialProveedor, Proveedor } from '../modelos/proveedor';
@@ -339,9 +339,38 @@ export class ProveedoresServicio {
                 activo: linea.activo,
               };
               const previa = porMaterial.get(linea.materialId);
-              return previa
-                ? this.api.patch(`/proveedores/${proveedorId}/materiales/${previa.id}`, cuerpo)
-                : this.api.post(`/proveedores/${proveedorId}/materiales`, cuerpo);
+              if (previa) {
+                return this.api.patch(
+                  `/proveedores/${proveedorId}/materiales/${previa.id}`,
+                  cuerpo,
+                );
+              }
+              // Si la caché local quedó desactualizada, Flask rechaza el POST con
+              // DUPLICADO. Se recupera leyendo el id real y reactivando la fila.
+              return this.api.post(`/proveedores/${proveedorId}/materiales`, cuerpo).pipe(
+                catchError((error: unknown) => {
+                  if (codigoError(error) !== 'MATERIAL_PROVEEDOR_DUPLICADO') {
+                    return throwError(() => error);
+                  }
+                  return listarTodo<MaterialProveedorApi>(
+                    this.api,
+                    `/proveedores/${proveedorId}/materiales`,
+                  ).pipe(
+                    concatMap((filas) => {
+                      const existente = filas.find(
+                        (fila) => fila.material_id === linea.materialId,
+                      );
+                      if (!existente) {
+                        return throwError(() => error);
+                      }
+                      return this.api.patch(
+                        `/proveedores/${proveedorId}/materiales/${existente.id}`,
+                        cuerpo,
+                      );
+                    }),
+                  );
+                }),
+              );
             }),
           ),
         ),
