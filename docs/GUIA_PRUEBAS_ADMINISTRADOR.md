@@ -16,6 +16,7 @@
 5. **ADMIN hereda permisos de OPERATIVO, pero OPERATIVO no hereda de ADMIN** (`security/roles.py:46-50`). Las cotizaciones, órdenes de compra, M22 y el dashboard son ADMIN-only.
 6. **El access token dura 15 minutos.** Para pruebas largas hay que renovar con `POST /api/v1/auth/refrescar` (cookie + `X-CSRF-TOKEN`). Si la sesión expira, los errores serán 401, no fallos de negocio.
 7. **Los movimientos de inventario son inmutables** en MySQL (`migrations/versions/c4d5e6f7a8b9...`). Una corrección es otro movimiento, nunca editar el anterior.
+8. **La loneta no pide proveedor alterno.** `TEL-LON` no está en `MATERIALES_CRITICOS` de Flask (`TEL-FEL`, `TEL-JER`, `TEL-RIB`, `HIL-EST`). Basta con un proveedor principal. El aviso que antes mostraba Angular era demasiado amplio y ya se ajustó en este repositorio.
 
 ---
 
@@ -203,12 +204,30 @@ Si decides surtir con un ajuste directo en lugar de una compra (solo para aceler
 
 `cantidad_contada` es el conteo absoluto, no un delta. Con `TEL-LON`, 1 rollo = 75 m² (`factor_compra_base` 75.00). Para `TEL-FEL` el factor es 64.80.
 
+### 4.3 Desbloqueo: “la loneta necesita principal y alterno”
+
+Ese mensaje **no es un requisito de Flask**. Verificado en el contrato real:
+
+- `POST /api/v1/proveedores` valida solo identificación y contacto; no pide alterno.
+- `POST /api/v1/proveedores/{id}/materiales` acepta `es_principal` y permite guardar sin que exista otro proveedor.
+- `advertencias_cobertura()` solo emite avisos. Para `TEL-LON` ni siquiera avisa de alterno, porque no está en `MATERIALES_CRITICOS`.
+
+Secuencia correcta para proseguir:
+
+1. Entra con **ADMIN**. `/proveedores` y `/compras` son ADMIN-only; `/recepciones` también permite OPERATIVO. Si llegaste como Operativo, cambia de sesión antes de crear proveedores.
+2. `/proveedores` → **+ Nuevo proveedor** → captura los campos de §4.1 → **Dar de alta**.
+3. En la fila del proveedor pulsa **Catálogo** (`/proveedores/{id}/materiales`) → **+ Agregar material** → Material `Loneta (TEL-LON)`, Unidad de compra `Rollo de 1.50 x 50.00 m = 75.00 m2`, Precio cotizado, Mínimo `1.00`, Plazo acordado, **Principal = Sí**, **Activo = Sí** → **Guardar catálogo**.
+4. Aunque arriba aparezca el aviso de cobertura, guarda: es informativo y no deshabilita el botón. Para continuar de inmediato, en `/compras/requisiciones` pulsa **Emitir orden directa**: toma el principal, crea y emite la orden en Flask. Si quieres comparación normal, crea el segundo proveedor **después** y asígnale `TEL-LON` con **Principal = No**; entonces usa **Cotizar**.
+5. Continúa en `/recepciones` con la cabecera `Idempotency-Key` (§5.4).
+
+Si aparece otro mensaje, sí es un bloqueo distinto: `Solo el Administrador puede modificar el padrón` → cambia a ADMIN; `El RFC ya está registrado` → usa otro RFC o déjalo vacío; `Catálogo de materiales no disponible` → M15 no respondió, pulsa **Reintentar**; `No hay proveedor principal disponible para emitir la orden directa` → marca **Principal = Sí** en el catálogo.
+
 ---
 
 ## 5. Fase 3 — M14 · Compras (ciclo completo)
 
 Ruta Angular: `/compras` (Requisiciones, Cotizaciones, Órdenes de compra, Recepciones). Las recepciones también tienen acceso directo en `/recepciones`.  
-ADMIN puede hacer todo; OPERATIVO puede crear requisiciones y recepciones.
+ADMIN puede hacer todo en `/compras`; OPERATIVO solo entra a `/recepciones`. La captura de requisiciones por Operativo queda pendiente de que Flask defina su ruta y permisos (nota en `/compras/requisiciones`). Si estás en la sesión de Operativo, cambia a ADMIN antes de dar de alta proveedores o emitir compras.
 
 ### 5.1 Requisición
 

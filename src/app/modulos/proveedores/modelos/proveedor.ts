@@ -4,6 +4,21 @@ export type EstadoProveedor = 'ACTIVO' | 'EN_REVISION' | 'INACTIVO';
 
 export type CategoriaMaterial = 'Tela' | 'Hilo' | 'Estabilizador' | 'Avío' | 'Etiqueta' | 'Empaque';
 
+/**
+ * Cobertura crítica definida por Flask en `proveedor_service.MATERIALES_CRITICOS`.
+ * La loneta (`TEL-LON`) NO está incluida: solo necesita proveedor principal.
+ * Se replica como constante de interfaz, no como regla de negocio nueva.
+ */
+export const MATERIALES_CRITICOS = ['TEL-FEL', 'TEL-JER', 'TEL-RIB', 'HIL-EST'] as const;
+
+/** Evalúa criticidad por código exacto, no por prefijo `TEL`/`HIL`. */
+export function esMaterialCritico(codigo: string | null | undefined): boolean {
+  if (!codigo) {
+    return false;
+  }
+  return (MATERIALES_CRITICOS as readonly string[]).includes(codigo.trim().toUpperCase());
+}
+
 /** Catálogo de materiales de M15, consultado aquí solo como referencia. */
 export interface MaterialReferencia {
   id: number;

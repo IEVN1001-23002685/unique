@@ -9,6 +9,7 @@ import { InventarioServicio } from '../../../inventario/servicios/inventario-ser
 import { ChipEstatus } from '../../componentes/chip-estatus/chip-estatus';
 import { NavegacionProveedores } from '../../componentes/navegacion-proveedores/navegacion-proveedores';
 import { ProveedoresServicio } from '../../servicios/proveedores-servicio';
+import { esMaterialCritico } from '../../modelos/proveedor';
 import type {
   CategoriaMaterial,
   MaterialProveedor,
@@ -67,7 +68,7 @@ export class CatalogoProveedor {
         id: material.id,
         nombre: material.nombre,
         categoria: material.categoria,
-        critico: material.codigo.startsWith('TEL') || material.codigo.startsWith('HIL'),
+        critico: esMaterialCritico(material.codigo),
         unidadCompra: material.unidadCompra,
       })),
   );
@@ -114,8 +115,9 @@ export class CatalogoProveedor {
   }
 
   /**
-   * Cobertura de todo el catálogo activo de M15: principal obligatorio y
-   * alterno en críticos. No se limita al proveedor que se está editando.
+   * Cobertura de todo el catálogo activo de M15. Flask exige principal para
+   * cualquier material y alterno solo para los cuatro críticos; la loneta no
+   * está en esa lista. Es un aviso informativo, no impide guardar.
    */
   protected readonly materialesConAlerta = computed(() =>
     this.materialesReferencia()
@@ -143,8 +145,8 @@ export class CatalogoProveedor {
 
     if (activas.length === 0) {
       return this.referencia(materialId)?.critico
-        ? 'Crítico: requiere proveedor principal y alterno'
-        : 'Sin proveedores activos';
+        ? 'Crítico: sin proveedor principal ni alterno'
+        : 'Sin proveedor principal';
     }
     if (!activas.some((linea) => linea.esPrincipal)) {
       return 'Sin proveedor principal';

@@ -13,6 +13,7 @@ import {
 import { ApiService, ValorParametro } from '../../../core/api/api.service';
 import { mensajeError } from '../../../core/api/errores';
 import { AuthStateService } from '../../../core/auth/auth-state.service';
+import { esMaterialCritico } from '../modelos/proveedor';
 import type { EvaluacionProveedor, MaterialProveedor, Proveedor } from '../modelos/proveedor';
 
 export type ResultadoEliminacion = 'eliminado' | 'desactivado' | 'no-encontrado';
@@ -345,7 +346,7 @@ export class ProveedoresServicio {
       materialId: fila.material_id,
       material: fila.material_nombre ?? codigo,
       categoria: this.categoriaDe(codigo),
-      critico: codigo.startsWith('TEL') || codigo.startsWith('HIL'),
+      critico: esMaterialCritico(codigo),
       precioCompra: Number(fila.precio_compra),
       unidadCompra: fila.unidad_compra ?? 'pieza',
       minimoCompra: Number(fila.minimo_compra),
