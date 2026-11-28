@@ -59,9 +59,10 @@
     }
 
     <p class="nota">
-      El precio y el mínimo se expresan por unidad de compra. La unidad la define M15 y Flask la
-      toma del material; no se puede editar aquí. Cambiar un precio no altera las órdenes de compra
-      ya emitidas.
+      Aquí se asignan materiales de M15 (por ejemplo, Loneta), no productos terminados ni SKU de
+      venta. El precio y el mínimo se expresan por unidad de compra. La unidad la define M15 y Flask
+      la toma del material; no se puede editar aquí. Cambiar un precio no altera las órdenes de
+      compra ya emitidas.
     </p>
 
     @if (intentoEnvio() && formulario.invalid) {
@@ -113,6 +114,7 @@
                         aria-label="Material"
                         (change)="sincronizarUnidad(i)"
                       >
+                        <option [ngValue]="0">Selecciona un material…</option>
                         @for (material of materialesReferencia(); track material.id) {
                           <option [ngValue]="material.id">{{ material.nombre }}</option>
                         }

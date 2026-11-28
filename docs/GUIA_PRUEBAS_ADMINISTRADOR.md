@@ -216,7 +216,7 @@ Secuencia correcta para proseguir:
 
 1. Entra con **ADMIN**. `/proveedores` y `/compras` son ADMIN-only; `/recepciones` también permite OPERATIVO. Si llegaste como Operativo, cambia de sesión antes de crear proveedores.
 2. `/proveedores` → **+ Nuevo proveedor** → captura los campos de §4.1 → **Dar de alta**.
-3. En la fila del proveedor pulsa **Catálogo** (`/proveedores/{id}/materiales`) → **+ Agregar material** → Material `Loneta (TEL-LON)` (la unidad de compra se llena sola desde M15: `Rollo de 1.50 x 50.00 m = 75.00 m2`), Precio cotizado, Mínimo `1.00`, Plazo acordado, **Principal = Sí**, **Activo = Sí** → **Guardar catálogo**.
+3. En la fila del proveedor pulsa **Catálogo** (`/proveedores/{id}/materiales`) → **+ Agregar material** → en el desplegable elige la opción **`Loneta`** (no busca el SKU `BO-UN-NG`: ese es un producto terminado y aquí solo aparecen materiales de M15). La unidad de compra se llena sola: `Rollo de 1.50 x 50.00 m = 75.00 m2`. Captura Precio cotizado, Mínimo `1.00`, Plazo acordado, **Principal = Sí**, **Activo = Sí** → **Guardar catálogo**.
 4. Aunque arriba aparezca el aviso de cobertura, guarda: es informativo y no deshabilita el botón. Para continuar de inmediato, en `/compras/requisiciones` pulsa **Emitir orden directa**: toma el principal, crea y emite la orden en Flask. Si quieres comparación normal, crea el segundo proveedor **después** y asígnale `TEL-LON` con **Principal = No**; entonces usa **Cotizar**.
 5. Continúa en `/recepciones` con la cabecera `Idempotency-Key` (§5.4).
 
