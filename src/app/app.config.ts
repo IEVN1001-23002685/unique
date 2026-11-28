@@ -20,8 +20,12 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideHttpClient(withInterceptors([authInterceptor])),
-    provideAppInitializer(() => inject(ApiConfigService).cargar()),
-    provideAppInitializer(() => inject(AuthSessionService).hidratar()),
+    // Un único initializer: los initializers de Angular pueden ejecutarse en paralelo,
+    // por lo que hidratar la sesión debe esperar a que la URL de la API esté lista.
+    provideAppInitializer(async () => {
+      await inject(ApiConfigService).cargar();
+      await inject(AuthSessionService).hidratar();
+    }),
     // Los guards encuentran data.roles también en las rutas hijas (§10.2).
     provideRouter(routes, withRouterConfig({ paramsInheritanceStrategy: 'always' })),
   ],

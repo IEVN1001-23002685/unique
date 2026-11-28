@@ -35,7 +35,10 @@ server {
     }
 
     # Router de Angular: cualquier ruta interna devuelve index.html.
+    # El HTML no se cachea para que un despliegue no deje referencias a chunks antiguos.
     location / {
+        include /etc/nginx/snippets/seguridad.conf;
+        add_header Cache-Control "no-store" always;
         try_files $uri $uri/ /index.html;
     }
 }

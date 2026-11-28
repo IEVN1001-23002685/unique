@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { catchError, firstValueFrom, Observable, of, tap, throwError } from 'rxjs';
+import { catchError, defer, firstValueFrom, Observable, of, tap, throwError } from 'rxjs';
 import { ApiConfigService } from '../api/api-config.service';
 import { AuthStateService, RespuestaSesion, RolUsuario, UsuarioSesion } from './auth-state.service';
 
@@ -86,7 +86,9 @@ export class AuthSessionService {
 
   /** Recupera la sesión desde la cookie httpOnly al cargar la aplicación. */
   async hidratar(): Promise<void> {
-    await firstValueFrom(this.refrescar().pipe(catchError(() => of(null))));
+    // `refrescar()` calcula `base` de forma síncrona; `defer` convierte ese fallo
+    // en un error del Observable para que no detenga el arranque de la aplicación.
+    await firstValueFrom(defer(() => this.refrescar()).pipe(catchError(() => of(null))));
   }
 
   cerrarSesion(): Observable<MensajeApi> {
